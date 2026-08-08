@@ -38,8 +38,48 @@ function removeLogoBackground() {
 }
 
 let ws;
-let graphState = null;
-let scheduleState = null;
+let graphState = {
+  speakers: {
+    'speaker-1': { id: 'speaker-1', name: 'Dr. Aditi Sharma', role: 'AI Research Director', bio: 'Pioneering agentic swarm coordination models.', avatar: '🧑‍🔬', delay: 0 },
+    'speaker-2': { id: 'speaker-2', name: 'Vikramaditya Verma', role: 'Graphics Engineer', bio: 'Ex-Mozilla WebGPU core contributor.', avatar: '💻', delay: 0 },
+    'speaker-3': { id: 'speaker-3', name: 'Priya Nair', role: 'DevOps Architect', bio: 'Specialist in cloud-native self-healing nodes.', avatar: '☁️', delay: 0 }
+  },
+  topics: {
+    'topic-1': { id: 'topic-1', title: 'Autonomous Agent Swarms: Coordination without Controllers', speakerId: 'speaker-1', tags: ['AI', 'Agentic', 'Swarms'], interest: 210, duration: 60, slidesUploaded: true, summary: 'Peer-to-peer LLM negotiation without central controllers.' },
+    'topic-2': { id: 'topic-2', title: 'WebGPU Deep Dive: Raytracing in the Browser', speakerId: 'speaker-2', tags: ['Graphics', 'WebGPU', 'JS'], interest: 140, duration: 60, slidesUploaded: true, summary: 'Rendering hardware-accelerated 3D graphs at 60 FPS.' },
+    'topic-3': { id: 'topic-3', title: 'Kubernetes Auto-Healing Runtimes under Load Stress', speakerId: 'speaker-3', tags: ['DevOps', 'K8s', 'Cloud'], interest: 180, duration: 60, slidesUploaded: true, summary: 'Self-correcting pod scheduling during high traffic spikes.' }
+  },
+  halls: {
+    'hall-1': { id: 'hall-1', name: 'Turing Hall', capacity: 250 },
+    'hall-2': { id: 'hall-2', name: 'Lovelace Suite', capacity: 120 },
+    'hall-3': { id: 'hall-3', name: 'Hopper Room', capacity: 60 }
+  },
+  slots: {
+    'slot-1': { id: 'slot-1', time: '09:30 AM - 10:30 AM', startHour: 9.5 },
+    'slot-2': { id: 'slot-2', time: '11:00 AM - 12:00 PM', startHour: 11 },
+    'slot-3': { id: 'slot-3', time: '01:30 PM - 02:30 PM', startHour: 13.5 },
+    'slot-4': { id: 'slot-4', time: '03:00 PM - 04:00 PM', startHour: 15 }
+  },
+  edges: [
+    { source: 'topic-1', target: 'speaker-1', type: 'SPEAKER_OF' },
+    { source: 'topic-2', target: 'speaker-2', type: 'SPEAKER_OF' },
+    { source: 'topic-3', target: 'speaker-3', type: 'SPEAKER_OF' },
+    { source: 'topic-1', target: 'hall-1', type: 'SCHEDULED_IN' },
+    { source: 'topic-1', target: 'slot-1', type: 'SCHEDULED_AT' },
+    { source: 'topic-2', target: 'hall-1', type: 'SCHEDULED_IN' },
+    { source: 'topic-2', target: 'slot-2', type: 'SCHEDULED_AT' },
+    { source: 'topic-3', target: 'hall-1', type: 'SCHEDULED_IN' },
+    { source: 'topic-3', target: 'slot-3', type: 'SCHEDULED_AT' }
+  ]
+};
+
+let scheduleState = {
+  'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
+  'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
+  'slot-3': { 'hall-1': 'topic-3', 'hall-2': null, 'hall-3': null },
+  'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
+};
+
 let activeSpeakerId = null;
 let previousSchedule = null;
 
@@ -66,6 +106,12 @@ window.addEventListener('DOMContentLoaded', () => {
       setTimeout(() => loader.remove(), 800);
     }
   }, 3600);
+
+  // Immediate render with local mock data fallback (guarantees instantaneous UI rendering)
+  populateForms();
+  renderScheduleGrid();
+  rebuildGraphData();
+  updateCounters();
 
   initWebSockets();
   initFormListeners();
