@@ -180,4 +180,7 @@ function initWebSockets() {
     appendLog('[SYSTEM] Connection offline. Offline synchronization active.', 'system');
     setTimeout(initWebSockets, 5000);
   };
+  } catch (err) {
+    console.warn('[WS INIT] Could not establish WebSocket:', err);
+  }
 }
