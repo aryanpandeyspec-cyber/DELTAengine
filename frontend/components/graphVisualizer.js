@@ -206,6 +206,54 @@ function drawGraphSVG() {
     textLabel.textContent = n.label.length > 15 ? n.label.substring(0, 12) + '...' : n.label;
     g.appendChild(textLabel);
 
+    // Bind Hover Event for Floating Card Details Popover on Graph Nodes
+    g.addEventListener('mouseenter', (e) => {
+      const hoverCard = document.getElementById('matrix-hover-card');
+      if (!hoverCard || !graphState) return;
+
+      const elSpeaker = document.getElementById('hover-speaker-name');
+      const elInterest = document.getElementById('hover-interest-badge');
+      const elTitle = document.getElementById('hover-topic-title');
+      const elSummary = document.getElementById('hover-topic-summary');
+      const tagsRow = document.getElementById('hover-tags-row');
+
+      if (n.type === 'speaker' && graphState.speakers[n.id]) {
+        const s = graphState.speakers[n.id];
+        if (elSpeaker) elSpeaker.textContent = `${s.avatar} ${s.name}`;
+        if (elInterest) elInterest.textContent = s.delay > 0 ? `⚠️ +${s.delay}m Delay` : `🟢 On-Time`;
+        if (elTitle) elTitle.textContent = s.role;
+        if (elSummary) elSummary.textContent = s.bio || 'Conference speaker.';
+        if (tagsRow) tagsRow.innerHTML = '<span class="badge badge-blue">Speaker Node</span>';
+      } else if (n.type === 'topic' && graphState.topics[n.id]) {
+        const t = graphState.topics[n.id];
+        const s = graphState.speakers[t.speakerId] || {};
+        if (elSpeaker) elSpeaker.textContent = `${s.avatar || '🧑‍🔬'} ${s.name || 'Presenter'}`;
+        if (elInterest) elInterest.textContent = `🔥 ${t.interest} Interest`;
+        if (elTitle) elTitle.textContent = t.title;
+        if (elSummary) elSummary.textContent = t.summary || 'Presentation session.';
+        if (tagsRow) tagsRow.innerHTML = (t.tags || []).map(tag => `<span class="badge badge-yellow" style="font-size:0.68rem; padding:1px 5px;">#${tag}</span>`).join(' ');
+      } else if (n.type === 'hall' && graphState.halls[n.id]) {
+        const h = graphState.halls[n.id];
+        if (elSpeaker) elSpeaker.textContent = `🏛️ ${h.name}`;
+        if (elInterest) elInterest.textContent = `Cap: ${h.capacity} Pax`;
+        if (elTitle) elTitle.textContent = `Venue Hall Facility`;
+        if (elSummary) elSummary.textContent = `Max capacity limit: ${h.capacity} attendees.`;
+        if (tagsRow) tagsRow.innerHTML = '<span class="badge badge-green">Venue Hall Node</span>';
+      }
+
+      hoverCard.style.display = 'block';
+      if (typeof positionHoverCard === 'function') positionHoverCard(e, g);
+    });
+
+    g.addEventListener('mousemove', (e) => {
+      if (typeof positionHoverCard === 'function') positionHoverCard(e, g);
+    });
+
+    g.addEventListener('mouseleave', () => {
+      const hoverCard = document.getElementById('matrix-hover-card');
+      if (hoverCard) hoverCard.style.display = 'none';
+    });
+
     fragment.appendChild(g);
   });
 

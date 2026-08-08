@@ -100,15 +100,13 @@ function renderScheduleGrid() {
           }
 
           hoverCard.style.display = 'block';
-          hoverCard.style.top = (e.clientY + 15) + 'px';
-          hoverCard.style.left = (Math.min(e.clientX + 15, window.innerWidth - 300)) + 'px';
+          positionHoverCard(e, block);
         });
 
         block.addEventListener('mousemove', (e) => {
           const hoverCard = document.getElementById('matrix-hover-card');
           if (!hoverCard || hoverCard.style.display === 'none') return;
-          hoverCard.style.top = (e.clientY + 15) + 'px';
-          hoverCard.style.left = (Math.min(e.clientX + 15, window.innerWidth - 300)) + 'px';
+          positionHoverCard(e, block);
         });
 
         block.addEventListener('mouseleave', () => {
@@ -244,4 +242,45 @@ function handleDropOnCell(e) {
 
 function initDragAndDrop() {
   // Configured dynamically during renderScheduleGrid
+}
+
+function positionHoverCard(e, targetEl) {
+  const hoverCard = document.getElementById('matrix-hover-card');
+  if (!hoverCard) return;
+
+  const rect = targetEl ? targetEl.getBoundingClientRect() : null;
+  const cardWidth = 320;
+  const cardHeight = hoverCard.offsetHeight || 160;
+
+  let left, top;
+
+  if (rect && rect.width > 0 && rect.height > 0) {
+    // Position right next to the hovered element bounding box
+    left = rect.right + 12;
+    top = rect.top;
+
+    // Flip to left if overflowing right edge
+    if (left + cardWidth > window.innerWidth - 12) {
+      left = rect.left - cardWidth - 12;
+    }
+  } else {
+    // Cursor position fallback
+    left = e.clientX + 14;
+    top = e.clientY + 14;
+
+    if (left + cardWidth > window.innerWidth - 12) {
+      left = e.clientX - cardWidth - 14;
+    }
+  }
+
+  // Viewport vertical clamping
+  if (left < 10) left = 10;
+  if (top + cardHeight > window.innerHeight - 12) {
+    top = Math.max(10, window.innerHeight - cardHeight - 12);
+  }
+  if (top < 10) top = 10;
+
+  hoverCard.style.position = 'fixed';
+  hoverCard.style.top = `${top}px`;
+  hoverCard.style.left = `${left}px`;
 }
