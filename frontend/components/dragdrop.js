@@ -78,7 +78,6 @@ function renderScheduleGrid() {
         
         // Bind Drag event to block
         block.addEventListener('dragstart', handleDragStartBlock);
-        block.addEventListener('dragend', handleDragEndBlock);
         
         // Bind Hover Event for Floating Card Details Popover
         block.addEventListener('mouseenter', (e) => {
@@ -101,31 +100,27 @@ function renderScheduleGrid() {
           }
 
           hoverCard.style.display = 'block';
-          const cardWidth = 320;
-          const cardHeight = 160;
-          let left = e.clientX + 15;
-          let top = e.clientY + 15;
-
-          if (left + cardWidth > window.innerWidth) left = e.clientX - cardWidth - 10;
-          if (top + cardHeight > window.innerHeight) top = e.clientY - cardHeight - 10;
-
-          hoverCard.style.left = `${Math.max(10, left)}px`;
-          hoverCard.style.top = `${Math.max(10, top)}px`;
+          const rect = block.getBoundingClientRect();
+          let topPos = Math.max(10, rect.top);
+          let leftPos = rect.right + 12;
+          if (leftPos + 300 > window.innerWidth) {
+            leftPos = Math.max(10, rect.left - 300);
+          }
+          hoverCard.style.top = topPos + 'px';
+          hoverCard.style.left = leftPos + 'px';
         });
 
         block.addEventListener('mousemove', (e) => {
           const hoverCard = document.getElementById('matrix-hover-card');
           if (!hoverCard || hoverCard.style.display === 'none') return;
-          const cardWidth = 320;
-          const cardHeight = 160;
-          let left = e.clientX + 15;
-          let top = e.clientY + 15;
-
-          if (left + cardWidth > window.innerWidth) left = e.clientX - cardWidth - 10;
-          if (top + cardHeight > window.innerHeight) top = e.clientY - cardHeight - 10;
-
-          hoverCard.style.left = `${Math.max(10, left)}px`;
-          hoverCard.style.top = `${Math.max(10, top)}px`;
+          const rect = block.getBoundingClientRect();
+          let topPos = Math.max(10, rect.top);
+          let leftPos = rect.right + 12;
+          if (leftPos + 300 > window.innerWidth) {
+            leftPos = Math.max(10, rect.left - 300);
+          }
+          hoverCard.style.top = topPos + 'px';
+          hoverCard.style.left = leftPos + 'px';
         });
 
         block.addEventListener('mouseleave', () => {
@@ -135,13 +130,39 @@ function renderScheduleGrid() {
 
         td.appendChild(block);
       } else {
-        td.innerHTML = `<div class="schedule-block empty">No Session</div>`;
+        const emptyBlock = document.createElement('div');
+        emptyBlock.className = 'schedule-block empty';
+        emptyBlock.textContent = 'No Session';
+        td.appendChild(emptyBlock);
       }
 
       tr.appendChild(td);
     }
 
     tbody.appendChild(tr);
+  }
+
+  // Bind Date Picker Listener if not already bound
+  const datePicker = document.getElementById('schedule-date-picker');
+  if (datePicker && !datePicker.dataset.bound) {
+    datePicker.dataset.bound = 'true';
+    datePicker.addEventListener('change', (e) => {
+      const selectedDate = e.target.value;
+      createToast(`📅 Switching schedule matrix to date ${selectedDate}...`, 'info');
+      fetch('/api/schedule/set-date', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ date: selectedDate })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.schedule) {
+          scheduleState = data.schedule;
+          renderScheduleGrid();
+          if (typeof rebuildGraphData === 'function') rebuildGraphData();
+        }
+      });
+    });
   }
 }
 
@@ -154,14 +175,13 @@ function handleDragStartBlock(e) {
   e.dataTransfer.setData('text/plain', topicId);
   e.dataTransfer.effectAllowed = 'move';
 
-  const hoverCard = document.getElementById('matrix-hover-card');
-  if (hoverCard) hoverCard.style.display = 'none';
-}
-
-function handleDragEndBlock(e) {
-  currentDraggedTopicId = null;
-  const hoverCard = document.getElementById('matrix-hover-card');
-  if (hoverCard) hoverCard.style.display = 'none';
+  // Auto-expand tour guide on drag
+  const tourCard = document.getElementById('tour-card');
+  const btnToggle = document.getElementById('btn-toggle-tour');
+  if (tourCard && tourCard.classList.contains('collapsed')) {
+    tourCard.classList.remove('collapsed');
+    if (btnToggle) btnToggle.textContent = '_';
+  }
 }
 
 // HTML5 drag over cell
@@ -194,15 +214,14 @@ function handleDropOnCell(e) {
   const targetHallId = cell ? cell.getAttribute('data-hall-id') : null;
 
   if (!topicId || !targetSlotId || !targetHallId) {
+    console.warn('[DragDrop Warning] Missing drop parameters:', { topicId, targetSlotId, targetHallId });
     return;
   }
 
   // Make sure we're not dropping in the exact same spot
-  if (scheduleState && scheduleState[targetSlotId] && scheduleState[targetSlotId][targetHallId] === topicId) return;
+  if (scheduleState[targetSlotId][targetHallId] === topicId) return;
 
-  if (typeof appendLog === 'function') {
-    appendLog(`[SYSTEM] Initiating manual rescheduled move request for talk "${topicId}"...`, 'system');
-  }
+  appendLog(`[SYSTEM] Initiating manual rescheduled move request for talk "${topicId}"...`, 'system');
 
   fetch('/api/schedule/move', {
     method: 'POST',
@@ -217,9 +236,9 @@ function handleDropOnCell(e) {
       renderScheduleGrid();
       if (typeof rebuildGraphData === 'function') rebuildGraphData();
       if (typeof updateCounters === 'function') updateCounters();
-      if (typeof createToast === 'function') createToast('⚡ Session rescheduled & self-healed!', 'success');
+      createToast('Session card rescheduled & self-healed!', 'success');
 
-      if (data.logs && typeof appendLog === 'function') {
+      if (data.logs) {
         data.logs.forEach(log => {
           let logType = 'system';
           if (log.includes('[CONFLICT]')) logType = 'conflict';
@@ -227,14 +246,14 @@ function handleDropOnCell(e) {
           appendLog(log, logType);
         });
       }
-      if (data.swarmChat && typeof renderSwarmChat === 'function') {
+      if (data.swarmChat) {
         renderSwarmChat(data.swarmChat);
       }
     }
   })
   .catch(err => {
     console.error(err);
-    if (typeof createToast === 'function') createToast('Rescheduling request failed.', 'warning');
+    createToast('Rescheduling request failed.', 'warning');
   });
 }
 
