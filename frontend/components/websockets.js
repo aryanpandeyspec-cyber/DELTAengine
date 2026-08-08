@@ -101,22 +101,6 @@ function initWebSockets() {
           });
           break;
 
-        case 'SENTIMENT_ALERT':
-          if (payload.data.logs) {
-            payload.data.logs.forEach(log => appendLog(log, 'system'));
-          }
-          if (payload.data.swarmChat) {
-            renderSwarmChat(payload.data.swarmChat);
-          }
-          if (payload.data.notifications) {
-            payload.data.notifications.forEach(n => {
-              createToast(n.message, n.type);
-            });
-            showPushAlert(payload.data.notifications[0].message);
-          }
-        });
-        break;
-
       case 'SENTIMENT_ALERT':
         if (payload.data.logs) {
           payload.data.logs.forEach(log => appendLog(log, 'system'));
