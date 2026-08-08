@@ -1,72 +1,114 @@
 // --- WEBSOCKET CLIENT SYNC ---
 
-function initWebSockets() {
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}`;
-
-  appendLog('[SYSTEM] Establishing secure WebSocket socket connection...', 'system');
-
-  ws = new WebSocket(wsUrl);
-
-  ws.onopen = () => {
-    appendLog('[SYSTEM] WebSocket client successfully linked to Event Operating System.', 'success');
-  };
-
-  ws.onmessage = (event) => {
-    const payload = JSON.parse(event.data);
-
-    switch (payload.type) {
-      case 'INIT_STATE':
+async function fetchInitialStateHTTP() {
+  try {
+    const res = await fetch('/api/state');
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.graph && data.schedule) {
         previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
-        graphState = payload.data.graph;
-        scheduleState = payload.data.schedule;
+        graphState = data.graph;
+        scheduleState = data.schedule;
 
         populateForms();
         renderScheduleGrid();
         rebuildGraphData();
         updateCounters();
         if (selectedNodeId) selectGraphNode(selectedNodeId);
-        break;
+      }
+    }
+  } catch (err) {
+    console.warn('[HTTP FALLBACK] Could not fetch /api/state over HTTP:', err);
+  }
+}
 
-      case 'SCHEDULE_HEALED':
-        const conflictLog = payload.data.logs ? payload.data.logs.find(l => l.includes('[CONFLICT]') || l.includes('exceeds') || l.includes('Capacity')) : null;
-        const actionLog = payload.data.logs ? payload.data.logs.find(l => l.includes('moved to') || l.includes('Relocating') || l.includes('Scheduled') || l.includes('Solver')) : null;
+function initWebSockets() {
+  // Always fetch state via HTTP REST first to guarantee data loads on Vercel / serverless hosts!
+  fetchInitialStateHTTP();
 
-        const conflictText = conflictLog ? conflictLog.replace(/\[.*?\]/g, '').trim() : '⚠️ Self-Healing Triggered: Operational constraint violation detected.';
-        const destText = actionLog ? actionLog.replace(/\[.*?\]/g, '').trim() : '📍 Optimization Solver reallocating talk node to viable venue position.';
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}`;
 
-        triggerReallocationCountdown(conflictText, destText, () => {
+  appendLog('[SYSTEM] Establishing secure WebSocket socket connection...', 'system');
+
+  try {
+    ws = new WebSocket(wsUrl);
+
+    ws.onopen = () => {
+      appendLog('[SYSTEM] WebSocket client successfully linked to Event Operating System.', 'success');
+    };
+
+    ws.onmessage = (event) => {
+      const payload = JSON.parse(event.data);
+
+      switch (payload.type) {
+        case 'INIT_STATE':
           previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
           graphState = payload.data.graph;
           scheduleState = payload.data.schedule;
-
-          if (payload.data.logs) {
-            let solved = false;
-            payload.data.logs.forEach(log => {
-              let logType = 'system';
-              if (log.includes('[CONFLICT]')) logType = 'conflict';
-              else if (log.includes('[Action]')) logType = 'action';
-              else if (log.includes('[Solver:')) logType = 'system';
-              else if (log.includes('Audit clean')) {
-                logType = 'success';
-                solved = true;
-              }
-
-              appendLog(log, logType);
-            });
-          }
 
           populateForms();
           renderScheduleGrid();
           rebuildGraphData();
           updateCounters();
           if (selectedNodeId) selectGraphNode(selectedNodeId);
+          break;
 
+        case 'SCHEDULE_HEALED':
+          const conflictLog = payload.data.logs ? payload.data.logs.find(l => l.includes('[CONFLICT]') || l.includes('exceeds') || l.includes('Capacity')) : null;
+          const actionLog = payload.data.logs ? payload.data.logs.find(l => l.includes('moved to') || l.includes('Relocating') || l.includes('Scheduled') || l.includes('Solver')) : null;
+
+          const conflictText = conflictLog ? conflictLog.replace(/\[.*?\]/g, '').trim() : '⚠️ Self-Healing Triggered: Operational constraint violation detected.';
+          const destText = actionLog ? actionLog.replace(/\[.*?\]/g, '').trim() : '📍 Optimization Solver reallocating talk node to viable venue position.';
+
+          triggerReallocationCountdown(conflictText, destText, () => {
+            previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
+            graphState = payload.data.graph;
+            scheduleState = payload.data.schedule;
+
+            if (payload.data.logs) {
+              let solved = false;
+              payload.data.logs.forEach(log => {
+                let logType = 'system';
+                if (log.includes('[CONFLICT]')) logType = 'conflict';
+                else if (log.includes('[Action]')) logType = 'action';
+                else if (log.includes('[Solver:')) logType = 'system';
+                else if (log.includes('Audit clean')) {
+                  logType = 'success';
+                  solved = true;
+                }
+
+                appendLog(log, logType);
+              });
+            }
+
+            populateForms();
+            renderScheduleGrid();
+            rebuildGraphData();
+            updateCounters();
+            if (selectedNodeId) selectGraphNode(selectedNodeId);
+
+            if (payload.data.swarmChat) {
+              renderSwarmChat(payload.data.swarmChat);
+            }
+
+            if (payload.data.notifications && payload.data.notifications.length > 0) {
+              payload.data.notifications.forEach(n => {
+                createToast(n.message, n.type);
+              });
+              showPushAlert(payload.data.notifications[0].message);
+            }
+          });
+          break;
+
+        case 'SENTIMENT_ALERT':
+          if (payload.data.logs) {
+            payload.data.logs.forEach(log => appendLog(log, 'system'));
+          }
           if (payload.data.swarmChat) {
             renderSwarmChat(payload.data.swarmChat);
           }
-
-          if (payload.data.notifications && payload.data.notifications.length > 0) {
+          if (payload.data.notifications) {
             payload.data.notifications.forEach(n => {
               createToast(n.message, n.type);
             });

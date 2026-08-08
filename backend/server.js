@@ -34,8 +34,19 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin.html'));
 });
 
-app.get('/dashboard', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+app.get('/api/state', (req, res) => {
+  res.json({
+    graph: db.graph,
+    schedule: db.schedule,
+    activeDate: db.activeDate,
+    contacts: db.contacts,
+    volunteers: db.volunteers,
+    limiters: db.limiters
+  });
+});
+
+app.get('/api/graph', (req, res) => {
+  res.json(db.graph);
 });
 
 // Configure multer with strict file size limits (20MB max)
