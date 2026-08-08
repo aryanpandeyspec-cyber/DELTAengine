@@ -2666,6 +2666,68 @@ input:checked + .slider:before {
   color: #444;
 }
 
+/* --- FLOATING MATRIX HOVER POPOVER CARD --- */
+.matrix-hover-card {
+  position: fixed !important;
+  z-index: 999999 !important;
+  width: 320px !important;
+  background: #ffffff !important;
+  border: 3px solid #000000 !important;
+  border-radius: 12px !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+  padding: 14px 16px !important;
+  pointer-events: none !important;
+  transition: opacity 0.15s ease, transform 0.15s ease !important;
+}
+
+.hover-card-header {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 8px !important;
+}
+
+.hover-card-speaker {
+  font-family: var(--font-mono) !important;
+  font-size: 0.85rem !important;
+  font-weight: 800 !important;
+  color: #000000 !important;
+}
+
+.hover-card-badge {
+  background: #f9ab00 !important;
+  color: #000000 !important;
+  font-weight: 900 !important;
+  font-size: 0.72rem !important;
+  padding: 2px 7px !important;
+  border: 2px solid #000 !important;
+  border-radius: 12px !important;
+  box-shadow: 2px 2px 0px #000 !important;
+}
+
+.hover-card-title {
+  font-family: 'Josefin Sans', sans-serif !important;
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  color: #000000 !important;
+  margin: 0 0 6px 0 !important;
+  line-height: 1.3 !important;
+}
+
+.hover-card-summary {
+  font-size: 0.82rem !important;
+  color: #444444 !important;
+  font-weight: 500 !important;
+  margin: 0 0 10px 0 !important;
+  line-height: 1.4 !important;
+}
+
+.hover-card-tags {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
 
 
 

@@ -78,6 +78,7 @@ function renderScheduleGrid() {
         
         // Bind Drag event to block
         block.addEventListener('dragstart', handleDragStartBlock);
+        block.addEventListener('dragend', handleDragEndBlock);
         
         // Bind Hover Event for Floating Card Details Popover
         block.addEventListener('mouseenter', (e) => {
@@ -100,15 +101,31 @@ function renderScheduleGrid() {
           }
 
           hoverCard.style.display = 'block';
-          hoverCard.style.top = (e.clientY + 15) + 'px';
-          hoverCard.style.left = (Math.min(e.clientX + 15, window.innerWidth - 300)) + 'px';
+          const cardWidth = 320;
+          const cardHeight = 160;
+          let left = e.clientX + 15;
+          let top = e.clientY + 15;
+
+          if (left + cardWidth > window.innerWidth) left = e.clientX - cardWidth - 10;
+          if (top + cardHeight > window.innerHeight) top = e.clientY - cardHeight - 10;
+
+          hoverCard.style.left = `${Math.max(10, left)}px`;
+          hoverCard.style.top = `${Math.max(10, top)}px`;
         });
 
         block.addEventListener('mousemove', (e) => {
           const hoverCard = document.getElementById('matrix-hover-card');
           if (!hoverCard || hoverCard.style.display === 'none') return;
-          hoverCard.style.top = (e.clientY + 15) + 'px';
-          hoverCard.style.left = (Math.min(e.clientX + 15, window.innerWidth - 300)) + 'px';
+          const cardWidth = 320;
+          const cardHeight = 160;
+          let left = e.clientX + 15;
+          let top = e.clientY + 15;
+
+          if (left + cardWidth > window.innerWidth) left = e.clientX - cardWidth - 10;
+          if (top + cardHeight > window.innerHeight) top = e.clientY - cardHeight - 10;
+
+          hoverCard.style.left = `${Math.max(10, left)}px`;
+          hoverCard.style.top = `${Math.max(10, top)}px`;
         });
 
         block.addEventListener('mouseleave', () => {
@@ -126,29 +143,6 @@ function renderScheduleGrid() {
 
     tbody.appendChild(tr);
   }
-
-  // Bind Date Picker Listener if not already bound
-  const datePicker = document.getElementById('schedule-date-picker');
-  if (datePicker && !datePicker.dataset.bound) {
-    datePicker.dataset.bound = 'true';
-    datePicker.addEventListener('change', (e) => {
-      const selectedDate = e.target.value;
-      createToast(`📅 Switching schedule matrix to date ${selectedDate}...`, 'info');
-      fetch('/api/schedule/set-date', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: selectedDate })
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.schedule) {
-          scheduleState = data.schedule;
-          renderScheduleGrid();
-          if (typeof rebuildGraphData === 'function') rebuildGraphData();
-        }
-      });
-    });
-  }
 }
 
 let currentDraggedTopicId = null;
@@ -160,13 +154,14 @@ function handleDragStartBlock(e) {
   e.dataTransfer.setData('text/plain', topicId);
   e.dataTransfer.effectAllowed = 'move';
 
-  // Auto-expand tour guide on drag
-  const tourCard = document.getElementById('tour-card');
-  const btnToggle = document.getElementById('btn-toggle-tour');
-  if (tourCard && tourCard.classList.contains('collapsed')) {
-    tourCard.classList.remove('collapsed');
-    if (btnToggle) btnToggle.textContent = '_';
-  }
+  const hoverCard = document.getElementById('matrix-hover-card');
+  if (hoverCard) hoverCard.style.display = 'none';
+}
+
+function handleDragEndBlock(e) {
+  currentDraggedTopicId = null;
+  const hoverCard = document.getElementById('matrix-hover-card');
+  if (hoverCard) hoverCard.style.display = 'none';
 }
 
 // HTML5 drag over cell
@@ -199,14 +194,15 @@ function handleDropOnCell(e) {
   const targetHallId = cell ? cell.getAttribute('data-hall-id') : null;
 
   if (!topicId || !targetSlotId || !targetHallId) {
-    console.warn('[DragDrop Warning] Missing drop parameters:', { topicId, targetSlotId, targetHallId });
     return;
   }
 
   // Make sure we're not dropping in the exact same spot
-  if (scheduleState[targetSlotId][targetHallId] === topicId) return;
+  if (scheduleState && scheduleState[targetSlotId] && scheduleState[targetSlotId][targetHallId] === topicId) return;
 
-  appendLog(`[SYSTEM] Initiating manual rescheduled move request for talk "${topicId}"...`, 'system');
+  if (typeof appendLog === 'function') {
+    appendLog(`[SYSTEM] Initiating manual rescheduled move request for talk "${topicId}"...`, 'system');
+  }
 
   fetch('/api/schedule/move', {
     method: 'POST',
@@ -221,9 +217,9 @@ function handleDropOnCell(e) {
       renderScheduleGrid();
       if (typeof rebuildGraphData === 'function') rebuildGraphData();
       if (typeof updateCounters === 'function') updateCounters();
-      createToast('Session card rescheduled & self-healed!', 'success');
+      if (typeof createToast === 'function') createToast('⚡ Session rescheduled & self-healed!', 'success');
 
-      if (data.logs) {
+      if (data.logs && typeof appendLog === 'function') {
         data.logs.forEach(log => {
           let logType = 'system';
           if (log.includes('[CONFLICT]')) logType = 'conflict';
@@ -231,14 +227,14 @@ function handleDropOnCell(e) {
           appendLog(log, logType);
         });
       }
-      if (data.swarmChat) {
+      if (data.swarmChat && typeof renderSwarmChat === 'function') {
         renderSwarmChat(data.swarmChat);
       }
     }
   })
   .catch(err => {
     console.error(err);
-    createToast('Rescheduling request failed.', 'warning');
+    if (typeof createToast === 'function') createToast('Rescheduling request failed.', 'warning');
   });
 }
 
