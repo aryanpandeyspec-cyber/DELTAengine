@@ -1,0 +1,58 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 612 792] /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Length 650 >>
+stream
+BT
+/F1 22 Tf
+40 730 Td
+(DELTA ENGINE 2026: GLOBAL AI & SWARMS SUMMIT) Tj
+/F1 15 Tf
+0 -35 Td
+(Session: Advanced WebAssembly Runtimes & Edge Swarms) Tj
+/F1 12 Tf
+0 -25 Td
+(Presenter: Dr. Evelyn Wright | Principal Systems Researcher) Tj
+0 -20 Td
+(Target Venue: Turing Hall | Facility Capacity: 250 Pax | Slot: 11:00 AM) Tj
+0 -20 Td
+(Tags: #Wasm #Rust #EdgeSwarm #AI #DistributedSystems) Tj
+0 -35 Td
+(ABSTRACT & TECHNICAL HIGHLIGHTS:) Tj
+0 -20 Td
+(1. Sandboxed WebAssembly execution on low-latency edge routers.) Tj
+0 -18 Td
+(2. Zero-overhead peer-to-peer swarm consensus without central controllers.) Tj
+0 -18 Td
+(3. Autonomous self-healing fault tolerance under heavy network load stress.) Tj
+0 -18 Td
+(4. Real-time telemetry monitoring with automated IoT venue balancing.) Tj
+0 -35 Td
+(Generated for DELTA ENGINE Automated Content Pipeline Ingestion) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000245 00000 n 
+0000000321 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1020
+%%EOF

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DELTA ENGINE - Role Portal Login</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Josefin+Sans:wght@600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- Styling -->
+  <link rel="stylesheet" href="app.css">
+  
+  <style>
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at center, #ffffff 0%, #faecd9 100%);
+      padding: 20px;
+    }
+    
+    .login-container {
+      width: 100%;
+      max-width: 480px;
+      z-index: 10;
+      position: relative;
+    }
+    
+    .login-card {
+      background: #ffffff !important;
+      border: 4px solid #000000 !important;
+      border-radius: 24px !important;
+      box-shadow: 12px 12px 0px #000000 !important;
+      padding: 36px 32px !important;
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .login-logo {
+      height: 90px;
+      margin-bottom: 12px;
+      object-fit: contain;
+      mix-blend-mode: darken;
+    }
+    
+    .login-title {
+      font-family: 'Josefin Sans', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #000000;
+      margin: 0;
+    }
+    
+    .login-subtitle {
+      font-family: var(--font-main);
+      font-size: 0.92rem;
+      color: #555555;
+      font-weight: 600;
+      margin-top: 4px;
+    }
+    
+    .google-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px 16px;
+      background: #ffffff;
+      color: #000000;
+      border: 3px solid #000000;
+      border-radius: 14px;
+      font-family: var(--font-main);
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      box-shadow: 4px 4px 0px #000000;
+      transition: all 0.15s ease;
+      margin-bottom: 20px;
+    }
+    
+    .google-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px #000000;
+      background: #f8f9fa;
+    }
+    
+    .google-icon {
+      width: 22px;
+      height: 22px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Levitating Doodles -->
+  <div class="decorations">
+    <img src="doodles/yazg.png" class="doodle-img doodle-yazg" alt="Doodle YAZG">
+    <img src="doodles/5003155.png" class="doodle-img doodle-500" alt="Doodle 5003155">
+    <img src="doodles/2057748.png" class="doodle-img doodle-205" alt="Doodle 2057748">
+    <img src="doodles/15711543.png" class="doodle-img doodle-157" alt="Doodle 15711543">
+  </div>
+
+  <div class="login-container">
+    <div class="login-card">
+      <div class="login-header">
+        <img src="logo.jpeg" class="login-logo delta-polymorphic-logo" alt="DELTA ENGINE Logo">
+        <h1 class="login-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
+        <p class="login-subtitle">Role Access Portal & Event OS Authentication</p>
+      </div>
+
+      <!-- Top Role Selection Tabs -->
+      <div class="auth-role-tabs mb-4">
+        <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Regular / Coordinator</button>
+        <button id="tab-login-admin" class="auth-tab-btn">👑 Super Admin Login</button>
+      </div>
+
+      <!-- Google Sign-In via Supabase Auth -->
+      <button id="btn-google-login" class="google-btn">
+        <svg class="google-icon" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+        </svg>
+        Sign in with Google (Supabase Auth)
+      </button>
+
+      <div class="auth-demo-divider">
+        <span>OR LOGIN WITH CREDENTIALS</span>
+      </div>
+
+      <form id="standalone-login-form">
+        <input type="hidden" id="auth-selected-role" value="coordinator">
+        
+        <div class="form-group mb-3">
+          <label class="form-label" id="username-label" style="font-weight:700;">Coordinator Username / ID</label>
+          <input type="text" id="input-username" class="form-control" value="elena.vance" placeholder="Username" required style="border:2px solid #000; border-radius:10px;">
+        </div>
+
+        <div class="form-group mb-4">
+          <label class="form-label" style="font-weight:700;">Password Key</label>
+          <input type="password" id="input-password" class="form-control" value="••••••••" required style="border:2px solid #000; border-radius:10px;">
+        </div>
+
+        <button type="submit" id="btn-submit-login" class="btn btn-blue w-full btn-md mb-3" style="font-size:1.05rem; font-weight:800;">
+          🚀 Log In & Proceed to Portal
+        </button>
+
+        <div class="auth-demo-divider">
+          <span>⚡ QUICK ONE-CLICK DEMO ACCESS</span>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <button type="button" id="btn-demo-coord" class="btn btn-yellow btn-sm w-full">
+            👤 Quick Login as Regular Coordinator
+          </button>
+          <button type="button" id="btn-demo-admin" class="btn btn-red btn-sm w-full">
+            👑 Quick Login as Super Admin
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="components/customCursor.js"></script>
+  <script>
+    // --- SUPABASE CLIENT INITIALIZATION ---
+    const SUPABASE_URL = 'https://frlrazzskbzmtlqrswjl.supabase.co';
+    const SUPABASE_KEY = window.SUPABASE_ANON_KEY || 'sb_anon_public_key';
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+
+    let selectedRole = 'coordinator';
+
+    const tabCoord = document.getElementById('tab-login-coordinator');
+    const tabAdmin = document.getElementById('tab-login-admin');
+    const usernameLabel = document.getElementById('username-label');
+    const inputUsername = document.getElementById('input-username');
+    const hiddenRole = document.getElementById('auth-selected-role');
+
+    tabCoord.addEventListener('click', () => {
+      selectedRole = 'coordinator';
+      hiddenRole.value = 'coordinator';
+      tabCoord.classList.add('active');
+      tabAdmin.classList.remove('active');
+      usernameLabel.textContent = 'Coordinator Username / ID';
+      inputUsername.value = 'elena.vance';
+    });
+
+    tabAdmin.addEventListener('click', () => {
+      selectedRole = 'admin';
+      hiddenRole.value = 'admin';
+      tabAdmin.classList.add('active');
+      tabCoord.classList.remove('active');
+      usernameLabel.textContent = 'Super Admin Key / ID';
+      inputUsername.value = 'admin_marcus';
+    });
+
+    // Google Login via Supabase
+    document.getElementById('btn-google-login').addEventListener('click', async () => {
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: { redirectTo: window.location.origin + (selectedRole === 'admin' ? '/admin.html' : '/index.html') }
+          });
+          if (error) throw error;
+        } catch (err) {
+          console.log('[Supabase OAuth Notice] Redirecting to portal:', err.message);
+          proceedToPortal(selectedRole, 'Google Auth User');
+        }
+      } else {
+        proceedToPortal(selectedRole, 'Google User');
+      }
+    });
+
+    document.getElementById('standalone-login-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const username = inputUsername.value || 'User';
+      proceedToPortal(selectedRole, username);
+    });
+
+    document.getElementById('btn-demo-coord').addEventListener('click', () => {
+      proceedToPortal('coordinator', 'Elena Vance (Lead Coordinator)');
+    });
+
+    document.getElementById('btn-demo-admin').addEventListener('click', () => {
+      proceedToPortal('admin', 'Marcus Aurelius (Super Admin)');
+    });
+
+    function proceedToPortal(role, username) {
+      localStorage.setItem('delta_user_role', role);
+      localStorage.setItem('delta_user_name', username);
+      if (role === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'index.html';
+      }
+    }
+  </script>
+</body>
+</html>

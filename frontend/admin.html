@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DELTA ENGINE - Super Admin Command Center</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Josefin+Sans:wght@600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="app.css">
+</head>
+
+<body>
+  <!-- Neubrutalist Grid Background overlay -->
+  <div class="grid-overlay"></div>
+
+  <!-- Decorative levitating doodle images from the provided doodles folder -->
+  <div class="decorations">
+    <img src="doodles/yazg.png" class="doodle-img doodle-yazg" alt="Doodle YAZG">
+    <img src="doodles/5003155.png" class="doodle-img doodle-500" alt="Doodle 5003155">
+    <img src="doodles/2057748.png" class="doodle-img doodle-205" alt="Doodle 2057748">
+    <img src="doodles/15711543.png" class="doodle-img doodle-157" alt="Doodle 15711543">
+  </div>
+
+  <div class="container" style="padding-top: 24px;">
+    <!-- ADMIN PAGE TOP NAVBAR -->
+    <header class="main-header mb-6">
+      <div class="auth-user-bar">
+        <div class="user-status-pill">
+          <span class="user-role-badge admin">👑 Super Admin</span>
+          <span class="user-name-text" id="admin-user-name">Marcus Aurelius</span>
+        </div>
+        <div class="auth-nav-buttons">
+          <a href="index.html" class="btn btn-sm btn-blue" style="font-weight:700; text-decoration:none;">💻 OS Dashboard</a>
+          <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Logout</a>
+        </div>
+      </div>
+
+      <div class="header-logo-group">
+        <div class="logo-polymorphic-wrapper">
+          <img src="logo.jpeg" class="delta-polymorphic-logo" alt="DELTA ENGINE Logo">
+        </div>
+      </div>
+
+      <div class="header-text">
+        <h1 id="main-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
+        <p class="subtitle">Super Admin Administrative Control & System Diagnostics Portal</p>
+      </div>
+    </header>
+
+    <!-- EXCLUSIVE SUPER ADMIN COMMAND CENTER HERO -->
+    <div class="admin-hero-card mb-6">
+      <div class="admin-hero-badge">
+        <span>👑 SUPER ADMIN COMMAND CENTER</span>
+        <span class="admin-clearance-badge">CLEARANCE LEVEL 5 (UNRESTRICTED)</span>
+      </div>
+      <h2 class="admin-hero-title">DELTA ENGINE Infrastructure Control System</h2>
+      <p class="admin-hero-sub">Global Swarm Overrides, Backend Diagnostics, LLM Circuit Breakers & Automated WhatsApp Alerts</p>
+    </div>
+
+    <!-- SECTION 0: FEATURED LIVE / UPCOMING EVENT & ASSIGNED VOLUNTEERS MONITOR -->
+    <div class="dash-card admin-card mb-6">
+      <div class="card-header">
+        <span class="card-title">🔥 LIVE & UPCOMING FEATURED EVENT MONITOR</span>
+        <span class="card-badge red">LIVE SESSION ACTIVE</span>
+      </div>
+      <div class="card-body">
+        <div class="admin-grid" style="grid-template-columns: 1fr 1fr; gap: 20px;">
+          
+          <!-- Event Metrics & Details -->
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span class="status-chip active" style="background:#ea4335; color:#fff; font-weight:900;">🔴 LIVE NOW (Slot 1)</span>
+              <span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:800;">📍 Turing Hall</span>
+            </div>
+            
+            <h3 id="featured-event-title" style="font-family:'Josefin Sans', sans-serif; font-size:1.45rem; font-weight:700; margin:0 0 6px 0; color:#000;">
+              Autonomous Agent Swarms: Coordination without Controllers
+            </h3>
+            
+            <div style="font-size:0.9rem; font-weight:700; color:#4285f4; margin-bottom:12px;">
+              🧑‍🔬 Speaker: Dr. Aditi Sharma <span style="color:#666; font-weight:500;">(AI Research Director)</span>
+            </div>
+
+            <!-- Live Event Statistics Grid -->
+            <div class="admin-diag-grid">
+              <div class="diag-item">
+                <span class="diag-label">📊 Attendee Occupancy Rate:</span>
+                <span class="diag-val success" style="color:#ea4335;">210 / 250 Pax (84% Full)</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">⏱️ Session Time Remaining:</span>
+                <span class="diag-val success">18 Mins Left</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">🌡️ Room Climate & HVAC Sensor:</span>
+                <span class="diag-val success">21.5°C (Climate Balance)</span>
+              </div>
+              <div class="diag-item">
+                <span class="diag-label">❓ Q&A Audience Engagement:</span>
+                <span class="diag-val success">42 Questions Submitted</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Assigned Volunteers & Crew List -->
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <span style="font-family:var(--font-mono); font-size:0.82rem; font-weight:800;">🙋‍♂️ ASSIGNED VOLUNTEERS & CREW (4)</span>
+              <span class="card-badge green">ALL ON DUTY</span>
+            </div>
+
+            <div id="featured-volunteers-list" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- Dynamically rendered by auth.js -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 1: BACKEND STATUS & CIRCUIT BREAKER LIMITERS -->
+    <div class="admin-grid mb-6">
+      <!-- Widget 1: Backend System Status & Diagnostics -->
+      <div class="dash-card admin-card">
+        <div class="card-header">
+          <span class="card-title">🖥️ Backend Infrastructure & Diagnostics</span>
+          <span class="card-badge green">ALL SYSTEMS GO</span>
+        </div>
+        <div class="card-body">
+          <div class="admin-diag-grid">
+            <div class="diag-item">
+              <span class="diag-label">Graph DB (Neo4j / Engine):</span>
+              <span class="diag-val success">🟢 1ms (Healthy)</span>
+            </div>
+            <div class="diag-item">
+              <span class="diag-label">WebSocket Dispatcher:</span>
+              <span class="diag-val success">🟢 Active (WS Port 3000)</span>
+            </div>
+            <div class="diag-item">
+              <span class="diag-label">Groq LLM API Gateway:</span>
+              <span class="diag-val success">🟢 Llama-3 70B (38ms)</span>
+            </div>
+            <div class="diag-item">
+              <span class="diag-label">Supabase Sync Engine:</span>
+              <span class="diag-val success">🟢 Connected</span>
+            </div>
+            <div class="diag-item">
+              <span class="diag-label">System Uptime:</span>
+              <span class="diag-val">99.98% (Online)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget 2: LLM & Backend DB Circuit Breaker Limiters -->
+      <div class="dash-card admin-card">
+        <div class="card-header">
+          <span class="card-title">⚡ LLM & Database Circuit Breaker Limiters</span>
+          <span class="card-badge red">PROTECTION ACTIVE</span>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:14px;">
+          <div class="limiter-toggle-box">
+            <div>
+              <div class="limiter-title">🛑 LLM Token Usage Limiter / Kill-Switch</div>
+              <div class="limiter-sub">Stops expensive LLM API calls when token threshold is reached.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="toggle-llm-limiter">
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="limiter-toggle-box">
+            <div>
+              <div class="limiter-title">🔒 Backend DB Write Limiter</div>
+              <div class="limiter-sub">Freezes DB write operations during high-stress traffic surges.</div>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="toggle-db-limiter">
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <!-- API Quota & Token Meter -->
+          <div class="token-meter-box mt-2">
+            <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700; margin-bottom:4px;">
+              <span>Groq LLM Token Usage Meter:</span>
+              <span style="color:#ea4335;">28,450 / 100,000 Tokens (28%)</span>
+            </div>
+            <div class="token-meter-track">
+              <div class="token-meter-fill" style="width: 28%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: AUTOMATED WHATSAPP DISPATCH & GLOBAL OVERRIDES -->
+    <div class="admin-grid mb-6">
+      <!-- Widget 3: Live Automated WhatsApp Notification Dispatch Feed -->
+      <div class="dash-card admin-card">
+        <div class="card-header">
+          <span class="card-title">💬 Live Automated WhatsApp Dispatch Feed</span>
+          <span class="card-badge green">AI LIAISON ACTIVE</span>
+        </div>
+        <div class="card-body">
+          <div id="admin-whatsapp-log-container" class="admin-audit-box">
+            <div class="admin-audit-line info">[02:54:10 AM] 💬 WhatsApp AI Liaison dispatched alert to Elena Vance (+1-555-234-8901): "⚠️ System Initialization Complete. Ready for event coordination."</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget 3B: Live Automated Email Dispatch Feed -->
+      <div class="dash-card admin-card">
+        <div class="card-header">
+          <span class="card-title">📧 Live Automated Email Dispatch Feed</span>
+          <span class="card-badge blue">SUPABASE MAILER ACTIVE</span>
+        </div>
+        <div class="card-body">
+          <div id="admin-email-log-container" class="admin-audit-box">
+            <div class="admin-audit-line info">[02:54:10 AM] 📧 [Supabase AI Mailer] Dispatched official DKIM-signed notice to 4 personnel: "[DELTA ENGINE] System Initialization Complete."</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Widget 4: System Overrides & Security Audit -->
+      <div class="dash-card admin-card">
+        <div class="card-header">
+          <span class="card-title">⚙️ Global Swarm System Overrides</span>
+          <span class="card-badge red">ADMIN ONLY</span>
+        </div>
+        <div class="card-body" style="display:flex; flex-direction:column; gap:10px;">
+          <button id="btn-admin-stress-500" class="btn btn-red w-full btn-sm" style="font-weight:900; background:#ea4335; color:#fff; border:2px solid #000; box-shadow:2px 2px 0px #000; margin-bottom:4px;">
+            🔥 RUN 500 HIGH-STRESS TEST CASES
+          </button>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+            <button id="btn-admin-freeze-swarm" class="btn btn-red btn-sm">🛑 Freeze Swarm</button>
+            <button id="btn-admin-reindex-graph" class="btn btn-blue btn-sm">🔄 Re-Index Graph</button>
+            <button id="btn-admin-broadcast-alert" class="btn btn-yellow btn-sm">📢 Broadcast Alert</button>
+            <button id="btn-admin-purge-locks" class="btn btn-white btn-sm">🔓 Clear Locks</button>
+          </div>
+          <div id="admin-audit-log-container" class="admin-audit-box mt-2" style="height: 100px;">
+            <div class="admin-audit-line info">[02:50:12 AM] Super Admin "Marcus Aurelius" authenticated.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: EVENT CONTACTS & STAKEHOLDERS DIRECTORY TABLE -->
+    <div class="dash-card admin-card mb-8">
+      <div class="card-header">
+        <span class="card-title">📱 Event Coordinators & Stakeholders Contact Directory</span>
+        <span class="card-badge yellow">AUTOMATED WHATSAPP NOTIFICATIONS ACTIVE</span>
+      </div>
+      <div class="card-body">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>CONTACT NAME</th>
+              <th>ROLE & RESPONSIBILITY</th>
+              <th>PHONE NUMBER (WHATSAPP)</th>
+              <th>EMAIL ADDRESS</th>
+              <th>ASSIGNED VENUE HALLS</th>
+              <th>ACTION</th>
+            </tr>
+          </thead>
+          <tbody id="admin-contacts-table-body">
+            <!-- Dynamically populated by auth.js -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script src="components/websockets.js"></script>
+  <script src="components/auth.js"></script>
+  <script src="components/customCursor.js"></script>
+  <script src="components/app.js"></script>
+</body>
+
+</html>

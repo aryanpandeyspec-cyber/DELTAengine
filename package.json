@@ -1,0 +1,19 @@
+{
+  "name": "delta-engine",
+  "version": "1.0.0",
+  "description": "Agentic & Self-Healing Event Operating System for DELTA ENGINE",
+  "main": "backend/server.js",
+  "scripts": {
+    "dev": "node backend/server.js",
+    "start": "node backend/server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.2",
+    "dotenv": "^17.4.2",
+    "express": "^4.19.2",
+    "multer": "^1.4.5-lts.1",
+    "ws": "^8.17.0"
+  },
+  "author": "Antigravity AI",
+  "license": "MIT"
+}
