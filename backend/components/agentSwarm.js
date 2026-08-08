@@ -58,18 +58,25 @@ async function generateGroqAgentSwarmDialogue(conflictDescription, resolutionSum
   const apiKey = process.env.GROQ_API_KEY || DEFAULT_GROQ_KEY;
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
+  // Handle flexible signature: generateGroqAgentSwarmDialogue(conflictDescription, db) vs (conflictDescription, resolutionSummary, db)
+  const targetDb = (db && db.graph) ? db : ((resolutionSummary && resolutionSummary.graph) ? resolutionSummary : null);
+
   // Guard: If Super Admin LLM Limiter / Kill-Switch is enabled, block LLM expenditure
-  if (db && db.limiters && db.limiters.llmLimiter) {
+  if (targetDb && targetDb.limiters && targetDb.limiters.llmLimiter) {
     console.log('[LLM LIMITER ACTIVE] Super Admin Circuit Breaker paused LLM Token expenditure.');
     return [
       { sender: 'Liaison Agent', avatar: '🗣️', text: '⚠️ [CIRCUIT BREAKER ACTIVE] Super Admin LLM Limiter is enabled. Operating under deterministic rule-based optimization solver.', time: timeStr },
       { sender: 'Scheduler Agent', avatar: '⏱️', text: 'Algorithmic constraint solver evaluated venue capacity matrix and executed reallocation cleanly.', time: timeStr }
     ];
   }
-  const activeSpeakers = Object.values(db.graph.speakers).map(s => `${s.name} (delay: ${s.delay}m)`).join(', ');
-  const activeTopics = Object.values(db.graph.topics).map(t => `"${t.title}" (interest: ${t.interest})`).join(', ');
 
-  const contextBase = `Event Disruption: "${conflictDescription}". Active Speakers: ${activeSpeakers}. Active Topics: ${activeTopics}.`;
+  const speakersObj = (targetDb && targetDb.graph && targetDb.graph.speakers) ? targetDb.graph.speakers : {};
+  const topicsObj = (targetDb && targetDb.graph && targetDb.graph.topics) ? targetDb.graph.topics : {};
+
+  const activeSpeakers = Object.values(speakersObj).map(s => `${s.name} (delay: ${s.delay || 0}m)`).join(', ');
+  const activeTopics = Object.values(topicsObj).map(t => `"${t.title}" (interest: ${t.interest})`).join(', ');
+
+  const contextBase = `Event Disruption: "${conflictDescription}". Active Speakers: ${activeSpeakers}. Active Topics: ${activeTopics}. Resolution: ${typeof resolutionSummary === 'string' ? resolutionSummary : ''}`;
 
   // --- PHASE 1: LIAISON INGESTION AGENT (llama-3.1-8b-instant) ---
   const liaisonSystemPrompt = `You are the Liaison Agent (Avatar: 🗣️) running on Llama-3.1-8B.

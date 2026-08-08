@@ -100,27 +100,15 @@ function renderScheduleGrid() {
           }
 
           hoverCard.style.display = 'block';
-          const rect = block.getBoundingClientRect();
-          let topPos = Math.max(10, rect.top);
-          let leftPos = rect.right + 12;
-          if (leftPos + 300 > window.innerWidth) {
-            leftPos = Math.max(10, rect.left - 300);
-          }
-          hoverCard.style.top = topPos + 'px';
-          hoverCard.style.left = leftPos + 'px';
+          hoverCard.style.top = (e.clientY + 15) + 'px';
+          hoverCard.style.left = (Math.min(e.clientX + 15, window.innerWidth - 300)) + 'px';
         });
 
         block.addEventListener('mousemove', (e) => {
           const hoverCard = document.getElementById('matrix-hover-card');
           if (!hoverCard || hoverCard.style.display === 'none') return;
-          const rect = block.getBoundingClientRect();
-          let topPos = Math.max(10, rect.top);
-          let leftPos = rect.right + 12;
-          if (leftPos + 300 > window.innerWidth) {
-            leftPos = Math.max(10, rect.left - 300);
-          }
-          hoverCard.style.top = topPos + 'px';
-          hoverCard.style.left = leftPos + 'px';
+          hoverCard.style.top = (e.clientY + 15) + 'px';
+          hoverCard.style.left = (Math.min(e.clientX + 15, window.innerWidth - 300)) + 'px';
         });
 
         block.addEventListener('mouseleave', () => {
@@ -130,10 +118,7 @@ function renderScheduleGrid() {
 
         td.appendChild(block);
       } else {
-        const emptyBlock = document.createElement('div');
-        emptyBlock.className = 'schedule-block empty';
-        emptyBlock.textContent = 'No Session';
-        td.appendChild(emptyBlock);
+        td.innerHTML = `<div class="schedule-block empty">No Session</div>`;
       }
 
       tr.appendChild(td);

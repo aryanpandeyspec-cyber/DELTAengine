@@ -655,11 +655,9 @@ app.post('/api/sim/mass-disruption', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-if (require.main === module) {
-  server.listen(PORT, async () => {
-    console.log(`[DELTA ENGINE] Running on http://localhost:${PORT}`);
-    await loadGraphFromSupabase(db);
-  });
-}
+server.listen(PORT, async () => {
+  console.log(`[DELTA ENGINE] Running on http://localhost:${PORT}`);
+  await loadGraphFromSupabase(db);
+});
 
 module.exports = app;

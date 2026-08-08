@@ -65,7 +65,7 @@ async function runSelfHealingAgent(eventDescription, db, broadcast) {
   db.syncScheduleEdges();
 
   // Compile Multi-Agent Swarm Chat Negotiation dialogue logs
-  let swarmChat = await generateGroqAgentSwarmDialogue(eventDescription, db);
+  let swarmChat = await generateGroqAgentSwarmDialogue(eventDescription, notifications.join('; '), db);
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   if (!swarmChat) {

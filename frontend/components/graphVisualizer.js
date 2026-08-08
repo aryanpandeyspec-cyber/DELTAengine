@@ -241,84 +241,19 @@ function initSvgMouseHandlers() {
   });
 
   svg.addEventListener('mousemove', (e) => {
+    if (!draggedNode) return;
     const rect = svg.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
-    if (draggedNode) {
-      if (Math.abs(mx - dragStartX) > 4 || Math.abs(my - dragStartY) > 4) {
-        isMouseDragging = true;
-      }
-
-      draggedNode.x = mx;
-      draggedNode.y = my;
-      draggedNode.vx = 0;
-      draggedNode.vy = 0;
-      return;
+    if (Math.abs(mx - dragStartX) > 4 || Math.abs(my - dragStartY) > 4) {
+      isMouseDragging = true;
     }
 
-    // Hover check over graph nodes to position hover popover card right next to the node!
-    let hoveredNode = null;
-    for (let i = 0; i < nodes.length; i++) {
-      const n = nodes[i];
-      const dist = Math.sqrt((n.x - mx)**2 + (n.y - my)**2);
-      if (dist <= n.radius + 6) {
-        hoveredNode = n;
-        break;
-      }
-    }
-
-    const hoverCard = document.getElementById('matrix-hover-card');
-    if (hoveredNode && hoverCard && graphState) {
-      const elSpeaker = document.getElementById('hover-speaker-name');
-      const elInterest = document.getElementById('hover-interest-badge');
-      const elTitle = document.getElementById('hover-topic-title');
-      const elSummary = document.getElementById('hover-topic-summary');
-      const tagsRow = document.getElementById('hover-tags-row');
-
-      if (hoveredNode.type === 'speaker') {
-        const s = graphState.speakers[hoveredNode.id];
-        if (s) {
-          if (elSpeaker) elSpeaker.textContent = `${s.avatar} ${s.name}`;
-          if (elInterest) elInterest.textContent = s.delay > 0 ? `⚠️ Delay: +${s.delay}m` : `✅ On Time`;
-          if (elTitle) elTitle.textContent = s.role;
-          if (elSummary) elSummary.textContent = s.bio;
-          if (tagsRow) tagsRow.innerHTML = `<span class="badge badge-blue">Speaker Node</span>`;
-        }
-      } else if (hoveredNode.type === 'topic') {
-        const t = graphState.topics[hoveredNode.id];
-        if (t) {
-          const s = graphState.speakers[t.speakerId];
-          if (elSpeaker) elSpeaker.textContent = s ? `${s.avatar} ${s.name}` : 'Topic';
-          if (elInterest) elInterest.textContent = `🔥 ${t.interest} Interest`;
-          if (elTitle) elTitle.textContent = t.title;
-          if (elSummary) elSummary.textContent = t.summary || 'Scheduled presentation session.';
-          if (tagsRow) tagsRow.innerHTML = (t.tags || []).map(tag => `<span class="badge badge-yellow" style="font-size:0.68rem; padding:1px 5px;">#${tag}</span>`).join(' ');
-        }
-      } else if (hoveredNode.type === 'hall') {
-        const h = graphState.halls[hoveredNode.id];
-        if (h) {
-          if (elSpeaker) elSpeaker.textContent = `🏛️ Venue Hall`;
-          if (elInterest) elInterest.textContent = `Cap: ${h.capacity} pax`;
-          if (elTitle) elTitle.textContent = h.name;
-          if (elSummary) elSummary.textContent = `Maximum capacity allocation limit: ${h.capacity} attendees.`;
-          if (tagsRow) tagsRow.innerHTML = `<span class="badge badge-green">Venue Node</span>`;
-        }
-      }
-
-      hoverCard.style.display = 'block';
-      let leftPos = e.clientX + 16;
-      if (leftPos + 300 > window.innerWidth) {
-        leftPos = Math.max(10, e.clientX - 310);
-      }
-      hoverCard.style.top = Math.max(10, e.clientY - 40) + 'px';
-      hoverCard.style.left = leftPos + 'px';
-    }
-  });
-
-  svg.addEventListener('mouseleave', () => {
-    const hoverCard = document.getElementById('matrix-hover-card');
-    if (hoverCard) hoverCard.style.display = 'none';
+    draggedNode.x = mx;
+    draggedNode.y = my;
+    draggedNode.vx = 0;
+    draggedNode.vy = 0;
   });
 
   window.addEventListener('mouseup', (e) => {

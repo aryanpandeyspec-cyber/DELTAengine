@@ -2533,65 +2533,6 @@ input:checked + .slider:before {
   transition: width 0.3s ease !important;
 }
 
-/* FLOATING SCHEDULE HOVER POPOVER CARD */
-.matrix-hover-card {
-  position: fixed !important;
-  z-index: 999999 !important;
-  width: 290px;
-  background: #ffffff !important;
-  border: 3px solid #000000 !important;
-  border-radius: 12px !important;
-  box-shadow: 6px 6px 0px #000000 !important;
-  padding: 12px 14px !important;
-  pointer-events: none !important;
-  transition: opacity 0.15s ease;
-}
-
-.hover-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-}
-
-.hover-card-speaker {
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: #000;
-}
-
-.hover-card-badge {
-  background: #ffe885;
-  border: 2px solid #000;
-  border-radius: 12px;
-  padding: 2px 6px;
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
-.hover-card-title {
-  font-family: 'Josefin Sans', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 800;
-  margin: 4px 0;
-  color: #000;
-  line-height: 1.3;
-}
-
-.hover-card-summary {
-  font-size: 0.78rem;
-  color: #444;
-  margin: 4px 0 8px 0;
-  line-height: 1.35;
-}
-
-.hover-card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
 /* --- INTERACTIVE TOUR GUIDE (DOCK TO RIGHT EDGE SCROLLBAR, 90-DEGREE ROTATED MINIMIZED TAB) --- */
 .tour-guide-card {
   position: fixed !important;
