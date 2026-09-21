@@ -54,11 +54,15 @@
       <div class="auth-user-bar">
         <div class="user-status-pill" id="user-status-pill">
           <span class="user-role-badge coordinator" id="user-role-badge">👤 Coordinator</span>
-          <span class="user-name-text" id="user-name-text">Elena Vance</span>
+          <span class="user-name-text" id="user-name-text">Suryansh</span>
         </div>
         <div class="auth-nav-buttons">
-          <a href="admin.html" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;">👑 Admin Portal</a>
-          <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Switch Role / Logout</a>
+          <button id="btn-sound-toggle" class="btn btn-sm btn-white" style="font-weight:700;" title="Toggle Synthesized Audio Feedback">🔊 SFX: ON</button>
+          <button id="btn-shortcuts-modal" class="btn btn-sm btn-white" style="font-weight:700;" title="Keyboard Hotkeys [?]">⌨️ Hotkeys</button>
+          <a href="admin.html" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;">👑 Admin
+            Portal</a>
+          <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Switch
+            Role / Logout</a>
         </div>
       </div>
 
@@ -73,455 +77,538 @@
         <h1 id="main-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
         <p class="subtitle">The Self-Healing & Agentic Conference Coordinator</p>
       </div>
+    </header>
+
     <!-- COORDINATOR DASHBOARD VIEW -->
     <div id="coordinator-dashboard-view">
-      <!-- METRICS PANEL (Inspired by checkmark window and speaker pills) -->
-      <section class="metrics-row mb-8">
-      <!-- Integrity Widget (checkmark window) -->
-      <div class="metric-card widget-integrity">
-        <div class="widget-header">
-          <span class="dot red"></span>
-          <span class="dot yellow"></span>
-          <span class="dot green"></span>
-          <span class="widget-title">Agent System Health</span>
-        </div>
-        <div class="widget-body">
-          <div class="integrity-content">
-            <svg class="check-illustration" viewBox="0 0 60 60" width="34" height="34">
-              <rect width="60" height="60" rx="12" fill="#c2e7ff" stroke="#000" stroke-width="3" />
-              <path d="M15 30 L25 40 L45 18" fill="none" stroke="#4285f4" stroke-width="6" stroke-linecap="round"
-                stroke-linejoin="round" />
-            </svg>
-            <div class="integrity-text">
-              <span class="status-indicator online">ONLINE</span>
-              <p>Self-Healing Agent Active</p>
+        <!-- METRICS PANEL (Inspired by checkmark window and speaker pills) -->
+        <section class="metrics-row mb-8">
+          <!-- Integrity Widget (checkmark window) -->
+          <div class="metric-card widget-integrity">
+            <div class="widget-header">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="widget-title">Agent System Health</span>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Speakers Widget (three circles pill) -->
-      <div class="metric-card widget-speakers">
-        <div class="widget-header">
-          <span class="widget-title">Speaker Status Registry</span>
-        </div>
-        <div class="widget-body">
-          <div class="speakers-content">
-            <div class="pill-illustration">
-              <span class="circle-speaker blue">E.W</span>
-              <span class="circle-speaker green">C.S</span>
-              <span class="circle-speaker yellow">A.C</span>
-            </div>
-            <div class="speakers-info">
-              <h3 id="active-speakers-count">5 Active Speakers</h3>
-              <p id="system-delays-count">0 Delays Registered</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Quick Control Action -->
-      <div class="metric-card widget-controls">
-        <div class="widget-header">
-          <span class="widget-title">OS Sync Utilities</span>
-        </div>
-        <div class="widget-body" style="display:flex; flex-direction:column; gap:6px;">
-          <button id="btn-mass-disruption" class="btn w-full btn-sm" style="background-color: #ea4335; color: #ffffff; font-weight: 800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
-            🔥 SIMULATE MASS DISRUPTION
-          </button>
-          <button id="btn-reset-db" class="btn w-full btn-sm" style="background-color: #34a853; color: #ffffff; font-weight: 800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
-            🔄 RESET TO NORMAL STATUS
-          </button>
-          <button id="btn-open-ical" class="btn btn-blue w-full btn-sm">
-            📅 iCal Calendar Sync
-          </button>
-          <button id="btn-show-tour" class="btn btn-yellow w-full btn-sm">
-            ⚡ Tour Guide
-          </button>
-        </div>
-      </div>
-
-      <!-- Capacity Stress Tester (Heatmaps Slider) -->
-      <div class="metric-card widget-stress">
-        <div class="widget-header">
-          <span class="widget-title">Registration Stress Tester</span>
-        </div>
-        <div class="widget-body">
-          <div style="display:flex; flex-direction:column; gap:6px;">
-            <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:700;">
-              <span>Attendee Load Factor:</span>
-              <span id="stress-factor-label" style="color:var(--google-blue);">1.0x (Normal)</span>
-            </div>
-            <input type="range" id="stress-slider" min="0.5" max="3.0" step="0.1" value="1.0"
-              class="stress-slider-input" style="width:100%; cursor:pointer;">
-            <div style="font-size:0.72rem; color:#666; font-weight:600; line-height:1.2;">Surges registrations to
-              highlight venue congestion heatmaps.</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CORE WORKSPACE GRID -->
-    <main class="dashboard-grid">
-      <!-- LEFT COLUMN: SCHEDULE & LOGS -->
-      <div class="dash-column col-left">
-        <!-- LIVE SCHEDULE CARD -->
-        <section class="dash-card card-schedule mb-8">
-          <div class="card-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-            <h2 style="display:flex; align-items:center; margin:0;"><img src="ioncs/live.png" class="header-icon-img" alt="Live"> Live Schedule Matrix</h2>
-            <div style="display:flex; align-items:center; gap:8px;">
-              <input type="date" id="schedule-date-picker" value="2026-08-07" class="input-select" style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; padding:4px 8px; cursor:pointer;">
-              <span class="badge badge-blue">Dynamic Grid</span>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table id="schedule-table">
-                <thead>
-                  <tr>
-                    <th>Venue Hall</th>
-                    <th id="th-slot-1">09:30 AM</th>
-                    <th id="th-slot-2">11:00 AM</th>
-                    <th id="th-slot-3">01:30 PM</th>
-                    <th id="th-slot-4">03:00 PM</th>
-                  </tr>
-                </thead>
-                <tbody id="schedule-tbody">
-                  <!-- Generated by javascript dynamically -->
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </section>
-
-        <!-- AGENT CONSOLE LOGS -->
-        <section class="dash-card card-console">
-          <div class="card-header border-bottom">
-            <h2><img src="ioncs/healing.png" class="header-icon-img" alt="Healing"> Self-Healing Agent Logs</h2>
-            <div class="console-controls">
-              <input type="text" id="log-search" class="console-search" placeholder="Search log lines...">
-              <select id="log-filter" class="console-filter">
-                <option value="all">All Logs</option>
-                <option value="conflict">Conflicts Only 🔴</option>
-                <option value="action">Actions Only 🔵</option>
-                <option value="success">Success Only 🟢</option>
-              </select>
-              <button id="btn-clear-logs" class="btn-clear-logs">Clear</button>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="agent-simulation-controls mb-4">
-              <h3>Simulate Disruptive Incidents:</h3>
-              <div class="sim-grid">
-                <div class="sim-row">
-                  <label for="select-speaker">Delay Speaker:</label>
-                  <select id="select-speaker" class="input-select">
-                    <!-- Loaded dynamically -->
-                  </select>
-                  <select id="select-delay" class="input-select select-short">
-                    <option value="60">60 mins</option>
-                    <option value="90">90 mins</option>
-                    <option value="120">120 mins</option>
-                  </select>
-                  <button id="btn-trigger-delay" class="btn btn-yellow">Trigger delay</button>
-                </div>
-                <div class="sim-row">
-                  <label for="select-topic">Surge Interest:</label>
-                  <select id="select-topic" class="input-select">
-                    <!-- Loaded dynamically -->
-                  </select>
-                  <input type="number" id="input-surge-count" class="input-text text-short" value="260" min="50"
-                    max="400">
-                  <button id="btn-trigger-surge" class="btn btn-blue">Trigger surge</button>
-                </div>
-                <div class="sim-row">
-                  <label for="select-sentiment">Simulate Feedback:</label>
-                  <select id="select-sentiment" class="input-select">
-                    <option value="hvac">"Lovelace Suite is freezing!" (HVAC Temp)</option>
-                    <option value="av">"Crackling speaker microphone in Lovelace Suite!" (A/V Setup)</option>
-                  </select>
-                  <button id="btn-trigger-sentiment" class="btn btn-red">Inject Feedback</button>
-                </div>
-              </div>
-
-              <div class="sentiment-ticker mt-4">
-                <h4
-                  style="font-size:0.8rem; font-weight:800; font-family:var(--font-mono); margin-bottom:4px; display:flex; justify-content:space-between;">
-                  <span>💬 ATTENDEE REACTION STREAM</span>
-                  <span class="pulse-indicator-red">● LIVE</span>
-                </h4>
-                <div class="ticker-box" id="sentiment-ticker-box">
-                  <div class="ticker-item">"The swarms keynote was absolute fire!" - @agentic_geek</div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Terminal-style Log Output -->
-            <div class="terminal-container">
-              <div class="terminal-header">
-                <span class="terminal-dot red"></span>
-                <span class="terminal-dot yellow"></span>
-                <span class="terminal-dot green"></span>
-                <span class="terminal-title">agent_decision_matrix.log</span>
-              </div>
-              <div class="terminal-body" id="agent-logs">
-              </div>
-            </div>
-          </div>
-        </section>
-
-      </div>
-
-      <!-- RIGHT COLUMN: GRAPH VIS & CONTENT PIPELINE -->
-      <div class="dash-column col-right">
-        <!-- DYNAMIC GRAPH DATABASE VISUALIZER -->
-        <section class="dash-card card-graph mb-8">
-          <div class="card-header">
-            <h2><img src="ioncs/graph.png" class="header-icon-img" alt="Graph"> Dynamic Graph Network</h2>
-            <span class="badge badge-green">In-Memory DB</span>
-          </div>
-          <div class="card-body relative-body">
-            <div class="graph-legend">
-              <span class="legend-item"><span class="legend-color node-speaker"></span> Speaker</span>
-              <span class="legend-item"><span class="legend-color node-topic"></span> Talk Topic</span>
-              <span class="legend-item"><span class="legend-color node-hall"></span> Hall Venue</span>
-            </div>
-            <!-- Canvas/SVG for Force Directed Graph -->
-            <div id="graph-container">
-              <svg id="graph-svg"></svg>
-            </div>
-          </div>
-        </section>
-
-        <!-- GRAPH NODE INSPECTOR (QoL Refinement) -->
-        <section class="dash-card card-inspector mb-8" id="node-inspector" style="display: none;">
-          <div class="card-header bg-yellow-light">
-            <h2><img src="ioncs/DB.png" class="header-icon-img" alt="DB"> Graph Database Node Inspector</h2>
-            <button class="btn-close-inspector"
-              onclick="document.getElementById('node-inspector').style.display='none'">×</button>
-          </div>
-          <div class="card-body" id="inspector-body">
-            <!-- Rendered dynamically on node click -->
-          </div>
-        </section>
-
-        <!-- CONTENT PIPELINE -->
-        <section class="dash-card card-pipeline">
-          <div class="card-header">
-            <h2><img src="ioncs/pipeline.png" class="header-icon-img" alt="Pipeline"> Automated Content Pipeline</h2>
-            <span class="badge badge-red">Ingestion</span>
-          </div>
-          <div class="card-body">
-            <div class="pipeline-flow">
-              <div class="drag-zone" id="drag-zone">
-                <svg class="upload-icon" viewBox="0 0 24 24" width="48" height="48">
-                  <path d="M12 5v14M5 12h14" fill="none" stroke="#ea4335" stroke-width="3" stroke-linecap="round" />
+            <div class="widget-body">
+              <div class="integrity-content">
+                <svg class="check-illustration" viewBox="0 0 60 60" width="34" height="34">
+                  <rect width="60" height="60" rx="12" fill="#c2e7ff" stroke="#000" stroke-width="3" />
+                  <path d="M15 30 L25 40 L45 18" fill="none" stroke="#4285f4" stroke-width="6" stroke-linecap="round"
+                    stroke-linejoin="round" />
                 </svg>
-                <h3>Drag & Drop Presentation Slides</h3>
-                <p>Ingest .pdf / .pptx (Max 20MB)</p>
-                <input type="file" id="file-input" style="display:none;" accept=".pdf,.pptx,.ppt,.txt">
+                <div class="integrity-text">
+                  <span class="status-indicator online">ONLINE</span>
+                  <p>Self-Healing Agent Active</p>
+                </div>
               </div>
+            </div>
+          </div>
 
-              <!-- Content Ingestion Stage Loading Status -->
-              <div class="pipeline-loader mb-4" id="pipeline-loader" style="display: none;">
-                <div class="loader-stages">
-                  <div class="stage-item" id="stage-1"><span class="stage-dot"></span> Ingesting slide data...</div>
-                  <div class="stage-item" id="stage-2"><span class="stage-dot"></span> Extracting semantic tags...</div>
-                  <div class="stage-item" id="stage-3"><span class="stage-dot"></span> Re-weaving graph database...
+          <!-- Speakers Widget (three circles pill) -->
+          <div class="metric-card widget-speakers">
+            <div class="widget-header">
+              <span class="widget-title">Speaker Status Registry</span>
+            </div>
+            <div class="widget-body">
+              <div class="speakers-content">
+                <div class="pill-illustration">
+                  <span class="circle-speaker blue">E.W</span>
+                  <span class="circle-speaker green">C.S</span>
+                  <span class="circle-speaker yellow">A.C</span>
+                </div>
+                <div class="speakers-info">
+                  <h3 id="active-speakers-count">5 Active Speakers</h3>
+                  <p id="system-delays-count">0 Delays Registered</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Control Action -->
+          <div class="metric-card widget-controls">
+            <div class="widget-header">
+              <span class="widget-title">OS Sync Utilities</span>
+            </div>
+            <div class="widget-body" style="display:flex; flex-direction:column; gap:6px;">
+              <button id="btn-mass-disruption" class="btn w-full btn-sm"
+                style="background-color: #ea4335; color: #ffffff; font-weight: 800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+                🔥 SIMULATE MASS DISRUPTION
+              </button>
+              <button id="btn-reset-db" class="btn w-full btn-sm"
+                style="background-color: #34a853; color: #ffffff; font-weight: 800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+                🔄 RESET TO NORMAL STATUS
+              </button>
+              <button id="btn-open-ical" class="btn btn-blue w-full btn-sm">
+                📅 iCal Calendar Sync
+              </button>
+              <button id="btn-show-tour" class="btn btn-yellow w-full btn-sm">
+                ⚡ Tour Guide
+              </button>
+            </div>
+          </div>
+
+          <!-- Capacity Stress Tester (Heatmaps Slider) -->
+          <div class="metric-card widget-stress">
+            <div class="widget-header">
+              <span class="widget-title">Registration Stress Tester</span>
+            </div>
+            <div class="widget-body">
+              <div style="display:flex; flex-direction:column; gap:6px;">
+                <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:700;">
+                  <span>Attendee Load Factor:</span>
+                  <span id="stress-factor-label" style="color:var(--google-blue);">1.0x (Normal)</span>
+                </div>
+                <input type="range" id="stress-slider" min="0.5" max="3.0" step="0.1" value="1.0"
+                  class="stress-slider-input" style="width:100%; cursor:pointer;">
+                <div style="font-size:0.72rem; color:#666; font-weight:600; line-height:1.2;">Surges registrations to
+                  highlight venue congestion heatmaps.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- CORE WORKSPACE GRID -->
+        <main class="dashboard-grid">
+          <!-- LEFT COLUMN: SCHEDULE & LOGS -->
+          <div class="dash-column col-left">
+            <!-- LIVE SCHEDULE CARD -->
+            <section class="dash-card card-schedule mb-8">
+              <div class="card-header"
+                style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                <h2 style="display:flex; align-items:center; margin:0;"><img src="ioncs/live.png"
+                    class="header-icon-img" alt="Live"> Live Schedule Matrix</h2>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <input type="text" id="matrix-search-input" placeholder="🔍 Quick filter talks..." class="input-text"
+                    style="font-family:var(--font-mono); font-size:0.78rem; padding:4px 10px; width:180px; border-radius:20px; border:2px solid #000;">
+                  <input type="date" id="schedule-date-picker" value="2026-08-07" class="input-select"
+                    style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; padding:4px 8px; cursor:pointer;">
+                  <span class="badge badge-blue">Dynamic Grid</span>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table id="schedule-table">
+                    <thead>
+                      <tr>
+                        <th>Venue Hall</th>
+                        <th id="th-slot-1">09:30 AM</th>
+                        <th id="th-slot-2">11:00 AM</th>
+                        <th id="th-slot-3">01:30 PM</th>
+                        <th id="th-slot-4">03:00 PM</th>
+                      </tr>
+                    </thead>
+                    <tbody id="schedule-tbody">
+                      <!-- Generated by javascript dynamically -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+
+            <!-- AGENT CONSOLE LOGS -->
+            <section class="dash-card card-console">
+              <div class="card-header border-bottom">
+                <h2><img src="ioncs/healing.png" class="header-icon-img" alt="Healing"> Self-Healing Agent Logs</h2>
+                <div class="console-controls">
+                  <input type="text" id="log-search" class="console-search" placeholder="Search log lines...">
+                  <select id="log-filter" class="console-filter">
+                    <option value="all">All Logs</option>
+                    <option value="conflict">Conflicts Only 🔴</option>
+                    <option value="action">Actions Only 🔵</option>
+                    <option value="success">Success Only 🟢</option>
+                  </select>
+                  <button id="btn-clear-logs" class="btn-clear-logs">Clear</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="agent-simulation-controls mb-4">
+                  <h3>Simulate Disruptive Incidents:</h3>
+                  <div class="sim-grid">
+                    <div class="sim-row">
+                      <label for="select-speaker">Delay Speaker:</label>
+                      <select id="select-speaker" class="input-select">
+                        <!-- Loaded dynamically -->
+                      </select>
+                      <select id="select-delay" class="input-select select-short">
+                        <option value="60">60 mins</option>
+                        <option value="90">90 mins</option>
+                        <option value="120">120 mins</option>
+                      </select>
+                      <button id="btn-trigger-delay" class="btn btn-yellow">Trigger delay</button>
+                    </div>
+                    <div class="sim-row">
+                      <label for="select-topic">Surge Interest:</label>
+                      <select id="select-topic" class="input-select">
+                        <!-- Loaded dynamically -->
+                      </select>
+                      <input type="number" id="input-surge-count" class="input-text text-short" value="260" min="50"
+                        max="400">
+                      <button id="btn-trigger-surge" class="btn btn-blue">Trigger surge</button>
+                    </div>
+                    <div class="sim-row">
+                      <label for="select-sentiment">Simulate Feedback:</label>
+                      <select id="select-sentiment" class="input-select">
+                        <option value="hvac">"Lovelace Suite is freezing!" (HVAC Temp)</option>
+                        <option value="av">"Crackling speaker microphone in Lovelace Suite!" (A/V Setup)</option>
+                      </select>
+                      <button id="btn-trigger-sentiment" class="btn btn-red">Inject Feedback</button>
+                    </div>
                   </div>
-                  <div class="stage-item" id="stage-4"><span class="stage-dot"></span> Auto-generating promo copy...
+
+                  <div class="sentiment-ticker mt-4">
+                    <h4
+                      style="font-size:0.8rem; font-weight:800; font-family:var(--font-mono); margin-bottom:4px; display:flex; justify-content:space-between;">
+                      <span>💬 ATTENDEE REACTION STREAM</span>
+                      <span class="pulse-indicator-red">● LIVE</span>
+                    </h4>
+                    <div class="ticker-box" id="sentiment-ticker-box">
+                      <div class="ticker-item">"The swarms keynote was absolute fire!" - @agentic_geek</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Terminal-style Log Output -->
+                <div class="terminal-container">
+                  <div class="terminal-header">
+                    <span class="terminal-dot red"></span>
+                    <span class="terminal-dot yellow"></span>
+                    <span class="terminal-dot green"></span>
+                    <span class="terminal-title">agent_decision_matrix.log</span>
+                  </div>
+                  <div class="terminal-body" id="agent-logs">
                   </div>
                 </div>
               </div>
+            </section>
 
-              <!-- Content Pipeline Results -->
-              <div class="pipeline-results" id="pipeline-results" style="display: none;">
-                <div class="results-header">
-                  <span class="badge badge-success">✓ EXTRACTED</span>
-                  <h3 id="result-topic-title">Autonomous Agent Swarms</h3>
+          </div>
+
+          <!-- RIGHT COLUMN: GRAPH VIS & CONTENT PIPELINE -->
+          <div class="dash-column col-right">
+            <!-- DYNAMIC GRAPH DATABASE VISUALIZER -->
+            <section class="dash-card card-graph mb-8">
+              <div class="card-header">
+                <h2><img src="ioncs/graph.png" class="header-icon-img" alt="Graph"> Dynamic Graph Network</h2>
+                <span class="badge badge-green">In-Memory DB</span>
+              </div>
+              <div class="card-body relative-body">
+                <div class="graph-legend">
+                  <span class="legend-item"><span class="legend-color node-speaker"></span> Speaker</span>
+                  <span class="legend-item"><span class="legend-color node-topic"></span> Talk Topic</span>
+                  <span class="legend-item"><span class="legend-color node-hall"></span> Hall Venue</span>
                 </div>
+                <!-- Canvas/SVG for Force Directed Graph -->
+                <div id="graph-container">
+                  <svg id="graph-svg"></svg>
+                </div>
+              </div>
+            </section>
 
-                <div class="results-body">
-                  <p class="summary-paragraph" id="result-topic-summary">Ingested slides, extracted topic details,
-                    generated marketing assets and updated DB nodes dynamically.</p>
+            <!-- GRAPH NODE INSPECTOR (QoL Refinement) -->
+            <section class="dash-card card-inspector mb-8" id="node-inspector" style="display: none;">
+              <div class="card-header bg-yellow-light">
+                <h2><img src="ioncs/DB.png" class="header-icon-img" alt="DB"> Graph Database Node Inspector</h2>
+                <button class="btn-close-inspector"
+                  onclick="document.getElementById('node-inspector').style.display='none'">×</button>
+              </div>
+              <div class="card-body" id="inspector-body">
+                <!-- Rendered dynamically on node click -->
+              </div>
+            </section>
 
-                  <div class="tag-row mb-4" id="result-topic-tags">
-                    <!-- Tags will render here -->
+            <!-- CONTENT PIPELINE -->
+            <section class="dash-card card-pipeline">
+              <div class="card-header">
+                <h2><img src="ioncs/pipeline.png" class="header-icon-img" alt="Pipeline"> Automated Content Pipeline
+                </h2>
+                <span class="badge badge-red">Ingestion</span>
+              </div>
+              <div class="card-body">
+                <div class="pipeline-flow">
+                  <div class="drag-zone" id="drag-zone">
+                    <svg class="upload-icon" viewBox="0 0 24 24" width="48" height="48">
+                      <path d="M12 5v14M5 12h14" fill="none" stroke="#ea4335" stroke-width="3" stroke-linecap="round" />
+                    </svg>
+                    <h3>Drag & Drop Presentation Slides</h3>
+                    <p>Ingest .pdf / .pptx (Max 20MB)</p>
+                    <input type="file" id="file-input" style="display:none;" accept=".pdf,.pptx,.ppt,.txt">
                   </div>
 
-                  <!-- Generated Copy -->
-                  <div class="copy-box mb-4">
-                    <label>Social Promo Copy:</label>
-                    <textarea id="result-social-copy" readonly class="text-area-copy"></textarea>
-                    <button id="btn-copy-social" class="btn btn-sm btn-yellow">Copy Copy text</button>
-                  </div>
-
-                  <!-- Visual Exporter Bindings (QoL Refinement) -->
-                  <div class="graphics-customizer mb-4">
-                    <label class="custom-label">Customize Visual Banner:</label>
-                    <div class="customizer-inputs">
-                      <input type="text" id="input-banner-title" class="input-text w-full mb-2"
-                        placeholder="Banner Title">
-                      <input type="text" id="input-banner-speaker" class="input-text w-full mb-2"
-                        placeholder="Banner Speaker">
-                      <div class="theme-colors-row mb-2">
-                        <span style="font-size:0.8rem; font-weight:700;">Gradient Theme:</span>
-                        <button class="color-btn blue active" data-theme="blue">Blue</button>
-                        <button class="color-btn green" data-theme="green">Green</button>
-                        <button class="color-btn yellow" data-theme="yellow">Yellow</button>
-                        <button class="color-btn red" data-theme="red">Red</button>
+                  <!-- Content Ingestion Stage Loading Status -->
+                  <div class="pipeline-loader mb-4" id="pipeline-loader" style="display: none;">
+                    <div class="loader-stages">
+                      <div class="stage-item" id="stage-1"><span class="stage-dot"></span> Ingesting slide data...</div>
+                      <div class="stage-item" id="stage-2"><span class="stage-dot"></span> Extracting semantic tags...
+                      </div>
+                      <div class="stage-item" id="stage-3"><span class="stage-dot"></span> Re-weaving graph database...
+                      </div>
+                      <div class="stage-item" id="stage-4"><span class="stage-dot"></span> Auto-generating promo copy...
                       </div>
                     </div>
                   </div>
 
-                  <!-- Generated Graphics Visualizer -->
-                  <div class="social-graphic-card blue mb-4" id="social-graphic-card">
-                    <!-- Generated Canvas / Custom card visually matching the design -->
-                    <div class="card-canvas-header">
-                      <span class="pill-brand">DELTA ENGINE</span>
+                  <!-- Content Pipeline Results -->
+                  <div class="pipeline-results" id="pipeline-results" style="display: none;">
+                    <div class="results-header">
+                      <span class="badge badge-success">✓ EXTRACTED</span>
+                      <h3 id="result-topic-title">Autonomous Agent Swarms</h3>
                     </div>
-                    <div class="card-canvas-content">
-                      <h4 id="canvas-topic-title">Autonomous Agent Swarms</h4>
-                      <p id="canvas-speaker-name">Dr. Evelyn Wright</p>
-                    </div>
-                    <div class="card-canvas-footer">
-                      <span class="tag-brand">#DedicatedHackIndia</span>
-                      <!-- Semicolon SVG visual decorator -->
-                      <svg class="canvas-decor-semicolon" viewBox="0 0 50 100" width="15" height="30">
-                        <circle cx="25" cy="25" r="10" fill="#f9ab00" stroke="#000" stroke-width="2" />
-                        <path d="M25,60 C25,75 15,90 5,95 C15,85 25,75 25,60 Z" fill="#f9ab00" stroke="#000"
-                          stroke-width="2" />
-                      </svg>
+
+                    <div class="results-body">
+                      <p class="summary-paragraph" id="result-topic-summary">Ingested slides, extracted topic details,
+                        generated marketing assets and updated DB nodes dynamically.</p>
+
+                      <div class="tag-row mb-4" id="result-topic-tags">
+                        <!-- Tags will render here -->
+                      </div>
+
+                      <!-- Generated Copy -->
+                      <div class="copy-box mb-4">
+                        <label>Social Promo Copy:</label>
+                        <textarea id="result-social-copy" readonly class="text-area-copy"></textarea>
+                        <button id="btn-copy-social" class="btn btn-sm btn-yellow">Copy Copy text</button>
+                      </div>
+
+                      <!-- Visual Exporter Bindings (QoL Refinement) -->
+                      <div class="graphics-customizer mb-4">
+                        <label class="custom-label">Customize Visual Banner:</label>
+                        <div class="customizer-inputs">
+                          <input type="text" id="input-banner-title" class="input-text w-full mb-2"
+                            placeholder="Banner Title">
+                          <input type="text" id="input-banner-speaker" class="input-text w-full mb-2"
+                            placeholder="Banner Speaker">
+                          <div class="theme-colors-row mb-2">
+                            <span style="font-size:0.8rem; font-weight:700;">Gradient Theme:</span>
+                            <button class="color-btn blue active" data-theme="blue">Blue</button>
+                            <button class="color-btn green" data-theme="green">Green</button>
+                            <button class="color-btn yellow" data-theme="yellow">Yellow</button>
+                            <button class="color-btn red" data-theme="red">Red</button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Generated Graphics Visualizer -->
+                      <div class="social-graphic-card blue mb-4" id="social-graphic-card">
+                        <!-- Generated Canvas / Custom card visually matching the design -->
+                        <div class="card-canvas-header">
+                          <span class="pill-brand">DELTA ENGINE</span>
+                        </div>
+                        <div class="card-canvas-content">
+                          <h4 id="canvas-topic-title">Autonomous Agent Swarms</h4>
+                          <p id="canvas-speaker-name">Dr. Evelyn Wright</p>
+                        </div>
+                        <div class="card-canvas-footer">
+                          <span class="tag-brand">#DedicatedHackIndia</span>
+                          <!-- Semicolon SVG visual decorator -->
+                          <svg class="canvas-decor-semicolon" viewBox="0 0 50 100" width="15" height="30">
+                            <circle cx="25" cy="25" r="10" fill="#f9ab00" stroke="#000" stroke-width="2" />
+                            <path d="M25,60 C25,75 15,90 5,95 C15,85 25,75 25,60 Z" fill="#f9ab00" stroke="#000"
+                              stroke-width="2" />
+                          </svg>
+                        </div>
+                      </div>
+
+                      <button id="btn-download-banner" class="btn btn-sm btn-blue w-full">
+                        📥 Download Promo Graphic
+                      </button>
                     </div>
                   </div>
+                </div>
+              </div>
+            </section>
+          </div>
 
-                  <button id="btn-download-banner" class="btn btn-sm btn-blue w-full">
-                    📥 Download Promo Graphic
-                  </button>
+          <!-- FULL-WIDTH SWARM NEGOTIATION CHANNEL -->
+          <section class="dash-card card-swarm mt-8" style="grid-column: 1 / -1; width: 100%;">
+            <div class="card-header border-bottom" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <h2 style="margin:0;"><img src="ioncs/negotiate.png" class="header-icon-img" alt="Negotiate"> Swarm Negotiation Channel</h2>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="badge badge-blue">Multi-Agent Bus</span>
+                <button id="btn-copy-swarm" class="btn btn-sm btn-yellow" style="font-weight:700; font-size:0.75rem;" title="Copy Swarm Dialogue to Clipboard">📋 Copy Transcript</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="swarm-chat-container">
+                <div class="swarm-chat-messages" id="swarm-chat-messages">
+                  <div class="chat-bubble system">
+                    <span class="chat-sender">SYSTEM</span>
+                    <span class="chat-text">Swarm session synchronized. Scheduler ⏱️, Logistics 🏛️, Liaison 🗣️,
+                      Marketing 📢 active.</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+
+        </main>
+
+
       </div>
 
-      <!-- FULL-WIDTH SWARM NEGOTIATION CHANNEL -->
-      <section class="dash-card card-swarm mt-8" style="grid-column: 1 / -1; width: 100%;">
-        <div class="card-header border-bottom">
-          <h2><img src="ioncs/negotiate.png" class="header-icon-img" alt="Negotiate"> Swarm Negotiation Channel</h2>
-          <span class="badge badge-blue">Multi-Agent Bus</span>
+      <!-- TOAST NOTIFICATION CONTAINER -->
+      <div class="toast-container" id="toast-container">
+        <!-- Active notifications populate here -->
+      </div>
+
+      <!-- Simulated user push alert display -->
+      <div class="push-alert-overlay" id="push-alert" style="display: none;">
+        <div class="push-alert-card">
+          <div class="push-header">
+            <span class="push-icon">⚡</span>
+            <span class="push-app-name">DELTA ENGINE Live Updates</span>
+          </div>
+          <div class="push-body" id="push-message">
+            Schedule Update: Autonomous Agent Swarms shifted to slot 2 due to speaker delays.
+          </div>
+          <button class="btn btn-sm btn-blue"
+            onclick="document.getElementById('push-alert').style.display='none'">Dismiss
+            Alert</button>
         </div>
-        <div class="card-body">
-          <div class="swarm-chat-container">
-            <div class="swarm-chat-messages" id="swarm-chat-messages">
-              <div class="chat-bubble system">
-                <span class="chat-sender">SYSTEM</span>
-                <span class="chat-text">Swarm session synchronized. Scheduler ⏱️, Logistics 🏛️, Liaison 🗣️, Marketing 📢 active.</span>
+      </div>
+      <!-- Interactive Tour Walkthrough Card (Right-Edge Docked & 90° Rotated Minimized Bar) -->
+      <div class="tour-guide-card collapsed" id="tour-card">
+        <!-- Minimized Vertical 90° Rotated Calling Bar (Pinned to Right Edge) -->
+        <div class="tour-minimized-bar" id="tour-minimized-bar">
+          <span class="tour-minimized-text">⚡ TOUR GUIDE</span>
+        </div>
+
+        <!-- Expanded Tour Card Content -->
+        <div class="tour-expanded-content">
+          <div class="tour-header">
+            <span class="tour-badge">⚡ TOUR GUIDE</span>
+            <h3>Interactive Sandbox Guide</h3>
+            <button class="btn-close-tour" id="btn-toggle-tour" title="Minimize Tour Guide">_</button>
+          </div>
+          <div class="tour-body">
+            <p id="tour-step-text">Drag any scheduled session card in the Live Schedule Matrix and drop it to reschedule
+              manually. Watch the Agent heal any capacity violations!</p>
+            <div class="tour-footer mt-4">
+              <button id="btn-tour-prev" class="btn btn-sm btn-yellow">Prev</button>
+              <span id="tour-step-indicator" class="tour-indicator">1 / 4</span>
+              <button id="btn-tour-next" class="btn btn-sm btn-blue">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- iCal Subscription Modal (QoL Refinement) -->
+      <div class="modal-overlay" id="ical-modal" style="display: none;">
+        <div class="modal-card">
+          <div class="modal-header">
+            <h3>📅 iCal Live Calendar Sync</h3>
+            <button class="btn-close-modal" id="btn-close-ical">&times;</button>
+          </div>
+          <div class="modal-body text-center" style="text-align: center; padding: 10px 0;">
+            <p class="mb-4" style="font-size:0.9rem; font-weight:600; margin-bottom: 15px;">Subscribe to dynamic
+              updates.
+              Reschedules sync automatically onto your device calendar app.</p>
+            <div class="qr-code-box mb-4" style="margin-bottom: 15px;">
+              <!-- Neubrutalist custom QR mockup -->
+              <div
+                style="background:#000; width:120px; height:120px; margin:0 auto; padding:8px; border-radius:8px; box-shadow: 4px 4px 0px #f9ab00;">
+                <div
+                  style="background:#fff; width:104px; height:104px; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; padding:6px;">
+                  <!-- Visual QR grids blocks -->
+                  <div style="background:#000; grid-column:1/3; grid-row:1/3; border-radius:2px;"></div>
+                  <div style="background:#000; border-radius:2px;"></div>
+                  <div style="background:#000; border-radius:2px;"></div>
+                  <div style="background:#000; border-radius:2px;"></div>
+                  <div style="background:#000; grid-column:3/5; grid-row:3/5; border-radius:2px;"></div>
+                  <div style="background:#000; border-radius:2px;"></div>
+                  <div style="background:#000; border-radius:2px;"></div>
+                </div>
               </div>
             </div>
+            <div class="feed-url-box">
+              <input type="text" id="ical-feed-url" class="input-text w-full text-center"
+                style="text-align:center; font-family:var(--font-mono); font-size:0.8rem;" readonly
+                value="webcal://localhost:3000/api/calendar/feed.ics">
+              <button id="btn-copy-ical" class="btn btn-sm btn-yellow mt-2 w-full" style="margin-top:10px;">Copy Feed
+                Link</button>
+            </div>
+          </div>
+        </div> <!-- END #coordinator-dashboard-view -->
+      </div> <!-- END .container -->
+
+      <!-- ROLE-BASED AUTH LOGIN MODAL -->
+      <div id="auth-login-modal" class="auth-modal-backdrop hidden">
+        <div class="auth-modal-card">
+          <div class="auth-modal-header">
+            <span class="auth-header-title">🔐 DELTA ENGINE Access Portal</span>
+            <button id="btn-close-auth-modal" class="auth-close-btn">&times;</button>
+          </div>
+
+          <div class="auth-role-tabs">
+            <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Coordinator Login</button>
+            <button id="tab-login-admin" class="auth-tab-btn">👑 Super Admin Login</button>
+          </div>
+
+          <form id="auth-login-form" class="auth-form-body">
+            <input type="hidden" id="auth-selected-role" value="coordinator">
+
+            <div class="form-group">
+              <label class="form-label" id="auth-username-label">Coordinator Username / ID</label>
+              <input type="text" id="auth-input-username" class="form-control" placeholder="e.g. coordinator_elena"
+                value="elena.vance" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Password Key</label>
+              <input type="password" id="auth-input-password" class="form-control" value="••••••••" required>
+            </div>
+
+            <button type="submit" id="btn-submit-auth-login" class="btn btn-blue w-full btn-md mt-2"
+              style="font-size:1.05rem; font-weight:800;">
+              🚀 Log In to Portal
+            </button>
+
+            <div class="auth-demo-divider">
+              <span>⚡ QUICK ONE-CLICK DEMO ACCESS</span>
+            </div>
+
+            <div class="auth-quick-buttons">
+              <button type="button" id="btn-quick-login-coord" class="btn btn-yellow btn-sm w-full">
+                👤 Quick Login as Coordinator
+              </button>
+              <button type="button" id="btn-quick-login-admin" class="btn btn-red btn-sm w-full">
+                👑 Quick Login as Super Admin
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- EVENT COORDINATORS & STAKEHOLDERS DIRECTORY SECTION FOR COORDINATORS -->
+      <section class="container mb-8 mt-8">
+        <div class="dash-card card-contacts">
+          <div class="card-header">
+            <h2><img src="ioncs/DB.png" class="header-icon-img" alt="Contacts"> 📱 Event Coordinators & Stakeholders
+              Contact Directory</h2>
+            <span class="badge badge-yellow">WhatsApp Dispatches Active</span>
+          </div>
+          <div class="card-body">
+            <table class="admin-table">
+              <thead>
+                <tr>
+                  <th>CONTACT NAME</th>
+                  <th>ROLE & RESPONSIBILITY</th>
+                  <th>PHONE NUMBER (WHATSAPP)</th>
+                  <th>EMAIL ADDRESS</th>
+                  <th>ASSIGNED VENUE HALLS</th>
+                  <th>ACTION</th>
+                </tr>
+              </thead>
+              <tbody id="admin-contacts-table-body">
+                <!-- Dynamically populated by auth.js -->
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
 
-    </main>
-
-
-  </div>
-
-  <!-- TOAST NOTIFICATION CONTAINER -->
-  <div class="toast-container" id="toast-container">
-    <!-- Active notifications populate here -->
-  </div>
-
-  <!-- Simulated user push alert display -->
-  <div class="push-alert-overlay" id="push-alert" style="display: none;">
-    <div class="push-alert-card">
-      <div class="push-header">
-        <span class="push-icon">⚡</span>
-        <span class="push-app-name">DELTA ENGINE Live Updates</span>
-      </div>
-      <div class="push-body" id="push-message">
-        Schedule Update: Autonomous Agent Swarms shifted to slot 2 due to speaker delays.
-      </div>
-      <button class="btn btn-sm btn-blue" onclick="document.getElementById('push-alert').style.display='none'">Dismiss
-        Alert</button>
-    </div>
-  </div>
-  <!-- Interactive Tour Walkthrough Card (Right-Edge Docked & 90° Rotated Minimized Bar) -->
-  <div class="tour-guide-card collapsed" id="tour-card">
-    <!-- Minimized Vertical 90° Rotated Calling Bar (Pinned to Right Edge) -->
-    <div class="tour-minimized-bar" id="tour-minimized-bar">
-      <span class="tour-minimized-text">⚡ TOUR GUIDE</span>
-    </div>
-
-    <!-- Expanded Tour Card Content -->
-    <div class="tour-expanded-content">
-      <div class="tour-header">
-        <span class="tour-badge">⚡ TOUR GUIDE</span>
-        <h3>Interactive Sandbox Guide</h3>
-        <button class="btn-close-tour" id="btn-toggle-tour" title="Minimize Tour Guide">_</button>
-      </div>
-      <div class="tour-body">
-        <p id="tour-step-text">Drag any scheduled session card in the Live Schedule Matrix and drop it to reschedule manually. Watch the Agent heal any capacity violations!</p>
-        <div class="tour-footer mt-4">
-          <button id="btn-tour-prev" class="btn btn-sm btn-yellow">Prev</button>
-          <span id="tour-step-indicator" class="tour-indicator">1 / 4</span>
-          <button id="btn-tour-next" class="btn btn-sm btn-blue">Next</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- iCal Subscription Modal (QoL Refinement) -->
-  <div class="modal-overlay" id="ical-modal" style="display: none;">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>📅 iCal Live Calendar Sync</h3>
-        <button class="btn-close-modal" id="btn-close-ical">&times;</button>
-      </div>
-      <div class="modal-body text-center" style="text-align: center; padding: 10px 0;">
-        <p class="mb-4" style="font-size:0.9rem; font-weight:600; margin-bottom: 15px;">Subscribe to dynamic updates.
-          Reschedules sync automatically onto your device calendar app.</p>
-        <div class="qr-code-box mb-4" style="margin-bottom: 15px;">
-          <!-- Neubrutalist custom QR mockup -->
-          <div
-            style="background:#000; width:120px; height:120px; margin:0 auto; padding:8px; border-radius:8px; box-shadow: 4px 4px 0px #f9ab00;">
-            <div
-              style="background:#fff; width:104px; height:104px; display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; padding:6px;">
-              <!-- Visual QR grids blocks -->
-              <div style="background:#000; grid-column:1/3; grid-row:1/3; border-radius:2px;"></div>
-              <div style="background:#000; border-radius:2px;"></div>
-              <div style="background:#000; border-radius:2px;"></div>
-              <div style="background:#000; border-radius:2px;"></div>
-              <div style="background:#000; grid-column:3/5; grid-row:3/5; border-radius:2px;"></div>
-              <div style="background:#000; border-radius:2px;"></div>
-              <div style="background:#000; border-radius:2px;"></div>
-            </div>
-          </div>
-        </div>
-        <div class="feed-url-box">
-          <input type="text" id="ical-feed-url" class="input-text w-full text-center"
-            style="text-align:center; font-family:var(--font-mono); font-size:0.8rem;" readonly
-            value="webcal://localhost:3000/api/calendar/feed.ics">
-          <button id="btn-copy-ical" class="btn btn-sm btn-yellow mt-2 w-full" style="margin-top:10px;">Copy Feed
-            Link</button>
-        </div>
-      </div>
-    </div> <!-- END #coordinator-dashboard-view -->
-  </div> <!-- END .container -->
-
-  <!-- FLOATING SCHEDULE HOVER POPOVER CARD -->
-  <div id="matrix-hover-card" class="matrix-hover-card" style="display: none;">
-    <div class="hover-card-header">
-      <span class="hover-card-speaker" id="hover-speaker-name">Dr. Evelyn Wright</span>
-      <span class="hover-card-badge" id="hover-interest-badge">🔥 210 Interest</span>
-    </div>
-    <h4 class="hover-card-title" id="hover-topic-title">Autonomous Agent Swarms</h4>
-    <p class="hover-card-summary" id="hover-topic-summary">Topic summary details</p>
-    <div class="hover-card-tags" id="hover-tags-row"></div>
-  </div>
-
-  <!-- SELF-HEALING REALLOCATION COUNTDOWN OVERLAY MODAL -->
+  <!-- SELF-HEALING REALLOCATION COUNTDOWN OVERLAY CONTAINER (DIRECT BODY CHILD) -->
   <div id="reallocation-countdown-modal" class="reallocation-modal-backdrop hidden">
     <div class="reallocation-modal-card">
       <div class="reallocation-header">
@@ -530,112 +617,101 @@
       </div>
 
       <div class="reallocation-conflict-box">
-        <div class="conflict-label">DETECTED CONFLICT REASON</div>
+        <div class="conflict-label">⚠️ DETECTED CONSTRAINT BREACH</div>
         <div id="reallocation-conflict-text" class="conflict-text">
           ⚠️ Talk "WebGPU Deep Dive" attendance (260 pax) exceeds Turing Hall capacity (250 pax).
         </div>
       </div>
 
       <div class="reallocation-destination-box">
-        <div class="destination-label">PROPOSED REALLOCATION TARGET</div>
+        <div class="destination-label">📍 PROPOSED HEALING TARGET</div>
         <div id="reallocation-destination-text" class="destination-text">
           📍 Relocating to Lovelace Suite (11:00 AM - 12:00 PM)
         </div>
       </div>
 
       <div class="countdown-timer-container">
-        <div class="countdown-timer-label">AUTOMATICALLY REALLOCATING IN</div>
-        <div id="reallocation-countdown-number" class="countdown-timer-number">3</div>
+        <div class="countdown-timer-label">AUTOMATIC REALLOCATION IN</div>
+        <div id="reallocation-countdown-number" class="countdown-timer-number">5</div>
       </div>
 
       <div class="reallocation-progress-track">
         <div id="reallocation-progress-bar" class="reallocation-progress-fill"></div>
       </div>
-    </div>
-  </div>
 
-  <!-- ROLE-BASED AUTH LOGIN MODAL -->
-  <div id="auth-login-modal" class="auth-modal-backdrop hidden">
-    <div class="auth-modal-card">
-      <div class="auth-modal-header">
-        <span class="auth-header-title">🔐 DELTA ENGINE Access Portal</span>
-        <button id="btn-close-auth-modal" class="auth-close-btn">&times;</button>
-      </div>
-      
-      <div class="auth-role-tabs">
-        <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Coordinator Login</button>
-        <button id="tab-login-admin" class="auth-tab-btn">👑 Super Admin Login</button>
-      </div>
-
-      <form id="auth-login-form" class="auth-form-body">
-        <input type="hidden" id="auth-selected-role" value="coordinator">
-        
-        <div class="form-group">
-          <label class="form-label" id="auth-username-label">Coordinator Username / ID</label>
-          <input type="text" id="auth-input-username" class="form-control" placeholder="e.g. coordinator_elena" value="elena.vance" required>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Password Key</label>
-          <input type="password" id="auth-input-password" class="form-control" value="••••••••" required>
-        </div>
-
-        <button type="submit" id="btn-submit-auth-login" class="btn btn-blue w-full btn-md mt-2" style="font-size:1.05rem; font-weight:800;">
-          🚀 Log In to Portal
+      <div style="display:flex; justify-content:center; gap:10px; margin-top:14px;">
+        <button id="btn-skip-countdown" class="btn btn-sm btn-yellow"
+          style="font-weight:800; font-family:var(--font-mono); font-size:0.8rem; padding:6px 16px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+          title="Fast-forward and execute reallocation immediately (Space / Esc)">
+          ⚡ Apply Immediately (Skip Wait)
         </button>
+      </div>
 
-        <div class="auth-demo-divider">
-          <span>⚡ QUICK ONE-CLICK DEMO ACCESS</span>
-        </div>
-
-        <div class="auth-quick-buttons">
-          <button type="button" id="btn-quick-login-coord" class="btn btn-yellow btn-sm w-full">
-            👤 Quick Login as Coordinator
-          </button>
-          <button type="button" id="btn-quick-login-admin" class="btn btn-red btn-sm w-full">
-            👑 Quick Login as Super Admin
-          </button>
-        </div>
-      </form>
+      <div class="reallocation-footer-note">
+        ⚡ Swarm consensus locked • Press <kbd style="background:#eee; padding:1px 5px; border-radius:3px; border:1px solid #ccc; font-size:0.7rem;">Space</kbd> to skip
+      </div>
     </div>
   </div>
 
-  <!-- EVENT COORDINATORS & STAKEHOLDERS DIRECTORY SECTION FOR COORDINATORS -->
-  <section class="container mb-8 mt-8">
-    <div class="dash-card card-contacts">
-      <div class="card-header">
-        <h2><img src="ioncs/DB.png" class="header-icon-img" alt="Contacts"> 📱 Event Coordinators & Stakeholders Contact Directory</h2>
-        <span class="badge badge-yellow">WhatsApp Dispatches Active</span>
+  <!-- KEYBOARD SHORTCUTS CHEAT SHEET MODAL -->
+  <div id="shortcuts-modal" class="auth-modal-backdrop hidden">
+    <div class="auth-modal-card" style="max-width:480px; text-align:left;">
+      <div class="auth-modal-header" style="display:flex; justify-content:space-between; align-items:center;">
+        <span class="auth-header-title">⌨️ Keyboard Shortcuts & Power Controls</span>
+        <button id="btn-close-shortcuts" class="auth-close-btn">&times;</button>
       </div>
-      <div class="card-body">
-        <table class="admin-table">
+      <div style="padding:16px 0;">
+        <table class="admin-table" style="font-size:0.85rem; width:100%;">
           <thead>
             <tr>
-              <th>CONTACT NAME</th>
-              <th>ROLE & RESPONSIBILITY</th>
-              <th>PHONE NUMBER (WHATSAPP)</th>
-              <th>EMAIL ADDRESS</th>
-              <th>ASSIGNED VENUE HALLS</th>
+              <th style="width:35%;">HOTKEY</th>
               <th>ACTION</th>
             </tr>
           </thead>
-          <tbody id="admin-contacts-table-body">
-            <!-- Dynamically populated by auth.js -->
+          <tbody>
+            <tr>
+              <td><kbd class="kbd-badge">R</kbd></td>
+              <td>Reset Schedule to Default Baseline</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">D</kbd></td>
+              <td>Simulate Speaker Flight Delay</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">S</kbd></td>
+              <td>Simulate Room Capacity Surge</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">M</kbd></td>
+              <td>Simulate Mass Disruption Scenario</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">C</kbd></td>
+              <td>Copy Live iCal Calendar Feed Link</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">Space</kbd> / <kbd class="kbd-badge">Esc</kbd></td>
+              <td>Fast-Forward / Dismiss Active Countdown</td>
+            </tr>
+            <tr>
+              <td><kbd class="kbd-badge">?</kbd></td>
+              <td>Toggle This Shortcuts Guide</td>
+            </tr>
           </tbody>
         </table>
       </div>
     </div>
-  </section>
+  </div>
 
-  <script src="components/websockets.js"></script>
-  <script src="components/dragdrop.js"></script>
-  <script src="components/graphVisualizer.js"></script>
-  <script src="components/tourGuide.js"></script>
-  <script src="components/contentPipeline.js"></script>
-  <script src="components/stressTester.js"></script>
-  <script src="components/auth.js"></script>
-  <script src="components/customCursor.js"></script>
   <script src="components/app.js"></script>
+      <script src="components/websockets.js"></script>
+      <script src="components/dragdrop.js"></script>
+      <script src="components/graphVisualizer.js"></script>
+      <script src="components/tourGuide.js"></script>
+      <script src="components/contentPipeline.js"></script>
+      <script src="components/stressTester.js"></script>
+      <script src="components/auth.js"></script>
+      <script src="components/customCursor.js"></script>
 </body>
 
 </html>

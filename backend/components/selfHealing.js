@@ -1,7 +1,7 @@
 const { generateGroqAgentSwarmDialogue } = require('./agentSwarm');
 const { autoDispatchSelfHealingEmail } = require('./supabaseEmailIntegrator');
 
-async function runSelfHealingAgent(eventDescription, db, broadcast) {
+async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}) {
   const logs = [];
   logs.push(`[Agent Agentic OS] Initiating check run. Event: "${eventDescription}"`);
   
@@ -12,6 +12,7 @@ async function runSelfHealingAgent(eventDescription, db, broadcast) {
 
   const graph = db.graph;
   const schedule = db.schedule;
+  const initialSchedule = JSON.parse(JSON.stringify(db.schedule));
 
   while (hasConflicts && iterations < MAX_ITERATIONS) {
     iterations++;
@@ -31,7 +32,7 @@ async function runSelfHealingAgent(eventDescription, db, broadcast) {
         const hall = graph.halls[hallId];
 
         if (speaker.delay > 0) {
-          const availabilityStartHour = 9.0 + (speaker.delay / 60);
+          const availabilityStartHour = 9.5 + (speaker.delay / 60);
           if (slot.startHour < availabilityStartHour) {
             logs.push(`[CONFLICT] Speaker "${speaker.name}" is delayed by ${speaker.delay} mins. Available at ${formatHour(availabilityStartHour)}, but talk "${topic.title}" is scheduled at ${slot.time} in ${hall.name}.`);
             conflictFoundThisPass = true;
@@ -65,7 +66,8 @@ async function runSelfHealingAgent(eventDescription, db, broadcast) {
   db.syncScheduleEdges();
 
   // Compile Multi-Agent Swarm Chat Negotiation dialogue logs
-  let swarmChat = await generateGroqAgentSwarmDialogue(eventDescription, notifications.join('; '), db);
+  const resolutionSummary = notifications.map(n => n.message).join('. ') || 'Schedule timetable and room constraints verified.';
+  let swarmChat = await generateGroqAgentSwarmDialogue(eventDescription, resolutionSummary, db);
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   if (!swarmChat) {
@@ -119,7 +121,13 @@ async function runSelfHealingAgent(eventDescription, db, broadcast) {
       swarmChat.push({
         sender: 'Logistics Agent',
         avatar: '🏛️',
-        text: `Venue occupancy limits verified. Healthy load distributions.`,
+        text: `Venue occupancy limits verified. Healthy load distributions across halls.`,
+        time: timeStr
+      });
+      swarmChat.push({
+        sender: 'Marketing Agent',
+        avatar: '📢',
+        text: `Live schedule broadcast confirmed. Matrix operating at optimal capacity.`,
         time: timeStr
       });
     }
@@ -141,20 +149,32 @@ async function runSelfHealingAgent(eventDescription, db, broadcast) {
     }, db, broadcast);
   }
 
+  const conflictLog = logs.find(l => l.includes('[CONFLICT]') || l.includes('exceeds') || l.includes('Capacity'));
+  const actionLog = logs.find(l => l.includes('[Action') || l.includes('Moved') || l.includes('Relocated') || l.includes('Swapped') || l.includes('shifted') || l.includes('rescheduled'));
+
+  const wasHealed = !!(conflictLog || actionLog || notifications.length > 0);
+  const conflictReason = conflictLog ? conflictLog.replace(/\[.*?\]/g, '').trim() : (notifications[0]?.message || '⚠️ Operational constraint violation detected.');
+  const destinationTarget = actionLog ? actionLog.replace(/\[.*?\]/g, '').trim() : '📍 Optimization Solver reallocating talk node to viable venue position.';
+
   const updatePayload = {
     type: 'SCHEDULE_HEALED',
     data: {
       graph,
       schedule,
+      initialSchedule,
       logs,
       notifications,
       swarmChat,
-      eventDescription
+      eventDescription,
+      isManual: !!options.isManual,
+      hasConflict: wasHealed,
+      conflictReason,
+      destinationTarget
     }
   };
   broadcast(updatePayload);
 
-  return { schedule, logs, notifications, swarmChat };
+  return { schedule, initialSchedule, logs, notifications, swarmChat, hasConflict: wasHealed, conflictReason, destinationTarget };
 }
 
 function formatHour(hourDec) {

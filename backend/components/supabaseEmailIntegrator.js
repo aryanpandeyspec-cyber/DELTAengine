@@ -14,7 +14,7 @@ const supabase = (SUPABASE_URL && SUPABASE_KEY) ? createClient(SUPABASE_URL, SUP
  */
 function composeAntiSpamEmailHTML(eventDetails) {
   const { topicTitle, speakerName, oldVenue, newVenue, timeSlot, reason, timestamp, dispatchId } = eventDetails;
-  
+
   return `
 <!DOCTYPE html>
 <html>
@@ -80,14 +80,14 @@ async function autoDispatchSelfHealingEmail(eventDetails, db, broadcast) {
     ...eventDetails
   };
 
-  const recipients = db && db.contacts 
+  const recipients = db && db.contacts
     ? db.contacts.map(c => ({ name: c.name, email: c.email, role: c.role }))
     : [
-        { name: 'Elena Vance', email: 'elena.vance@delta-engine.io', role: 'Lead Coordinator' },
-        { name: 'Dr. Evelyn Wright', email: 'evelyn.wright@ai-research.org', role: 'Speaker' },
-        { name: 'Carlos Santana', email: 'carlos.santana@graphics.dev', role: 'Speaker' },
-        { name: 'Marcus Aurelius', email: 'admin.marcus@delta-engine.io', role: 'Super Admin' }
-      ];
+      { name: 'Suryansh', email: 'elena.vance@delta-engine.io', role: 'Lead Coordinator' },
+      { name: 'Dr. Evelyn Wright', email: 'evelyn.wright@ai-research.org', role: 'Speaker' },
+      { name: 'Carlos Santana', email: 'carlos.santana@graphics.dev', role: 'Speaker' },
+      { name: 'Marcus Aurelius', email: 'admin.marcus@delta-engine.io', role: 'Super Admin' }
+    ];
 
   const htmlContent = composeAntiSpamEmailHTML(fullDetails);
 

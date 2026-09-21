@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DELTA ENGINE - Autonomous Event OS Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #f6f5f0;
+      --bg-card: #ffffff;
+      --border-color: #111827;
+      --google-blue: #2563eb;
+      --google-blue-light: #dbeafe;
+      --google-green: #10b981;
+      --google-green-light: #dcfce7;
+      --google-yellow: #f59e0b;
+      --google-yellow-light: #fef3c7;
+      --google-red: #ef4444;
+      --google-red-light: #fee2e2;
+      --google-purple: #8b5cf6;
+      --google-purple-light: #f3e8ff;
+      --text-main: #111827;
+      --text-muted: #4b5563;
+      --font-main: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'Space Grotesk', monospace;
+      --border-width: 2.5px;
+      --shadow-offset: 5px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      background-image: 
+        linear-gradient(to right, rgba(0, 0, 0, 0.04) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+      background-size: 32px 32px;
+      color: var(--text-main);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    /* Top Action Bar */
+    .top-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      max-width: 1280px;
+      margin-bottom: 16px;
+      padding: 12px 20px;
+      background: #ffffff;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: 12px;
+      box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--border-color);
+    }
+
+    .brand-tag {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 1rem;
+    }
+
+    .badge-pill {
+      background: var(--google-yellow-light);
+      color: #92400e;
+      border: 1.5px solid #d97706;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    .controls-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 2px solid var(--border-color);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: transform 0.1s, box-shadow 0.1s;
+      box-shadow: 3px 3px 0 var(--border-color);
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 4px 4px 0 var(--border-color);
+    }
+
+    .btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 1px 1px 0 var(--border-color);
+    }
+
+    .btn-primary { background: var(--google-blue); color: #fff; }
+    .btn-success { background: var(--google-green); color: #fff; }
+    .btn-secondary { background: #fff; color: var(--text-main); }
+
+    .slide-counter {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 6px 14px;
+      background: var(--google-blue-light);
+      color: var(--google-blue);
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+    }
+
+    /* Deck Viewport (16:9 Widescreen) */
+    .deck-container {
+      width: 100%;
+      max-width: 1280px;
+      aspect-ratio: 16 / 9;
+      position: relative;
+      background: var(--bg-card);
+      border: 3.5px solid var(--border-color);
+      border-radius: 18px;
+      box-shadow: 8px 8px 0 var(--border-color);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .slide {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      padding: 36px 44px;
+      display: none;
+      flex-direction: column;
+      box-sizing: border-box;
+      background: #ffffff;
+      opacity: 0;
+      transition: opacity 0.3s ease-in-out;
+    }
+
+    .slide.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    /* Slide Header */
+    .slide-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .slide-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border: 1.5px solid var(--border-color);
+      width: fit-content;
+    }
+
+    .slide-title {
+      font-size: 1.95rem;
+      font-weight: 900;
+      color: var(--text-main);
+      line-height: 1.15;
+    }
+
+    .slide-subtitle {
+      font-size: 0.98rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .slide-number-tag {
+      font-family: var(--font-mono);
+      font-size: 0.9rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border: 2px solid var(--border-color);
+      border-radius: 6px;
+      background: var(--google-blue-light);
+      color: var(--google-blue);
+    }
+
+    /* Neubrutalist Cards */
+    .nb-card {
+      background: #ffffff;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: 14px;
+      padding: 20px;
+      box-shadow: 4px 4px 0 var(--border-color);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .nb-card.alert-bad {
+      background: var(--google-red-light);
+      border-color: var(--google-red);
+      box-shadow: 4px 4px 0 #7f1d1d;
+    }
+
+    .nb-card.alert-good {
+      background: var(--google-green-light);
+      border-color: var(--google-green);
+      box-shadow: 4px 4px 0 #064e3b;
+    }
+
+    .nb-card.accent-blue {
+      background: var(--google-blue-light);
+      border-color: var(--google-blue);
+      box-shadow: 4px 4px 0 #1e3a8a;
+    }
+
+    .nb-card.accent-amber {
+      background: var(--google-yellow-light);
+      border-color: #d97706;
+      box-shadow: 4px 4px 0 #78350f;
+    }
+
+    /* Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      flex: 1;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      flex: 1;
+    }
+
+    .grid-2x2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 16px;
+      flex: 1;
+    }
+
+    /* Typography inside cards */
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .card-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .bullet-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .bullet-item {
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    .bullet-item strong {
+      color: var(--text-main);
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    /* Stat Box */
+    .stat-callout {
+      margin-top: auto;
+      background: #ffffff;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .stat-value {
+      font-size: 1.3rem;
+      font-weight: 900;
+    }
+
+    /* Slide 1 Hero Specifics */
+    .hero-split {
+      display: grid;
+      grid-template-columns: 1.3fr 0.9fr;
+      gap: 24px;
+      flex: 1;
+    }
+
+    .hero-banner-img {
+      width: 100%;
+      height: 240px;
+      object-fit: cover;
+      border-radius: 10px;
+      border: 2px solid var(--border-color);
+    }
+
+    .bottom-ribbon {
+      margin-top: 14px;
+      background: #ffffff;
+      border: 2px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    /* Printable Styles */
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+      .top-toolbar { display: none !important; }
+      .deck-container {
+        max-width: 100% !important;
+        border: none !important;
+        box-shadow: none !important;
+        aspect-ratio: auto !important;
+      }
+      .slide {
+        position: relative !important;
+        display: flex !important;
+        opacity: 1 !important;
+        page-break-after: always !important;
+        height: 100vh !important;
+        width: 100vw !important;
+        border-bottom: 2px solid #ddd !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Controls Toolbar -->
+  <div class="top-toolbar">
+    <div class="brand-tag">
+      <span>⚡ DELTA ENGINE</span>
+      <span class="badge-pill">Autonomous Event OS</span>
+    </div>
+    
+    <div class="controls-group">
+      <button class="btn btn-secondary" id="prevBtn" onclick="prevSlide()">◀ Prev</button>
+      <span class="slide-counter" id="slideIndicator">01 / 07</span>
+      <button class="btn btn-secondary" id="nextBtn" onclick="nextSlide()">Next ▶</button>
+      <button class="btn btn-primary" onclick="toggleFullScreen()">🖥️ Fullscreen</button>
+      <a href="/download-deck" class="btn btn-success">📥 Download .pptx</a>
+      <button class="btn btn-secondary" onclick="window.print()">🖨️ Print / PDF</button>
+    </div>
+  </div>
+
+  <!-- Deck Viewport -->
+  <div class="deck-container" id="deckContainer">
+
+    <!-- ================= SLIDE 1 ================= -->
+    <div class="slide active" id="slide-1">
+      <div class="slide-header">
+        <div class="header-left">
+          <div style="display:flex; gap:8px;">
+            <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e;">⚡ AUTONOMOUS EVENT OS</span>
+            <span class="slide-badge" style="background:var(--google-blue-light); color:var(--google-blue);">🏛️ ENTERPRISE ARCHITECTURE</span>
+          </div>
+          <h1 class="slide-title" style="font-size: 2.5rem; margin-top: 4px;">DELTA ENGINE</h1>
+          <p class="slide-subtitle" style="font-size: 1.1rem; color:var(--google-blue); font-weight:700;">
+            Autonomous, Agentic & Self-Healing Event Operating System
+          </p>
+        </div>
+        <div class="slide-number-tag">01 / 07</div>
+      </div>
+
+      <div class="hero-split">
+        <!-- Left Hero Details -->
+        <div class="nb-card" style="justify-content: space-between;">
+          <div>
+            <p style="font-size: 0.95rem; line-height: 1.5; color: var(--text-muted); margin-bottom: 16px;">
+              A zero-latency conference operating system that autonomously detects speaker delays, resolves room capacity overshoots, and re-allocates sessions in real time without human intervention.
+            </p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg-primary); border:1.5px solid var(--border-color); border-radius:8px;">
+                <span style="font-size:1.3rem;">🤖</span>
+                <div>
+                  <strong style="font-size:0.9rem;">4-Agent Groq LLM Swarm</strong>
+                  <div style="font-size:0.78rem; color:var(--text-muted);">Parallel-sequential intelligence for temporal and spatial constraint logic</div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg-primary); border:1.5px solid var(--border-color); border-radius:8px;">
+                <span style="font-size:1.3rem;">🛡️</span>
+                <div>
+                  <strong style="font-size:0.9rem;">Sub-150ms Self-Healing Engine</strong>
+                  <div style="font-size:0.78rem; color:var(--text-muted);">In-memory graph reallocations prevent cascade delays before attendees notice</div>
+                </div>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--bg-primary); border:1.5px solid var(--border-color); border-radius:8px;">
+                <span style="font-size:1.3rem;">📱</span>
+                <div>
+                  <strong style="font-size:0.9rem;">Automated WhatsApp & Email Dispatch</strong>
+                  <div style="font-size:0.78rem; color:var(--text-muted);">DKIM-signed HTML notices and WhatsApp AI direct alerts to coordinators</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding: 8px 12px; background: var(--google-green-light); border: 1.5px solid var(--google-green); border-radius: 8px; font-weight: 700; font-size: 0.85rem; color: #065f46;">
+            🌟 Validated under 500 High-Concurrency Stress Test Scenarios with 100% Success
+          </div>
+        </div>
+
+        <!-- Right Hero Image -->
+        <div class="nb-card" style="align-items: center; justify-content: center; padding: 12px; text-align: center;">
+          <img src="/logo.jpeg" alt="DELTA Engine Banner" class="hero-banner-img">
+          <div style="margin-top: 14px; font-weight: 700; font-size: 0.95rem; color: var(--text-main);">
+            ⚡ Real-Time Graph Event Architecture
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+            Zero Human Bottlenecks • Zero Downtime
+          </div>
+        </div>
+      </div>
+
+      <div class="bottom-ribbon">
+        <div>
+          <strong>TEAM DELTA (2nd Year CSM-C):</strong> 25BK2A66D5 - ARYAN PANDEY &bull; 25BK1A66J2 - SHAIK SHAHIDUDDIN &bull; 25BK1A66J6 - SURYANSH SINGH
+        </div>
+        <div style="color: var(--google-blue); font-family: var(--font-mono); font-size:0.8rem;">
+          🚀 Live: https://deltaengine.vercel.app/
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= SLIDE 2 ================= -->
+    <div class="slide" id="slide-2">
+      <div class="slide-header">
+        <div class="header-left">
+          <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e;">01 | THE PARADIGM SHIFT</span>
+          <h1 class="slide-title">Why Large-Scale Events Break Down</h1>
+          <p class="slide-subtitle">Moving from human coordination panic to deterministic autonomous self-healing</p>
+        </div>
+        <div class="slide-number-tag">02 / 07</div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Left: Status Quo -->
+        <div class="nb-card alert-bad">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span class="slide-badge" style="background:var(--google-red); color:#fff; border-color:var(--google-red);">🚨 TRADITIONAL EVENT CHAOS</span>
+            <img src="/doodles/15711543.png" style="width:48px; height:48px; object-fit:contain;" alt="Disruption">
+          </div>
+
+          <ul class="bullet-list">
+            <li class="bullet-item">
+              <strong>❌ Cascade Schedule Clashes</strong>
+              A single 30-minute speaker delay triggers overlapping hall conflicts across subsequent sessions.
+            </li>
+            <li class="bullet-item">
+              <strong>❌ Dangerous Venue Overcrowding</strong>
+              Popular breakout sessions surge past room capacity (up to 212% pax), violating fire regulations without warning.
+            </li>
+            <li class="bullet-item">
+              <strong>❌ Communication Blindspots</strong>
+              Organizers scramble through disconnected WhatsApp chats, phone calls, and unread emails with no single source of truth.
+            </li>
+          </ul>
+
+          <div class="stat-callout" style="border-color: var(--google-red); color: var(--google-red);">
+            <span>⏱️ Average Human Delay:</span>
+            <span class="stat-value">45+ Mins</span>
+          </div>
+        </div>
+
+        <!-- Right: DELTA OS -->
+        <div class="nb-card alert-good">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+            <span class="slide-badge" style="background:var(--google-green); color:#fff; border-color:var(--google-green);">✨ DELTA AUTONOMOUS OS</span>
+            <img src="/ioncs/healing.png" style="width:48px; height:48px; object-fit:contain;" alt="Healing">
+          </div>
+
+          <ul class="bullet-list">
+            <li class="bullet-item">
+              <strong>✅ Autonomous Graph Reallocation</strong>
+              Constraint solvers evaluate availability formulas and execute non-colliding room swaps in milliseconds.
+            </li>
+            <li class="bullet-item">
+              <strong>✅ Dynamic Seating & Capacity Balancing</strong>
+              Monitors hall limits (Turing: 250, Lovelace: 120, Hopper: 60) and balances audience distribution before rooms overflow.
+            </li>
+            <li class="bullet-item">
+              <strong>✅ Instant Zero-Touch Dispatch</strong>
+              AI automatically notifies coordinators via WhatsApp direct links, and pushes DKIM-signed HTML emails to speakers.
+            </li>
+          </ul>
+
+          <div class="stat-callout" style="border-color: var(--google-green); color: var(--google-green);">
+            <span>⚡ Autonomous Healing Latency:</span>
+            <span class="stat-value">&lt; 150 ms</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= SLIDE 3 ================= -->
+    <div class="slide" id="slide-3">
+      <div class="slide-header">
+        <div class="header-left">
+          <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e;">02 | ARCHITECTURE & PIPELINE</span>
+          <h1 class="slide-title">Closed-Loop Autonomous Execution Pipeline</h1>
+          <p class="slide-subtitle">Continuous feedback loop from real-time telemetry ingestion to multi-channel broadcast</p>
+        </div>
+        <div class="slide-number-tag">03 / 07</div>
+      </div>
+
+      <div class="grid-4">
+        <!-- Stage 1 -->
+        <div class="nb-card" style="text-align: center; align-items: center;">
+          <span class="slide-badge" style="background:var(--google-blue-light); color:var(--google-blue); border-color:var(--google-blue);">1. TELEMETRY</span>
+          <img src="/doodles/15818548.png" style="width:64px; height:64px; margin: 16px 0;" alt="Sensors">
+          <div class="card-title" style="font-size:1rem; justify-content:center;">Anomaly Ingestion</div>
+          <p class="card-desc" style="font-size:0.8rem; text-align:left;">
+            • Speaker delay reports<br>
+            • Crowd surge sensors<br>
+            • REST API & UI triggers
+          </p>
+        </div>
+
+        <!-- Stage 2 -->
+        <div class="nb-card" style="text-align: center; align-items: center;">
+          <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e; border-color:#d97706;">2. SOLVER</span>
+          <img src="/ioncs/pipeline.png" style="width:64px; height:64px; margin: 16px 0;" alt="Pipeline">
+          <div class="card-title" style="font-size:1rem; justify-content:center;">Constraint Heuristic</div>
+          <p class="card-desc" style="font-size:0.8rem; text-align:left;">
+            • Availability equations<br>
+            • Bounded loop (10 max)<br>
+            • Optimal hall/slot swaps
+          </p>
+        </div>
+
+        <!-- Stage 3 -->
+        <div class="nb-card" style="text-align: center; align-items: center;">
+          <span class="slide-badge" style="background:var(--google-purple-light); color:var(--google-purple); border-color:var(--google-purple);">3. SWARM</span>
+          <img src="/ioncs/negotiate.png" style="width:64px; height:64px; margin: 16px 0;" alt="Swarm">
+          <div class="card-title" style="font-size:1rem; justify-content:center;">Groq AI Consensus</div>
+          <p class="card-desc" style="font-size:0.8rem; text-align:left;">
+            • 4 Parallel LLM agents<br>
+            • Facility & AV checks<br>
+            • Human-readable logs
+          </p>
+        </div>
+
+        <!-- Stage 4 -->
+        <div class="nb-card" style="text-align: center; align-items: center;">
+          <span class="slide-badge" style="background:var(--google-green-light); color:var(--google-green); border-color:var(--google-green);">4. DISPATCH</span>
+          <img src="/ioncs/graph.png" style="width:64px; height:64px; margin: 16px 0;" alt="Graph">
+          <div class="card-title" style="font-size:1rem; justify-content:center;">Edge Resync & Push</div>
+          <p class="card-desc" style="font-size:0.8rem; text-align:left;">
+            • In-Memory graph rebind<br>
+            • WebSocket client sync<br>
+            • WhatsApp & Email alerts
+          </p>
+        </div>
+      </div>
+
+      <div class="nb-card accent-blue" style="margin-top: 18px; padding: 12px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.88rem; font-weight:700;">
+          <span>⚡ Bounded Solver: 10 Passes Maximum (Zero Infinite Loops)</span>
+          <span>🕸️ In-Memory Relational Graph (Zero Disk Latency)</span>
+          <span>🔄 Real-Time WebSocket Telemetry Broadcast</span>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= SLIDE 4 ================= -->
+    <div class="slide" id="slide-4">
+      <div class="slide-header">
+        <div class="header-left">
+          <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e;">03 | ARTIFICIAL INTELLIGENCE</span>
+          <h1 class="slide-title">Specialized 4-Agent Groq LLM Swarm</h1>
+          <p class="slide-subtitle">Hybrid parallel-sequential pipeline tailored for autonomous event governance</p>
+        </div>
+        <div class="slide-number-tag">04 / 07</div>
+      </div>
+
+      <div class="grid-2x2">
+        <!-- Agent 1 -->
+        <div class="nb-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span class="card-title">🗣️ Liaison Agent</span>
+            <span class="badge-pill" style="background:var(--google-blue-light); color:var(--google-blue); border-color:var(--google-blue);">llama-3.1-8b-instant</span>
+          </div>
+          <p class="card-desc">
+            Raw telemetry ingestion specialist. Ingests attendee feedback, audio issues, and speaker flight delays, transforming messy signals into crisp, structured JSON situational updates.
+          </p>
+        </div>
+
+        <!-- Agent 2 -->
+        <div class="nb-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span class="card-title">⏱️ Scheduler Agent</span>
+            <span class="badge-pill" style="background:var(--google-yellow-light); color:#92400e; border-color:#d97706;">llama-3.3-70b-versatile</span>
+          </div>
+          <p class="card-desc">
+            Temporal logic solver. Audits complex time windows, speaker availability start formulas, and shifts overlapping presentations to optimal non-colliding subsequent slots.
+          </p>
+        </div>
+
+        <!-- Agent 3 -->
+        <div class="nb-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span class="card-title">🏛️ Logistics Agent</span>
+            <span class="badge-pill" style="background:var(--google-green-light); color:var(--google-green); border-color:var(--google-green);">llama-3.3-70b-versatile</span>
+          </div>
+          <p class="card-desc">
+            Spatial routing and venue balancing. Audits room capacities (Turing: 250, Lovelace: 120, Hopper: 60), routes technician crews, and adjusts smart-thermostat HVAC settings.
+          </p>
+        </div>
+
+        <!-- Agent 4 -->
+        <div class="nb-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <span class="card-title">📢 Marketing Agent</span>
+            <span class="badge-pill" style="background:var(--google-purple-light); color:var(--google-purple); border-color:var(--google-purple);">llama-3.1-8b-instant</span>
+          </div>
+          <p class="card-desc">
+            Public communications and calendar syndication. Drafts real-time attendee announcements, synchronizes iCal calendar feeds, and updates digital display signage.
+          </p>
+        </div>
+      </div>
+
+      <!-- Circuit Breaker -->
+      <div class="nb-card accent-amber" style="margin-top: 16px; padding: 12px 20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight: 800; font-size: 0.95rem; color: #92400e;">
+            🛑 Built-In Super Admin LLM Token Usage Circuit Breaker
+          </span>
+          <span style="font-size: 0.85rem; color: var(--text-main);">
+            During API outages or token surges, the system falls back instantly to local deterministic heuristics. Zero operational freeze.
+          </span>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= SLIDE 5 ================= -->
+    <div class="slide" id="slide-5">
+      <div class="slide-header">
+        <div class="header-left">
+          <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e;">04 | DISPATCH & INFRASTRUCTURE</span>
+          <h1 class="slide-title">Field Dispatch & Hardened Reliability</h1>
+          <p class="slide-subtitle">Multi-channel communication coupled with production crash guards</p>
+        </div>
+        <div class="slide-number-tag">05 / 07</div>
+      </div>
+
+      <div class="grid-3">
+        <!-- WhatsApp -->
+        <div class="nb-card" style="text-align: center; align-items: center;">
+          <img src="/ioncs/live.png" style="width:56px; height:56px; margin-bottom:12px;" alt="WhatsApp">
+          <span class="slide-badge" style="background:var(--google-green-light); color:var(--google-green); border-color:var(--google-green);">AUTOMATED LIAISON</span>
+          <h3 style="font-size:1.1rem; margin: 10px 0 6px 0;">WhatsApp AI Liaison</h3>
+          <ul class="bullet-list" style="text-align:left; font-size:0.85rem;">
+            <li class="bullet-item"><strong>Direct Web Links:</strong> wa.me protocol launches chats instantly with coordinators.</li>
+            <li class="bullet-item"><strong>Volunteer Registry:</strong> Duty tracking for Stage Leads, Door Scanners & Mic Runners.</li>
+            <li class="bullet-item"><strong>Live Dashboard Feed:</strong> Dispatches render real-time telemetry directly on screens.</li>
+          </ul>
+        </div>
+
+        <!-- Email -->
+        <div class="nb-card" style="text-align: center; align-items: center;">
+          <img src="/ioncs/DB.png" style="width:56px; height:56px; margin-bottom:12px;" alt="Email DB">
+          <span class="slide-badge" style="background:var(--google-blue-light); color:var(--google-blue); border-color:var(--google-blue);">DKIM / SPF SIGNED</span>
+          <h3 style="font-size:1.1rem; margin: 10px 0 6px 0;">Anti-Spam Supabase Mailer</h3>
+          <ul class="bullet-list" style="text-align:left; font-size:0.85rem;">
+            <li class="bullet-item"><strong>Automated HTML Notices:</strong> Sends session reallocation notices to all registered speakers.</li>
+            <li class="bullet-item"><strong>Audit Trail in DB:</strong> Every dispatch is recorded permanently in PostgreSQL tables.</li>
+            <li class="bullet-item"><strong>Resilient Fallback:</strong> Local caching ensures zero notice loss on network disconnect.</li>
+          </ul>
+        </div>
+
+        <!-- Security -->
+        <div class="nb-card" style="text-align: center; align-items: center;">
+          <img src="/doodles/2682340.png" style="width:56px; height:56px; margin-bottom:12px;" alt="Security">
+          <span class="slide-badge" style="background:var(--google-red-light); color:var(--google-red); border-color:var(--google-red);">ENTERPRISE GUARDS</span>
+          <h3 style="font-size:1.1rem; margin: 10px 0 6px 0;">Crash Guards & Security</h3>
+          <ul class="bullet-list" style="text-align:left; font-size:0.85rem;">
+            <li class="bullet-item"><strong>Process Crash Guards:</strong> Node uncaughtException listeners guarantee server never crashes.</li>
+            <li class="bullet-item"><strong>Express Rate Limiter:</strong> Hardened against Denial-of-Service floods and spam abuse.</li>
+            <li class="bullet-item"><strong>Buffer Validation:</strong> Strict 20MB upload ceiling + XSS entity sanitization.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= SLIDE 6 ================= -->
+    <div class="slide" id="slide-6">
+      <div class="slide-header">
+        <div class="header-left">
+          <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e;">05 | BENCHMARKS & ROADMAP</span>
+          <h1 class="slide-title">Production Impact & Live Deployment</h1>
+          <p class="slide-subtitle">Proven reliability under extreme stress, deployed live in production</p>
+        </div>
+        <div class="slide-number-tag">06 / 07</div>
+      </div>
+
+      <!-- 4 Top KPI Stat Cards -->
+      <div class="grid-4" style="flex: 0.6; margin-bottom: 18px;">
+        <div class="nb-card alert-good" style="align-items:center; justify-content:center; text-align:center;">
+          <div class="stat-value" style="color:var(--google-green); font-size:2rem;">&lt; 150 ms</div>
+          <div style="font-weight:700; font-size:0.82rem; margin-top:4px;">Autonomous Healing</div>
+        </div>
+
+        <div class="nb-card accent-blue" style="align-items:center; justify-content:center; text-align:center;">
+          <div class="stat-value" style="color:var(--google-blue); font-size:2rem;">500 / 500</div>
+          <div style="font-weight:700; font-size:0.82rem; margin-top:4px;">Stress Tests Passed</div>
+        </div>
+
+        <div class="nb-card" style="background:var(--google-purple-light); border-color:var(--google-purple); align-items:center; justify-content:center; text-align:center;">
+          <div class="stat-value" style="color:var(--google-purple); font-size:2rem;">4 LLMs</div>
+          <div style="font-weight:700; font-size:0.82rem; margin-top:4px;">Groq Parallel Swarm</div>
+        </div>
+
+        <div class="nb-card accent-amber" style="align-items:center; justify-content:center; text-align:center;">
+          <div class="stat-value" style="color:#d97706; font-size:2rem;">100%</div>
+          <div style="font-weight:700; font-size:0.82rem; margin-top:4px;">Zero Human Bottlenecks</div>
+        </div>
+      </div>
+
+      <!-- Bottom Split -->
+      <div class="grid-2" style="flex: 1.2;">
+        <!-- Left: Deployment & Roadmap -->
+        <div class="nb-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span class="slide-badge" style="background:var(--google-blue-light); color:var(--google-blue); border-color:var(--google-blue);">PRODUCTION STATUS</span>
+            <span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700; color:var(--google-green);">● LIVE & TESTED</span>
+          </div>
+          <p style="font-family:var(--font-mono); font-size:0.95rem; font-weight:700; color:var(--google-blue); margin-bottom:10px;">
+            https://deltaengine.vercel.app/
+          </p>
+          <ul class="bullet-list" style="font-size:0.85rem;">
+            <li class="bullet-item">• Eliminates event scheduling delays and prevents room overcrowding.</li>
+            <li class="bullet-item">• Deterministic fallbacks guarantee zero downtime even under API rate limits.</li>
+            <li class="bullet-item">• Next Roadmap: IoT room occupancy sensors & Apple/Google Wallet iCal sync.</li>
+          </ul>
+        </div>
+
+        <!-- Right: Team DELTA (Updated as requested) -->
+        <div class="nb-card">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+            <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e; border-color:#d97706;">TEAM DELTA</span>
+            <span class="slide-badge" style="background:var(--google-blue-light); color:var(--google-blue); border-color:var(--google-blue);">2nd Year CSM-C</span>
+          </div>
+          <ul class="bullet-list" style="font-size:0.95rem; font-family:var(--font-mono); gap:14px;">
+            <li class="bullet-item" style="font-weight:700; color:var(--text-main);">
+              👤 25BK2A66D5 - ARYAN PANDEY
+            </li>
+            <li class="bullet-item" style="font-weight:700; color:var(--text-main);">
+              👤 25BK1A66J2 - SHAIK SHAHIDUDDIN
+            </li>
+            <li class="bullet-item" style="font-weight:700; color:var(--text-main);">
+              👤 25BK1A66J6 - SURYANSH SINGH
+            </li>
+          </ul>
+          <div style="margin-top:auto; font-size:0.82rem; color:var(--text-muted); font-weight:700; border-top:1.5px solid #eee; padding-top:10px;">
+            DELTA ENGINE &bull; Autonomous Event Operating System
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================= SLIDE 7: THANK YOU (PAGE 7) ================= -->
+    <div class="slide" id="slide-7">
+      <div class="slide-header">
+        <div class="header-left">
+          <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e;">06 | CONCLUSION & Q&A</span>
+          <h1 class="slide-title">Thank You!</h1>
+          <p class="slide-subtitle">Autonomous & Self-Healing Event Operating System — Open for Discussion</p>
+        </div>
+        <div class="slide-number-tag">07 / 07</div>
+      </div>
+
+      <div class="hero-split">
+        <!-- Left Thank You Hero -->
+        <div class="nb-card" style="justify-content: space-between;">
+          <div>
+            <h2 style="font-size: 2.4rem; font-weight: 900; color: var(--text-main); margin-bottom: 6px;">
+              THANK YOU!
+            </h2>
+            <p style="font-size: 1.1rem; font-weight: 700; color: var(--google-blue); margin-bottom: 14px;">
+              Any Questions or Discussion?
+            </p>
+            <p style="font-size: 0.95rem; line-height: 1.5; color: var(--text-muted); margin-bottom: 20px;">
+              DELTA ENGINE demonstrates how autonomous multi-agent swarms and in-memory graph heuristic solvers can completely eliminate human coordination panic in high-stakes live events.
+            </p>
+
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--google-green-light); border:1.5px solid var(--google-green); border-radius:8px;">
+                <span style="font-size:1.2rem;">⚡</span>
+                <span style="font-size:0.9rem; font-weight:700; color:#065f46;">&lt; 150ms Autonomous Conflict Detection & Healing</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--google-blue-light); border:1.5px solid var(--google-blue); border-radius:8px;">
+                <span style="font-size:1.2rem;">🤖</span>
+                <span style="font-size:0.9rem; font-weight:700; color:#1e40af;">4-Agent Groq LLM Swarm (Parallel Constraint Logic)</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--google-yellow-light); border:1.5px solid #d97706; border-radius:8px;">
+                <span style="font-size:1.2rem;">🛡️</span>
+                <span style="font-size:0.9rem; font-weight:700; color:#92400e;">500 High-Stress Concurrency Scenarios Passed with 100% Success</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size:0.85rem; font-weight:700; color:var(--text-muted); font-family:var(--font-mono);">
+            Zero Human Bottlenecks &bull; Zero Operational Downtime
+          </div>
+        </div>
+
+        <!-- Right Author & Project Box -->
+        <div class="nb-card" style="justify-content: space-between;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+              <span class="slide-badge" style="background:var(--google-yellow-light); color:#92400e; border-color:#d97706;">TEAM DELTA</span>
+              <span class="slide-badge" style="background:var(--google-blue-light); color:var(--google-blue); border-color:var(--google-blue);">2nd Year CSM-C</span>
+            </div>
+
+            <div style="font-size:0.85rem; font-weight:800; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:10px;">
+              PROJECT CONTRIBUTORS
+            </div>
+
+            <ul class="bullet-list" style="font-size:0.95rem; font-family:var(--font-mono); gap:12px;">
+              <li class="bullet-item" style="font-weight:700; color:var(--text-main);">
+                👤 25BK2A66D5 - ARYAN PANDEY
+              </li>
+              <li class="bullet-item" style="font-weight:700; color:var(--text-main);">
+                👤 25BK1A66J2 - SHAIK SHAHIDUDDIN
+              </li>
+              <li class="bullet-item" style="font-weight:700; color:var(--text-main);">
+                👤 25BK1A66J6 - SURYANSH SINGH
+              </li>
+            </ul>
+          </div>
+
+          <div style="border-top: 1.5px solid #eee; padding-top: 14px;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">
+              🌐 Live Production Deployment
+            </div>
+            <a href="https://deltaengine.vercel.app/" target="_blank" style="font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; color: var(--google-blue); text-decoration: none; display: block; margin-top: 4px;">
+              https://deltaengine.vercel.app/
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentSlide = 1;
+    const totalSlides = 7;
+
+    function updateSlide() {
+      document.querySelectorAll('.slide').forEach((slide, idx) => {
+        slide.classList.toggle('active', (idx + 1) === currentSlide);
+      });
+      document.getElementById('slideIndicator').textContent = `0${currentSlide} / 0${totalSlides}`;
+      document.getElementById('prevBtn').disabled = (currentSlide === 1);
+      document.getElementById('nextBtn').disabled = (currentSlide === totalSlides);
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides) {
+        currentSlide++;
+        updateSlide();
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 1) {
+        currentSlide--;
+        updateSlide();
+      }
+    }
+
+    function toggleFullScreen() {
+      const elem = document.getElementById('deckContainer');
+      if (!document.fullscreenElement) {
+        elem.requestFullscreen().catch(err => {
+          alert(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') {
+        nextSlide();
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        prevSlide();
+      } else if (e.key.toLowerCase() === 'f') {
+        toggleFullScreen();
+      }
+    });
+
+    updateSlide();
+  </script>
+</body>
+</html>

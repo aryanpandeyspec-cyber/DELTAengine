@@ -38,48 +38,8 @@ function removeLogoBackground() {
 }
 
 let ws;
-let graphState = {
-  speakers: {
-    'speaker-1': { id: 'speaker-1', name: 'Dr. Aditi Sharma', role: 'AI Research Director', bio: 'Pioneering agentic swarm coordination models.', avatar: '🧑‍🔬', delay: 0 },
-    'speaker-2': { id: 'speaker-2', name: 'Vikramaditya Verma', role: 'Graphics Engineer', bio: 'Ex-Mozilla WebGPU core contributor.', avatar: '💻', delay: 0 },
-    'speaker-3': { id: 'speaker-3', name: 'Priya Nair', role: 'DevOps Architect', bio: 'Specialist in cloud-native self-healing nodes.', avatar: '☁️', delay: 0 }
-  },
-  topics: {
-    'topic-1': { id: 'topic-1', title: 'Autonomous Agent Swarms: Coordination without Controllers', speakerId: 'speaker-1', tags: ['AI', 'Agentic', 'Swarms'], interest: 210, duration: 60, slidesUploaded: true, summary: 'Peer-to-peer LLM negotiation without central controllers.' },
-    'topic-2': { id: 'topic-2', title: 'WebGPU Deep Dive: Raytracing in the Browser', speakerId: 'speaker-2', tags: ['Graphics', 'WebGPU', 'JS'], interest: 140, duration: 60, slidesUploaded: true, summary: 'Rendering hardware-accelerated 3D graphs at 60 FPS.' },
-    'topic-3': { id: 'topic-3', title: 'Kubernetes Auto-Healing Runtimes under Load Stress', speakerId: 'speaker-3', tags: ['DevOps', 'K8s', 'Cloud'], interest: 180, duration: 60, slidesUploaded: true, summary: 'Self-correcting pod scheduling during high traffic spikes.' }
-  },
-  halls: {
-    'hall-1': { id: 'hall-1', name: 'Turing Hall', capacity: 250 },
-    'hall-2': { id: 'hall-2', name: 'Lovelace Suite', capacity: 120 },
-    'hall-3': { id: 'hall-3', name: 'Hopper Room', capacity: 60 }
-  },
-  slots: {
-    'slot-1': { id: 'slot-1', time: '09:30 AM - 10:30 AM', startHour: 9.5 },
-    'slot-2': { id: 'slot-2', time: '11:00 AM - 12:00 PM', startHour: 11 },
-    'slot-3': { id: 'slot-3', time: '01:30 PM - 02:30 PM', startHour: 13.5 },
-    'slot-4': { id: 'slot-4', time: '03:00 PM - 04:00 PM', startHour: 15 }
-  },
-  edges: [
-    { source: 'topic-1', target: 'speaker-1', type: 'SPEAKER_OF' },
-    { source: 'topic-2', target: 'speaker-2', type: 'SPEAKER_OF' },
-    { source: 'topic-3', target: 'speaker-3', type: 'SPEAKER_OF' },
-    { source: 'topic-1', target: 'hall-1', type: 'SCHEDULED_IN' },
-    { source: 'topic-1', target: 'slot-1', type: 'SCHEDULED_AT' },
-    { source: 'topic-2', target: 'hall-1', type: 'SCHEDULED_IN' },
-    { source: 'topic-2', target: 'slot-2', type: 'SCHEDULED_AT' },
-    { source: 'topic-3', target: 'hall-1', type: 'SCHEDULED_IN' },
-    { source: 'topic-3', target: 'slot-3', type: 'SCHEDULED_AT' }
-  ]
-};
-
-let scheduleState = {
-  'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
-  'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
-  'slot-3': { 'hall-1': 'topic-3', 'hall-2': null, 'hall-3': null },
-  'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
-};
-
+let graphState = null;
+let scheduleState = null;
 let activeSpeakerId = null;
 let previousSchedule = null;
 
@@ -107,12 +67,6 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   }, 3600);
 
-  // Immediate render with local mock data fallback (guarantees instantaneous UI rendering)
-  populateForms();
-  renderScheduleGrid();
-  rebuildGraphData();
-  updateCounters();
-
   initWebSockets();
   initFormListeners();
   initDragAndDrop();
@@ -129,6 +83,10 @@ window.addEventListener('DOMContentLoaded', () => {
   initSentimentSimulator();
   initContentUploadPipeline(); // Trigger content uploader drag and drop
   initDatePicker(); // Bind schedule date picker change handler
+  initSoundEffects(); // Synthesized Web Audio feedback
+  initKeyboardShortcuts(); // Neubrutalist keyboard shortcuts & modal
+  initMatrixSearch(); // Real-time matrix talk search & filter
+  initSwarmCopy(); // Swarm negotiation transcript copy to clipboard
 
   // Custom Node Graph animation loop
   requestAnimationFrame(physicsTick);
@@ -210,6 +168,26 @@ function initFormListeners() {
         body: JSON.stringify({ speakerId, delayMinutes })
       })
       .then(res => res.json())
+      .then(data => {
+        if (data.swarmChat) {
+          renderSwarmChat(data.swarmChat);
+        }
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          if (data.hasConflict) {
+            triggerReallocationCountdown(data.conflictReason, data.destinationTarget, () => {
+              previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
+              scheduleState = data.schedule;
+              renderScheduleGrid();
+              if (typeof rebuildGraphData === 'function') rebuildGraphData();
+              if (typeof updateCounters === 'function') updateCounters();
+              createToast('✨ Self-Healing complete: Talk node redirected to applicable hall!', 'success');
+              if (typeof highlightHealedDestination === 'function') {
+                highlightHealedDestination(data.destinationTarget, data.schedule);
+              }
+            });
+          }
+        }
+      })
       .catch(err => {
         console.error(err);
         createToast('Failed to trigger simulated delay.', 'warning');
@@ -230,6 +208,26 @@ function initFormListeners() {
         body: JSON.stringify({ topicId, interestCount })
       })
       .then(res => res.json())
+      .then(data => {
+        if (data.swarmChat) {
+          renderSwarmChat(data.swarmChat);
+        }
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          if (data.hasConflict) {
+            triggerReallocationCountdown(data.conflictReason, data.destinationTarget, () => {
+              previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
+              scheduleState = data.schedule;
+              renderScheduleGrid();
+              if (typeof rebuildGraphData === 'function') rebuildGraphData();
+              if (typeof updateCounters === 'function') updateCounters();
+              createToast('✨ Self-Healing complete: Talk node redirected to applicable hall!', 'success');
+              if (typeof highlightHealedDestination === 'function') {
+                highlightHealedDestination(data.destinationTarget, data.schedule);
+              }
+            });
+          }
+        }
+      })
       .catch(err => {
         console.error(err);
         createToast('Failed to trigger capacity surge.', 'warning');
@@ -301,6 +299,14 @@ function initResetButton() {
           if (typeof rebuildGraphData === 'function') rebuildGraphData();
           if (typeof updateCounters === 'function') updateCounters();
           createToast('✨ Schedule reset to normal status!', 'success');
+
+          const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          renderSwarmChat([
+            { sender: 'Liaison Agent', avatar: '🗣️', text: 'Telemetry Reset: Conference schedule returned to baseline configuration.', time: timeStr },
+            { sender: 'Scheduler Agent', avatar: '⏱️', text: 'All 3 tracks aligned to initial timeline with zero conflicts.', time: timeStr },
+            { sender: 'Logistics Agent', avatar: '🏛️', text: 'Stage facilities and hall occupancy re-calibrated.', time: timeStr },
+            { sender: 'Marketing Agent', avatar: '📢', text: 'iCal sync feed synchronized with default conference timetable.', time: timeStr }
+          ]);
         }
       });
     });
@@ -322,6 +328,11 @@ function initResetButton() {
             }
 
             const step = data.steps[index];
+            // Render Swarm negotiation dialogue immediately for this step
+            if (step.swarmChat) {
+              renderSwarmChat(step.swarmChat);
+            }
+
             triggerReallocationCountdown(step.conflictReason, step.destinationTarget, () => {
               previousSchedule = JSON.parse(JSON.stringify(scheduleState));
               scheduleState = step.healedSchedule;
@@ -340,6 +351,9 @@ function initResetButton() {
               renderScheduleGrid();
               if (typeof rebuildGraphData === 'function') rebuildGraphData();
               if (typeof updateCounters === 'function') updateCounters();
+              if (typeof highlightHealedDestination === 'function') {
+                highlightHealedDestination(step.destinationTarget, step.healedSchedule);
+              }
 
               // Proceed to next resolution step
               setTimeout(() => executeStep(index + 1), 600);
@@ -472,6 +486,96 @@ function showPushAlert(message) {
   }
 }
 
+// ==========================================
+// QUALITY OF LIFE (QoL) SUITE & AUDIO SYNTH
+// ==========================================
+
+let audioCtx = null;
+let sfxEnabled = localStorage.getItem('delta_sfx_enabled') !== 'false'; // default true
+let activeCountdownSkipFn = null;
+
+function getAudioContext() {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      audioCtx = new AudioContext();
+    }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+
+function playTone(freq, duration, type = 'sine', gainVal = 0.15) {
+  if (!sfxEnabled) return;
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime);
+    gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + duration);
+  } catch (e) {
+    // Suppress audio autoplay restrictions before gesture
+  }
+}
+
+function playAlertSfx() {
+  if (!sfxEnabled) return;
+  try {
+    playTone(587.33, 0.22, 'triangle', 0.18); // D5
+    setTimeout(() => playTone(880, 0.32, 'triangle', 0.22), 110); // A5
+  } catch (e) {}
+}
+
+function playTickSfx() {
+  if (!sfxEnabled) return;
+  try {
+    playTone(950, 0.04, 'sine', 0.12);
+  } catch (e) {}
+}
+
+function playSuccessSfx() {
+  if (!sfxEnabled) return;
+  try {
+    playTone(523.25, 0.16, 'triangle', 0.14); // C5
+    setTimeout(() => playTone(659.25, 0.16, 'triangle', 0.16), 80); // E5
+    setTimeout(() => playTone(783.99, 0.28, 'triangle', 0.2), 160); // G5
+  } catch (e) {}
+}
+
+function initSoundEffects() {
+  const btnSound = document.getElementById('btn-sound-toggle');
+  if (!btnSound) return;
+
+  const updateBtn = () => {
+    btnSound.textContent = sfxEnabled ? '🔊 SFX: ON' : '🔇 SFX: OFF';
+    btnSound.classList.toggle('btn-yellow', sfxEnabled);
+    btnSound.classList.toggle('btn-white', !sfxEnabled);
+  };
+
+  updateBtn();
+
+  btnSound.addEventListener('click', () => {
+    sfxEnabled = !sfxEnabled;
+    localStorage.setItem('delta_sfx_enabled', sfxEnabled ? 'true' : 'false');
+    updateBtn();
+    if (sfxEnabled) {
+      playSuccessSfx();
+      createToast('🔊 Audio feedback enabled.', 'info');
+    } else {
+      createToast('🔇 Audio feedback muted.', 'info');
+    }
+  });
+}
+
 function triggerReallocationCountdown(conflictReason, destinationTarget, onComplete) {
   const modal = document.getElementById('reallocation-countdown-modal');
   const card = modal ? modal.querySelector('.reallocation-modal-card') : null;
@@ -479,9 +583,15 @@ function triggerReallocationCountdown(conflictReason, destinationTarget, onCompl
   const elDest = document.getElementById('reallocation-destination-text');
   const elNum = document.getElementById('reallocation-countdown-number');
   const elProgress = document.getElementById('reallocation-progress-bar');
+  const btnSkip = document.getElementById('btn-skip-countdown');
 
   if (!modal || !elReason || !elDest || !elNum || !elProgress) {
     if (typeof onComplete === 'function') onComplete();
+    return;
+  }
+
+  // Prevent restarting countdown if already active
+  if (!modal.classList.contains('hidden')) {
     return;
   }
 
@@ -492,6 +602,10 @@ function triggerReallocationCountdown(conflictReason, destinationTarget, onCompl
   elProgress.style.transition = 'none';
   elProgress.style.width = '0%';
   modal.classList.remove('hidden');
+  document.body.classList.add('self-healing-active');
+
+  // Trigger audio alert chime
+  playAlertSfx();
 
   // Trigger dramatic emergency alarm pulse and card shake animations!
   modal.classList.remove('dramatic-alarm');
@@ -509,21 +623,272 @@ function triggerReallocationCountdown(conflictReason, destinationTarget, onCompl
   });
 
   let seconds = 5;
+  let hasCompleted = false;
+
+  const finishCountdown = () => {
+    if (hasCompleted) return;
+    hasCompleted = true;
+    clearInterval(timer);
+    activeCountdownSkipFn = null;
+
+    if (btnSkip) btnSkip.removeEventListener('click', finishCountdown);
+
+    elNum.textContent = '0';
+    elProgress.style.transition = 'width 0.15s ease';
+    elProgress.style.width = '100%';
+
+    playSuccessSfx();
+
+    setTimeout(() => {
+      modal.classList.add('hidden');
+      document.body.classList.remove('self-healing-active');
+      modal.classList.remove('dramatic-alarm');
+      if (card) card.classList.remove('dramatic-shake');
+      if (typeof onComplete === 'function') onComplete();
+    }, 280);
+  };
+
+  activeCountdownSkipFn = finishCountdown;
+  if (btnSkip) {
+    btnSkip.addEventListener('click', finishCountdown, { once: true });
+  }
+
   const timer = setInterval(() => {
     seconds--;
     if (seconds > 0) {
       elNum.textContent = seconds;
       elNum.classList.add('tick');
+      playTickSfx();
       setTimeout(() => elNum.classList.remove('tick'), 250);
     } else {
-      clearInterval(timer);
-      elNum.textContent = '0';
-      setTimeout(() => {
-        modal.classList.add('hidden');
-        modal.classList.remove('dramatic-alarm');
-        if (card) card.classList.remove('dramatic-shake');
-        if (typeof onComplete === 'function') onComplete();
-      }, 400);
+      finishCountdown();
     }
   }, 1000);
 }
+
+window.triggerReallocationCountdown = triggerReallocationCountdown;
+
+// --- CELL DESTINATION HIGHLIGHT ANIMATION ---
+function highlightHealedDestination(destinationTarget, newSchedule) {
+  let targetTd = null;
+
+  // First attempt: match hall name & slot from destinationTarget text
+  if (graphState && destinationTarget) {
+    for (const hId in graphState.halls) {
+      const hall = graphState.halls[hId];
+      if (destinationTarget.toLowerCase().includes(hall.name.toLowerCase())) {
+        for (const sId in graphState.slots) {
+          const slot = graphState.slots[sId];
+          if (
+            destinationTarget.toLowerCase().includes(sId.toLowerCase()) ||
+            destinationTarget.toLowerCase().includes(slot.time.toLowerCase())
+          ) {
+            targetTd = document.querySelector(`td[data-hall-id="${hId}"][data-slot-id="${sId}"]`);
+            break;
+          }
+        }
+        if (!targetTd) {
+          targetTd = document.querySelector(`td[data-hall-id="${hId}"][data-slot-id]`);
+        }
+        break;
+      }
+    }
+  }
+
+  // Second attempt: find cell whose session changed between previousSchedule and newSchedule
+  if (!targetTd && previousSchedule && newSchedule) {
+    for (const sId in newSchedule) {
+      for (const hId in newSchedule[sId]) {
+        if (newSchedule[sId][hId] && (!previousSchedule[sId] || previousSchedule[sId][hId] !== newSchedule[sId][hId])) {
+          targetTd = document.querySelector(`td[data-hall-id="${hId}"][data-slot-id="${sId}"]`);
+          break;
+        }
+      }
+      if (targetTd) break;
+    }
+  }
+
+  if (targetTd) {
+    targetTd.classList.remove('cell-healed-highlight');
+    void targetTd.offsetWidth; // Force reflow
+    targetTd.classList.add('cell-healed-highlight');
+    setTimeout(() => targetTd.classList.remove('cell-healed-highlight'), 3200);
+  }
+}
+
+window.highlightHealedDestination = highlightHealedDestination;
+
+// --- KEYBOARD SHORTCUTS CONTROLLER ---
+function initKeyboardShortcuts() {
+  const shortcutsModal = document.getElementById('shortcuts-modal');
+  const btnOpenShortcuts = document.getElementById('btn-shortcuts-modal');
+  const btnCloseShortcuts = document.getElementById('btn-close-shortcuts');
+
+  const toggleModal = (show) => {
+    if (!shortcutsModal) return;
+    if (typeof show === 'boolean') {
+      shortcutsModal.classList.toggle('hidden', !show);
+    } else {
+      shortcutsModal.classList.toggle('hidden');
+    }
+  };
+
+  if (btnOpenShortcuts) {
+    btnOpenShortcuts.addEventListener('click', () => toggleModal(true));
+  }
+  if (btnCloseShortcuts) {
+    btnCloseShortcuts.addEventListener('click', () => toggleModal(false));
+  }
+  if (shortcutsModal) {
+    shortcutsModal.addEventListener('click', (e) => {
+      if (e.target === shortcutsModal) toggleModal(false);
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    // If active countdown is showing, Space or Escape immediately skips countdown
+    if (activeCountdownSkipFn && (e.code === 'Space' || e.key === 'Escape')) {
+      e.preventDefault();
+      activeCountdownSkipFn();
+      return;
+    }
+
+    // Don't trigger hotkeys when focused on inputs / textareas / selects
+    const tag = e.target.tagName ? e.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'textarea' || tag === 'select') {
+      if (e.key === 'Escape') {
+        e.target.blur();
+      }
+      return;
+    }
+
+    if (e.key === '?' || (e.shiftKey && e.key === '/')) {
+      e.preventDefault();
+      toggleModal();
+      return;
+    }
+
+    if (e.key === 'Escape' && shortcutsModal && !shortcutsModal.classList.contains('hidden')) {
+      toggleModal(false);
+      return;
+    }
+
+    const key = e.key.toLowerCase();
+    if (key === 'r') {
+      const btn = document.getElementById('btn-reset-db');
+      if (btn) btn.click();
+    } else if (key === 'd') {
+      const btn = document.getElementById('btn-trigger-delay');
+      if (btn) btn.click();
+    } else if (key === 's') {
+      const btn = document.getElementById('btn-trigger-surge');
+      if (btn) btn.click();
+    } else if (key === 'm') {
+      const btn = document.getElementById('btn-mass-disruption');
+      if (btn) btn.click();
+    } else if (key === 'c') {
+      const iCalUrl = `${window.location.origin}/api/ical`;
+      navigator.clipboard.writeText(iCalUrl)
+        .then(() => {
+          playSuccessSfx();
+          createToast('📋 Live iCal feed URL copied to clipboard!', 'success');
+        })
+        .catch(() => createToast(`Live feed: ${iCalUrl}`, 'info'));
+    }
+  });
+}
+
+// --- LIVE SCHEDULE MATRIX REAL-TIME TALK FILTER ---
+function applyMatrixSearch() {
+  const searchInput = document.getElementById('matrix-search-input');
+  if (!searchInput) return;
+  const q = searchInput.value.trim().toLowerCase();
+
+  const blocks = document.querySelectorAll('.schedule-block:not(.empty)');
+  blocks.forEach(block => {
+    if (!q) {
+      block.classList.remove('search-match', 'search-dimmed');
+      return;
+    }
+
+    const text = block.textContent.toLowerCase();
+    const topicId = block.getAttribute('data-topic-id');
+    const topic = graphState?.topics?.[topicId];
+    const speaker = topic ? graphState?.speakers?.[topic.speakerId] : null;
+
+    let match = text.includes(q);
+    if (topic && topic.tags && topic.tags.some(tag => tag.toLowerCase().includes(q))) {
+      match = true;
+    }
+    if (speaker && speaker.role && speaker.role.toLowerCase().includes(q)) {
+      match = true;
+    }
+
+    if (match) {
+      block.classList.add('search-match');
+      block.classList.remove('search-dimmed');
+    } else {
+      block.classList.remove('search-match');
+      block.classList.add('search-dimmed');
+    }
+  });
+}
+
+window.applyMatrixSearch = applyMatrixSearch;
+
+function initMatrixSearch() {
+  const searchInput = document.getElementById('matrix-search-input');
+  if (!searchInput) return;
+  searchInput.addEventListener('input', applyMatrixSearch);
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      searchInput.value = '';
+      applyMatrixSearch();
+      searchInput.blur();
+    }
+  });
+}
+
+// --- SWARM NEGOTIATION TRANSCRIPT COPY HANDLER ---
+function initSwarmCopy() {
+  const btn = document.getElementById('btn-copy-swarm');
+  if (!btn) return;
+
+  btn.addEventListener('click', () => {
+    const bubbles = document.querySelectorAll('#swarm-chat-messages .chat-bubble');
+    if (!bubbles.length) {
+      createToast('No dialogue to copy yet.', 'info');
+      return;
+    }
+
+    let transcript = '### DELTA Engine - Swarm Negotiation Transcript\n';
+    transcript += `Generated at: ${new Date().toLocaleString()}\n\n`;
+
+    bubbles.forEach(bubble => {
+      const sender = bubble.querySelector('.chat-sender')?.textContent.trim() || 'Agent';
+      const text = bubble.querySelector('.chat-text')?.textContent.trim() || '';
+      const time = bubble.querySelector('.chat-time')?.textContent.trim() || '';
+      transcript += `${time ? `[${time}] ` : ''}**${sender}**: ${text}\n\n`;
+    });
+
+    navigator.clipboard.writeText(transcript)
+      .then(() => {
+        playSuccessSfx();
+        createToast('📋 Swarm transcript copied to clipboard as Markdown!', 'success');
+        const origText = btn.textContent;
+        btn.textContent = '✅ Copied!';
+        btn.classList.remove('btn-yellow');
+        btn.classList.add('btn-green');
+        setTimeout(() => {
+          btn.textContent = origText;
+          btn.classList.remove('btn-green');
+          btn.classList.add('btn-yellow');
+        }, 2000);
+      })
+      .catch(err => {
+        console.error('Clipboard copy failed:', err);
+        createToast('Failed to copy to clipboard.', 'warning');
+      });
+  });
+}
+

@@ -1483,16 +1483,24 @@ td {
 
 /* Drag states on matrix */
 td.drag-over {
-  background-color: var(--google-blue-soft) !important;
+  background-color: #dbeafe !important;
   border: 3px dashed var(--google-blue) !important;
+  box-shadow: inset 0 0 10px rgba(66, 133, 244, 0.2) !important;
 }
 
 .schedule-block[draggable="true"] {
   cursor: grab;
+  user-select: none;
 }
 
 .schedule-block[draggable="true"]:active {
   cursor: grabbing;
+}
+
+.schedule-block.dragging {
+  opacity: 0.45 !important;
+  transform: scale(0.96) !important;
+  border: 2px dashed #000 !important;
 }
 
 /* --- Phase 2: SWARM CHAT AND ICS MODAL STYLES --- */
@@ -1791,18 +1799,11 @@ td.drag-over {
   line-height: 1 !important;
 }
 
-/* 4. Matrix Schedule Hover Popover Card */
+/* 4. Matrix Schedule Hover Popover Card - REMOVED AS REQUESTED */
 .matrix-hover-card {
-  position: fixed !important;
-  z-index: 1000000 !important;
-  background: #ffffff !important;
-  border: 3px solid #000000 !important;
-  box-shadow: 6px 6px 0px #000000 !important;
-  border-radius: 12px !important;
-  padding: 14px 16px !important;
-  width: 280px !important;
+  display: none !important;
+  visibility: hidden !important;
   pointer-events: none !important;
-  font-family: var(--font-main) !important;
 }
 
 .hover-card-header {
@@ -1974,22 +1975,21 @@ td.drag-over {
   box-sizing: border-box !important;
 }
 
-/* --- SELF-HEALING REALLOCATION COUNTDOWN OVERLAY MODAL --- */
+/* --- SELF-HEALING REALLOCATION COUNTDOWN OVERLAY CONTAINER --- */
 .reallocation-modal-backdrop {
   position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   width: 100vw !important;
   height: 100vh !important;
-  background: rgba(0, 0, 0, 0.78) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  z-index: 10000000 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  pointer-events: none !important;
+  z-index: 99999999 !important;
+  display: block !important;
   opacity: 1 !important;
-  transition: opacity 0.25s ease !important;
+  transition: opacity 0.2s ease !important;
 }
 
 .reallocation-modal-backdrop.hidden {
@@ -1999,45 +1999,56 @@ td.drag-over {
 }
 
 .reallocation-modal-card {
+  position: fixed !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+  pointer-events: auto !important;
   background: #ffffff !important;
-  border: 5px solid #ea4335 !important;
-  box-shadow: 14px 14px 0px #000000 !important;
-  border-radius: 20px !important;
-  padding: 32px 36px !important;
-  width: 600px !important;
-  max-width: 92vw !important;
+  border: 4px solid #ea4335 !important;
+  box-shadow: 0px 24px 60px rgba(0, 0, 0, 0.28), 14px 14px 0px #000000 !important;
+  border-radius: 18px !important;
+  padding: 28px 34px !important;
+  width: 580px !important;
+  max-width: 90vw !important;
   text-align: center !important;
   font-family: var(--font-main) !important;
-  animation: modalPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  z-index: 100000000 !important;
+  animation: warningCardPopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards !important;
 }
 
-/* --- DRAMATIC EMERGENCY ALARM ANIMATIONS --- */
-@keyframes emergencyRedPulse {
-  0% { background: rgba(234, 67, 53, 0.4); }
-  50% { background: rgba(234, 67, 53, 0.88); }
-  100% { background: rgba(0, 0, 0, 0.82); }
-}
-
+/* --- DRAMATIC CARD ALARM ANIMATIONS (WITHOUT DARKENING SURROUNDINGS) --- */
 @keyframes dramaticShake {
-  0% { transform: scale(0.9) translate(0, 0) rotate(0deg); }
-  20% { transform: scale(1.03) translate(-8px, 6px) rotate(-2deg); }
-  40% { transform: scale(1.02) translate(8px, -6px) rotate(2deg); }
-  60% { transform: scale(1.01) translate(-5px, -3px) rotate(-1deg); }
-  80% { transform: scale(1) translate(4px, 3px) rotate(1deg); }
-  100% { transform: scale(1) translate(0, 0) rotate(0deg); }
+  0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+  20% { transform: translate(calc(-50% - 6px), calc(-50% + 4px)) scale(1.02) rotate(-1.5deg); }
+  40% { transform: translate(calc(-50% + 6px), calc(-50% - 4px)) scale(1.01) rotate(1.5deg); }
+  60% { transform: translate(calc(-50% - 4px), calc(-50% - 2px)) scale(1.005) rotate(-0.8deg); }
+  80% { transform: translate(calc(-50% + 3px), calc(-50% + 2px)) scale(1) rotate(0.8deg); }
+  100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+}
+
+@keyframes cardBorderGlow {
+  0%, 100% { border-color: #ea4335; box-shadow: 0px 24px 60px rgba(0, 0, 0, 0.28), 14px 14px 0px #000000; }
+  50% { border-color: #ff3b30; box-shadow: 0px 28px 70px rgba(234, 67, 53, 0.4), 16px 16px 0px #ea4335; }
 }
 
 .reallocation-modal-backdrop.dramatic-alarm {
-  animation: emergencyRedPulse 0.8s ease-in-out !important;
+  /* Keep background 100% transparent so surroundings are never darkened */
+  background: transparent !important;
 }
 
 .reallocation-modal-card.dramatic-shake {
-  animation: dramaticShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97) !important;
+  animation: dramaticShake 0.45s cubic-bezier(0.36, 0.07, 0.19, 0.97), cardBorderGlow 1.4s infinite ease-in-out !important;
 }
 
-@keyframes modalPop {
-  0% { transform: scale(0.85); opacity: 0; }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes warningCardPopIn {
+  0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+body.self-healing-active {
+  overflow: hidden !important;
 }
 
 .reallocation-header {
@@ -2049,112 +2060,129 @@ td.drag-over {
   padding: 6px 16px !important;
   border-radius: 30px !important;
   box-shadow: 3px 3px 0px #000 !important;
-  margin-bottom: 20px !important;
+  margin-bottom: 18px !important;
 }
 
 .reallocation-badge-text {
   font-family: var(--font-mono) !important;
   font-weight: 900 !important;
-  font-size: 0.85rem !important;
+  font-size: 0.82rem !important;
   color: #c5221f !important;
   letter-spacing: 0.5px !important;
 }
 
 .reallocation-conflict-box {
-  background: #fce8e6 !important;
-  border: 2.5px solid #ea4335 !important;
+  background: #fff8f7 !important;
+  border: 2px solid #f28b82 !important;
+  border-left: 6px solid #ea4335 !important;
   box-shadow: 4px 4px 0px #000000 !important;
   border-radius: 12px !important;
-  padding: 16px 20px !important;
-  margin-bottom: 16px !important;
+  padding: 14px 18px !important;
+  margin-bottom: 14px !important;
   text-align: left !important;
 }
 
 .conflict-label {
   font-family: var(--font-mono) !important;
-  font-size: 0.75rem !important;
-  font-weight: 800 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
   color: #c5221f !important;
   text-transform: uppercase !important;
-  margin-bottom: 6px !important;
+  margin-bottom: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
 }
 
 .conflict-text {
-  font-size: 1rem !important;
+  font-size: 0.95rem !important;
   font-weight: 800 !important;
-  color: #c5221f !important;
-  line-height: 1.4 !important;
+  color: #202124 !important;
+  line-height: 1.45 !important;
 }
 
 .reallocation-destination-box {
-  background: #e8f0fe !important;
-  border: 2.5px solid #1a73e8 !important;
+  background: #f0f7ff !important;
+  border: 2px solid #aecbfa !important;
+  border-left: 6px solid #1a73e8 !important;
   box-shadow: 4px 4px 0px #000000 !important;
   border-radius: 12px !important;
-  padding: 16px 20px !important;
-  margin-bottom: 24px !important;
+  padding: 14px 18px !important;
+  margin-bottom: 20px !important;
   text-align: left !important;
 }
 
 .destination-label {
   font-family: var(--font-mono) !important;
-  font-size: 0.75rem !important;
-  font-weight: 800 !important;
+  font-size: 0.72rem !important;
+  font-weight: 900 !important;
   color: #1a73e8 !important;
   text-transform: uppercase !important;
-  margin-bottom: 6px !important;
+  margin-bottom: 4px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
 }
 
 .destination-text {
-  font-size: 1rem !important;
+  font-size: 0.95rem !important;
   font-weight: 800 !important;
-  color: #1967d2 !important;
-  line-height: 1.4 !important;
+  color: #1a73e8 !important;
+  line-height: 1.45 !important;
 }
 
 .countdown-timer-container {
-  margin-bottom: 18px !important;
+  margin-bottom: 14px !important;
 }
 
 .countdown-timer-label {
   font-family: var(--font-mono) !important;
-  font-size: 0.8rem !important;
+  font-size: 0.78rem !important;
   font-weight: 900 !important;
-  color: #555555 !important;
+  color: #5f6368 !important;
   letter-spacing: 1px !important;
-  margin-bottom: 4px !important;
+  margin-bottom: 2px !important;
 }
 
 .countdown-timer-number {
   font-family: var(--font-mono) !important;
-  font-size: 3.8rem !important;
+  font-size: 3.6rem !important;
   font-weight: 900 !important;
   color: #ea4335 !important;
   line-height: 1 !important;
   text-shadow: 3px 3px 0px #000000 !important;
   display: inline-block !important;
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  transition: transform 0.18s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
 }
 
 .countdown-timer-number.tick {
-  transform: scale(1.35) !important;
+  transform: scale(1.3) !important;
 }
 
 .reallocation-progress-track {
   width: 100% !important;
   height: 12px !important;
-  background: #e0e0e0 !important;
+  background: #f1f3f4 !important;
   border: 2px solid #000000 !important;
   border-radius: 10px !important;
   overflow: hidden !important;
-  box-shadow: inset 2px 2px 0px rgba(0,0,0,0.1) !important;
+  box-shadow: inset 2px 2px 0px rgba(0,0,0,0.08) !important;
 }
 
 .reallocation-progress-fill {
   width: 0% !important;
   height: 100% !important;
-  background: linear-gradient(90deg, #ea4335, #f9ab00, #34a853) !important;
+  background: linear-gradient(90deg, #ea4335 0%, #fbbc04 38%, #34a853 72%, #4285f4 100%) !important;
   transition: width 5s linear !important;
+}
+
+.reallocation-footer-note {
+  margin-top: 14px !important;
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  color: #5f6368 !important;
+  font-family: var(--font-mono) !important;
+  letter-spacing: 0.3px !important;
 }
 
 /* --- ROLE-BASED AUTH & ADMIN COMMAND CENTER STYLES --- */
@@ -2533,6 +2561,56 @@ input:checked + .slider:before {
   transition: width 0.3s ease !important;
 }
 
+/* FLOATING SCHEDULE HOVER POPOVER CARD - REMOVED AS REQUESTED */
+.matrix-hover-card {
+  display: none !important;
+}
+
+.hover-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.hover-card-speaker {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #000;
+}
+
+.hover-card-badge {
+  background: #ffe885;
+  border: 2px solid #000;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.hover-card-title {
+  font-family: 'Josefin Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 800;
+  margin: 4px 0;
+  color: #000;
+  line-height: 1.3;
+}
+
+.hover-card-summary {
+  font-size: 0.78rem;
+  color: #444;
+  margin: 4px 0 8px 0;
+  line-height: 1.35;
+}
+
+.hover-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
 /* --- INTERACTIVE TOUR GUIDE (DOCK TO RIGHT EDGE SCROLLBAR, 90-DEGREE ROTATED MINIMIZED TAB) --- */
 .tour-guide-card {
   position: fixed !important;
@@ -2666,68 +2744,54 @@ input:checked + .slider:before {
   color: #444;
 }
 
-/* Floating Schedule & Graph Hover Popover Card - Positioned right next to hovered card/node */
-.matrix-hover-card {
-  position: fixed !important;
-  z-index: 999999 !important;
-  width: 320px !important;
-  background: #ffffff !important;
-  border: 3px solid #000000 !important;
-  border-radius: 14px !important;
-  box-shadow: 6px 6px 0px #000000 !important;
-  padding: 14px !important;
-  pointer-events: none !important;
-  transition: opacity 0.15s ease, transform 0.15s ease !important;
+/* --- QoL ENHANCEMENTS: HEALED CELL HIGHLIGHT, SEARCH, KEYBOARD BADGES --- */
+@keyframes healedPulse {
+  0% { background-color: #d4edda !important; box-shadow: inset 0 0 0 4px #28a745, 0 0 20px rgba(40, 167, 69, 0.5) !important; transform: scale(1.02); }
+  60% { background-color: #e8f5e9 !important; box-shadow: inset 0 0 0 3px #28a745 !important; }
+  100% { background-color: transparent !important; box-shadow: none !important; transform: scale(1); }
 }
 
-.hover-card-header {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  margin-bottom: 8px !important;
+.cell-healed-highlight {
+  animation: healedPulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) !important;
+  position: relative !important;
+  z-index: 5 !important;
 }
 
-.hover-card-speaker {
-  font-family: var(--font-mono) !important;
-  font-size: 0.9rem !important;
-  font-weight: 800 !important;
-  color: #4285f4 !important;
-}
-
-.hover-card-badge {
+.schedule-block.search-match {
+  border-color: #fbbc04 !important;
   background: #fff8e1 !important;
-  border: 2px solid #000000 !important;
-  border-radius: 20px !important;
-  padding: 2px 8px !important;
+  box-shadow: 0 0 14px rgba(251, 188, 4, 0.7), 4px 4px 0px #000 !important;
+  transform: scale(1.03) !important;
+  z-index: 10 !important;
+  transition: all 0.2s ease !important;
+}
+
+.schedule-block.search-dimmed {
+  opacity: 0.25 !important;
+  filter: grayscale(85%) !important;
+  transition: opacity 0.2s ease !important;
+}
+
+.kbd-badge {
+  display: inline-block !important;
+  padding: 3px 8px !important;
   font-family: var(--font-mono) !important;
-  font-size: 0.75rem !important;
-  font-weight: 800 !important;
-  color: #d97706 !important;
+  font-size: 0.8rem !important;
+  font-weight: 900 !important;
+  color: #202124 !important;
+  background: #f1f3f4 !important;
+  border: 2px solid #000000 !important;
+  border-radius: 6px !important;
   box-shadow: 2px 2px 0px #000000 !important;
 }
 
-.hover-card-title {
-  font-family: 'Josefin Sans', sans-serif !important;
-  font-size: 1.05rem !important;
-  font-weight: 800 !important;
-  color: #000000 !important;
-  margin: 0 0 6px 0 !important;
-  line-height: 1.3 !important;
+#btn-skip-countdown:hover {
+  background-color: #f9ab00 !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 3px 3px 0px #000 !important;
 }
 
-.hover-card-summary {
-  font-size: 0.82rem !important;
-  color: #555555 !important;
-  margin: 0 0 10px 0 !important;
-  line-height: 1.4 !important;
+#btn-skip-countdown:active {
+  transform: translateY(1px) !important;
+  box-shadow: 1px 1px 0px #000 !important;
 }
-
-.hover-card-tags {
-  display: flex !important;
-  gap: 6px !important;
-  flex-wrap: wrap !important;
-}
-
-
-
-

@@ -1,105 +1,152 @@
 // --- WEBSOCKET CLIENT SYNC ---
 
-async function fetchInitialStateHTTP() {
-  try {
-    const res = await fetch('/api/state');
-    if (res.ok) {
-      const data = await res.json();
-      if (data && data.graph && data.schedule) {
+function initWebSockets() {
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const wsUrl = `${protocol}//${window.location.host}`;
+
+  appendLog('[SYSTEM] Establishing secure WebSocket socket connection...', 'system');
+
+  ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    appendLog('[SYSTEM] WebSocket client successfully linked to Event Operating System.', 'success');
+  };
+
+  ws.onmessage = (event) => {
+    const payload = JSON.parse(event.data);
+
+    switch (payload.type) {
+      case 'INIT_STATE':
         previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
-        graphState = data.graph;
-        scheduleState = data.schedule;
+        graphState = payload.data.graph;
+        scheduleState = payload.data.schedule;
 
         populateForms();
         renderScheduleGrid();
         rebuildGraphData();
         updateCounters();
         if (selectedNodeId) selectGraphNode(selectedNodeId);
-      }
-    }
-  } catch (err) {
-    console.warn('[HTTP FALLBACK] Could not fetch /api/state over HTTP:', err);
-  }
-}
+        break;
 
-function initWebSockets() {
-  // Always fetch state via HTTP REST first to guarantee data loads on Vercel / serverless hosts!
-  fetchInitialStateHTTP();
+      case 'SCHEDULE_UPDATED':
+        previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
+        if (payload.data.graph) graphState = payload.data.graph;
+        if (payload.data.schedule) scheduleState = payload.data.schedule;
 
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}`;
+        if (payload.data.logs) {
+          payload.data.logs.forEach(log => {
+            let logType = 'system';
+            if (log.includes('[CONFLICT]')) logType = 'conflict';
+            else if (log.includes('[Action]')) logType = 'action';
+            else if (log.includes('Audit clean')) logType = 'success';
+            appendLog(log, logType);
+          });
+        }
 
-  appendLog('[SYSTEM] Establishing secure WebSocket socket connection...', 'system');
+        populateForms();
+        renderScheduleGrid();
+        rebuildGraphData();
+        updateCounters();
+        if (selectedNodeId) selectGraphNode(selectedNodeId);
 
-  try {
-    ws = new WebSocket(wsUrl);
+        if (payload.data.swarmChat) {
+          renderSwarmChat(payload.data.swarmChat);
+        }
 
-    ws.onopen = () => {
-      appendLog('[SYSTEM] WebSocket client successfully linked to Event Operating System.', 'success');
-    };
+        if (payload.data.notifications && payload.data.notifications.length > 0) {
+          payload.data.notifications.forEach(n => {
+            createToast(n.message, n.type);
+          });
+        }
+        break;
 
-    ws.onmessage = (event) => {
-      const payload = JSON.parse(event.data);
+      case 'SCHEDULE_HEALED':
+        // Render swarm chat immediately so agents are seen negotiating in real time!
+        if (payload.data.swarmChat) {
+          renderSwarmChat(payload.data.swarmChat);
+        }
 
-      switch (payload.type) {
-        case 'INIT_STATE':
+        const hasConflict = payload.data.hasConflict || (payload.data.logs && payload.data.logs.some(l => l.includes('[CONFLICT]')));
+
+        if (hasConflict) {
+          // If initial conflicting schedule provided, render it so coordinator sees the conflict in place
+          if (payload.data.initialSchedule) {
+            scheduleState = payload.data.initialSchedule;
+            renderScheduleGrid();
+          }
+
+          const conflictLog = payload.data.logs ? payload.data.logs.find(l => l.includes('[CONFLICT]') || l.includes('exceeds') || l.includes('Capacity')) : null;
+          const actionLog = payload.data.logs ? payload.data.logs.find(l => l.includes('[Action') || l.includes('moved to') || l.includes('Relocating') || l.includes('Scheduled') || l.includes('Solver')) : null;
+
+          const conflictText = payload.data.conflictReason || (conflictLog ? conflictLog.replace(/\[.*?\]/g, '').trim() : '⚠️ Self-Healing Triggered: Operational constraint violation detected.');
+          const destText = payload.data.destinationTarget || (actionLog ? actionLog.replace(/\[.*?\]/g, '').trim() : '📍 Optimization Solver reallocating talk node to viable venue position.');
+
+          const fnCountdown = window.triggerReallocationCountdown || (typeof triggerReallocationCountdown === 'function' ? triggerReallocationCountdown : null);
+
+          if (fnCountdown) {
+            fnCountdown(conflictText, destText, () => {
+              previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
+              graphState = payload.data.graph;
+              scheduleState = payload.data.schedule;
+
+              if (payload.data.logs) {
+                payload.data.logs.forEach(log => {
+                  let logType = 'system';
+                  if (log.includes('[CONFLICT]')) logType = 'conflict';
+                  else if (log.includes('[Action]')) logType = 'action';
+                  else if (log.includes('[Solver:')) logType = 'system';
+                  else if (log.includes('Audit clean')) logType = 'success';
+                  appendLog(log, logType);
+                });
+              }
+
+              populateForms();
+              renderScheduleGrid();
+              rebuildGraphData();
+              updateCounters();
+              if (selectedNodeId) selectGraphNode(selectedNodeId);
+
+              if (payload.data.notifications && payload.data.notifications.length > 0) {
+                payload.data.notifications.forEach(n => {
+                  createToast(n.message, n.type);
+                });
+                showPushAlert(payload.data.notifications[0].message);
+              }
+              createToast('✨ Self-Healing complete: Talk node redirected to applicable hall!', 'success');
+              if (typeof highlightHealedDestination === 'function') {
+                highlightHealedDestination(destText, payload.data.schedule);
+              }
+            });
+          } else {
+            // Direct apply fallback
+            previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
+            graphState = payload.data.graph;
+            scheduleState = payload.data.schedule;
+            populateForms();
+            renderScheduleGrid();
+            rebuildGraphData();
+            updateCounters();
+          }
+        } else {
+          // Clean update with no conflicts
           previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
-          graphState = payload.data.graph;
-          scheduleState = payload.data.schedule;
+          if (payload.data.graph) graphState = payload.data.graph;
+          if (payload.data.schedule) scheduleState = payload.data.schedule;
+
+          if (payload.data.logs) {
+            payload.data.logs.forEach(log => {
+              let logType = log.includes('clean') ? 'success' : 'system';
+              appendLog(log, logType);
+            });
+          }
 
           populateForms();
           renderScheduleGrid();
           rebuildGraphData();
           updateCounters();
           if (selectedNodeId) selectGraphNode(selectedNodeId);
-          break;
-
-        case 'SCHEDULE_HEALED':
-          const conflictLog = payload.data.logs ? payload.data.logs.find(l => l.includes('[CONFLICT]') || l.includes('exceeds') || l.includes('Capacity')) : null;
-          const actionLog = payload.data.logs ? payload.data.logs.find(l => l.includes('moved to') || l.includes('Relocating') || l.includes('Scheduled') || l.includes('Solver')) : null;
-
-          const conflictText = conflictLog ? conflictLog.replace(/\[.*?\]/g, '').trim() : '⚠️ Self-Healing Triggered: Operational constraint violation detected.';
-          const destText = actionLog ? actionLog.replace(/\[.*?\]/g, '').trim() : '📍 Optimization Solver reallocating talk node to viable venue position.';
-
-          triggerReallocationCountdown(conflictText, destText, () => {
-            previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
-            graphState = payload.data.graph;
-            scheduleState = payload.data.schedule;
-
-            if (payload.data.logs) {
-              let solved = false;
-              payload.data.logs.forEach(log => {
-                let logType = 'system';
-                if (log.includes('[CONFLICT]')) logType = 'conflict';
-                else if (log.includes('[Action]')) logType = 'action';
-                else if (log.includes('[Solver:')) logType = 'system';
-                else if (log.includes('Audit clean')) {
-                  logType = 'success';
-                  solved = true;
-                }
-
-                appendLog(log, logType);
-              });
-            }
-
-            populateForms();
-            renderScheduleGrid();
-            rebuildGraphData();
-            updateCounters();
-            if (selectedNodeId) selectGraphNode(selectedNodeId);
-
-            if (payload.data.swarmChat) {
-              renderSwarmChat(payload.data.swarmChat);
-            }
-
-            if (payload.data.notifications && payload.data.notifications.length > 0) {
-              payload.data.notifications.forEach(n => {
-                createToast(n.message, n.type);
-              });
-              showPushAlert(payload.data.notifications[0].message);
-            }
-          });
-          break;
+        }
+        break;
 
       case 'SENTIMENT_ALERT':
         if (payload.data.logs) {
@@ -180,7 +227,4 @@ function initWebSockets() {
     appendLog('[SYSTEM] Connection offline. Offline synchronization active.', 'system');
     setTimeout(initWebSockets, 5000);
   };
-  } catch (err) {
-    console.warn('[WS INIT] Could not establish WebSocket:', err);
-  }
 }

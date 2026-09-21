@@ -2,7 +2,7 @@
 
 (function initAuthManager() {
   let currentUserRole = 'coordinator'; // 'coordinator' | 'admin'
-  let currentUserName = 'Elena Vance';
+  let currentUserName = 'Suryansh';
 
   window.addEventListener('DOMContentLoaded', () => {
     bindAuthEventListeners();
@@ -59,7 +59,7 @@
 
     if (btnQuickCoord) {
       btnQuickCoord.addEventListener('click', () => {
-        loginUser('coordinator', 'Elena Vance (Lead Coordinator)');
+        loginUser('coordinator', 'Suryansh (Lead Coordinator)');
       });
     }
 
@@ -263,7 +263,7 @@
     const tbody = document.getElementById('admin-contacts-table-body');
     if (!tbody) return;
     tbody.innerHTML = '';
-    
+
     defaultContacts.forEach(c => {
       const tr = document.createElement('tr');
       tr.innerHTML = `
@@ -337,7 +337,7 @@
     window.open(waUrl, '_blank');
   }
 
-  window.handleWhatsAppDispatch = function(data) {
+  window.handleWhatsAppDispatch = function (data) {
     const logBox = document.getElementById('admin-whatsapp-log-container');
     if (logBox) {
       const line = document.createElement('div');
@@ -350,7 +350,7 @@
     }
   };
 
-  window.handleEmailDispatch = function(data) {
+  window.handleEmailDispatch = function (data) {
     const logBox = document.getElementById('admin-email-log-container');
     if (logBox) {
       const line = document.createElement('div');

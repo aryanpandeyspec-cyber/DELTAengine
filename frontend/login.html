@@ -1,21 +1,24 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DELTA ENGINE - Role Portal Login</title>
-  
+
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Josefin+Sans:wght@600;700&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Josefin+Sans:wght@600;700&family=JetBrains+Mono:wght@500;700;800&display=swap"
+    rel="stylesheet">
+
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
+
   <!-- Styling -->
   <link rel="stylesheet" href="app.css">
-  
+
   <style>
     body {
       min-height: 100vh;
@@ -25,14 +28,14 @@
       background: radial-gradient(circle at center, #ffffff 0%, #faecd9 100%);
       padding: 20px;
     }
-    
+
     .login-container {
       width: 100%;
       max-width: 480px;
       z-index: 10;
       position: relative;
     }
-    
+
     .login-card {
       background: #ffffff !important;
       border: 4px solid #000000 !important;
@@ -40,19 +43,19 @@
       box-shadow: 12px 12px 0px #000000 !important;
       padding: 36px 32px !important;
     }
-    
+
     .login-header {
       text-align: center;
       margin-bottom: 24px;
     }
-    
+
     .login-logo {
       height: 90px;
       margin-bottom: 12px;
       object-fit: contain;
       mix-blend-mode: darken;
     }
-    
+
     .login-title {
       font-family: 'Josefin Sans', sans-serif;
       font-size: 2.2rem;
@@ -60,7 +63,7 @@
       color: #000000;
       margin: 0;
     }
-    
+
     .login-subtitle {
       font-family: var(--font-main);
       font-size: 0.92rem;
@@ -68,7 +71,7 @@
       font-weight: 600;
       margin-top: 4px;
     }
-    
+
     .google-btn {
       display: flex;
       align-items: center;
@@ -88,19 +91,20 @@
       transition: all 0.15s ease;
       margin-bottom: 20px;
     }
-    
+
     .google-btn:hover {
       transform: translate(-2px, -2px);
       box-shadow: 6px 6px 0px #000000;
       background: #f8f9fa;
     }
-    
+
     .google-icon {
       width: 22px;
       height: 22px;
     }
   </style>
 </head>
+
 <body>
 
   <!-- Background Levitating Doodles -->
@@ -128,10 +132,14 @@
       <!-- Google Sign-In via Supabase Auth -->
       <button id="btn-google-login" class="google-btn">
         <svg class="google-icon" viewBox="0 0 24 24">
-          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          <path fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+          <path fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+          <path fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
+          <path fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
         </svg>
         Sign in with Google (Supabase Auth)
       </button>
@@ -142,18 +150,21 @@
 
       <form id="standalone-login-form">
         <input type="hidden" id="auth-selected-role" value="coordinator">
-        
+
         <div class="form-group mb-3">
           <label class="form-label" id="username-label" style="font-weight:700;">Coordinator Username / ID</label>
-          <input type="text" id="input-username" class="form-control" value="elena.vance" placeholder="Username" required style="border:2px solid #000; border-radius:10px;">
+          <input type="text" id="input-username" class="form-control" value="elena.vance" placeholder="Username"
+            required style="border:2px solid #000; border-radius:10px;">
         </div>
 
         <div class="form-group mb-4">
           <label class="form-label" style="font-weight:700;">Password Key</label>
-          <input type="password" id="input-password" class="form-control" value="••••••••" required style="border:2px solid #000; border-radius:10px;">
+          <input type="password" id="input-password" class="form-control" value="••••••••" required
+            style="border:2px solid #000; border-radius:10px;">
         </div>
 
-        <button type="submit" id="btn-submit-login" class="btn btn-blue w-full btn-md mb-3" style="font-size:1.05rem; font-weight:800;">
+        <button type="submit" id="btn-submit-login" class="btn btn-blue w-full btn-md mb-3"
+          style="font-size:1.05rem; font-weight:800;">
           🚀 Log In & Proceed to Portal
         </button>
 
@@ -231,7 +242,7 @@
     });
 
     document.getElementById('btn-demo-coord').addEventListener('click', () => {
-      proceedToPortal('coordinator', 'Elena Vance (Lead Coordinator)');
+      proceedToPortal('coordinator', 'Suryansh (Lead Coordinator)');
     });
 
     document.getElementById('btn-demo-admin').addEventListener('click', () => {
@@ -249,4 +260,5 @@
     }
   </script>
 </body>
+
 </html>

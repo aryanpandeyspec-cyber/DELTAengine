@@ -7,6 +7,7 @@ const multer = require('multer');
 
 const db = require('./components/graphDb');
 const { runSelfHealingAgent } = require('./components/selfHealing');
+const { setGroqApiKey, getGroqApiKey } = require('./components/agentSwarm');
 const { loadGraphFromSupabase } = require('./components/supabaseDb');
 const { escapeHtml, rateLimiter, validateSlideFile } = require('./components/security');
 
@@ -34,24 +35,21 @@ app.get('/admin', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/admin.html'));
 });
 
-app.get('/api/state', (req, res) => {
-  res.json({
-    graph: db.graph,
-    schedule: db.schedule,
-    activeDate: db.activeDate,
-    contacts: db.contacts,
-    volunteers: db.volunteers,
-    limiters: db.limiters
-  });
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-app.get('/api/graph', (req, res) => {
-  res.json(db.graph);
+app.get('/presentation', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/presentation.html'));
+});
+
+app.get('/download-deck', (req, res) => {
+  res.download(path.join(__dirname, '../DELTA_ENGINE_Presentation.pptx'));
 });
 
 // Configure multer with strict file size limits (20MB max)
 const storage = multer.memoryStorage();
-const upload = multer({ 
+const upload = multer({
   storage: storage,
   limits: { fileSize: 20 * 1024 * 1024 }
 });
@@ -123,8 +121,8 @@ app.post('/api/notify/whatsapp', (req, res) => {
     return res.status(400).json({ error: 'Missing recipientName or messageText' });
   }
   const result = sendWhatsAppNotification(
-    recipientName, 
-    phoneNumber || '+1 (555) 234-8901', 
+    recipientName,
+    phoneNumber || '+1 (555) 234-8901',
     messageText
   );
   res.json({ success: true, notification: result });
@@ -162,8 +160,8 @@ app.post('/api/admin/action', (req, res) => {
 
   if (action === 'freeze_swarm') {
     db.swarmFrozen = !db.swarmFrozen;
-    message = db.swarmFrozen 
-      ? '[CRITICAL OVERRIDE] Super Admin executed Emergency Agent Autonomy Freeze.' 
+    message = db.swarmFrozen
+      ? '[CRITICAL OVERRIDE] Super Admin executed Emergency Agent Autonomy Freeze.'
       : '[SYSTEM] Agent autonomy resumed by Super Admin.';
     broadcast({
       type: 'SWARM_CHAT',
@@ -174,7 +172,7 @@ app.post('/api/admin/action', (req, res) => {
     message = '[GRAPH DB] Force re-indexed Neo4j graph topology edges & node connections.';
   } else if (action === 'broadcast') {
     message = '[BROADCAST ALERT] Super Admin pushed emergency notification to all attendee webcal clients.';
-    sendWhatsAppNotification('Elena Vance (Lead Coordinator)', '+1 (555) 234-8901', '⚠️ EMERGENCY BROADCAST: Super Admin initiated system-wide attendee alert.');
+    sendWhatsAppNotification('Suryansh (Lead Coordinator)', '+1 (555) 234-8901', '⚠️ EMERGENCY BROADCAST: Super Admin initiated system-wide attendee alert.');
     broadcast({
       type: 'TOAST',
       data: { message: '📢 EMERGENCY SYSTEM BROADCAST PUSHED BY SUPER ADMIN', type: 'conflict' }
@@ -283,7 +281,7 @@ app.post('/api/reset', (req, res) => {
     'slot-3': { 'hall-1': 'topic-8', 'hall-2': null, 'hall-3': null },
     'slot-4': { 'hall-1': 'topic-7', 'hall-2': null, 'hall-3': null }
   };
-  
+
   db.syncScheduleEdges();
 
   broadcast({
@@ -342,7 +340,7 @@ app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
 
   const fileName = escapeHtml(req.file.originalname);
   const fileStr = req.file.buffer ? req.file.buffer.toString('utf-8') : '';
-  
+
   // Real PDF / Document Text Stream Extraction
   let extractedTitle = '';
   let extractedSpeakerId = 'speaker-1';
@@ -433,7 +431,7 @@ app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
 
 app.post('/api/schedule/move', async (req, res) => {
   const { topicId, targetSlotId, targetHallId } = req.body;
-  
+
   let sourceSlotId = null;
   let sourceHallId = null;
   for (const slotId in db.schedule) {
@@ -455,20 +453,48 @@ app.post('/api/schedule/move', async (req, res) => {
   }
 
   db.schedule[targetSlotId][targetHallId] = topicId;
+  db.schedulesByDate[db.activeDate] = db.schedule;
   db.syncScheduleEdges();
 
-  const topicTitle = db.graph.topics[topicId].title;
-  const targetHallName = db.graph.halls[targetHallId].name;
-  const targetSlotTime = db.graph.slots[targetSlotId].time;
+  const topicTitle = db.graph.topics[topicId]?.title || topicId;
+  const targetHallName = db.graph.halls[targetHallId]?.name || targetHallId;
+  const targetSlotTime = db.graph.slots[targetSlotId]?.time || targetSlotId;
   const eventDesc = `Manual move: "${topicTitle}" moved to ${targetHallName} (${targetSlotTime}).`;
 
-  const healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+  const healingReport = await runSelfHealingAgent(eventDesc, db, broadcast, { isManual: true, manualTopicId: topicId });
 
   res.json({
     success: true,
     schedule: db.schedule,
+    graph: db.graph,
     ...healingReport
   });
+});
+
+app.get('/api/groq/status', (req, res) => {
+  const currentKey = getGroqApiKey();
+  const isConfigured = !!(currentKey && currentKey.trim().length > 0);
+  res.json({
+    hasKey: isConfigured,
+    mode: isConfigured ? 'LIVE_GROQ_API' : 'HEURISTIC_SWARM_INTELLIGENCE',
+    keyMasked: isConfigured ? (currentKey.substring(0, 6) + '...' + currentKey.substring(currentKey.length - 4)) : 'Not set (Operating in Heuristic Swarm Mode)',
+    models: {
+      liaison: 'llama-3.1-8b-instant',
+      scheduler: 'llama-3.3-70b-versatile',
+      logistics: 'llama-3.3-70b-versatile',
+      marketing: 'llama-3.1-8b-instant'
+    }
+  });
+});
+
+app.post('/api/groq/set-key', (req, res) => {
+  const { apiKey } = req.body;
+  if (typeof apiKey === 'string') {
+    setGroqApiKey(apiKey.trim());
+    res.json({ success: true, message: 'Groq API Key updated successfully!' });
+  } else {
+    res.status(400).json({ error: 'Invalid apiKey parameter' });
+  }
 });
 
 app.get('/api/calendar/feed.ics', (req, res) => {
@@ -515,7 +541,7 @@ app.get('/api/calendar/feed.ics', (req, res) => {
   }
 
   ics.push('END:VCALENDAR');
-  
+
   res.setHeader('Content-Type', 'text/calendar');
   res.setHeader('Content-Disposition', 'attachment; filename="delta_engine_schedule.ics"');
   res.send(ics.join('\r\n'));
@@ -523,14 +549,14 @@ app.get('/api/calendar/feed.ics', (req, res) => {
 
 app.post('/api/simulate/sentiment', (req, res) => {
   const { sentimentType, text } = req.body;
-  
+
   let logs = [];
   let notifications = [];
   let swarmChat = [];
 
   const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   logs.push(`[Smart-Sensor Ingestion] Sentiment Event: "${text}"`);
-  
+
   if (sentimentType === 'hvac') {
     swarmChat.push({
       sender: 'Liaison Agent',
@@ -600,7 +626,7 @@ app.post('/api/reset', (req, res) => {
 
 app.post('/api/sim/mass-disruption', async (req, res) => {
   const currentSched = db.schedule;
-  
+
   // Step 1: Detect double-booking in Turing Hall slot-1
   const step1Schedule = JSON.parse(JSON.stringify(currentSched));
   step1Schedule['slot-1']['hall-1'] = 'topic-1';
@@ -657,6 +683,21 @@ app.post('/api/sim/mass-disruption', async (req, res) => {
     }
   ];
 
+  broadcast({
+    type: 'SCHEDULE_HEALED',
+    data: {
+      graph: db.graph,
+      schedule: db.schedule,
+      logs: steps[0].logs.concat(steps[1].logs),
+      notifications: [
+        { type: 'conflict', message: '🚨 Catastrophic clash: 3 Keynotes collided in Turing Hall.' },
+        { type: 'action', message: '✨ Self-healing solver resolved multi-track collision cleanly.' }
+      ],
+      swarmChat: steps[0].swarmChat.concat(steps[1].swarmChat),
+      isMassDisruption: true
+    }
+  });
+
   res.json({
     success: true,
     steps,
@@ -666,9 +707,11 @@ app.post('/api/sim/mass-disruption', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, async () => {
-  console.log(`[DELTA ENGINE] Running on http://localhost:${PORT}`);
-  await loadGraphFromSupabase(db);
-});
+if (require.main === module) {
+  server.listen(PORT, async () => {
+    console.log(`[DELTA ENGINE] Running on http://localhost:${PORT}`);
+    await loadGraphFromSupabase(db);
+  });
+}
 
 module.exports = app;
