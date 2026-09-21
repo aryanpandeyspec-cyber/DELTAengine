@@ -332,6 +332,64 @@ app.post('/api/simulate/capacity', async (req, res) => {
   });
 });
 
+app.post('/api/sensors/door', async (req, res) => {
+  const { event, hallId, netOccupancy, entries, exits, dist1, dist2 } = req.body;
+  const targetHallId = hallId || 'hall-1';
+  const hall = db.graph.halls[targetHallId] || { name: 'Turing Auditorium', capacity: 150 };
+  const occupancy = parseInt(netOccupancy, 10) || 0;
+
+  const timeStr = new Date().toLocaleTimeString();
+  console.log(`[IoT Door Sensor] ${event}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries}, Out: ${exits})`);
+
+  // Broadcast live occupancy update to all connected frontend clients
+  broadcast({
+    type: 'ROOM_OCCUPANCY_UPDATE',
+    data: {
+      hallId: targetHallId,
+      hallName: hall.name,
+      capacity: hall.capacity,
+      occupancy: occupancy,
+      entries: entries || 0,
+      exits: exits || 0,
+      event: event || 'ENTRY',
+      timestamp: timeStr
+    }
+  });
+
+  // Check for capacity overshoot
+  let healingReport = null;
+  let surgeTriggered = false;
+
+  if (occupancy > hall.capacity) {
+    // Find active topic scheduled in this hall
+    let activeTopicId = null;
+    for (const slotId in db.schedule) {
+      if (db.schedule[slotId][targetHallId]) {
+        activeTopicId = db.schedule[slotId][targetHallId];
+        break;
+      }
+    }
+
+    if (activeTopicId && db.graph.topics[activeTopicId]) {
+      surgeTriggered = true;
+      const topic = db.graph.topics[activeTopicId];
+      topic.interest = occupancy; // Dynamically set topic interest to physical headcount!
+      const eventDesc = `⚡ IoT Door Sensor: "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
+
+      healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+    }
+  }
+
+  res.json({
+    success: true,
+    hallId: targetHallId,
+    occupancy,
+    capacity: hall.capacity,
+    surgeTriggered,
+    healingReport
+  });
+});
+
 app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
   const fileCheck = validateSlideFile(req.file);
   if (!fileCheck.valid) {
