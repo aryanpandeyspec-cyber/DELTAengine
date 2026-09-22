@@ -24,9 +24,9 @@
 
 #define ONBOARD_LED 2
 
-// Distance threshold for hand/door passage detection (15 cm = 150 mm)
-#define DISTANCE_THRESHOLD_MM 150
-#define MIN_DISTANCE_MM 35 // Ignore anything under 3.5 cm (filters close noise/reflection)
+// Generous distance threshold for demo hand waving (50 cm = 500 mm)
+#define DISTANCE_THRESHOLD_MM 500
+#define MIN_DISTANCE_MM 20 // 2 cm minimum
 
 // Create two independent Adafruit_VL53L0X instances on separate I2C buses
 Adafruit_VL53L0X sensor1 = Adafruit_VL53L0X();
@@ -200,6 +200,15 @@ void blinkLed() {
 }
 
 void sendEvent(const char* eventType, uint16_t d1, uint16_t d2) {
+  // Output clear human notification
+  Serial.print(F("🎉 ["));
+  Serial.print(eventType);
+  Serial.print(F(" DETECTED!] Hand wave counted! Occupancy: "));
+  Serial.print(netOccupancy);
+  Serial.print(F(" | Sensor 2: "));
+  Serial.print(d2);
+  Serial.println(F(" mm"));
+
   // Output clean JSON format directly to Serial (read by DELTA Engine Python bridge)
   Serial.print(F("{\"event\":\""));
   Serial.print(eventType);
