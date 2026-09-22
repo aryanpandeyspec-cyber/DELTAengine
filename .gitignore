@@ -6,3 +6,5 @@ node_modules/
 *.mp4
 video_frames/
 extracted_assets/
+.venv/
+__pycache__/

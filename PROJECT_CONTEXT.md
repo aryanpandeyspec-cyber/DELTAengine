@@ -153,7 +153,7 @@ DELTA ENGINE bridges physical space with an agentic AI operating system:
 - **Result**: Both sensors operate simultaneously at default address `0x29` on separate buses without requiring any `XSHUT` control pins or address remapping routines.
 
 ### Firmware Implementation (`DELTA_Door_Counter.ino`)
-The firmware located at [`hardware/DELTA_Door_Counter/DELTA_Door_Counter.ino`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/hardware/DELTA_Door_Counter/DELTA_Door_Counter.ino) implements:
+The firmware located at [`hardware/DELTA_Door_Counter/DELTA_Door_Counter.ino`](hardware/DELTA_Door_Counter/DELTA_Door_Counter.ino) implements:
 1. **Directional Passage State Machine**:
    - **Entry**: Sensor 1 triggered first $\rightarrow$ Sensor 2 triggered within 2 seconds = `ENTRY` (+1 headcount).
    - **Exit**: Sensor 2 triggered first $\rightarrow$ Sensor 1 triggered within 2 seconds = `EXIT` (-1 headcount).
@@ -226,7 +226,7 @@ During the bring-up of the physical hardware, five distinct electrical, firmware
 
 ## 5. IoT Serial-to-Web Bridge (`door_serial_bridge.py`)
 
-The bridge script at [`hardware/door_serial_bridge.py`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/hardware/door_serial_bridge.py) establishes bidirectional communication between the microcontroller and the web operating system:
+The bridge script at [`hardware/door_serial_bridge.py`](hardware/door_serial_bridge.py) establishes bidirectional communication between the microcontroller and the web operating system:
 
 ```python
 # Core logic snippet
@@ -254,9 +254,37 @@ def find_esp32_port():
 
 ---
 
+## 5.1. CCTV Room Density Perception System (Zebronics ZEB-CRYSTAL PRO 480p)
+
+To complement door laser tripwires with visual room state verification, DELTA ENGINE features an optical CCTV density perception engine supporting external webcams (specifically tuned for the **Zebronics ZEB-CRYSTAL PRO 480p** USB camera).
+
+### Visual Metrics & Density Computation
+The computer vision pipeline tracks headcount against target venue capacity to compute room saturation metrics in real time:
+- **`% Room Occupied`**:
+  $$\text{Occupied } \% = \min\left(100, \text{round}\left(\frac{\text{detectedAttendees}}{\text{capacity}} \times 100\right)\right)$$
+- **`% Room Empty`**:
+  $$\text{Empty } \% = 100 - \text{Occupied } \%$$
+
+### Real-Time Volunteer & Coordinator Notification Protocol
+The system enforces automated threshold alerts broadcasted over WebSockets:
+1. **🚨 ROOM FULL (Occupancy $\ge 90\%$ / $100\%$ Saturation)**:
+   - **Target**: Door & Crowd Volunteers (*Priya Patel* @ Entrance A, *Rohan Sharma* @ Stage Front) and Lead Coordinators (*Ananya Roy*, *Arjun Mehta*).
+   - **Action**: High-visibility siren banner slides down across coordinator screens with audio alert; automated WhatsApp notices are logged; door volunteers halt incoming admissions and redirect crowds to Lovelace Suite.
+2. **ℹ️ ROOM EMPTY (Occupancy $\le 10\%$ / Empty $\ge 90\%$)**:
+   - **Target**: AV & Stage Volunteers (*Ananya Sen*, *Aarav Mehta*).
+   - **Action**: Clears stage crew to enter the auditorium for speaker mic checks and presentation setup.
+
+### Dual Perception Architectures Supported
+- **Native In-Browser WebRTC HUD (`frontend/components/cctvPerception.js`)**:
+  Accesses the Zebronics USB camera directly in Chrome/Edge at 640x480 resolution with zero external drivers. Renders live dual progress gauges (`% Occupied` and `% Empty`), interactive capacity sliders, and pitch demo simulation buttons.
+- **Python OpenCV Edge Agent (`hardware/cctv_occupancy_vision.py`)**:
+  Connects to USB camera index via `cv2.VideoCapture`, executes HOG person detection with bounding box overlays, and streams JSON telemetry to `http://localhost:3000/api/sensors/camera`.
+
+---
+
 ## 6. Backend API & Autonomous Self-Healing Pipeline (`server.js`)
 
-Located in [`backend/server.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/server.js), the `/api/sensors/door` endpoint handles real-time IoT ingress:
+Located in [`backend/server.js`](backend/server.js), the `/api/sensors/door` endpoint handles real-time IoT ingress:
 
 ### Request Schema
 ```http
@@ -404,8 +432,8 @@ DELTAengine/
 │   ├── components/
 │   │   ├── agentSwarm.js               # Groq LLM Swarm (Liaison, Scheduler, Logistics, Marketing)
 │   │   ├── selfHealing.js              # Conflict solver & deterministic fallback engine
-│   │   ├── graphEngine.js              # In-memory graph model for halls, topics, speakers
-│   │   └── notificationService.js      # WhatsApp & Supabase email dispatch routines
+│   │   ├── graphDb.js                  # In-memory graph model for halls, topics, speakers
+│   │   └── supabaseEmailIntegrator.js  # WhatsApp & Supabase email dispatch routines
 │   └── data/
 │       └── initialSchedule.json        # Default conference schedule & hall capacities
 ├── frontend/
@@ -419,27 +447,31 @@ DELTAengine/
 │       ├── websockets.js               # Client WebSocket client & live occupancy listeners
 │       ├── graphVisualizer.js          # Interactive canvas rendering of topic/hall graph
 │       ├── dragdrop.js                 # HTML5 schedule drag-and-drop mechanics
-│       └── tourGuide.js                # Docked 90-degree sidebar interactive walkthrough
+│       ├── tourGuide.js                # Docked 90-degree sidebar interactive walkthrough
+│       └── cctvPerception.js           # Zebronics 480p CCTV perception controller & HUD
 └── hardware/
     ├── DELTA_Door_Counter/
     │   └── DELTA_Door_Counter.ino      # ESP32 Dual VL53L0X firmware with auto-pin detection
-    └── door_serial_bridge.py           # USB Serial COM7 -> HTTP REST API bridge
+    ├── drivers/
+    │   ├── CP210x_Windows_Driver/      # Silicon Labs CP210x USB-to-UART driver files
+    │   └── install_cp210x_driver.bat   # 1-Click admin driver installer
+    ├── door_serial_bridge.py           # USB Serial COM7 -> HTTP REST API bridge
+    └── cctv_occupancy_vision.py        # Zebronics 480p CCTV OpenCV room density perception agent
 ```
 
 ---
 
 ## 10. End-to-End Live Demo Execution Guide
 
-Follow these steps to demonstrate the complete IoT-to-AI self-healing workflow:
+Follow these steps to demonstrate the complete IoT-to-AI self-healing and CCTV perception workflow:
 
 ### Step 1: Start the Backend Server
 ```powershell
-cd d:\DESKTOP\Desktop\HACKATHONS\DELTAengine-main
-node backend/server.js
+npm start
 ```
 *Expected Output*: `[DELTA ENGINE] Running on http://localhost:3000`
 
-### Step 2: Connect Hardware & Run the Serial Bridge
+### Step 2A: Connect Hardware & Run the Door Serial Bridge
 1. Plug the ESP32 into USB (`COM7`).
 2. Close any open Serial Monitor windows in Arduino IDE (to free `COM7`).
 3. Run the bridge:
@@ -449,6 +481,13 @@ python hardware/door_serial_bridge.py
 *Expected Output*:  
 `📡 Connecting to ESP32 on: COM7 at 115200 baud`  
 `✅ Serial connection established! Listening for door crossings...`
+
+### Step 2B: Run the Zebronics 480p CCTV Room Density Perception Agent (Optional)
+Plug in the Zebronics ZEB-CRYSTAL PRO USB webcam and run:
+```powershell
+python hardware/cctv_occupancy_vision.py --camera 0 --capacity 25
+```
+*(Alternatively, open the Dashboard and click **📹 CCTV Density HUD** to run the camera directly in your web browser with zero command lines!)*
 
 ### Step 3: Open the Dashboard
 Navigate to `http://localhost:3000/index.html` in your browser.

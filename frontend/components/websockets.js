@@ -215,6 +215,25 @@ function initWebSockets() {
         if (toggleLlm && payload.data) toggleLlm.checked = !!payload.data.llmLimiter;
         if (toggleDb && payload.data) toggleDb.checked = !!payload.data.dbLimiter;
         break;
+
+      case 'CCTV_OCCUPANCY_UPDATE':
+        if (typeof window.handleCctvOccupancyUpdate === 'function') {
+          window.handleCctvOccupancyUpdate(payload.data);
+        }
+        break;
+
+      case 'VOLUNTEER_ALERT':
+        if (typeof window.handleVolunteerAlert === 'function') {
+          window.handleVolunteerAlert(payload.data);
+        }
+        break;
+
+      case 'ROOM_OCCUPANCY_UPDATE':
+        // Update live door occupancy metrics if handler present
+        if (typeof window.handleRoomOccupancyUpdate === 'function') {
+          window.handleRoomOccupancyUpdate(payload.data);
+        }
+        break;
     }
   };
 

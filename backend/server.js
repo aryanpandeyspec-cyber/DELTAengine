@@ -764,6 +764,249 @@ app.post('/api/sim/mass-disruption', async (req, res) => {
   });
 });
 
+// =========================================================================
+// 📹 CCTV WEBCAM (ZEBRONICS 480P) & IOT DOOR PERCEPTION SYSTEM
+// =========================================================================
+
+// In-memory CCTV perception telemetry store
+db.cctvState = {
+  'hall-1': {
+    hallId: 'hall-1',
+    hallName: 'Turing Hall',
+    peopleDetected: 0,
+    capacity: 250,
+    occupiedPercent: 0,
+    emptyPercent: 100,
+    status: 'EMPTY',
+    source: 'Zebronics ZEB-CRYSTAL PRO 480p CCTV',
+    lastUpdated: new Date().toLocaleTimeString()
+  }
+};
+
+let lastCctvAlertState = null;
+let lastAlertTimestamp = 0;
+
+// 1. CCTV & Webcam Room Occupancy Perception Endpoint (% Occupied / % Empty)
+app.post('/api/sensors/camera', (req, res) => {
+  const { hallId, peopleDetected, capacity, status, source } = req.body;
+  const targetHallId = hallId || 'hall-1';
+  const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
+  
+  const currentCount = parseInt(peopleDetected, 10) >= 0 ? parseInt(peopleDetected, 10) : 0;
+  const targetCap = parseInt(capacity, 10) > 0 ? parseInt(capacity, 10) : hall.capacity;
+  
+  // Calculate exact percentages
+  const occupiedPercent = Math.min(100, Math.round((currentCount / targetCap) * 100));
+  const emptyPercent = Math.max(0, 100 - occupiedPercent);
+  
+  let currentStatus = status;
+  if (!currentStatus) {
+    if (occupiedPercent >= 95) currentStatus = 'ROOM_FULL';
+    else if (occupiedPercent >= 80) currentStatus = 'NEAR_CAPACITY';
+    else if (occupiedPercent <= 10) currentStatus = 'EMPTY';
+    else currentStatus = 'OPTIMAL';
+  }
+
+  const cameraPayload = {
+    hallId: targetHallId,
+    hallName: hall.name,
+    peopleDetected: currentCount,
+    capacity: targetCap,
+    occupiedPercent,
+    emptyPercent,
+    status: currentStatus,
+    source: source || 'Zebronics ZEB-CRYSTAL PRO 480p CCTV',
+    timestamp: new Date().toLocaleTimeString()
+  };
+
+  db.cctvState[targetHallId] = cameraPayload;
+
+  // Broadcast live CCTV metrics to all connected coordinator & volunteer clients
+  broadcast({
+    type: 'CCTV_OCCUPANCY_UPDATE',
+    data: cameraPayload
+  });
+
+  // Evaluate Volunteer & Coordinator Notification triggers ONLY on state transition
+  const now = Date.now();
+  if (lastCctvAlertState !== currentStatus) {
+    if (currentStatus === 'ROOM_FULL' || occupiedPercent >= 95) {
+      lastCctvAlertState = 'ROOM_FULL';
+      lastAlertTimestamp = now;
+
+      const fullAlert = {
+        id: 'cctv_full_' + now,
+        type: 'ROOM_FULL',
+        severity: 'critical',
+        hallId: targetHallId,
+        hallName: hall.name,
+        occupiedPercent,
+        emptyPercent,
+        peopleDetected: currentCount,
+        capacity: targetCap,
+        timestamp: cameraPayload.timestamp,
+        assignedVolunteers: [
+          { name: 'Priya Patel', role: 'Door & Crowd Volunteer', location: 'Turing Hall (Entrance A)', task: 'HALT ENTRANCE & REDIRECT ATTENDEES' },
+          { name: 'Rohan Sharma', role: 'Lead Stage Volunteer', location: 'Turing Hall (Stage Front)', task: 'FIRE SAFETY & AISLE CLEARANCE' },
+          { name: 'Aarav Mehta', role: 'Crowd Runner', location: 'Aisle 2', task: 'PREVENT CHAIR OVERCROWDING' }
+        ],
+        assignedCoordinators: [
+          { name: 'Ananya Roy', role: 'Lead Event Coordinator', phone: '+91 98765 43210' },
+          { name: 'Arjun Mehta', role: 'Super Admin', phone: '+91 98990 01122' }
+        ],
+        message: `🚨 CCTV ALERT: "${hall.name}" is ${occupiedPercent}% FULL (${emptyPercent}% Empty)! Capacity reached (${currentCount}/${targetCap} pax). Volunteers deployed to redirect incoming crowd to Lovelace Suite.`
+      };
+
+      broadcast({
+        type: 'VOLUNTEER_ALERT',
+        data: fullAlert
+      });
+
+      sendWhatsAppNotification(
+        'Priya Patel (Door Volunteer)',
+        '+91 98123 45678',
+        `🚨 [CCTV URGENT] ${hall.name} is ${occupiedPercent}% FULL! Halt admissions and direct attendees to Lovelace Suite.`
+      );
+
+      sendWhatsAppNotification(
+        'Ananya Roy (Lead Coordinator)',
+        '+91 98765 43210',
+        `🚨 [CCTV BREACH] ${hall.name} capacity reached (${occupiedPercent}% Occupied). Gate closure active.`
+      );
+
+    } else if (currentStatus === 'NEAR_CAPACITY' || (occupiedPercent >= 80 && occupiedPercent < 95)) {
+      lastCctvAlertState = 'NEAR_CAPACITY';
+      lastAlertTimestamp = now;
+
+      const warn80Alert = {
+        id: 'cctv_warn80_' + now,
+        type: 'ROOM_80_PERCENT',
+        severity: 'warning',
+        hallId: targetHallId,
+        hallName: hall.name,
+        occupiedPercent,
+        emptyPercent,
+        peopleDetected: currentCount,
+        capacity: targetCap,
+        timestamp: cameraPayload.timestamp,
+        assignedVolunteers: [
+          { name: 'Priya Patel', role: 'Door & Crowd Volunteer', location: 'Turing Hall (Entrance A)', task: 'PREPARE OVERFLOW ROUTING TO LOVELACE' },
+          { name: 'Aarav Mehta', role: 'Crowd Runner', location: 'Aisle 2', task: 'MONITOR SEAT OCCUPANCY DENSITY' }
+        ],
+        assignedCoordinators: [
+          { name: 'Ananya Roy', role: 'Lead Event Coordinator', phone: '+91 98765 43210' }
+        ],
+        message: `⚠️ CCTV WARNING: "${hall.name}" is ${occupiedPercent}% FULL (${emptyPercent}% Empty)! 80% room capacity threshold reached (${currentCount}/${targetCap} pax). Crowd volunteers alerted to prepare overflow routing.`
+      };
+
+      broadcast({
+        type: 'VOLUNTEER_ALERT',
+        data: warn80Alert
+      });
+
+      sendWhatsAppNotification(
+        'Priya Patel (Door Volunteer)',
+        '+91 98123 45678',
+        `⚠️ [CCTV 80% WARNING] ${hall.name} is ${occupiedPercent}% FULL! Prepare overflow queue management for Lovelace Suite.`
+      );
+
+      sendWhatsAppNotification(
+        'Ananya Roy (Lead Coordinator)',
+        '+91 98765 43210',
+        `⚠️ [CCTV 80% NOTICE] ${hall.name} has reached ${occupiedPercent}% capacity. Near capacity warning active.`
+      );
+
+    } else if (currentStatus === 'EMPTY' || occupiedPercent <= 10) {
+      lastCctvAlertState = 'EMPTY';
+      lastAlertTimestamp = now;
+
+      const emptyAlert = {
+        id: 'cctv_empty_' + now,
+        type: 'ROOM_EMPTY',
+        severity: 'info',
+        hallId: targetHallId,
+        hallName: hall.name,
+        occupiedPercent,
+        emptyPercent,
+        peopleDetected: currentCount,
+        capacity: targetCap,
+        timestamp: cameraPayload.timestamp,
+        assignedVolunteers: [
+          { name: 'Ananya Sen', role: 'AV & Stream Volunteer', location: 'Turing Hall (AV Desk)', task: 'STAGE & LIVE STREAM SETUP PERMITTED' },
+          { name: 'Rohan Sharma', role: 'Stage Lead', location: 'Stage Front', task: 'SPEAKER PODIUM & MIC PREP' }
+        ],
+        assignedCoordinators: [
+          { name: 'Rohan Kulkarni', role: 'AV Systems & Facility Stage Lead', phone: '+91 97112 24455' }
+        ],
+        message: `ℹ️ CCTV NOTICE: "${hall.name}" is EMPTY (${emptyPercent}% Vacant, ${occupiedPercent}% Occupied). Stage and AV volunteers cleared to enter for session setup.`
+      };
+
+      broadcast({
+        type: 'VOLUNTEER_ALERT',
+        data: emptyAlert
+      });
+
+      sendWhatsAppNotification(
+        'Ananya Sen (AV Volunteer)',
+        '+91 97890 12345',
+        `ℹ️ [CCTV NOTICE] ${hall.name} is now EMPTY (${emptyPercent}% Vacant). You are cleared to begin stage AV setup.`
+      );
+    } else if (currentStatus === 'OPTIMAL') {
+      lastCctvAlertState = 'OPTIMAL';
+    }
+  }
+
+  res.json({
+    success: true,
+    data: cameraPayload
+  });
+});
+
+// GET endpoint to fetch latest CCTV metrics
+app.get('/api/sensors/camera/latest', (req, res) => {
+  const hallId = req.query.hallId || 'hall-1';
+  const data = db.cctvState[hallId] || db.cctvState['hall-1'];
+  res.json({ success: true, data });
+});
+
+// 2. Physical IoT Door Passage Counter Endpoint (Dual VL53L0X Sensors)
+app.post('/api/sensors/door', async (req, res) => {
+  const { event, hallId, netOccupancy, entries, exits, dist1, dist2 } = req.body;
+  const targetHallId = hallId || 'hall-1';
+  const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
+  const occupancy = parseInt(netOccupancy, 10) || 0;
+
+  broadcast({
+    type: 'ROOM_OCCUPANCY_UPDATE',
+    data: {
+      hallId: targetHallId,
+      hallName: hall.name,
+      capacity: hall.capacity,
+      occupancy: occupancy,
+      entries: entries || 0,
+      exits: exits || 0,
+      dist1: dist1 || 0,
+      dist2: dist2 || 0,
+      event: event || 'ENTRY',
+      timestamp: new Date().toLocaleTimeString()
+    }
+  });
+
+  if (occupancy > hall.capacity) {
+    const activeTopicId = db.schedule['slot-1'][targetHallId];
+    if (activeTopicId && db.graph.topics[activeTopicId]) {
+      const topic = db.graph.topics[activeTopicId];
+      topic.interest = occupancy;
+
+      const eventDesc = `⚡ IoT Door Sensor: "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
+      const healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+      return res.json({ success: true, surgeTriggered: true, healingReport });
+    }
+  }
+
+  res.json({ success: true, surgeTriggered: false });
+});
+
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
   server.listen(PORT, async () => {
