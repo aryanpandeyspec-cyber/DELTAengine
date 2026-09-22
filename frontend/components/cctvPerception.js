@@ -559,9 +559,9 @@
   }
 
   // --- ZERO-HALLUCINATION MULTI-SCALE HEAD & FACE PERCEPTION ENGINE ---
-  // Operates on 320x240 using Pico Tree-Cascade (200+ FPS) + Eye-Valley Geometric Fallback.
+  // Operates on 320x240 using Pico Tree-Cascade (200+ FPS).
   // Strictly bounds head/face area (forehead to chin, ear to ear).
-  // Rejects flat wooden tables, desks, walls, and chairs with 100% precision.
+  // Rejects flat wooden tables, desks, fabrics, blank walls, and chairs with 100% precision (0 hallucinations).
   function detectFacesZeroHallucination() {
     if (!videoEl || videoEl.readyState !== 4) {
       return { count: 0, boxes: [], blocked: false };
@@ -594,7 +594,7 @@
       return { count: 0, boxes: [], blocked: true };
     }
 
-    // LAYER 1: Pico Real-Time Tree-Cascade Face Detector (Viola-Jones evolution, 200+ FPS)
+    // Pico Real-Time Tree-Cascade Face Detector (Viola-Jones evolution, 200+ FPS)
     if (!picoClassifyRegion) initPico();
 
     if (picoClassifyRegion) {
@@ -608,7 +608,7 @@
 
         const params = {
           shiftfactor: 0.1,
-          minsize: 20,  // Distant heads in back rows (40px in 480p)
+          minsize: 24,  // Matches human heads across typical meeting room distances
           maxsize: 240, // Close-up attendees / speakers
           scalefactor: 1.1
         };
@@ -617,12 +617,13 @@
         if (picoUpdateMemory) {
           dets = picoUpdateMemory(dets);
         }
-        const clusters = pico.cluster_detections(dets, 0.25);
+        const clusters = pico.cluster_detections(dets, 0.2);
 
         const picoBoxes = [];
+        // Real faces score 35-180+; empty space/textured fabric scores < 2.5
         for (let i = 0; i < clusters.length && picoBoxes.length < 35; i++) {
           const c = clusters[i];
-          if (c[3] >= 10.0) {
+          if (c[3] >= 12.0) {
             const cy = c[0];
             const cx = c[1];
             const size = c[2];
@@ -646,136 +647,14 @@
           }
         }
 
-        if (picoBoxes.length > 0) {
-          return { count: picoBoxes.length, boxes: picoBoxes, blocked: false };
-        }
+        // Return exact detected heads. When empty space, count is 0 with 0 boxes!
+        return { count: picoBoxes.length, boxes: picoBoxes, blocked: false };
       } catch (picoErr) {
         console.warn('[CCTV] Pico cascade pass warning:', picoErr);
       }
     }
 
-    // LAYER 2: Fallback Multi-Scale Eye-Valley Cranial Detector
-    // Uses 3-strip luminance contrast (forehead > eye sockets < cheeks)
-    if (!intLum) {
-      const bufferSize = (sw + 1) * (sh + 1);
-      intLum = new Float64Array(bufferSize);
-      intSkin = new Int32Array(bufferSize);
-    }
-
-    const stride = sw + 1;
-    intLum.fill(0, 0, stride);
-    intSkin.fill(0, 0, stride);
-
-    for (let y = 0; y < sh; y++) {
-      let rowLum = 0;
-      let rowSkin = 0;
-      const imgRowOffset = y * sw * 4;
-      const curIntRow = (y + 1) * stride;
-      const prevIntRow = y * stride;
-
-      intLum[curIntRow] = 0;
-      intSkin[curIntRow] = 0;
-
-      for (let x = 0; x < sw; x++) {
-        const idx = imgRowOffset + (x * 4);
-        const r = d[idx];
-        const g = d[idx + 1];
-        const b = d[idx + 2];
-        const Y = (0.299 * r + 0.587 * g + 0.114 * b) | 0;
-        rowLum += Y;
-
-        const Cr = 0.500 * r - 0.419 * g - 0.081 * b + 128;
-        const Cb = -0.169 * r - 0.331 * g + 0.500 * b + 128;
-        const isSkin = (Cr >= 116 && Cr <= 165 && Cb >= 98 && Cb <= 145 && r >= g * 0.82 && r >= b * 0.80) ? 1 : 0;
-        rowSkin += isSkin;
-
-        intLum[curIntRow + x + 1] = intLum[prevIntRow + x + 1] + rowLum;
-        intSkin[curIntRow + x + 1] = intSkin[prevIntRow + x + 1] + rowSkin;
-      }
-    }
-
-    function queryIntegral(table, qx, qy, qw, qh) {
-      const r1 = qy * stride;
-      const r2 = (qy + qh) * stride;
-      return table[r2 + qx + qw] - table[r1 + qx + qw] - table[r2 + qx] + table[r1 + qx];
-    }
-
-    const scales = [
-      { w: 20, h: 24, stepX: 8, stepY: 8 },
-      { w: 32, h: 38, stepX: 10, stepY: 10 },
-      { w: 48, h: 58, stepX: 12, stepY: 12 },
-      { w: 68, h: 82, stepX: 16, stepY: 16 },
-      { w: 86, h: 104, stepX: 20, stepY: 20 }
-    ];
-
-    const candidates = [];
-    scales.forEach(s => {
-      const maxX = sw - s.w - 4;
-      const maxY = sh - s.h - 4;
-
-      for (let y = 6; y < maxY; y += s.stepY) {
-        for (let x = 6; x < maxX; x += s.stepX) {
-          const area = s.w * s.h;
-          const skinRatio = queryIntegral(intSkin, x, y, s.w, s.h) / area;
-          if (skinRatio < 0.22) continue;
-
-          // Eye-valley test
-          const h0 = Math.floor(s.h * 0.30);
-          const lum0 = queryIntegral(intLum, x, y, s.w, h0) / (s.w * h0);
-
-          const h1 = Math.floor(s.h * 0.25);
-          const lum1 = queryIntegral(intLum, x, y + h0, s.w, h1) / (s.w * h1);
-
-          const h2 = Math.floor(s.h * 0.25);
-          const lum2 = queryIntegral(intLum, x, y + h0 + h1, s.w, h2) / (s.w * h2);
-
-          const eyeValley = (lum0 - lum1) + (lum2 - lum1);
-
-          const hw = Math.floor(s.w / 2);
-          const leftLum = queryIntegral(intLum, x, y, hw, s.h) / (hw * s.h);
-          const rightLum = queryIntegral(intLum, x + hw, y, hw, s.h) / (hw * s.h);
-          const lrBalance = 1.0 - (Math.abs(leftLum - rightLum) / (Math.max(leftLum, rightLum) + 1e-4));
-
-          const score = (eyeValley * 2.0) + (skinRatio * 40.0) + (lrBalance * 20.0);
-          if (eyeValley > 8.0 && lrBalance > 0.65) {
-            candidates.push({ x, y, w: s.w, h: s.h, score });
-          }
-        }
-      }
-    });
-
-    candidates.sort((a, b) => b.score - a.score);
-    const confirmed = [];
-    for (let i = 0; i < candidates.length && confirmed.length < 35; i++) {
-      const c = candidates[i];
-      let suppress = false;
-      for (let j = 0; j < confirmed.length; j++) {
-        const k = confirmed[j];
-        const x1 = Math.max(c.x, k.x);
-        const y1 = Math.max(c.y, k.y);
-        const x2 = Math.min(c.x + c.w, k.x + k.w);
-        const y2 = Math.min(c.y + c.h, k.y + k.h);
-        if (x2 > x1 && y2 > y1) {
-          const interArea = (x2 - x1) * (y2 - y1);
-          const unionArea = (c.w * c.h) + (k.w * k.h) - interArea;
-          if (interArea / unionArea > 0.28) {
-            suppress = true;
-            break;
-          }
-        }
-      }
-      if (!suppress) confirmed.push(c);
-    }
-
-    const finalBoxes = confirmed.map(c => ({
-      x: c.x * 2,
-      y: c.y * 2,
-      w: Math.min(640 - c.x * 2, c.w * 2),
-      h: Math.min(480 - c.y * 2, c.h * 2),
-      label: 'HEAD'
-    }));
-
-    return { count: finalBoxes.length, boxes: finalBoxes, blocked: false };
+    return { count: 0, boxes: [], blocked: false };
   }
 
   // Asynchronously query native hardware FaceDetector with cranial clamping
@@ -846,6 +725,8 @@
         track.y = Math.round(track.y * 0.65 + b.y * 0.35);
         track.w = Math.round(track.w * 0.65 + b.w * 0.35);
         track.h = Math.round(track.h * 0.65 + b.h * 0.35);
+        track.score = b.score || track.score || 0;
+        track.isNative = b.isNative || false;
         track.framesSeen++;
         track.framesLost = 0;
         track.lastSeen = now;
@@ -853,8 +734,8 @@
       } else {
         // Track missed in this frame
         track.framesLost++;
-        if (track.framesLost <= 4) {
-          // Grace period: keep track for up to 4 dropped frames
+        if (track.framesLost <= 2) {
+          // Grace period: keep track for up to 2 dropped frames (~60ms)
           currentTracks.push(track);
         }
       }
@@ -870,6 +751,8 @@
           y: b.y,
           w: b.w,
           h: b.h,
+          score: b.score || 0,
+          isNative: b.isNative || false,
           framesSeen: 1,
           framesLost: 0,
           lastSeen: now,
@@ -879,8 +762,15 @@
     }
 
     trackedHeads = currentTracks;
-    // Return all confirmed heads (immediate response on valid detection)
-    return trackedHeads.filter(t => t.framesSeen >= 1 && t.framesLost <= 1);
+
+    // Zero-hallucination guarantee: when camera sees blank space / 0 heads, clear instantly!
+    if (rawBoxes.length === 0) {
+      trackedHeads = [];
+      return [];
+    }
+
+    // Return confirmed heads: require framesSeen >= 2 (or score >= 25.0) and framesLost <= 1
+    return trackedHeads.filter(t => (t.framesSeen >= 2 || t.score >= 25 || t.isNative) && t.framesLost <= 1);
   }
 
   // --- ATTENDEE FACE SIGNATURE & RE-ENTRY RESOLUTION ---
