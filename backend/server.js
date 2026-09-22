@@ -337,8 +337,24 @@ app.post('/api/sensors/door', async (req, res) => {
   const targetHallId = hallId || 'hall-1';
   const hall = db.graph.halls[targetHallId] || { name: 'Turing Auditorium', capacity: 150 };
   const occupancy = parseInt(netOccupancy, 10) || 0;
-
   const timeStr = new Date().toLocaleTimeString();
+
+  // Forward DOOR_TRIGGER to camera for face scanning
+  if (event === 'DOOR_TRIGGER') {
+    console.log(`[IoT Door Sensor] ⚡ DOOR_TRIGGER received at ${timeStr} (Dist2: ${dist2}mm) -> Activating Camera Face Scan...`);
+    broadcast({
+      type: 'DOOR_TRIGGER',
+      data: {
+        hallId: targetHallId,
+        hallName: hall.name,
+        dist1: dist1 || 0,
+        dist2: dist2 || 0,
+        timestamp: timeStr
+      }
+    });
+    return res.json({ success: true, triggerBroadcast: true });
+  }
+
   console.log(`[IoT Door Sensor] ${event}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries}, Out: ${exits})`);
 
   // Broadcast live occupancy update to all connected frontend clients
@@ -361,7 +377,6 @@ app.post('/api/sensors/door', async (req, res) => {
   let surgeTriggered = false;
 
   if (occupancy > hall.capacity) {
-    // Find active topic scheduled in this hall
     let activeTopicId = null;
     for (const slotId in db.schedule) {
       if (db.schedule[slotId][targetHallId]) {
@@ -373,9 +388,8 @@ app.post('/api/sensors/door', async (req, res) => {
     if (activeTopicId && db.graph.topics[activeTopicId]) {
       surgeTriggered = true;
       const topic = db.graph.topics[activeTopicId];
-      topic.interest = occupancy; // Dynamically set topic interest to physical headcount!
+      topic.interest = occupancy;
       const eventDesc = `⚡ IoT Door Sensor: "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
-
       healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
     }
   }
@@ -388,6 +402,72 @@ app.post('/api/sensors/door', async (req, res) => {
     surgeTriggered,
     healingReport
   });
+});
+
+// Endpoint for Camera Face Verification (Entry / Exit / Re-entry)
+app.post('/api/sensors/face-passage', async (req, res) => {
+  const { event, attendeeId, attendeeName, netOccupancy, totalEntries, totalExits, reEntries, hallId } = req.body;
+  const targetHallId = hallId || 'hall-1';
+  const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
+  const occupancy = parseInt(netOccupancy, 10) >= 0 ? parseInt(netOccupancy, 10) : 0;
+  const timeStr = new Date().toLocaleTimeString();
+
+  const occupiedPct = Math.min(100, Math.round((occupancy / hall.capacity) * 100));
+  const emptyPct = Math.max(0, 100 - occupiedPct);
+  const status = occupiedPct >= 95 ? 'ROOM_FULL' : occupiedPct >= 80 ? 'NEAR_CAPACITY' : occupiedPct <= 10 ? 'EMPTY' : 'OPTIMAL';
+
+  console.log(`[Face Perception] ${event}: ${attendeeName} (${attendeeId}) | Hall Occupancy: ${occupancy}/${hall.capacity} (${occupiedPct}%)`);
+
+  const passageData = {
+    event,
+    attendeeId,
+    attendeeName,
+    occupancy,
+    capacity: hall.capacity,
+    occupiedPercent: occupiedPct,
+    emptyPercent: emptyPct,
+    totalEntries: totalEntries || 0,
+    totalExits: totalExits || 0,
+    reEntries: reEntries || 0,
+    hallId: targetHallId,
+    hallName: hall.name,
+    status,
+    timestamp: timeStr
+  };
+
+  db.cctvState[targetHallId] = {
+    ...db.cctvState[targetHallId],
+    peopleDetected: occupancy,
+    capacity: hall.capacity,
+    occupiedPercent: occupiedPct,
+    emptyPercent: emptyPct,
+    status,
+    lastUpdated: timeStr
+  };
+
+  broadcast({
+    type: 'ROOM_OCCUPANCY_UPDATE',
+    data: passageData
+  });
+
+  broadcast({
+    type: 'ATTENDEE_PASSAGE_EVENT',
+    data: passageData
+  });
+
+  // Evaluate self-healing capacity breach
+  if (occupancy > hall.capacity) {
+    const activeTopicId = db.schedule['slot-1'] ? db.schedule['slot-1'][targetHallId] : null;
+    if (activeTopicId && db.graph.topics[activeTopicId]) {
+      const topic = db.graph.topics[activeTopicId];
+      topic.interest = occupancy;
+      const eventDesc = `⚡ Camera & Sensor Fusion: "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds limit of ${hall.capacity}.`;
+      const healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+      return res.json({ success: true, passageData, healingReport });
+    }
+  }
+
+  res.json({ success: true, passageData });
 });
 
 app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
@@ -969,43 +1049,6 @@ app.get('/api/sensors/camera/latest', (req, res) => {
   res.json({ success: true, data });
 });
 
-// 2. Physical IoT Door Passage Counter Endpoint (Dual VL53L0X Sensors)
-app.post('/api/sensors/door', async (req, res) => {
-  const { event, hallId, netOccupancy, entries, exits, dist1, dist2 } = req.body;
-  const targetHallId = hallId || 'hall-1';
-  const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
-  const occupancy = parseInt(netOccupancy, 10) || 0;
-
-  broadcast({
-    type: 'ROOM_OCCUPANCY_UPDATE',
-    data: {
-      hallId: targetHallId,
-      hallName: hall.name,
-      capacity: hall.capacity,
-      occupancy: occupancy,
-      entries: entries || 0,
-      exits: exits || 0,
-      dist1: dist1 || 0,
-      dist2: dist2 || 0,
-      event: event || 'ENTRY',
-      timestamp: new Date().toLocaleTimeString()
-    }
-  });
-
-  if (occupancy > hall.capacity) {
-    const activeTopicId = db.schedule['slot-1'][targetHallId];
-    if (activeTopicId && db.graph.topics[activeTopicId]) {
-      const topic = db.graph.topics[activeTopicId];
-      topic.interest = occupancy;
-
-      const eventDesc = `⚡ IoT Door Sensor: "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
-      const healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
-      return res.json({ success: true, surgeTriggered: true, healingReport });
-    }
-  }
-
-  res.json({ success: true, surgeTriggered: false });
-});
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {

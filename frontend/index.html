@@ -156,6 +156,22 @@
               <span>👥 Detected In Turing Hall: <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
               <span id="cctv-occupancy-status-pill" class="status-pill neutral">⚪ ROOM EMPTY (0%)</span>
             </div>
+
+            <!-- Door & Face Fusion Flow Tracker -->
+            <div class="cctv-flow-tracker-bar mt-2 mb-2" style="background:#f8fafc; border:2px solid #000; border-radius:8px; padding:6px 10px; display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; font-weight:800;">
+              <span>📥 IN: <strong id="cctv-count-entries" style="color:#16a34a;">0</strong></span>
+              <span>🚪 OUT: <strong id="cctv-count-exits" style="color:#dc2626;">0</strong></span>
+              <span>🔁 RE-ENTRY: <strong id="cctv-count-reentries" style="color:#d97706;">0</strong></span>
+              <span>👥 NET: <strong id="cctv-count-net" style="color:#2563eb;">0 Pax</strong></span>
+            </div>
+
+            <!-- Active Tracked Attendees -->
+            <div class="cctv-attendee-list-box mb-2" style="font-size:0.75rem;">
+              <div style="font-weight:700; margin-bottom:4px; color:#555;">👤 Verified Attendees at Venue:</div>
+              <div id="cctv-attendee-chips" style="display:flex; flex-wrap:wrap; max-height:56px; overflow-y:auto;">
+                <span style="font-size:0.75rem; color:#888;">No attendees checked in yet.</span>
+              </div>
+            </div>
           </div>
 
           <!-- Capacity Controller Slider -->
@@ -177,6 +193,7 @@
           <div class="cctv-sim-controls mb-3">
             <span class="sim-label">⚡ Pitch Simulation Triggers:</span>
             <div class="sim-btn-row">
+              <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Door Sensor (750mm)</button>
               <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
               <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
               <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80% Full</button>

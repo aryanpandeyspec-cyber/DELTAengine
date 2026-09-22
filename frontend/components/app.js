@@ -454,6 +454,15 @@ function triggerConfetti() {
 function createToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
+
+  // Prevent duplicate toast spam
+  const existing = Array.from(container.children).some(child => child.textContent.includes(message));
+  if (existing) return;
+
+  // Enforce maximum 3 concurrent toasts
+  while (container.children.length >= 3) {
+    container.removeChild(container.firstChild);
+  }
   
   const toast = document.createElement('div');
   toast.className = `toast-card ${type}`;
@@ -464,17 +473,21 @@ function createToast(message, type = 'info') {
   else if (type === 'conflict') icon = '🔥';
 
   toast.innerHTML = `
-    <span style="font-size:1.2rem;">${icon}</span>
-    <span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:700; flex-grow:1;">${message}</span>
+    <span style="font-size:1.1rem; line-height:1;">${icon}</span>
+    <span style="font-family:var(--font-mono, monospace); font-size:0.78rem; font-weight:700; flex-grow:1; word-break:break-word;">${message}</span>
+    <span style="cursor:pointer; font-weight:800; font-size:1rem; opacity:0.6; padding-left:6px;" onclick="this.parentElement.remove()">&times;</span>
   `;
 
   container.appendChild(toast);
 
   setTimeout(() => {
+    toast.style.transition = 'all 0.35s ease';
     toast.style.opacity = '0';
     toast.style.transform = 'translateY(15px)';
-    setTimeout(() => toast.remove(), 400);
-  }, 4000);
+    setTimeout(() => {
+      if (toast.parentElement) toast.remove();
+    }, 380);
+  }, 4200);
 }
 
 function showPushAlert(message) {

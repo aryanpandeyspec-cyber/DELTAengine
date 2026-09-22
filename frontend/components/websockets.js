@@ -228,8 +228,19 @@ function initWebSockets() {
         }
         break;
 
+      case 'DOOR_TRIGGER':
+        if (typeof window.handleDoorSensorTrigger === 'function') {
+          window.handleDoorSensorTrigger(payload.data);
+        }
+        break;
+
+      case 'ATTENDEE_PASSAGE_EVENT':
+        if (typeof window.handleAttendeePassageEvent === 'function') {
+          window.handleAttendeePassageEvent(payload.data);
+        }
+        break;
+
       case 'ROOM_OCCUPANCY_UPDATE':
-        // Update live door occupancy metrics if handler present
         if (typeof window.handleRoomOccupancyUpdate === 'function') {
           window.handleRoomOccupancyUpdate(payload.data);
         }
