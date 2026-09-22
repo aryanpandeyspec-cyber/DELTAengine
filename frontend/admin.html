@@ -37,8 +37,8 @@
           <span class="user-name-text" id="admin-user-name">Marcus Aurelius</span>
         </div>
         <div class="auth-nav-buttons">
-          <a href="index.html" class="btn btn-sm btn-blue" style="font-weight:700; text-decoration:none;">💻 OS
-            Dashboard</a>
+          <button id="btn-open-cctv" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;" title="Open Zebronics CCTV Room Density Perception HUD">📹 CCTV HUD <span class="cctv-live-dot"></span></button>
+          <a href="index.html" class="btn btn-sm btn-blue" style="font-weight:700; text-decoration:none;">💻 OS Dashboard</a>
           <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Logout</a>
         </div>
       </div>
@@ -54,6 +54,115 @@
         <p class="subtitle">Super Admin Administrative Control & System Diagnostics Portal</p>
       </div>
     </header>
+
+    <!-- VOLUNTEER & COORDINATOR REAL-TIME EMERGENCY ALERT BANNER -->
+    <div id="volunteer-alert-banner" class="volunteer-alert-banner hidden">
+      <button id="btn-close-alert-banner" class="volunteer-alert-close-btn" title="Close Notification" aria-label="Close notification">&times;</button>
+      <div class="volunteer-alert-content">
+        <div class="volunteer-alert-icon-box">
+          <span class="volunteer-alert-icon">🚨</span>
+        </div>
+        <div class="volunteer-alert-text-block">
+          <div id="volunteer-alert-title" class="volunteer-alert-title">CAPACITY BREACH ALERT</div>
+          <div id="volunteer-alert-message" class="volunteer-alert-msg">Turing Hall has reached capacity. Volunteers deployed.</div>
+          <div id="volunteer-alert-recipients" class="volunteer-alert-recipients"></div>
+        </div>
+        <button id="btn-dismiss-volunteer-banner" class="btn btn-sm btn-white" style="font-weight:800;">Acknowledge ✕</button>
+      </div>
+    </div>
+
+    <!-- TOP-LEVEL CCTV ZEBRONICS 480P LIVE ROOM PERCEPTION HUB -->
+    <section id="cctv-top-hub" class="cctv-top-hub mb-6">
+      <div class="cctv-hub-header">
+        <div class="cctv-hub-title-group">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <h2 class="cctv-hub-title">📹 CCTV ROOM PERCEPTION — ZEBRONICS CRYSTAL PRO 480P</h2>
+          <span id="cctv-stream-status" class="cctv-status-badge">⚪ <strong>CAMERA READY</strong></span>
+        </div>
+        <div class="cctv-hub-header-actions">
+          <select id="cctv-device-select" class="cctv-select">
+            <option value="">Detecting Zebronics Crystal Pro...</option>
+          </select>
+          <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
+          <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
+          <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;" title="Toggle between Full Camera HUD and Compact Bar">🔼 Minimize View</button>
+        </div>
+      </div>
+
+      <!-- Main Hub Body: Left Live Feed, Right Gauges & Controls -->
+      <div id="cctv-hub-body" class="cctv-hub-body">
+        <!-- Left: Canvas & Video Display -->
+        <div class="cctv-hub-video-col">
+          <div class="cctv-canvas-frame">
+            <video id="cctv-hidden-video" style="display:none;" playsinline muted></video>
+            <canvas id="cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
+          </div>
+          <div class="cctv-hub-feed-sub">
+            <span>🎯 <strong>Optical AI Engine:</strong> Real-time Head & Facial Recognition</span>
+            <span id="cctv-optical-detection-tag" class="badge-mini-green">0 Persons Detected</span>
+          </div>
+        </div>
+
+        <!-- Right: Real-time % Occupied vs % Empty Telemetry & Pitch Simulator -->
+        <div class="cctv-hub-metrics-col">
+          <!-- Big Dual Metric Banner -->
+          <div class="cctv-gauge-card mb-4">
+            <div class="gauge-split-header">
+              <div class="gauge-metric occupied">
+                <span class="gauge-label">🔴 ROOM OCCUPIED</span>
+                <span id="cctv-metric-occupied-pct" class="gauge-val occupied">0%</span>
+              </div>
+              <div class="gauge-divider"></div>
+              <div class="gauge-metric empty">
+                <span class="gauge-label">🔵 ROOM EMPTY</span>
+                <span id="cctv-metric-empty-pct" class="gauge-val empty">100%</span>
+              </div>
+            </div>
+
+            <!-- Dual Occupancy Track Bar -->
+            <div class="cctv-density-bar-track">
+              <div id="cctv-bar-occupied" class="cctv-density-bar-fill occupied" style="width: 0%;"></div>
+              <div id="cctv-bar-empty" class="cctv-density-bar-fill empty" style="width: 100%;"></div>
+            </div>
+
+            <div class="cctv-headcount-sub">
+              <span>👥 Detected In Turing Hall: <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
+              <span id="cctv-occupancy-status-pill" class="status-pill neutral">⚪ ROOM EMPTY (0%)</span>
+            </div>
+          </div>
+
+          <!-- Capacity Controller Slider -->
+          <div class="cctv-capacity-box mb-3">
+            <div class="capacity-slider-header">
+              <label for="cctv-capacity-slider"><strong>🎯 Target Venue Capacity (Turing Hall):</strong></label>
+              <span id="cctv-capacity-val" class="capacity-val-badge">25 Pax</span>
+            </div>
+            <input type="range" id="cctv-capacity-slider" min="2" max="250" value="25" step="1" class="neubrutalist-slider">
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#555; margin-top:4px;">
+              <span>Min: 2 Pax</span>
+              <span style="color:#d97706;">⚠️ 80% Alert: <strong id="cctv-80-threshold-lbl">20 Pax</strong></span>
+              <span style="color:#dc2626;">🚨 100% Alert: <strong id="cctv-100-threshold-lbl">25 Pax</strong></span>
+              <span>Max: 250 Pax</span>
+            </div>
+          </div>
+
+          <!-- Pitch Testing & Calibration Buttons -->
+          <div class="cctv-sim-controls mb-3">
+            <span class="sim-label">⚡ Pitch Simulation Triggers:</span>
+            <div class="sim-btn-row">
+              <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
+              <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
+              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80% Full</button>
+              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100% Full</button>
+              <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
+              <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- EXCLUSIVE SUPER ADMIN COMMAND CENTER HERO -->
     <div class="admin-hero-card mb-6">
@@ -96,7 +205,29 @@
             <div class="admin-diag-grid">
               <div class="diag-item">
                 <span class="diag-label">📊 Attendee Occupancy Rate:</span>
-                <span class="diag-val success" style="color:#ea4335;">210 / 250 Pax (84% Full)</span>
+                <span id="featured-event-occupancy-rate" class="diag-val success" style="color:#ea4335;">210 / 250 Pax (84% Full | 16% Empty)</span>
+              </div>
+              <!-- Real-time CCTV Room Perception Widget -->
+              <div class="diag-item" style="grid-column: span 2; background: #ffffff; border: 2px solid #000; padding: 12px 14px; border-radius: 10px; margin-top: 4px; box-shadow: 2px 2px 0px #000;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:nowrap; gap:10px;">
+                  <span class="diag-label" style="font-weight:800; color:#000; font-size:0.85rem; white-space:nowrap;">📹 CCTV Turing Hall Feed:</span>
+                  <button id="btn-open-cctv-secondary" class="btn btn-sm btn-yellow" style="font-size:0.75rem; font-weight:800; padding:4px 10px; border:2px solid #000; cursor:pointer; white-space:nowrap;" title="Jump to Top CCTV Perception Station">
+                    🔍 View Camera Feed ⬆️
+                  </button>
+                </div>
+                <div style="display:flex; gap:12px; align-items:center;">
+                  <div style="flex:1;">
+                    <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:0.75rem; font-weight:800; margin-bottom:4px;">
+                      <span id="admin-cctv-occupied-label" style="color:#ef4444;">🔴 OCCUPIED: 0%</span>
+                      <span id="admin-cctv-empty-label" style="color:#2563eb;">🔵 EMPTY: 100%</span>
+                    </div>
+                    <div style="height:12px; border:2px solid #000; border-radius:6px; overflow:hidden; display:flex; background:#e5e7eb;">
+                      <div id="admin-cctv-bar-occupied" style="width:0%; background:#10b981; transition: width 0.3s ease, background-color 0.3s ease;"></div>
+                      <div id="admin-cctv-bar-empty" style="width:100%; background:#3b82f6; transition: width 0.3s ease;"></div>
+                    </div>
+                  </div>
+                  <span id="admin-cctv-status-pill" class="status-pill neutral" style="font-size:0.72rem; padding:3px 8px; font-weight:800; white-space:nowrap;">⚪ EMPTY (0%)</span>
+                </div>
               </div>
               <div class="diag-item">
                 <span class="diag-label">⏱️ Session Time Remaining:</span>
@@ -288,10 +419,134 @@
     </div>
   </div>
 
+  <!-- CCTV WEBCAM ROOM DENSITY PERCEPTION MODAL -->
+  <div id="cctv-perception-modal" class="modal-backdrop hidden">
+    <div class="modal-card cctv-modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <h2 class="modal-title">📹 CCTV ROOM PERCEPTION — ZEBRONICS CRYSTAL PRO 480P</h2>
+        </div>
+        <button id="btn-close-cctv-modal" class="btn-close-modal" aria-label="Close Modal">&times;</button>
+      </div>
+
+      <div class="modal-body cctv-modal-layout">
+        <!-- Left: Live Video & Canvas Feed -->
+        <div class="cctv-video-container">
+          <div class="cctv-feed-header">
+            <span id="cctv-stream-status" class="cctv-status-badge">⚪ <strong>CAMERA INITIALIZING...</strong></span>
+            <div class="cctv-device-selector-wrap">
+              <select id="cctv-device-select" class="cctv-select">
+                <option value="">Detecting Zebronics Crystal Pro...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="cctv-canvas-frame">
+            <video id="cctv-hidden-video" style="display:none;" playsinline muted></video>
+            <canvas id="cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
+          </div>
+
+          <div class="cctv-camera-action-bar">
+            <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Camera</button>
+            <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Camera</button>
+            <span class="cctv-device-sub">Target: Zebronics ZEB-CRYSTAL PRO (480p / 640x480)</span>
+          </div>
+        </div>
+
+        <!-- Right: Density Gauges (% Occupied / % Empty) & Volunteer Dispatch -->
+        <div class="cctv-telemetry-panel">
+          <!-- Big Dual Metric Card -->
+          <div class="cctv-gauge-card mb-4">
+            <div class="gauge-split-header">
+              <div class="gauge-metric occupied">
+                <span class="gauge-label">🔴 ROOM OCCUPIED</span>
+                <span id="cctv-metric-occupied-pct" class="gauge-val occupied">0%</span>
+              </div>
+              <div class="gauge-divider"></div>
+              <div class="gauge-metric empty">
+                <span class="gauge-label">🔵 ROOM EMPTY</span>
+                <span id="cctv-metric-empty-pct" class="gauge-val empty">100%</span>
+              </div>
+            </div>
+
+            <!-- Visual Dual Density Bar -->
+            <div class="cctv-density-bar-track">
+              <div id="cctv-bar-occupied" class="cctv-density-bar-fill occupied" style="width: 0%;"></div>
+              <div id="cctv-bar-empty" class="cctv-density-bar-fill empty" style="width: 100%;"></div>
+            </div>
+
+            <div class="cctv-headcount-sub">
+              <span>👥 Detected Attendees: <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
+              <span id="cctv-occupancy-status-pill" class="status-pill neutral">⚪ ROOM EMPTY (0%)</span>
+            </div>
+          </div>
+
+          <!-- Capacity Controller Slider -->
+          <div class="cctv-capacity-box mb-4">
+            <div class="capacity-slider-header">
+              <label for="cctv-capacity-slider"><strong>🎯 Target Venue Capacity (Turing Hall):</strong></label>
+              <span id="cctv-capacity-val" class="capacity-val-badge">25 Pax</span>
+            </div>
+            <input type="range" id="cctv-capacity-slider" min="2" max="250" value="25" step="1" class="neubrutalist-slider">
+            <span class="capacity-hint">💡 Tip for demo: Slide capacity down to 2 or 5 pax to demonstrate 80% & 100% alerts live!</span>
+          </div>
+
+          <!-- Live Pitch Testing & Attendee Simulator -->
+          <div class="cctv-sim-controls mb-4">
+            <span class="sim-label">⚡ Live Pitch Test Actions:</span>
+            <div class="sim-btn-row">
+              <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
+              <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
+              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80% Full</button>
+              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100% Full</button>
+              <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
+              <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
+            </div>
+          </div>
+
+          <!-- Assigned Volunteers & Coordinators Live Dispatch -->
+          <div class="cctv-volunteers-card">
+            <div class="vol-card-header">
+              <span>🤝 ASSIGNED VOLUNTEERS ON DUTY (TURING HALL)</span>
+              <span class="badge-mini-green">SYNCED</span>
+            </div>
+            <div class="vol-duty-list">
+              <div class="vol-duty-item" id="vol-duty-priya">
+                <span class="vol-avatar">🚪</span>
+                <div class="vol-info">
+                  <strong>Priya Patel</strong> <em>(Crowd & Door Volunteer)</em>
+                  <span class="vol-task" id="vol-task-priya">Door Entrance A — Scanning passes & crowd routing</span>
+                </div>
+              </div>
+              <div class="vol-duty-item" id="vol-duty-rohan">
+                <span class="vol-avatar">🎤</span>
+                <div class="vol-info">
+                  <strong>Rohan Sharma</strong> <em>(Lead Stage Volunteer)</em>
+                  <span class="vol-task" id="vol-task-rohan">Stage Front — Safety aisle clearance & mic checks</span>
+                </div>
+              </div>
+              <div class="vol-duty-item" id="vol-duty-ananya">
+                <span class="vol-avatar">🖥️</span>
+                <div class="vol-info">
+                  <strong>Ananya Sen</strong> <em>(AV & Stream Volunteer)</em>
+                  <span class="vol-task" id="vol-task-ananya">AV Desk — Cleared for stage setup when room is EMPTY</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="components/websockets.js"></script>
   <script src="components/auth.js"></script>
   <script src="components/customCursor.js"></script>
   <script src="components/app.js"></script>
+  <script src="components/cctvPerception.js"></script>
 </body>
 
 </html>

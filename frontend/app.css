@@ -1,3 +1,8 @@
+/* Global Visibility Utility */
+.hidden {
+  display: none !important;
+}
+
 /* Neubrutalist Design System - DELTA ENGINE */
 
 /* --- SHACKLETON GLOBAL LOADER --- */
@@ -2795,3 +2800,570 @@ input:checked + .slider:before {
   transform: translateY(1px) !important;
   box-shadow: 1px 1px 0px #000 !important;
 }
+
+/* ==========================================================================
+   📹 CCTV WEBCAM ROOM DENSITY PERCEPTION & VOLUNTEER DISPATCH SYSTEM
+   ========================================================================== */
+
+/* Pulsing CCTV live dot */
+.cctv-live-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  margin-left: 6px;
+  vertical-align: middle;
+  box-shadow: 0 0 0 rgba(239, 68, 68, 0.7);
+  animation: cctvPulse 1.4s infinite;
+}
+
+@keyframes cctvPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1.15); box-shadow: 0 0 0 7px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* Real-Time Volunteer & Coordinator Emergency Alert Banner */
+.volunteer-alert-banner {
+  position: fixed;
+  top: 20px;
+  right: 24px;
+  left: auto;
+  transform: none;
+  width: min(92%, 520px);
+  z-index: 999999;
+  border: 3px solid #000000;
+  border-radius: 12px;
+  box-shadow: 6px 6px 0px #000000;
+  padding: 14px 18px;
+  animation: slideInRightBanner 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.3s ease;
+}
+
+.volunteer-alert-banner.hidden {
+  display: none !important;
+}
+
+@keyframes slideInRightBanner {
+  0% { transform: translateX(110%); opacity: 0; }
+  100% { transform: translateX(0); opacity: 1; }
+}
+
+.volunteer-alert-banner.critical-siren {
+  background: #fee2e2;
+  border-color: #dc2626;
+  box-shadow: 6px 6px 0px #991b1b;
+  animation: sirenFlash 1.6s infinite alternate, slideInRightBanner 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.volunteer-alert-banner.warning-amber {
+  background: #fef3c7;
+  border-color: #d97706;
+  box-shadow: 6px 6px 0px #b45309;
+  animation: warningFlash 1.8s infinite alternate, slideInRightBanner 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes warningFlash {
+  0% { background: #fef3c7; box-shadow: 6px 6px 0px #b45309; }
+  100% { background: #fde68a; box-shadow: 0 0 16px rgba(217, 119, 6, 0.5), 6px 6px 0px #000; }
+}
+
+@keyframes sirenFlash {
+  0% { background: #fee2e2; box-shadow: 6px 6px 0px #991b1b; }
+  100% { background: #fecaca; box-shadow: 0 0 20px rgba(220, 38, 38, 0.6), 6px 6px 0px #000; }
+}
+
+.volunteer-alert-banner.info-notice {
+  background: #dbeafe;
+  border-color: #2563eb;
+  box-shadow: 6px 6px 0px #1d4ed8;
+}
+
+.volunteer-alert-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.volunteer-alert-icon-box {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.volunteer-alert-text-block {
+  flex: 1;
+}
+
+.volunteer-alert-title {
+  font-family: var(--font-heading, 'Josefin Sans', sans-serif);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+  color: #111827;
+}
+
+.volunteer-alert-msg {
+  font-family: var(--font-body, 'Inter', sans-serif);
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 6px;
+}
+
+.volunteer-alert-recipients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.badge-volunteer-chip {
+  display: inline-block;
+  background: #ffffff;
+  border: 1.5px solid #000;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #111827;
+  box-shadow: 1px 1px 0px #000;
+}
+
+.volunteer-alert-close-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 1px 1px 0px #000;
+  transition: all 0.15s ease;
+  line-height: 1;
+}
+
+.volunteer-alert-close-btn:hover {
+  background: #fee2e2;
+  transform: scale(1.1);
+}
+
+/* Global Modal Backdrop */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.65);
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.modal-backdrop.hidden {
+  display: none !important;
+}
+
+/* TOP-LEVEL CCTV PERCEPTION HUB (Station at top of dashboard) */
+.cctv-top-hub {
+  background: #ffffff;
+  border: 3.5px solid #000000;
+  border-radius: 16px;
+  box-shadow: 6px 6px 0px #000000;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.cctv-hub-header {
+  background: #fff8e1;
+  border-bottom: 3px solid #000000;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.cctv-hub-title-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cctv-hub-title {
+  font-family: var(--font-heading, 'Josefin Sans', sans-serif);
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0;
+  color: #000000;
+  letter-spacing: 0.5px;
+}
+
+.cctv-hub-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cctv-hub-body {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 20px;
+  padding: 20px;
+  background: #fafaf9;
+}
+
+.cctv-hub-body.collapsed {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .cctv-hub-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cctv-hub-feed-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.8rem;
+  font-family: var(--font-mono, monospace);
+  color: #4b5563;
+}
+
+/* CCTV Modal Layout */
+.cctv-modal-card {
+  max-width: 1060px !important;
+  width: 95% !important;
+  background: #fafaf9 !important;
+  border: 3.5px solid #000000 !important;
+  box-shadow: 8px 8px 0px #000000 !important;
+  border-radius: 16px !important;
+}
+
+.cctv-modal-layout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 22px;
+  padding: 18px 22px 24px 22px;
+}
+
+@media (max-width: 900px) {
+  .cctv-modal-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cctv-feed-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cctv-status-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.cctv-select {
+  padding: 5px 10px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  font-weight: 700;
+  border: 2px solid #000;
+  border-radius: 6px;
+  background: #fff;
+  box-shadow: 2px 2px 0px #000;
+  max-width: 280px;
+}
+
+.cctv-canvas-frame {
+  position: relative;
+  border: 3px solid #000000;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 4px 4px 0px #000000;
+  background: #111827;
+}
+
+.cctv-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  display: block;
+}
+
+.cctv-camera-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.cctv-device-sub {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-left: auto;
+}
+
+/* Density Gauge Card */
+.cctv-gauge-card {
+  background: #ffffff;
+  border: 2.5px solid #000000;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 3.5px 3.5px 0px #000000;
+}
+
+.gauge-split-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin-bottom: 12px;
+}
+
+.gauge-metric {
+  text-align: center;
+  flex: 1;
+}
+
+.gauge-label {
+  display: block;
+  font-family: var(--font-heading, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #4b5563;
+  margin-bottom: 2px;
+}
+
+.gauge-val {
+  font-family: var(--font-heading, 'Space Grotesk', sans-serif);
+  font-size: 2.1rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.gauge-val.occupied {
+  color: #ef4444;
+}
+
+.gauge-val.empty {
+  color: #2563eb;
+}
+
+.gauge-divider {
+  width: 2px;
+  height: 48px;
+  background: #e5e7eb;
+}
+
+.cctv-density-bar-track {
+  height: 24px;
+  background: #e5e7eb;
+  border: 2px solid #000000;
+  border-radius: 20px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: inset 1px 1px 3px rgba(0, 0, 0, 0.2);
+  margin-bottom: 12px;
+}
+
+.cctv-density-bar-fill.occupied {
+  background-color: #ef4444;
+  transition: width 0.35s ease, background-color 0.3s ease;
+}
+
+.cctv-density-bar-fill.empty {
+  background-color: #93c5fd;
+  transition: width 0.35s ease;
+}
+
+.cctv-headcount-sub {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  font-family: var(--font-body, sans-serif);
+}
+
+.status-pill {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.76rem;
+  font-weight: 800;
+  border: 1.5px solid #000;
+}
+
+.status-pill.critical {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #ef4444;
+}
+
+.status-pill.warning {
+  background: #fef3c7;
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.status-pill.optimal {
+  background: #dcfce7;
+  color: #166534;
+  border-color: #10b981;
+}
+
+.status-pill.neutral {
+  background: #f3f4f6;
+  color: #4b5563;
+  border-color: #9ca3af;
+}
+
+/* Capacity Slider Box */
+.cctv-capacity-box {
+  background: #ffffff;
+  border: 2.5px solid #000000;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 3.5px 3.5px 0px #000000;
+}
+
+.capacity-slider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.88rem;
+}
+
+.capacity-val-badge {
+  background: #fef08a;
+  border: 1.5px solid #000;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 800;
+  font-size: 0.84rem;
+}
+
+.neubrutalist-slider {
+  width: 100%;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
+.capacity-hint {
+  display: block;
+  font-size: 0.74rem;
+  color: #6b7280;
+  margin-top: 6px;
+  font-family: var(--font-mono, monospace);
+}
+
+/* Live Simulation Test Actions */
+.cctv-sim-controls {
+  background: #ffffff;
+  border: 2px dashed #000000;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.sim-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  margin-bottom: 8px;
+}
+
+.sim-btn-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Volunteers Assigned Duty Card */
+.cctv-volunteers-card {
+  background: #ffffff;
+  border: 2.5px solid #000000;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 3.5px 3.5px 0px #000000;
+}
+
+.vol-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-heading, sans-serif);
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #111827;
+}
+
+.badge-mini-green {
+  background: #dcfce7;
+  color: #15803d;
+  border: 1px solid #16a34a;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.vol-duty-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vol-duty-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+
+.vol-avatar {
+  font-size: 1.1rem;
+}
+
+.vol-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.8rem;
+}
+
+.vol-task {
+  font-size: 0.72rem;
+  color: #4b5563;
+  margin-top: 1px;
+}
+
