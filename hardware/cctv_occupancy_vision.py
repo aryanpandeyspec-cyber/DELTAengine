@@ -29,16 +29,128 @@ def parse_args():
     return parser.parse_args()
 
 def init_detector():
-    """Initializes multi-model detector combining Haar Cascade Face, Upper Body, and HOG."""
-    face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
-    upper_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_upperbody.xml')
-    hog = cv2.HOGDescriptor()
-    hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+    """Initializes multi-scale Haar Cascade face detectors tuned strictly for head area."""
+    frontal = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+    alt = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_alt2.xml')
+    profile = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_profileface.xml')
     return {
-        'face': face_cascade,
-        'upper': upper_cascade,
-        'hog': hog
+        'frontal': frontal,
+        'alt': alt,
+        'profile': profile
     }
+
+def compute_iou(boxA, boxB):
+    xA = max(boxA[0], boxB[0])
+    yA = max(boxA[1], boxB[1])
+    xB = min(boxA[0] + boxA[2], boxB[0] + boxB[2])
+    yB = min(boxA[1] + boxA[3], boxB[1] + boxB[3])
+    inter = max(0, xB - xA) * max(0, yB - yA)
+    union = (boxA[2] * boxA[3]) + (boxB[2] * boxB[3]) - inter
+    return inter / float(union) if union > 0 else 0.0
+
+def nms_boxes(boxes, scores, iou_thresh=0.30):
+    if not boxes:
+        return []
+    idxs = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+    keep = []
+    while idxs:
+        current = idxs.pop(0)
+        keep.append(current)
+        idxs = [i for i in idxs if compute_iou(boxes[current], boxes[i]) < iou_thresh]
+    return [boxes[i] for i in keep]
+
+def detect_heads(gray, detectors):
+    """Detects heads across room with multi-scale frontal and profile cascades, strictly head area only."""
+    raw_boxes = []
+    scores = []
+
+    # 1. Frontal face default (sensitive, finds distant heads down to 20x20)
+    f1 = detectors['frontal'].detectMultiScale(
+        gray, scaleFactor=1.06, minNeighbors=3, minSize=(20, 20), maxSize=(240, 240)
+    )
+    for (x, y, w, h) in f1:
+        raw_boxes.append((int(x), int(y), int(w), int(h)))
+        scores.append(1.0)
+
+    # 2. Frontal face alt2 (high precision, confirms frontal attendees)
+    if not detectors['alt'].empty():
+        f2 = detectors['alt'].detectMultiScale(
+            gray, scaleFactor=1.06, minNeighbors=3, minSize=(20, 20), maxSize=(240, 240)
+        )
+        for (x, y, w, h) in f2:
+            raw_boxes.append((int(x), int(y), int(w), int(h)))
+            scores.append(1.2)
+
+    # 3. Profile face (for attendees turned towards screens or neighbors)
+    if not detectors['profile'].empty():
+        f3 = detectors['profile'].detectMultiScale(
+            gray, scaleFactor=1.08, minNeighbors=3, minSize=(22, 22), maxSize=(240, 240)
+        )
+        for (x, y, w, h) in f3:
+            raw_boxes.append((int(x), int(y), int(w), int(h)))
+            scores.append(0.9)
+
+    if not raw_boxes:
+        return []
+
+    # Apply NMS
+    filtered = nms_boxes(raw_boxes, scores, iou_thresh=0.30)
+
+    # Clamp strictly to head/face area: height = 1.20 * width, centered
+    final_heads = []
+    for (x, y, w, h) in filtered:
+        head_w = w
+        head_h = int(w * 1.20)
+        head_x = max(0, x)
+        head_y = max(0, y - int(head_h * 0.08))
+        final_heads.append((head_x, head_y, head_w, head_h))
+
+    return final_heads
+
+class HeadCentroidTracker:
+    def __init__(self, max_lost=4):
+        self.tracks = {} # track_id -> {'box': [x,y,w,h], 'lost': 0, 'seen': 1}
+        self.next_id = 1
+        self.max_lost = max_lost
+
+    def update(self, detected_boxes):
+        updated = {}
+        unmatched = list(range(len(detected_boxes)))
+
+        for tid, track in list(self.tracks.items()):
+            tx, ty, tw, th = track['box']
+            tcx, tcy = tx + tw / 2.0, ty + th / 2.0
+            best_dist = 60.0
+            best_idx = -1
+
+            for idx in unmatched:
+                bx, by, bw, bh = detected_boxes[idx]
+                bcx, bcy = bx + bw / 2.0, by + bh / 2.0
+                dist = np.hypot(tcx - bcx, tcy - bcy)
+                if dist < best_dist:
+                    best_dist = dist
+                    best_idx = idx
+
+            if best_idx != -1:
+                unmatched.remove(best_idx)
+                bx, by, bw, bh = detected_boxes[best_idx]
+                # Exponential smoothing
+                nx = int(tx * 0.70 + bx * 0.30)
+                ny = int(ty * 0.70 + by * 0.30)
+                nw = int(tw * 0.70 + bw * 0.30)
+                nh = int(th * 0.70 + bh * 0.30)
+                updated[tid] = {'box': (nx, ny, nw, nh), 'lost': 0, 'seen': track['seen'] + 1}
+            else:
+                track['lost'] += 1
+                if track['lost'] <= self.max_lost:
+                    updated[tid] = track
+
+        for idx in unmatched:
+            updated[self.next_id] = {'box': detected_boxes[idx], 'lost': 0, 'seen': 1}
+            self.next_id += 1
+
+        self.tracks = updated
+        return [t['box'] for t in self.tracks.values() if t['seen'] >= 2 or (t['seen'] >= 1 and t['lost'] == 0)]
 
 def draw_hud(frame, people_count, capacity, occupied_pct, empty_pct, status, source_name):
     """Draws rich Neubrutalist HUD with % Occupied and % Empty metrics directly on frame."""
@@ -130,7 +242,8 @@ def run_vision_loop():
     print(f"📡 API Endpoint: {api_url}")
     print("=================================================================\n")
 
-    hog = init_detector()
+    detectors = init_detector()
+    tracker = HeadCentroidTracker()
 
     # Try opening webcam
     cap = None
@@ -178,39 +291,12 @@ def run_vision_loop():
                     for col_x in range(60, 600, 60):
                         cv2.rectangle(frame, (col_x - 15, row_y - 20), (col_x + 15, row_y + 10), (70, 60, 50), 1)
 
-            # Multi-cue Person Detection (Face + Upper Body + HOG)
+            # Multi-scale Head Detection (strictly head/face area only)
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            detected_boxes = []
+            raw_heads = detect_heads(gray, detectors)
+            tracked_boxes = tracker.update(raw_heads)
 
-            # 1. Frontal & Profile Face Detection
-            faces = hog['face'].detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4, minSize=(36, 36))
-            for (fx, fy, fw, fh) in faces:
-                detected_boxes.append((fx, fy, fw, fh, "FACE"))
-
-            # 2. Upper Body Detection (for seated attendees)
-            uppers = hog['upper'].detectMultiScale(gray, scaleFactor=1.1, minNeighbors=3, minSize=(60, 60))
-            for (ux, uy, uw, uh) in uppers:
-                # Deduplicate if overlapping with face
-                overlap = False
-                for (bx, by, bw, bh, _) in detected_boxes:
-                    if abs((ux + uw//2) - (bx + bw//2)) < max(uw, bw) * 0.6 and abs((uy + uh//2) - (by + bh//2)) < max(uh, bh) * 0.6:
-                        overlap = True
-                        break
-                if not overlap:
-                    detected_boxes.append((ux, uy, uw, uh, "ATTENDEE"))
-
-            # 3. HOG Pedestrian Detector
-            rects, _ = hog['hog'].detectMultiScale(gray, winStride=(8, 8), padding=(8, 8), scale=1.05)
-            for (hx, hy, hw, hh) in rects:
-                overlap = False
-                for (bx, by, bw, bh, _) in detected_boxes:
-                    if abs((hx + hw//2) - (bx + bw//2)) < max(hw, bw) * 0.6 and abs((hy + hh//2) - (by + bh//2)) < max(hh, bh) * 0.6:
-                        overlap = True
-                        break
-                if not overlap:
-                    detected_boxes.append((hx, hy, hw, hh, "PERSON"))
-
-            total_people = len(detected_boxes) + simulated_attendees
+            total_people = len(tracked_boxes) + simulated_attendees
 
             # Calculate metrics
             occupied_pct = min(100, int((total_people / capacity) * 100)) if capacity > 0 else 0
@@ -229,11 +315,22 @@ def run_vision_loop():
                 status = "OPTIMAL"
                 box_color = (129, 185, 16)
 
-            # Draw bounding boxes
-            for (x, y, w, h, label) in detected_boxes:
+            # Draw bounding boxes (strictly head/face area only)
+            for idx, (x, y, w, h) in enumerate(tracked_boxes):
                 cv2.rectangle(frame, (x, y), (x + w, y + h), box_color, 2)
-                cv2.putText(frame, f"{label} #{detected_boxes.index((x,y,w,h,label))+1}", (x, y - 6),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, box_color, 1, cv2.LINE_AA)
+                # Corner reticles
+                c_len = min(12, int(w * 0.25))
+                cv2.line(frame, (x, y), (x + c_len, y), box_color, 3)
+                cv2.line(frame, (x, y), (x, y + c_len), box_color, 3)
+                cv2.line(frame, (x + w, y), (x + w - c_len, y), box_color, 3)
+                cv2.line(frame, (x + w, y), (x + w, y + c_len), box_color, 3)
+                cv2.line(frame, (x, y + h), (x + c_len, y + h), box_color, 3)
+                cv2.line(frame, (x, y + h), (x, y + h - c_len), box_color, 3)
+                cv2.line(frame, (x + w, y + h), (x + w - c_len, y + h), box_color, 3)
+                cv2.line(frame, (x + w, y + h), (x + w, y + h - c_len), box_color, 3)
+
+                cv2.putText(frame, f"HEAD #{idx+1} [INSIDE]", (x, max(14, y - 6)),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.42, box_color, 1, cv2.LINE_AA)
 
             # Render simulated attendee avatars if any
             if simulated_attendees > 0:
@@ -290,7 +387,8 @@ def run_vision_loop():
                 print(f"👤 Added attendee: Total count = {total_people + 1}")
             elif key == ord('c') or key == ord('C'):
                 simulated_attendees = 0
-                print("🧹 Cleared simulated attendees.")
+                tracker = HeadCentroidTracker()
+                print("🧹 Cleared simulated attendees & head tracks.")
 
     finally:
         if cap and cap.isOpened():

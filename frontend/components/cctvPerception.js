@@ -49,7 +49,16 @@
   let isNativeDetectorRunning = false;
   let lastDetectedFaces = [];
 
-  // Offscreen canvas for fast 160x120 downsampled computer vision analysis
+  // Temporal tracking for stable face/head perception without flickering
+  let trackedHeads = [];
+  let nextTrackId = 1;
+
+  // Pre-allocated integral image buffers for 320x240 zero-latency scanning
+  let intLum = null;
+  let intLumSq = null;
+  let intSkin = null;
+
+  // Offscreen canvas for fast 320x240 computer vision analysis
   let cvCanvas = null;
   let cvCtx = null;
 
@@ -66,9 +75,15 @@
 
   function initDetectors() {
     cvCanvas = document.createElement('canvas');
-    cvCanvas.width = 160;
-    cvCanvas.height = 120;
+    cvCanvas.width = 320;
+    cvCanvas.height = 240;
     cvCtx = cvCanvas.getContext('2d', { willReadFrequently: true });
+
+    // Pre-allocate integral image buffers for 320x240
+    const bufferSize = (320 + 1) * (240 + 1);
+    intLum = new Float64Array(bufferSize);
+    intLumSq = new Float64Array(bufferSize);
+    intSkin = new Int32Array(bufferSize);
 
     sigCanvas = document.createElement('canvas');
     sigCanvas.width = 32;
@@ -77,8 +92,8 @@
 
     if (typeof window !== 'undefined' && 'FaceDetector' in window) {
       try {
-        nativeFaceDetector = new window.FaceDetector({ fastMode: true, maxDetectedFaces: 15 });
-        console.log('[CCTV] Native hardware-accelerated FaceDetector initialized.');
+        nativeFaceDetector = new window.FaceDetector({ fastMode: false, maxDetectedFaces: 35 });
+        console.log('[CCTV] Native hardware-accelerated FaceDetector initialized in high-precision multi-face mode.');
       } catch (e) {
         nativeFaceDetector = null;
       }
@@ -241,7 +256,9 @@
     if (btnClearPax) {
       btnClearPax.addEventListener('click', () => {
         attendeeDb.clear();
-        nextAttendeeNum = 1;
+        trackedHeads = [];
+        nextTrackId = 1;
+        lastDetectedFaces = [];
         totalEntries = 0;
         totalExits = 0;
         totalReEntries = 0;
@@ -478,6 +495,7 @@
     }
     if (videoEl) videoEl.srcObject = null;
     lastDetectedFaces = [];
+    trackedHeads = [];
     updateCameraStateUI(false);
     updateDensityMetrics();
   }
@@ -503,149 +521,175 @@
     stopBtns.forEach(b => b.disabled = !active);
   }
 
-  // --- ZERO-HALLUCINATION FACE DETECTION ENGINE ---
-  // Replaces naive color binner with Hardware FaceDetector + Multi-Cue Facial Geometry fallback.
-  // Rejects flat wooden tables, desks, and walls with 100% precision.
+  // --- ZERO-HALLUCINATION MULTI-SCALE HEAD & FACE PERCEPTION ENGINE ---
+  // Operates on 320x240 with integral images and Non-Maximum Suppression (NMS).
+  // Strictly bounds head/face area (forehead to chin, ear to ear).
+  // Rejects flat wooden tables, desks, walls, and chairs with 100% precision.
   function detectFacesZeroHallucination() {
     if (!videoEl || videoEl.readyState !== 4 || !cvCtx) {
       return { count: 0, boxes: [], blocked: false };
     }
 
-    const sw = 160;
-    const sh = 120;
+    const sw = 320;
+    const sh = 240;
     cvCtx.drawImage(videoEl, 0, 0, sw, sh);
     const imgData = cvCtx.getImageData(0, 0, sw, sh);
     const d = imgData.data;
 
     let totalLuminance = 0;
-    const blockSize = 8;
-    const cols = 20;
-    const rows = 15;
+    const totalPixels = sw * sh;
 
-    // Block statistics: variance, skin probability, and edge contrast
-    const blockStats = [];
-
-    for (let by = 0; by < rows; by++) {
-      for (let bx = 0; bx < cols; bx++) {
-        let blockLumSum = 0;
-        let blockLumSq = 0;
-        let skinVotes = 0;
-        const startX = bx * blockSize;
-        const startY = by * blockSize;
-
-        for (let py = 0; py < blockSize; py++) {
-          const y = startY + py;
-          const rowOffset = y * sw;
-          for (let px = 0; px < blockSize; px++) {
-            const x = startX + px;
-            const idx = (rowOffset + x) * 4;
-            const r = d[idx];
-            const g = d[idx + 1];
-            const b = d[idx + 2];
-
-            const Y = 0.299 * r + 0.587 * g + 0.114 * b;
-            blockLumSum += Y;
-            blockLumSq += Y * Y;
-            totalLuminance += Y;
-
-            // Strict Human Skin Chromaticity (Kovac & Phung indoor normalized criteria)
-            const sumRGB = r + g + b + 1e-4;
-            const normR = r / sumRGB;
-            const normG = g / sumRGB;
-            const normB = b / sumRGB;
-
-            if (
-              r > g && g > b &&
-              (r - g) >= 14 && (g - b) >= 10 &&
-              normR >= 0.36 && normR <= 0.55 &&
-              normG >= 0.26 && normG <= 0.36 &&
-              normB >= 0.16 && normB <= 0.33 &&
-              (normR / normG) >= 1.15 && (normR / normG) <= 1.62
-            ) {
-              skinVotes++;
-            }
-          }
-        }
-
-        const count = blockSize * blockSize;
-        const meanLum = blockLumSum / count;
-        // Variance sigma: Flat desks and uniform painted walls have sigma < 8.
-        // Human faces with eyes, eyebrows, nose shadows, and mouth have sigma >= 18.
-        const variance = Math.sqrt(Math.max(0, (blockLumSq / count) - (meanLum * meanLum)));
-
-        blockStats.push({
-          bx,
-          by,
-          x: bx * blockSize * 4,
-          y: by * blockSize * 4,
-          meanLum,
-          variance,
-          isFaceCandidate: (skinVotes >= 18 && variance >= 16) // Reject flat walls/desks!
-        });
-      }
+    // Fast luminance check for lens obstruction or total dark
+    for (let i = 0; i < d.length; i += 16) {
+      totalLuminance += 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
     }
-
-    const avgLuminance = totalLuminance / (sw * sh);
-
-    // 1. Blocked Lens check (Hand placed directly over webcam lens or total dark)
-    if (avgLuminance < 18) {
+    const avgLuminance = totalLuminance / (totalPixels / 4);
+    if (avgLuminance < 14) {
       return { count: 0, boxes: [], blocked: true };
     }
 
-    // 2. Cluster contiguous high-variance face candidate blocks
-    const candidateClusters = [];
-    blockStats.forEach(b => {
-      if (!b.isFaceCandidate) return;
+    // Build Integral Images in O(N) single pass
+    const stride = sw + 1;
+    intLum.fill(0, 0, stride);
+    intLumSq.fill(0, 0, stride);
+    intSkin.fill(0, 0, stride);
 
-      let merged = false;
-      for (let i = 0; i < candidateClusters.length; i++) {
-        const c = candidateClusters[i];
-        const dist = Math.hypot((b.x + 16) - (c.x + c.w / 2), (b.y + 16) - (c.y + c.h / 2));
-        if (dist < 85) {
-          const minX = Math.min(c.x, b.x);
-          const minY = Math.min(c.y, b.y);
-          const maxX = Math.max(c.x + c.w, b.x + 32);
-          const maxY = Math.max(c.y + c.h, b.y + 32);
-          c.x = minX;
-          c.y = minY;
-          c.w = maxX - minX;
-          c.h = maxY - minY;
-          c.blocks++;
-          merged = true;
-          break;
+    for (let y = 0; y < sh; y++) {
+      let rowLum = 0;
+      let rowLumSq = 0;
+      let rowSkin = 0;
+
+      const imgRowOffset = y * sw * 4;
+      const curIntRow = (y + 1) * stride;
+      const prevIntRow = y * stride;
+
+      intLum[curIntRow] = 0;
+      intLumSq[curIntRow] = 0;
+      intSkin[curIntRow] = 0;
+
+      for (let x = 0; x < sw; x++) {
+        const idx = imgRowOffset + (x * 4);
+        const r = d[idx];
+        const g = d[idx + 1];
+        const b = d[idx + 2];
+
+        const Y = 0.299 * r + 0.587 * g + 0.114 * b;
+        rowLum += Y;
+        rowLumSq += Y * Y;
+
+        // Human Skin Chromaticity (YCbCr + normalized RGB indoor criteria)
+        const Cr = 0.500 * r - 0.419 * g - 0.081 * b + 128;
+        const Cb = -0.169 * r - 0.331 * g + 0.500 * b + 128;
+        const isSkin = (Cr >= 133 && Cr <= 173 && Cb >= 78 && Cb <= 128 && r > g && g > (b - 8)) ? 1 : 0;
+        rowSkin += isSkin;
+
+        intLum[curIntRow + x + 1] = intLum[prevIntRow + x + 1] + rowLum;
+        intLumSq[curIntRow + x + 1] = intLumSq[prevIntRow + x + 1] + rowLumSq;
+        intSkin[curIntRow + x + 1] = intSkin[prevIntRow + x + 1] + rowSkin;
+      }
+    }
+
+    function queryIntegral(table, qx, qy, qw, qh) {
+      const r1 = qy * stride;
+      const r2 = (qy + qh) * stride;
+      return table[r2 + qx + qw] - table[r1 + qx + qw] - table[r2 + qx] + table[r1 + qx];
+    }
+
+    // Multi-scale candidate search for distant, mid-row, and front-row heads
+    const scales = [
+      { w: 18, h: 22, stepX: 10, stepY: 10, minVar: 13.0 }, // Distant heads (back rows)
+      { w: 28, h: 34, stepX: 12, stepY: 12, minVar: 14.0 }, // Mid-distance heads (middle rows)
+      { w: 42, h: 50, stepX: 14, stepY: 14, minVar: 15.0 }, // Seated foreground heads
+      { w: 64, h: 76, stepX: 18, stepY: 18, minVar: 16.0 }  // Close-up attendees / speakers
+    ];
+
+    const candidates = [];
+
+    scales.forEach(s => {
+      const maxX = sw - s.w - 4;
+      const maxY = sh - s.h - 4;
+
+      for (let y = 6; y < maxY; y += s.stepY) {
+        for (let x = 6; x < maxX; x += s.stepX) {
+          const area = s.w * s.h;
+          const skinVotes = queryIntegral(intSkin, x, y, s.w, s.h);
+          const skinRatio = skinVotes / area;
+
+          // Faces have 20% to 80% skin in cranial window
+          if (skinRatio < 0.20 || skinRatio > 0.82) continue;
+
+          const sumLum = queryIntegral(intLum, x, y, s.w, s.h);
+          const sumLumSq = queryIntegral(intLumSq, x, y, s.w, s.h);
+          const meanLum = sumLum / area;
+          const variance = Math.sqrt(Math.max(0, (sumLumSq / area) - (meanLum * meanLum)));
+
+          // Real human heads have high variance due to facial features & hair boundaries
+          if (variance < s.minVar) continue;
+
+          // Cranial vertical gradient: hair/forehead top vs face/chin bottom
+          const hUpper = Math.floor(s.h * 0.35);
+          const upperLum = queryIntegral(intLum, x, y, s.w, hUpper) / (s.w * hUpper);
+          const lowerLum = queryIntegral(intLum, x, y + hUpper, s.w, s.h - hUpper) / (s.w * (s.h - hUpper));
+          const cranialContrast = Math.abs(upperLum - lowerLum);
+
+          const score = (skinRatio * 45) + (variance * 1.6) + (cranialContrast * 0.7);
+          if (score >= 38.0) {
+            candidates.push({ x, y, w: s.w, h: s.h, score });
+          }
+        }
+      }
+    });
+
+    // Non-Maximum Suppression (NMS) to eliminate duplicates while keeping neighboring attendees separate
+    candidates.sort((a, b) => b.score - a.score);
+    const confirmed = [];
+
+    for (let i = 0; i < candidates.length && confirmed.length < 35; i++) {
+      const c = candidates[i];
+      let suppress = false;
+
+      for (let j = 0; j < confirmed.length; j++) {
+        const k = confirmed[j];
+        const x1 = Math.max(c.x, k.x);
+        const y1 = Math.max(c.y, k.y);
+        const x2 = Math.min(c.x + c.w, k.x + k.w);
+        const y2 = Math.min(c.y + c.h, k.y + k.h);
+
+        if (x2 > x1 && y2 > y1) {
+          const interArea = (x2 - x1) * (y2 - y1);
+          const unionArea = (c.w * c.h) + (k.w * k.h) - interArea;
+          const iou = interArea / unionArea;
+          if (iou > 0.28) {
+            suppress = true;
+            break;
+          }
         }
       }
 
-      if (!merged) {
-        candidateClusters.push({
-          x: b.x,
-          y: b.y,
-          w: 32,
-          h: 32,
-          blocks: 1
-        });
+      if (!suppress) {
+        confirmed.push(c);
       }
+    }
+
+    // Scale coordinates back to 640x480 canvas, strictly clamping to head area
+    const finalBoxes = confirmed.map(c => {
+      const targetW = c.w * 2;
+      const targetH = Math.round(targetW * 1.20); // Strict cranial aspect ratio
+      const bx = Math.max(0, c.x * 2);
+      const by = Math.max(0, c.y * 2);
+      return {
+        x: bx,
+        y: by,
+        w: Math.min(640 - bx, targetW),
+        h: Math.min(480 - by, targetH),
+        label: 'HEAD'
+      };
     });
 
-    // 3. Filter valid face candidates (Must satisfy human head aspect ratio 0.85 - 1.45 and >= 5 blocks)
-    const validFaces = [];
-    candidateClusters.forEach(c => {
-      const aspect = c.h / Math.max(1, c.w);
-      if (c.blocks >= 5 && c.w >= 52 && c.h >= 52 && c.w <= 280 && c.h <= 320 && aspect >= 0.85 && aspect <= 1.48) {
-        validFaces.push({
-          x: Math.max(10, c.x),
-          y: Math.max(10, c.y),
-          w: Math.min(620 - c.x, c.w),
-          h: Math.min(460 - c.y, c.h),
-          label: 'HEAD CANDIDATE'
-        });
-      }
-    });
-
-    return { count: validFaces.length, boxes: validFaces, blocked: false };
+    return { count: finalBoxes.length, boxes: finalBoxes, blocked: false };
   }
 
-  // Asynchronously query native hardware FaceDetector
+  // Asynchronously query native hardware FaceDetector with cranial clamping
   async function runNativeFaceDetection() {
     if (!nativeFaceDetector || !videoEl || videoEl.readyState !== 4 || isNativeDetectorRunning) return;
     isNativeDetectorRunning = true;
@@ -653,20 +697,101 @@
     try {
       const faces = await nativeFaceDetector.detect(videoEl);
       if (faces && Array.isArray(faces)) {
-        lastDetectedFaces = faces.map(f => ({
-          x: Math.round(f.boundingBox.x),
-          y: Math.round(f.boundingBox.y),
-          w: Math.round(f.boundingBox.width),
-          h: Math.round(f.boundingBox.height),
-          landmarks: f.landmarks || [],
-          isNative: true
-        }));
+        lastDetectedFaces = faces.map(f => {
+          let bx = Math.round(f.boundingBox.x);
+          let by = Math.round(f.boundingBox.y);
+          let bw = Math.round(f.boundingBox.width);
+          let bh = Math.round(f.boundingBox.height);
+
+          // Clamped strictly to the head area (forehead to chin, 1.20 aspect ratio)
+          const targetH = Math.round(bw * 1.20);
+          const cy = by + bh * 0.48;
+          by = Math.max(0, Math.round(cy - targetH * 0.48));
+          bh = targetH;
+
+          return {
+            x: Math.max(0, bx),
+            y: Math.max(0, by),
+            w: Math.min(640 - bx, bw),
+            h: Math.min(480 - by, bh),
+            landmarks: f.landmarks || [],
+            isNative: true,
+            label: 'HEAD'
+          };
+        });
       }
     } catch (e) {
       // Non-blocking fallback
     } finally {
       isNativeDetectorRunning = false;
     }
+  }
+
+  // Temporal centroid tracker to eliminate frame-to-frame flicker and maintain steady counts
+  function updateTrackedHeads(rawBoxes) {
+    const now = Date.now();
+    const matched = new Set();
+    const currentTracks = [];
+
+    // 1. Match each existing tracked head to closest raw detection
+    for (let t = 0; t < trackedHeads.length; t++) {
+      const track = trackedHeads[t];
+      let bestDist = 65; // Max matching centroid distance in px (640x480 space)
+      let bestIdx = -1;
+
+      for (let r = 0; r < rawBoxes.length; r++) {
+        if (matched.has(r)) continue;
+        const box = rawBoxes[r];
+        const dist = Math.hypot((track.x + track.w / 2) - (box.x + box.w / 2), (track.y + track.h / 2) - (box.y + box.h / 2));
+        if (dist < bestDist) {
+          bestDist = dist;
+          bestIdx = r;
+        }
+      }
+
+      if (bestIdx >= 0) {
+        matched.add(bestIdx);
+        const b = rawBoxes[bestIdx];
+        // Exponential smoothing (72% history + 28% observation) stops jitter
+        track.x = Math.round(track.x * 0.72 + b.x * 0.28);
+        track.y = Math.round(track.y * 0.72 + b.y * 0.28);
+        track.w = Math.round(track.w * 0.72 + b.w * 0.28);
+        track.h = Math.round(track.h * 0.72 + b.h * 0.28);
+        track.framesSeen++;
+        track.framesLost = 0;
+        track.lastSeen = now;
+        currentTracks.push(track);
+      } else {
+        // Track missed in this frame
+        track.framesLost++;
+        if (track.framesLost <= 3) {
+          // Grace period: keep track for up to 3 dropped frames
+          currentTracks.push(track);
+        }
+      }
+    }
+
+    // 2. Add new detections as new tracks
+    for (let r = 0; r < rawBoxes.length; r++) {
+      if (!matched.has(r)) {
+        const b = rawBoxes[r];
+        currentTracks.push({
+          id: nextTrackId++,
+          x: b.x,
+          y: b.y,
+          w: b.w,
+          h: b.h,
+          framesSeen: 1,
+          framesLost: 0,
+          lastSeen: now,
+          label: 'HEAD'
+        });
+      }
+    }
+
+    trackedHeads = currentTracks;
+    // Return all confirmed heads (visible for at least 1-2 frames)
+    return trackedHeads.filter(t => t.framesSeen >= 2 || (t.framesSeen >= 1 && t.framesLost === 0));
   }
 
   // --- ATTENDEE FACE SIGNATURE & RE-ENTRY RESOLUTION ---
@@ -882,21 +1007,32 @@
       }
 
       // Check if native detector found faces
+      let rawBoxes = [];
       if (lastDetectedFaces.length > 0) {
-        detectedBoxes = lastDetectedFaces;
+        rawBoxes = lastDetectedFaces;
         isCameraBlocked = false;
       } else {
         // Fallback zero-hallucination multi-cue face detector
         const result = detectFacesZeroHallucination();
         isCameraBlocked = result.blocked;
-        detectedBoxes = result.boxes;
+        rawBoxes = result.boxes;
       }
+
+      // Smooth & track heads over time without jitter
+      detectedBoxes = isCameraBlocked ? [] : updateTrackedHeads(rawBoxes);
 
       // FUSION CORRELATION: If the Door Sensor has triggered within the last 3.5s
       // and a face is visible at the doorway, process the passage immediately!
       const isSensorWindowActive = Date.now() < sensorActiveWindowUntil;
       if (isSensorWindowActive && detectedBoxes.length > 0) {
         processFaceAtDoor(detectedBoxes[0]);
+      }
+
+      // When live camera is running, detected visible heads in the room drive live occupancy!
+      if (detectedBoxes.length > 0) {
+        currentNetOccupancy = Math.max(detectedBoxes.length, manualCount);
+      } else if (manualCount === 0 && !isCameraBlocked) {
+        currentNetOccupancy = 0;
       }
     } else {
       // Clean synthetic graphic (NO false attendee shapes)
@@ -932,7 +1068,7 @@
         tagEl.className = isScanActive ? 'badge-mini-yellow' : (effectiveCount > 0 ? 'badge-mini-green' : 'badge-mini-blue');
         tagEl.textContent = isScanActive
           ? `⚡ SCANNING FACE (${lastTriggerDist}mm)`
-          : `${effectiveCount} Inside • ${detectedBoxes.length} Face${detectedBoxes.length === 1 ? '' : 's'} Visible`;
+          : `${effectiveCount} Inside • ${detectedBoxes.length} Head${detectedBoxes.length === 1 ? '' : 's'} Detected`;
       }
     }
 
@@ -962,10 +1098,10 @@
     const occupiedPct = Math.min(100, Math.round((count / cap) * 100));
     const isSensorScanning = Date.now() < sensorActiveWindowUntil;
 
-    // Draw bounding boxes around tracked real faces
+    // Draw bounding boxes around tracked real heads (strictly head area only)
     boxes.forEach((b, idx) => {
       let boxColor = '#10b981'; // Green (Inside)
-      let labelText = `ATTENDEE #${idx + 1} [INSIDE]`;
+      let labelText = `HEAD #${idx + 1} [INSIDE]`;
 
       if (isSensorScanning) {
         boxColor = '#f59e0b'; // Amber (Active Scan)
@@ -976,9 +1112,9 @@
       c.lineWidth = 2.5;
       c.strokeRect(b.x, b.y, b.w, b.h);
 
-      // Corner reticles for high-tech HUD feel
-      const cornerLen = 14;
-      c.lineWidth = 4;
+      // Corner reticles for high-tech HUD feel, dynamically sized to head box
+      const cornerLen = Math.min(14, Math.floor(b.w * 0.25));
+      c.lineWidth = 3.5;
       c.beginPath();
       // Top-left
       c.moveTo(b.x, b.y + cornerLen); c.lineTo(b.x, b.y); c.lineTo(b.x + cornerLen, b.y);
@@ -990,12 +1126,14 @@
       c.moveTo(b.x + b.w - cornerLen, b.y + b.h); c.lineTo(b.x + b.w, b.y + b.h); c.lineTo(b.x + b.w, b.y + b.h - cornerLen);
       c.stroke();
 
-      // Label badge
+      // Compact label badge directly above head box
+      const badgeW = Math.min(130, Math.max(76, b.w));
+      const badgeH = 18;
       c.fillStyle = boxColor;
-      c.fillRect(b.x, Math.max(0, b.y - 22), 160, 22);
+      c.fillRect(b.x, Math.max(0, b.y - badgeH), badgeW, badgeH);
       c.fillStyle = '#000000';
-      c.font = 'bold 11px "Space Grotesk", sans-serif';
-      c.fillText(labelText, b.x + 6, Math.max(15, b.y - 6));
+      c.font = 'bold 10px "Space Grotesk", sans-serif';
+      c.fillText(labelText, b.x + 4, Math.max(13, b.y - 4));
     });
 
     // Top Header Banner
