@@ -187,9 +187,8 @@
           <!-- Event Metrics & Details -->
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span class="status-chip active" style="background:#ea4335; color:#fff; font-weight:900;">🔴 LIVE NOW
-                (Slot 1)</span>
-              <span style="font-family:var(--font-mono); font-size:0.8rem; font-weight:800;">📍 Turing Hall</span>
+              <span id="featured-event-slot-badge" class="status-chip active" style="background:#ea4335; color:#fff; font-weight:900;">🔴 LIVE NOW (Slot 1)</span>
+              <span id="featured-event-hall-name" style="font-family:var(--font-mono); font-size:0.8rem; font-weight:800;">📍 Turing Hall</span>
             </div>
 
             <h3 id="featured-event-title"
@@ -197,7 +196,7 @@
               Autonomous Agent Swarms: Coordination without Controllers
             </h3>
 
-            <div style="font-size:0.9rem; font-weight:700; color:#4285f4; margin-bottom:12px;">
+            <div id="featured-event-speaker" style="font-size:0.9rem; font-weight:700; color:#4285f4; margin-bottom:12px;">
               🧑‍🔬 Speaker: Dr. Aditi Sharma <span style="color:#666; font-weight:500;">(AI Research Director)</span>
             </div>
 
@@ -237,15 +236,15 @@
               </div>
               <div class="diag-item">
                 <span class="diag-label">⏱️ Session Time Remaining:</span>
-                <span class="diag-val success">18 Mins Left</span>
+                <span id="featured-event-time-remaining" class="diag-val success">18 Mins Left</span>
               </div>
               <div class="diag-item">
                 <span class="diag-label">🌡️ Room Climate & HVAC Sensor:</span>
-                <span class="diag-val success">21.5°C (Climate Balance)</span>
+                <span id="featured-event-climate" class="diag-val success">21.5°C (Climate Balance)</span>
               </div>
               <div class="diag-item">
                 <span class="diag-label">❓ Q&A Audience Engagement:</span>
-                <span class="diag-val success">42 Questions Submitted</span>
+                <span id="featured-event-qa" class="diag-val success">42 Questions Submitted</span>
               </div>
             </div>
           </div>
@@ -295,7 +294,7 @@
             </div>
             <div class="diag-item">
               <span class="diag-label">System Uptime:</span>
-              <span class="diag-val">99.98% (Online)</span>
+              <span id="admin-system-uptime" class="diag-val">99.98% (Online)</span>
             </div>
           </div>
         </div>
@@ -335,10 +334,10 @@
             <div
               style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:700; margin-bottom:4px;">
               <span>Groq LLM Token Usage Meter:</span>
-              <span style="color:#ea4335;">28,450 / 100,000 Tokens (28%)</span>
+              <span id="admin-token-meter-text" style="color:#ea4335;">28,450 / 100,000 Tokens (28%)</span>
             </div>
             <div class="token-meter-track">
-              <div class="token-meter-fill" style="width: 28%;"></div>
+              <div id="admin-token-meter-fill" class="token-meter-fill" style="width: 28%;"></div>
             </div>
           </div>
         </div>
@@ -442,22 +441,21 @@
         <!-- Left: Live Video & Canvas Feed -->
         <div class="cctv-video-container">
           <div class="cctv-feed-header">
-            <span id="cctv-stream-status" class="cctv-status-badge">⚪ <strong>CAMERA INITIALIZING...</strong></span>
+            <span class="cctv-status-badge">⚪ <strong>CAMERA INITIALIZING...</strong></span>
             <div class="cctv-device-selector-wrap">
-              <select id="cctv-device-select" class="cctv-select">
+              <select id="modal-cctv-device-select" class="cctv-select">
                 <option value="">Detecting Zebronics Crystal Pro...</option>
               </select>
             </div>
           </div>
 
           <div class="cctv-canvas-frame">
-            <video id="cctv-hidden-video" style="display:none;" playsinline muted></video>
-            <canvas id="cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
+            <canvas id="modal-cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
           </div>
 
           <div class="cctv-camera-action-bar">
-            <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Camera</button>
-            <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Camera</button>
+            <button id="btn-modal-cctv-start" class="btn btn-sm btn-green btn-cctv-start" style="font-weight:800;">▶️ Start Camera</button>
+            <button id="btn-modal-cctv-stop" class="btn btn-sm btn-white btn-cctv-stop" style="font-weight:800;">⏹️ Stop Camera</button>
             <span class="cctv-device-sub">Target: Zebronics ZEB-CRYSTAL PRO (480p / 640x480)</span>
           </div>
         </div>

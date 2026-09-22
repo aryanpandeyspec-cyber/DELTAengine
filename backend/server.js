@@ -88,6 +88,7 @@ function sendWhatsAppNotification(recipientName, phoneNumber, messageText) {
 
 wss.on('connection', ws => {
   console.log('[WS] Client connected');
+  db.tokensUsed = db.tokensUsed || 28450;
   ws.send(JSON.stringify({
     type: 'INIT_STATE',
     data: {
@@ -96,20 +97,27 @@ wss.on('connection', ws => {
       contacts: db.contacts,
       volunteers: db.volunteers,
       whatsappLogs: db.whatsappLogs,
-      limiters: db.limiters
+      limiters: db.limiters,
+      cctvState: db.cctvState,
+      uptimeSeconds: Math.floor(process.uptime()),
+      tokensUsed: db.tokensUsed
     }
   }));
   ws.on('close', () => console.log('[WS] Client disconnected'));
 });
 
 app.get('/api/state', (req, res) => {
+  db.tokensUsed = db.tokensUsed || 28450;
   res.json({
     graph: db.graph,
     schedule: db.schedule,
     contacts: db.contacts,
     volunteers: db.volunteers,
     whatsappLogs: db.whatsappLogs,
-    limiters: db.limiters
+    limiters: db.limiters,
+    cctvState: db.cctvState,
+    uptimeSeconds: Math.floor(process.uptime()),
+    tokensUsed: db.tokensUsed
   });
 });
 

@@ -24,6 +24,10 @@
   let bannerDismissTimer = null;
   let dismissedAlertState = null;
   let currentAlertState = null;
+  let selectedCameraDeviceId = '';
+  try {
+    selectedCameraDeviceId = localStorage.getItem('delta_selected_camera_id') || '';
+  } catch (e) {}
 
   // --- ATTENDEE PROFILE DATABASE & RE-ENTRY TRACKING ---
   // Maps attendeeId -> { id, name, signature, state: 'INSIDE'|'OUTSIDE', entryCount, lastSeen }
@@ -96,9 +100,6 @@
     const btnOpenSecondary = document.getElementById('btn-open-cctv-secondary');
     const btnClose = document.getElementById('btn-close-cctv-modal');
     const modal = document.getElementById('cctv-perception-modal');
-    const btnStart = document.getElementById('btn-cctv-start');
-    const btnStop = document.getElementById('btn-cctv-stop');
-    const selectCam = document.getElementById('cctv-device-select');
     const sliderCap = document.getElementById('cctv-capacity-slider');
     const capValDisplay = document.getElementById('cctv-capacity-val');
     const btnToggleView = document.getElementById('btn-toggle-cctv-view');
@@ -127,13 +128,13 @@
         }
         topHub.scrollIntoView({ behavior: 'smooth', block: 'start' });
         enumerateCameras();
-        if (!isCameraActive && btnStart) {
+        if (!isCameraActive) {
           startWebcam();
         }
       } else if (modal) {
         modal.classList.remove('hidden');
         enumerateCameras();
-        if (!isCameraActive && btnStart) {
+        if (!isCameraActive) {
           startWebcam();
         }
       }
@@ -156,20 +157,56 @@
       });
     }
 
-    if (btnStart) {
-      btnStart.addEventListener('click', () => startWebcam());
-    }
+    // Bind ALL Start Buttons (Top Hub & Modal)
+    document.querySelectorAll('#btn-cctv-start, .btn-cctv-start').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const chosenId = selectedCameraDeviceId || document.querySelector('.cctv-select')?.value;
+        startWebcam(chosenId);
+      });
+    });
 
-    if (btnStop) {
-      btnStop.addEventListener('click', () => stopWebcam());
-    }
+    // Bind ALL Stop Buttons (Top Hub & Modal)
+    document.querySelectorAll('#btn-cctv-stop, .btn-cctv-stop').forEach(btn => {
+      btn.addEventListener('click', () => stopWebcam());
+    });
 
-    if (selectCam) {
-      selectCam.addEventListener('change', () => {
-        if (isCameraActive) {
-          stopWebcam();
-          startWebcam(selectCam.value);
+    // Bind ALL Camera Select Dropdowns (Top Hub & Modal)
+    document.querySelectorAll('.cctv-select').forEach(sel => {
+      sel.addEventListener('change', async (e) => {
+        await switchCamera(e.target.value);
+      });
+
+      const unlockAndRefresh = async () => {
+        const hasUnlabeled = Array.from(sel.options).some(o => 
+          o.textContent.startsWith('📹 Video Input') || 
+          o.textContent.startsWith('Camera ') || 
+          o.value === '' || 
+          !o.textContent.includes('(')
+        );
+        if (hasUnlabeled || sel.options.length <= 1) {
+          try {
+            const probe = await navigator.mediaDevices.getUserMedia({ video: true });
+            if (!isCameraActive) {
+              probe.getTracks().forEach(t => t.stop());
+            } else if (!mediaStream) {
+              mediaStream = probe;
+            }
+            await enumerateCameras();
+          } catch (err) {
+            console.warn('[CCTV] Camera permission request error on dropdown focus:', err);
+          }
         }
+      };
+
+      sel.addEventListener('focus', unlockAndRefresh);
+      sel.addEventListener('mousedown', unlockAndRefresh);
+    });
+
+    // USB Camera Plug / Unplug Hotplug Listener
+    if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
+      navigator.mediaDevices.addEventListener('devicechange', async () => {
+        console.log('[CCTV] Video hardware hotplug event detected, refreshing camera list...');
+        await enumerateCameras();
       });
     }
 
@@ -244,6 +281,22 @@
     }
 
     updateThresholdLabels(currentCapacity);
+    // Initial camera discovery with proactive permission query
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'camera' }).then(res => {
+        if (res.state === 'granted') {
+          navigator.mediaDevices.getUserMedia({ video: true }).then(s => {
+            s.getTracks().forEach(t => t.stop());
+            enumerateCameras();
+          }).catch(() => enumerateCameras());
+        } else {
+          enumerateCameras();
+        }
+        res.addEventListener('change', () => enumerateCameras());
+      }).catch(() => enumerateCameras());
+    } else {
+      enumerateCameras();
+    }
   }
 
   function updateThresholdLabels(cap) {
@@ -254,61 +307,161 @@
   }
 
   async function enumerateCameras() {
-    const select = document.getElementById('cctv-device-select');
-    if (!select || !navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
 
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(d => d.kind === 'videoinput');
-      select.innerHTML = '';
+      const selects = document.querySelectorAll('.cctv-select');
+      if (selects.length === 0) return;
 
-      videoDevices.forEach((dev, idx) => {
-        const opt = document.createElement('option');
-        opt.value = dev.deviceId;
-        const label = dev.label || `Camera ${idx + 1}`;
-        opt.textContent = label.includes('Zebronics') || label.includes('ZEB') || label.includes('Crystal')
-          ? `⭐ ${label} (Zebronics Crystal Pro 480p)`
-          : label;
-        select.appendChild(opt);
+      selects.forEach(select => {
+        const prevVal = select.value || selectedCameraDeviceId;
+        select.innerHTML = '';
+
+        if (videoDevices.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = '';
+          opt.textContent = 'Integrated / USB Webcam';
+          select.appendChild(opt);
+          return;
+        }
+
+        videoDevices.forEach((dev, idx) => {
+          const opt = document.createElement('option');
+          opt.value = dev.deviceId;
+          const rawLabel = dev.label ? dev.label.trim() : '';
+          let label = rawLabel || `Camera ${idx + 1}`;
+          const lower = label.toLowerCase();
+
+          if (lower.includes('zebronics') || lower.includes('crystal') || lower.includes('zeb') || lower.includes('349c')) {
+            opt.textContent = `⭐ ${label} (Zebronics Crystal Pro 480p)`;
+          } else if (lower.includes('720p') || lower.includes('integrated') || lower.includes('internal') || lower.includes('built-in')) {
+            opt.textContent = `💻 ${label} (Integrated Webcam)`;
+          } else if (rawLabel) {
+            opt.textContent = `📹 ${label}`;
+          } else {
+            opt.textContent = `📹 Video Input Device ${idx + 1}`;
+          }
+          select.appendChild(opt);
+        });
+
+        // Restore selected value if valid or pick best default
+        if (prevVal && Array.from(select.options).some(o => o.value === prevVal)) {
+          select.value = prevVal;
+          selectedCameraDeviceId = prevVal;
+        } else if (videoDevices.length > 0) {
+          const zebOpt = Array.from(select.options).find(o => 
+            o.textContent.includes('Zebronics') || o.textContent.includes('Crystal') || o.textContent.includes('⭐')
+          );
+          if (zebOpt) {
+            select.value = zebOpt.value;
+            selectedCameraDeviceId = zebOpt.value;
+          } else {
+            select.value = videoDevices[0].deviceId;
+            selectedCameraDeviceId = videoDevices[0].deviceId;
+          }
+        }
       });
-
-      if (videoDevices.length === 0) {
-        const opt = document.createElement('option');
-        opt.value = '';
-        opt.textContent = 'Standard USB / Integrated Webcam';
-        select.appendChild(opt);
-      }
     } catch (e) {
       console.warn('[CCTV] Device enumeration error:', e);
     }
   }
 
-  async function startWebcam(deviceId) {
+  async function switchCamera(deviceId) {
+    if (!deviceId) return;
+    selectedCameraDeviceId = deviceId;
+    try {
+      localStorage.setItem('delta_selected_camera_id', deviceId);
+    } catch (e) {}
+
+    // Synchronize all camera dropdowns across the page
+    document.querySelectorAll('.cctv-select').forEach(sel => {
+      if (sel.value !== deviceId) sel.value = deviceId;
+    });
+
+    const activeOptText = document.querySelector('.cctv-select option:checked')?.textContent || 'Camera';
+
+    // Directly start/switch to selected camera so choosing from dropdown immediately displays feed
+    if (typeof createToast === 'function') createToast(`🔄 Switching camera to: ${activeOptText}...`, 'info');
+    stopWebcam();
+    await startWebcam(deviceId);
+  }
+
+  async function startWebcam(requestedDeviceId) {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       if (typeof createToast === 'function') createToast('Webcam not supported in this browser.', 'warning');
       return;
     }
 
-    const constraints = {
-      video: {
-        width: { ideal: 640 },
-        height: { ideal: 480 }
-      }
-    };
-    if (deviceId) constraints.video.deviceId = { exact: deviceId };
+    const deviceId = requestedDeviceId || selectedCameraDeviceId || document.querySelector('.cctv-select')?.value;
+    if (deviceId) {
+      selectedCameraDeviceId = deviceId;
+      try { localStorage.setItem('delta_selected_camera_id', deviceId); } catch (e) {}
+    }
 
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+    // Stop any existing tracks
+    if (mediaStream) {
+      mediaStream.getTracks().forEach(track => track.stop());
+      mediaStream = null;
+    }
+
+    let stream = null;
+    const baseVideo = {
+      width: { ideal: 640 },
+      height: { ideal: 480 }
+    };
+
+    if (deviceId) {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            ...baseVideo,
+            deviceId: { exact: deviceId }
+          }
+        });
+      } catch (exactErr) {
+        console.warn('[CCTV] Exact deviceId constraint failed, trying ideal constraint:', exactErr);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              ...baseVideo,
+              deviceId: { ideal: deviceId }
+            }
+          });
+        } catch (idealErr) {
+          console.warn('[CCTV] Ideal constraint failed, trying basic video:', idealErr);
+          try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          } catch (basicErr) {
+            console.warn('[CCTV] Video stream failed completely:', basicErr);
+          }
+        }
+      }
+    } else {
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo });
+      } catch (err) {
+        try { stream = await navigator.mediaDevices.getUserMedia({ video: true }); } catch (e) {}
+      }
+    }
+
+    if (stream) {
+      mediaStream = stream;
       if (videoEl) {
         videoEl.srcObject = mediaStream;
-        await videoEl.play();
+        try { await videoEl.play(); } catch (e) {}
       }
       isCameraActive = true;
       updateCameraStateUI(true);
       requestAnimationFrame(processVideoFrame);
-      if (typeof createToast === 'function') createToast('📹 Zebronics CCTV Feed active at 480p (640x480)!', 'success');
-    } catch (err) {
-      console.warn('[CCTV] Camera permission error or not found:', err);
+
+      // Immediately re-enumerate now that getUserMedia has unlocked the true hardware device labels!
+      await enumerateCameras();
+
+      const activeLabel = document.querySelector('.cctv-select option:checked')?.textContent || 'Zebronics 480p';
+      if (typeof createToast === 'function') createToast(`📹 ${activeLabel} feed connected!`, 'success');
+    } else {
       isCameraActive = true;
       updateCameraStateUI(true, true);
       requestAnimationFrame(processVideoFrame);
@@ -330,11 +483,11 @@
   }
 
   function updateCameraStateUI(active, isSim = false) {
-    const statusText = document.getElementById('cctv-stream-status');
-    const btnStart = document.getElementById('btn-cctv-start');
-    const btnStop = document.getElementById('btn-cctv-stop');
+    const statusTexts = document.querySelectorAll('#cctv-stream-status, #modal-cctv-stream-status, .cctv-status-badge');
+    const startBtns = document.querySelectorAll('#btn-cctv-start, .btn-cctv-start');
+    const stopBtns = document.querySelectorAll('#btn-cctv-stop, .btn-cctv-stop');
 
-    if (statusText) {
+    statusTexts.forEach(statusText => {
       if (active) {
         statusText.innerHTML = isSim
           ? '🟢 <strong>SIMULATED FEED</strong> (640x480)'
@@ -344,10 +497,10 @@
         statusText.innerHTML = '⚪ <strong>CAMERA READY</strong>';
         statusText.style.color = '#9ca3af';
       }
-    }
+    });
 
-    if (btnStart) btnStart.disabled = active;
-    if (btnStop) btnStop.disabled = !active;
+    startBtns.forEach(b => b.disabled = active);
+    stopBtns.forEach(b => b.disabled = !active);
   }
 
   // --- ZERO-HALLUCINATION FACE DETECTION ENGINE ---
@@ -782,6 +935,15 @@
           : `${effectiveCount} Inside • ${detectedBoxes.length} Face${detectedBoxes.length === 1 ? '' : 's'} Visible`;
       }
     }
+
+    // Mirror to all other active canvases (e.g. perception modal)
+    const allCanvases = document.querySelectorAll('.cctv-canvas');
+    allCanvases.forEach(canv => {
+      if (canv !== canvasEl && canv.offsetParent !== null) {
+        const cOther = canv.getContext('2d');
+        if (cOther) cOther.drawImage(canvasEl, 0, 0, canv.width, canv.height);
+      }
+    });
 
     // Update density gauges
     updateDensityMetrics(false);

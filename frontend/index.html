@@ -257,8 +257,8 @@
                     stroke-linejoin="round" />
                 </svg>
                 <div class="integrity-text">
-                  <span class="status-indicator online">ONLINE</span>
-                  <p>Self-Healing Agent Active</p>
+                  <span id="agent-health-status" class="status-indicator online">ONLINE</span>
+                  <p id="agent-health-desc">Self-Healing Agent Active</p>
                 </div>
               </div>
             </div>
@@ -271,10 +271,10 @@
             </div>
             <div class="widget-body">
               <div class="speakers-content">
-                <div class="pill-illustration">
-                  <span class="circle-speaker blue">E.W</span>
-                  <span class="circle-speaker green">C.S</span>
-                  <span class="circle-speaker yellow">A.C</span>
+                <div class="pill-illustration" id="speaker-pills-container">
+                  <span class="circle-speaker blue">A.S</span>
+                  <span class="circle-speaker green">V.V</span>
+                  <span class="circle-speaker yellow">P.N</span>
                 </div>
                 <div class="speakers-info">
                   <h3 id="active-speakers-count">5 Active Speakers</h3>
@@ -878,22 +878,21 @@
         <!-- Left: Live Video & Canvas Feed -->
         <div class="cctv-video-container">
           <div class="cctv-feed-header">
-            <span id="cctv-stream-status" class="cctv-status-badge">⚪ <strong>CAMERA INITIALIZING...</strong></span>
+            <span class="cctv-status-badge">⚪ <strong>CAMERA INITIALIZING...</strong></span>
             <div class="cctv-device-selector-wrap">
-              <select id="cctv-device-select" class="cctv-select">
+              <select id="modal-cctv-device-select" class="cctv-select">
                 <option value="">Detecting Zebronics Crystal Pro...</option>
               </select>
             </div>
           </div>
 
           <div class="cctv-canvas-frame">
-            <video id="cctv-hidden-video" style="display:none;" playsinline muted></video>
-            <canvas id="cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
+            <canvas id="modal-cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
           </div>
 
           <div class="cctv-camera-action-bar">
-            <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Camera</button>
-            <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Camera</button>
+            <button id="btn-modal-cctv-start" class="btn btn-sm btn-green btn-cctv-start" style="font-weight:800;">▶️ Start Camera</button>
+            <button id="btn-modal-cctv-stop" class="btn btn-sm btn-white btn-cctv-stop" style="font-weight:800;">⏹️ Stop Camera</button>
             <span class="cctv-device-sub">Target: Zebronics ZEB-CRYSTAL PRO (480p / 640x480)</span>
           </div>
         </div>

@@ -402,7 +402,44 @@ function updateCounters() {
   
   if (elSpeakers) elSpeakers.textContent = `${totalSpeakers} Active Speakers`;
   if (elDelays) elDelays.textContent = `${delayCount} Delay Event${delayCount === 1 ? '' : 's'} Logged`;
+
+  // Dynamically render speaker pills in #speaker-pills-container
+  const pillsContainer = document.getElementById('speaker-pills-container');
+  if (pillsContainer && graphState.speakers) {
+    pillsContainer.innerHTML = '';
+    const colorClasses = ['blue', 'green', 'yellow'];
+    let idx = 0;
+
+    for (const id in graphState.speakers) {
+      const s = graphState.speakers[id];
+      const pill = document.createElement('span');
+      const isDelayed = s.delay > 0;
+      const colorClass = colorClasses[idx % colorClasses.length];
+      idx++;
+
+      pill.className = `circle-speaker ${colorClass}`;
+      if (isDelayed) {
+        pill.style.backgroundColor = 'var(--google-red-light, #fee2e2)';
+        pill.style.borderColor = 'var(--google-red, #ea4335)';
+        pill.style.color = '#c5221f';
+        pill.title = `${s.name} (${s.role || 'Speaker'}) — ⚠️ Delayed +${s.delay}m`;
+      } else {
+        pill.title = `${s.name} (${s.role || 'Speaker'}) — ✅ On Schedule`;
+      }
+
+      // Calculate 2-letter clean initials
+      const cleanName = (s.name || '').replace(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)\s+/i, '').trim();
+      const parts = cleanName.split(/\s+/);
+      const initials = parts.length >= 2 
+        ? `${parts[0][0]}.${parts[parts.length - 1][0]}`.toUpperCase()
+        : cleanName.substring(0, 2).toUpperCase();
+
+      pill.textContent = initials || '??';
+      pillsContainer.appendChild(pill);
+    }
+  }
 }
+
 
 function renderSwarmChat(chatArray) {
   const chatBox = document.getElementById('swarm-chat-messages');
