@@ -24,9 +24,9 @@
 
 #define ONBOARD_LED 2
 
-// Generous distance threshold for demo hand waving (50 cm = 500 mm)
-#define DISTANCE_THRESHOLD_MM 500
-#define MIN_DISTANCE_MM 20 // 2 cm minimum
+// Distance threshold for hand/door passage detection (15 cm = 150 mm)
+#define DISTANCE_THRESHOLD_MM 750
+#define MIN_DISTANCE_MM 35 // Ignore anything under 3.5 cm (filters out close wires and surface crosstalk)
 
 // Create two independent Adafruit_VL53L0X instances on separate I2C buses
 Adafruit_VL53L0X sensor1 = Adafruit_VL53L0X();
@@ -47,6 +47,23 @@ int totalEntries = 0;
 int totalExits = 0;
 int netOccupancy = 0;
 
+bool testI2C(TwoWire &bus, int sda, int scl, uint8_t addr = 0x29) {
+  pinMode(sda, INPUT_PULLUP);
+  pinMode(scl, INPUT_PULLUP);
+  delay(5);
+
+  // If the line is shorted or unpowered (clamping to 0V), don't attempt transmission
+  if (digitalRead(sda) == LOW || digitalRead(scl) == LOW) {
+    return false;
+  }
+
+  bus.setTimeOut(30); // 30ms timeout - prevents hardware I2C hang
+  bus.begin(sda, scl);
+  bus.setClock(100000);
+  bus.beginTransmission(addr);
+  return (bus.endTransmission() == 0);
+}
+
 bool sensor1Online = false;
 bool sensor2Online = false;
 
@@ -55,46 +72,121 @@ void setup() {
   pinMode(ONBOARD_LED, OUTPUT);
   digitalWrite(ONBOARD_LED, LOW);
 
-  delay(1000);
+  delay(500);
   Serial.println(F("\n=========================================="));
-  Serial.println(F("⚡ DELTA ENGINE - IoT Door Passage Counter"));
+  Serial.println(F("DELTA ENGINE - IoT Door Passage Counter"));
   Serial.println(F("=========================================="));
+  Serial.flush();
 
-  // Initialize Hardware I2C Bus 0 for Sensor 1
-  Wire.begin(SENSOR1_SDA, SENSOR1_SCL);
-  Wire.setClock(100000);
+  struct PinPair { int sda; int scl; };
 
-  // Initialize Hardware I2C Bus 1 for Sensor 2
-  Wire1.begin(SENSOR2_SDA, SENSOR2_SCL);
-  Wire1.setClock(100000);
+  // 1. Smart Auto-Detection for Sensor 2 (Exit) on Wire1
+  Serial.println(F("Scanning pins for Sensor 2 (Exit)..."));
+  int detectedSDA2 = -1;
+  int detectedSCL2 = -1;
+  PinPair pairs2[] = {
+    {16, 17}, // Standard RX2 (GPIO 16) & TX2 (GPIO 17)
+    {17, 16}, // Swapped TX2/RX2
+    {4, 5},   // Alternative GPIO 4/5
+    {18, 19}  // Alternative GPIO 18/19
+  };
 
-  Serial.print(F("Initializing Sensor 1 (Entry - GPIO 21/22)... "));
-  if (!sensor1.begin(0x29, false, &Wire)) {
-    Serial.println(F("❌ FAILED! Check wiring on D21/D22."));
-  } else {
-    sensor1Online = true;
-    Serial.println(F("✅ ONLINE!"));
+  for (auto &p : pairs2) {
+    if (testI2C(Wire1, p.sda, p.scl, 0x29)) {
+      detectedSDA2 = p.sda;
+      detectedSCL2 = p.scl;
+      break;
+    }
   }
 
-  Serial.print(F("Initializing Sensor 2 (Exit - GPIO 16/17)... "));
-  if (!sensor2.begin(0x29, false, &Wire1)) {
-    Serial.println(F("❌ FAILED! Check wiring on RX2/TX2."));
+  if (detectedSDA2 != -1) {
+    Serial.print(F("✅ Sensor 2 detected on SDA=GPIO "));
+    Serial.print(detectedSDA2);
+    Serial.print(F(", SCL=GPIO "));
+    Serial.print(detectedSCL2);
+    Serial.println(F("!"));
+
+    Wire1.begin(detectedSDA2, detectedSCL2);
+    Wire1.setClock(100000);
+    delay(50); // Settling delay
+
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      if (sensor2.begin(0x29, false, &Wire1)) {
+        sensor2Online = true;
+        break;
+      }
+      delay(60);
+    }
+
+    if (sensor2Online) {
+      Serial.println(F("Initializing Sensor 2... ✅ ONLINE!"));
+    } else {
+      Serial.println(F("❌ Sensor 2 init failed (Try connecting VIN to 5V/VIN or check protective film)."));
+    }
   } else {
-    sensor2Online = true;
-    Serial.println(F("✅ ONLINE!"));
+    Serial.println(F("⚠️ Sensor 2 not responding on GPIO 16/17. Check wiring or power rail!"));
+  }
+
+  // 2. Smart Auto-Detection for Sensor 1 (Entry) on Wire
+  Serial.println(F("Scanning pins for Sensor 1 (Entry)..."));
+  int detectedSDA1 = -1;
+  int detectedSCL1 = -1;
+  PinPair pairs1[] = {
+    {21, 22}, // Standard SENSOR1_SDA=21, SCL=22
+    {22, 21}, // Swapped
+    {21, 23}, // SDA=21, SCL=23
+    {23, 21}, // SDA=23, SCL=21
+    {22, 23}, // SDA=22, SCL=23
+    {23, 22}  // SDA=23, SCL=22
+  };
+
+  for (auto &p : pairs1) {
+    if (testI2C(Wire, p.sda, p.scl, 0x29)) {
+      detectedSDA1 = p.sda;
+      detectedSCL1 = p.scl;
+      break;
+    }
+  }
+
+  if (detectedSDA1 != -1) {
+    Serial.print(F("✅ Sensor 1 detected on SDA=GPIO "));
+    Serial.print(detectedSDA1);
+    Serial.print(F(", SCL=GPIO "));
+    Serial.print(detectedSCL1);
+    Serial.println(F("!"));
+
+    Wire.begin(detectedSDA1, detectedSCL1);
+    Wire.setClock(100000);
+    delay(50); // Settling delay
+
+    for (int attempt = 1; attempt <= 3; attempt++) {
+      if (sensor1.begin(0x29, false, &Wire)) {
+        sensor1Online = true;
+        break;
+      }
+      delay(60);
+    }
+
+    if (sensor1Online) {
+      Serial.println(F("Initializing Sensor 1... ✅ ONLINE!"));
+    } else {
+      Serial.println(F("❌ Sensor 1 init failed (Try connecting VIN to 5V/VIN or check protective film)."));
+    }
+  } else {
+    Serial.println(F("⚠️ Sensor 1 not responding on GPIO 21/22. Check wiring or power rail!"));
   }
 
   if (sensor1Online && sensor2Online) {
-    Serial.println(F("🚀 DUAL-SENSOR MODE: Bi-directional Entry & Exit active!"));
-  } else if (sensor1Online) {
-    Serial.println(F("⚡ SINGLE-SENSOR MODE ACTIVE on Sensor 1 (Entry)!"));
+    Serial.println(F("\n🚀 DUAL-SENSOR MODE: Bi-directional Entry & Exit active!"));
   } else if (sensor2Online) {
-    Serial.println(F("⚡ SINGLE-SENSOR MODE ACTIVE on Sensor 2 (Exit)!"));
+    Serial.println(F("\n⚡ SINGLE-SENSOR MODE ACTIVE on Sensor 2! You can test passage right now!"));
+  } else if (sensor1Online) {
+    Serial.println(F("\n⚡ SINGLE-SENSOR MODE ACTIVE on Sensor 1! You can test passage right now!"));
   } else {
-    Serial.println(F("⚠️ Both sensors offline. Check power and I2C wiring."));
+    Serial.println(F("\n❌ Neither sensor responded. Check 3.3V & GND power jumper rails!"));
   }
-
-  Serial.println(F("Door counter ready. Stand or wave hand in front of sensors to test...\n"));
+  Serial.println(F("Stand or wave hand in front of sensor to test...\n"));
+  Serial.flush();
 }
 
 void loop() {
@@ -118,40 +210,59 @@ void loop() {
 
   unsigned long now = millis();
 
-  // Single-Sensor Mode fallback if only one sensor is plugged in
-  if (sensor1Online && !sensor2Online) {
-    static bool s1WasTriggered = false;
-    if (triggered1 && !s1WasTriggered) {
-      s1WasTriggered = true;
-      totalEntries++;
-      netOccupancy++;
-      sendEvent("ENTRY", dist1, 0);
-      blinkLed();
-      delay(250);
-    } else if (!triggered1) {
-      s1WasTriggered = false;
+  // Print detection ONLY when a target is actually detected (NO spam when clear)
+  static bool wasTriggered = false;
+  bool isTriggeredNow = (triggered1 || triggered2);
+
+  if (isTriggeredNow && !wasTriggered) {
+    wasTriggered = true;
+    if (sensor1Online && sensor2Online) {
+      Serial.print(F("\n🎯 [PASSAGE IN PROGRESS] S1: "));
+      Serial.print(dist1);
+      Serial.print(F(" mm | S2: "));
+      Serial.print(dist2);
+      Serial.println(F(" mm"));
+    } else {
+      Serial.print(F("\n🎯 [TARGET DETECTED] Distance: "));
+      Serial.print(sensor2Online ? dist2 : dist1);
+      Serial.println(F(" mm in crossing zone!"));
     }
-    delay(20);
-    return;
+    Serial.flush();
+  } else if (!isTriggeredNow && wasTriggered) {
+    wasTriggered = false;
   }
 
+  // If only Sensor 2 is online, operate in camera-fused single-sensor mode
   if (!sensor1Online && sensor2Online) {
-    static bool s2WasTriggered = false;
-    if (triggered2 && !s2WasTriggered) {
-      s2WasTriggered = true;
-      totalEntries++;
-      netOccupancy++;
-      sendEvent("ENTRY", 0, dist2);
+    static bool s2HandHandled = false;
+    if (triggered2 && !s2HandHandled) {
+      s2HandHandled = true;
+      sendEvent("DOOR_TRIGGER", 0, dist2);
       blinkLed();
-      delay(250);
+      delay(250); // Clean debounce
     } else if (!triggered2) {
-      s2WasTriggered = false;
+      s2HandHandled = false;
     }
-    delay(20);
+    delay(15);
     return;
   }
 
-  // Dual-Sensor Directional State Machine
+  // If only Sensor 1 is online, operate in camera-fused single-sensor mode
+  if (sensor1Online && !sensor2Online) {
+    static bool s1HandHandled = false;
+    if (triggered1 && !s1HandHandled) {
+      s1HandHandled = true;
+      sendEvent("DOOR_TRIGGER", dist1, 0);
+      blinkLed();
+      delay(250); // Clean debounce
+    } else if (!triggered1) {
+      s1HandHandled = false;
+    }
+    delay(15);
+    return;
+  }
+
+  // Dual-sensor directional state machine
   if (currentState != IDLE && (now - stateStartTime > STATE_TIMEOUT_MS)) {
     currentState = IDLE;
   }
@@ -174,7 +285,7 @@ void loop() {
         sendEvent("ENTRY", dist1, dist2);
         blinkLed();
         currentState = IDLE;
-        delay(250);
+        delay(150);
       }
       break;
 
@@ -185,30 +296,25 @@ void loop() {
         sendEvent("EXIT", dist1, dist2);
         blinkLed();
         currentState = IDLE;
-        delay(250);
+        delay(150);
       }
       break;
   }
 
-  delay(20);
+  delay(15);
 }
 
 void blinkLed() {
+  Serial.print(F("💡 [LED BLINK] Passage registered | Live Occupancy: "));
+  Serial.print(netOccupancy);
+  Serial.println(F(" Pax"));
+  Serial.flush();
   digitalWrite(ONBOARD_LED, HIGH);
-  delay(80);
+  delay(100);
   digitalWrite(ONBOARD_LED, LOW);
 }
 
 void sendEvent(const char* eventType, uint16_t d1, uint16_t d2) {
-  // Output clear human notification
-  Serial.print(F("🎉 ["));
-  Serial.print(eventType);
-  Serial.print(F(" DETECTED!] Hand wave counted! Occupancy: "));
-  Serial.print(netOccupancy);
-  Serial.print(F(" | Sensor 2: "));
-  Serial.print(d2);
-  Serial.println(F(" mm"));
-
   // Output clean JSON format directly to Serial (read by DELTA Engine Python bridge)
   Serial.print(F("{\"event\":\""));
   Serial.print(eventType);
@@ -223,4 +329,5 @@ void sendEvent(const char* eventType, uint16_t d1, uint16_t d2) {
   Serial.print(F(",\"dist2\":"));
   Serial.print(d2);
   Serial.println(F("}"));
+  Serial.flush();
 }

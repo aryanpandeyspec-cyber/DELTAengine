@@ -54,8 +54,8 @@ def run_bridge():
                         d1 = payload.get("dist1", 0)
                         d2 = payload.get("dist2", 0)
 
-                        icon = "🟢 [ENTRY]" if event == "ENTRY" else "🔴 [EXIT]"
-                        print(f"{icon} Net Occupancy: {occupancy} | Dist1: {d1}mm | Dist2: {d2}mm")
+                        icon = "🟢 [ENTRY]" if event == "ENTRY" else "🔴 [EXIT]" if event == "EXIT" else "⚡ [DOOR TRIGGER]"
+                        print(f"{icon} Net: {occupancy} | Dist1: {d1}mm | Dist2: {d2}mm (Event: {event})")
 
                         # Forward to DELTA Engine Server
                         try:
