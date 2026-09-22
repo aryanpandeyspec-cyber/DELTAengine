@@ -26,7 +26,7 @@
 
 // Distance threshold for hand/door passage detection (15 cm = 150 mm)
 #define DISTANCE_THRESHOLD_MM 150
-#define MIN_DISTANCE_MM 35 // Ignore anything under 3.5 cm (filters out close wires and surface crosstalk)
+#define MIN_DISTANCE_MM 35 // Ignore anything under 3.5 cm (filters close noise/reflection)
 
 // Create two independent Adafruit_VL53L0X instances on separate I2C buses
 Adafruit_VL53L0X sensor1 = Adafruit_VL53L0X();
@@ -47,13 +47,6 @@ int totalEntries = 0;
 int totalExits = 0;
 int netOccupancy = 0;
 
-bool testI2C(TwoWire &bus, int sda, int scl, uint8_t addr = 0x29) {
-  bus.begin(sda, scl);
-  bus.setClock(100000);
-  bus.beginTransmission(addr);
-  return (bus.endTransmission() == 0);
-}
-
 bool sensor1Online = false;
 bool sensor2Online = false;
 
@@ -67,9 +60,21 @@ void setup() {
   Serial.println(F("⚡ DELTA ENGINE - IoT Door Passage Counter"));
   Serial.println(F("=========================================="));
 
-  // Initialize Hardware I2C Bus 1 for Sensor 2 (GPIO 16/17)
+  // Initialize Hardware I2C Bus 0 for Sensor 1
+  Wire.begin(SENSOR1_SDA, SENSOR1_SCL);
+  Wire.setClock(100000);
+
+  // Initialize Hardware I2C Bus 1 for Sensor 2
   Wire1.begin(SENSOR2_SDA, SENSOR2_SCL);
   Wire1.setClock(100000);
+
+  Serial.print(F("Initializing Sensor 1 (Entry - GPIO 21/22)... "));
+  if (!sensor1.begin(0x29, false, &Wire)) {
+    Serial.println(F("❌ FAILED! Check wiring on D21/D22."));
+  } else {
+    sensor1Online = true;
+    Serial.println(F("✅ ONLINE!"));
+  }
 
   Serial.print(F("Initializing Sensor 2 (Exit - GPIO 16/17)... "));
   if (!sensor2.begin(0x29, false, &Wire1)) {
@@ -79,57 +84,17 @@ void setup() {
     Serial.println(F("✅ ONLINE!"));
   }
 
-  // Smart Auto-Detection for Sensor 1 across possible pin combinations
-  Serial.println(F("Scanning pins for Sensor 1..."));
-  int detectedSDA = -1;
-  int detectedSCL = -1;
-
-  struct PinPair { int sda; int scl; };
-  PinPair pairs[] = {
-    {21, 22}, // Standard SENSOR1_SDA=21, SCL=22
-    {22, 21}, // Swapped
-    {21, 23}, // SDA=21, SCL=23
-    {23, 21}, // SDA=23, SCL=21
-    {22, 23}, // SDA=22, SCL=23
-    {23, 22}  // SDA=23, SCL=22
-  };
-
-  for (auto &p : pairs) {
-    if (testI2C(Wire, p.sda, p.scl, 0x29)) {
-      detectedSDA = p.sda;
-      detectedSCL = p.scl;
-      break;
-    }
-  }
-
-  if (detectedSDA != -1) {
-    Serial.print(F("✅ Sensor 1 detected on SDA=GPIO "));
-    Serial.print(detectedSDA);
-    Serial.print(F(", SCL=GPIO "));
-    Serial.print(detectedSCL);
-    Serial.println(F("!"));
-
-    Wire.begin(detectedSDA, detectedSCL);
-    Wire.setClock(100000);
-    if (!sensor1.begin(0x29, false, &Wire)) {
-      Serial.println(F("❌ Init failed after detection."));
-    } else {
-      sensor1Online = true;
-      Serial.println(F("Initializing Sensor 1... ✅ ONLINE!"));
-    }
-  } else {
-    Serial.println(F("❌ SENSOR 1 NOT RESPONDING ON ANY PINS (21, 22, 23)!"));
-    Serial.println(F("⚠️  CRITICAL DIAGNOSIS:"));
-    Serial.println(F("   Sensor 1 has NO POWER (0 Volts)."));
-    Serial.println(F("   Move Sensor 1's VIN & GND wires to the RIGHT side of the breadboard next to Sensor 2!"));
-  }
-
   if (sensor1Online && sensor2Online) {
-    Serial.println(F("\n🚀 DUAL-SENSOR MODE: Bi-directional Entry & Exit active!"));
+    Serial.println(F("🚀 DUAL-SENSOR MODE: Bi-directional Entry & Exit active!"));
+  } else if (sensor1Online) {
+    Serial.println(F("⚡ SINGLE-SENSOR MODE ACTIVE on Sensor 1 (Entry)!"));
   } else if (sensor2Online) {
-    Serial.println(F("\n⚡ SINGLE-SENSOR MODE ACTIVE on Sensor 2! You can test passage right now!"));
+    Serial.println(F("⚡ SINGLE-SENSOR MODE ACTIVE on Sensor 2 (Exit)!"));
+  } else {
+    Serial.println(F("⚠️ Both sensors offline. Check power and I2C wiring."));
   }
-  Serial.println(F("Stand or wave hand in front of sensor to test...\n"));
+
+  Serial.println(F("Door counter ready. Stand or wave hand in front of sensors to test...\n"));
 }
 
 void loop() {
@@ -153,38 +118,23 @@ void loop() {
 
   unsigned long now = millis();
 
-  // Live Radar visualization printed to Serial Monitor every 200ms
-  static unsigned long lastRadarPrint = 0;
-  if (now - lastRadarPrint > 200) {
-    lastRadarPrint = now;
-    if (sensor1Online && sensor2Online) {
-      Serial.print(F("[RADAR] S1: "));
-      Serial.print(dist1);
-      Serial.print(F(" mm | S2: "));
-      Serial.print(dist2);
-      Serial.print(F(" mm | Status: "));
-      if (triggered1 || triggered2) {
-        Serial.println(F("🎯 [PASSAGE IN PROGRESS]"));
-      } else {
-        Serial.println(F("⚪ [Clear >15cm]"));
-      }
-    } else if (sensor2Online) {
-      Serial.print(F("[RADAR] S2: "));
-      Serial.print(dist2);
-      Serial.print(F(" mm ("));
-      Serial.print(dist2 / 10);
-      Serial.print(F(" cm) | "));
-      if (triggered2) {
-        Serial.println(F("🎯 [TARGET DETECTED in 3.5cm - 15cm zone!]"));
-      } else if (dist2 < MIN_DISTANCE_MM) {
-        Serial.println(F("⚠️ [OBJECT TOUCHING SENSOR (<3.5cm)! Peel off protective film or move dangling wires!]"));
-      } else {
-        Serial.println(F("⚪ [Clear - hand outside 15cm]"));
-      }
+  // Single-Sensor Mode fallback if only one sensor is plugged in
+  if (sensor1Online && !sensor2Online) {
+    static bool s1WasTriggered = false;
+    if (triggered1 && !s1WasTriggered) {
+      s1WasTriggered = true;
+      totalEntries++;
+      netOccupancy++;
+      sendEvent("ENTRY", dist1, 0);
+      blinkLed();
+      delay(250);
+    } else if (!triggered1) {
+      s1WasTriggered = false;
     }
+    delay(20);
+    return;
   }
 
-  // If only Sensor 2 is online, operate in ultra-responsive single-sensor mode
   if (!sensor1Online && sensor2Online) {
     static bool s2WasTriggered = false;
     if (triggered2 && !s2WasTriggered) {
@@ -193,15 +143,15 @@ void loop() {
       netOccupancy++;
       sendEvent("ENTRY", 0, dist2);
       blinkLed();
-      delay(150); // Fast debounce
+      delay(250);
     } else if (!triggered2) {
       s2WasTriggered = false;
     }
-    delay(15);
+    delay(20);
     return;
   }
 
-  // Dual-sensor directional state machine
+  // Dual-Sensor Directional State Machine
   if (currentState != IDLE && (now - stateStartTime > STATE_TIMEOUT_MS)) {
     currentState = IDLE;
   }
@@ -224,7 +174,7 @@ void loop() {
         sendEvent("ENTRY", dist1, dist2);
         blinkLed();
         currentState = IDLE;
-        delay(150);
+        delay(250);
       }
       break;
 
@@ -235,12 +185,12 @@ void loop() {
         sendEvent("EXIT", dist1, dist2);
         blinkLed();
         currentState = IDLE;
-        delay(150);
+        delay(250);
       }
       break;
   }
 
-  delay(15);
+  delay(20);
 }
 
 void blinkLed() {
