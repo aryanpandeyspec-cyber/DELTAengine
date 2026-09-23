@@ -551,31 +551,61 @@
 
           <!-- Assigned Volunteers & Coordinators Live Dispatch -->
           <div class="cctv-volunteers-card">
-            <div class="vol-card-header">
-              <span>🤝 ASSIGNED VOLUNTEERS ON DUTY (<span class="cctv-volunteers-venue-name">TURING HALL</span>)</span>
-              <span class="badge-mini-green">SYNCED</span>
+            <div class="vol-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>🤝 ASSIGNED COORDINATORS & DIRECTORY (<span class="cctv-volunteers-venue-name">TURING HALL</span>)</span>
+              <span class="badge-mini-green">3 SYNCED</span>
             </div>
             <div class="vol-duty-list">
-              <div class="vol-duty-item" id="vol-duty-priya">
-                <span class="vol-avatar">🚪</span>
-                <div class="vol-info">
-                  <strong>Priya Patel</strong> <em>(Crowd & Door Volunteer)</em>
-                  <span class="vol-task" id="vol-task-priya">Door Entrance A — Scanning passes & crowd routing</span>
+              <div class="vol-duty-item" id="admin-vol-duty-suryansh" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="vol-avatar">🚪</span>
+                  <div class="vol-info">
+                    <strong>Suryansh</strong> <em style="font-size:0.75rem; color:#555;">(Crowd & Entrance Lead)</em>
+                    <span class="vol-task" id="vol-task-suryansh">Door Entrance A — Scanning passes & crowd routing</span>
+                  </div>
                 </div>
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Suryansh" data-phone="+918303009159" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Suryansh">
+                  💬 WhatsApp
+                </button>
               </div>
-              <div class="vol-duty-item" id="vol-duty-rohan">
-                <span class="vol-avatar">🎤</span>
-                <div class="vol-info">
-                  <strong>Rohan Sharma</strong> <em>(Lead Stage Volunteer)</em>
-                  <span class="vol-task" id="vol-task-rohan">Stage Front — Safety aisle clearance & mic checks</span>
+              <div class="vol-duty-item" id="admin-vol-duty-shahid" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="vol-avatar">🎤</span>
+                  <div class="vol-info">
+                    <strong>Shahid</strong> <em style="font-size:0.75rem; color:#555;">(Stage & Operations Lead)</em>
+                    <span class="vol-task" id="vol-task-shahid">Stage Front — Safety aisle clearance & mic checks</span>
+                  </div>
                 </div>
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Shahid" data-phone="+916303570916" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Shahid">
+                  💬 WhatsApp
+                </button>
               </div>
-              <div class="vol-duty-item" id="vol-duty-ananya">
-                <span class="vol-avatar">🖥️</span>
-                <div class="vol-info">
-                  <strong>Ananya Sen</strong> <em>(AV & Stream Volunteer)</em>
-                  <span class="vol-task" id="vol-task-ananya">AV Desk — Cleared for stage setup when room is EMPTY</span>
+              <div class="vol-duty-item" id="admin-vol-duty-aryan" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="vol-avatar">🖥️</span>
+                  <div class="vol-info">
+                    <strong>Aryan Pandey</strong> <em style="font-size:0.75rem; color:#555;">(Lead Systems Commander)</em>
+                    <span class="vol-task" id="vol-task-aryan">Central AV Desk — Perception monitoring & volunteer dispatch</span>
+                  </div>
                 </div>
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Aryan Pandey" data-phone="+919154276178" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Aryan">
+                  💬 WhatsApp
+                </button>
+              </div>
+            </div>
+
+            <!-- ONE-CLICK SEND ALL & GUEST SPEAKER ACTIONS -->
+            <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+              <button class="btn btn-sm btn-green w-full btn-dispatch-send-all" style="font-weight:900; font-size:0.8rem; border:2px solid #000; box-shadow:3px 3px 0px #000; display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px;">
+                <span>📢 SEND ALL (ONE-CLICK DISPATCH)</span>
+              </button>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-sm btn-white btn-open-speaker-directory" style="flex:1; font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                  🎤 Guest Speakers (Email & WA)
+                </button>
+                <button class="btn btn-sm btn-yellow btn-preview-compiled-msg" style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Preview current auto-compiled event message">
+                  📋 Live Message
+                </button>
               </div>
             </div>
           </div>

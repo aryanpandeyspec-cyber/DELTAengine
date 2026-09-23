@@ -222,12 +222,12 @@
 
   // Contacts & WhatsApp Notification State (Indian Personnel & +91 Format)
   const defaultContacts = [
-    { id: 'cnt_01', name: 'Ananya Roy', role: 'Lead Event Coordinator', phone: '+91 98765 43210', email: 'ananya.roy@delta-engine.in', hall: 'Turing Hall & Lovelace Suite' },
-    { id: 'cnt_02', name: 'Dr. Aditi Sharma', role: 'AI Keynote Speaker & Research Lead', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall' },
-    { id: 'cnt_03', name: 'Vikramaditya Verma', role: 'WebGPU Speaker & Graphics Lead', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite' },
-    { id: 'cnt_04', name: 'Priya Nair', role: 'DevOps Speaker & Cloud Lead', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room' },
-    { id: 'cnt_05', name: 'Arjun Mehta', role: 'Super Admin & Infrastructure Director', phone: '+91 98990 01122', email: 'arjun.mehta@delta-engine.in', hall: 'ALL VENUES (Root)' },
-    { id: 'cnt_06', name: 'Rohan Kulkarni', role: 'AV Systems & Facility Stage Lead', phone: '+91 97112 24455', email: 'rohan.kulkarni@venue-av.in', hall: 'All Venue Halls' }
+    { id: 'cnt_01', name: 'Aryan Pandey', role: 'Lead Event Coordinator & Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', hall: 'ALL VENUES (Central Command)' },
+    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A' },
+    { id: 'cnt_03', name: 'Shahid', role: 'Stage & Hall Operations Coordinator', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', hall: 'Lovelace Suite & Stage Front' },
+    { id: 'cnt_04', name: 'Dr. Aditi Sharma', role: 'Guest Keynote Speaker (AI Research Lead)', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall' },
+    { id: 'cnt_05', name: 'Vikramaditya Verma', role: 'Guest Keynote Speaker (Graphics Lead)', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite' },
+    { id: 'cnt_06', name: 'Priya Nair', role: 'Guest Speaker (DevOps Architect)', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room' }
   ];
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -245,10 +245,9 @@
     container.innerHTML = '';
 
     const volunteers = [
-      { name: 'Rohan Sharma', role: 'Lead Stage Volunteer', phone: '+91 98761 23456', location: 'Stage Front', task: 'Mic & Clicker Check', status: 'ON DUTY' },
-      { name: 'Priya Patel', role: 'Crowd & Entrance Lead', phone: '+91 98123 45678', location: 'Door A', task: 'Scanning QR Badges', status: 'ON DUTY' },
-      { name: 'Aarav Mehta', role: 'Q&A Mic Runner', phone: '+91 99001 12233', location: 'Aisle 2', task: 'Audience Mic Pass', status: 'ACTIVE' },
-      { name: 'Ananya Sen', role: 'AV & Stream Lead', phone: '+91 97890 12345', location: 'AV Desk', task: '4K Stream Check', status: 'ON DUTY' }
+      { name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', location: 'Door A', task: 'Scanning passes & door routing', status: 'ON DUTY' },
+      { name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', location: 'Stage Front', task: 'Safety aisle clearance & mic checks', status: 'ON DUTY' },
+      { name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', location: 'Central AV Desk', task: 'Perception monitoring & volunteer dispatch', status: 'ON DUTY' }
     ];
 
     volunteers.forEach(v => {

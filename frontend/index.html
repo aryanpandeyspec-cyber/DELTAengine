@@ -219,33 +219,63 @@
             </div>
           </div>
 
-          <!-- Assigned Volunteers Quick Duty Sync -->
+          <!-- Assigned Volunteers & WhatsApp Directory -->
           <div class="cctv-volunteers-card">
-            <div class="vol-card-header">
-              <span>🤝 ASSIGNED VOLUNTEERS ON DUTY (<span id="cctv-volunteers-venue-name" class="cctv-volunteers-venue-name">TURING HALL</span>)</span>
-              <span class="badge-mini-green">SYNCED</span>
+            <div class="vol-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>🤝 ASSIGNED COORDINATORS & DIRECTORY (<span id="cctv-volunteers-venue-name" class="cctv-volunteers-venue-name">TURING HALL</span>)</span>
+              <span class="badge-mini-green">3 SYNCED</span>
             </div>
             <div class="vol-duty-list">
-              <div class="vol-duty-item" id="vol-duty-priya">
-                <span class="vol-avatar">🚪</span>
-                <div class="vol-info">
-                  <strong>Priya Patel</strong> <em>(Crowd & Door Volunteer)</em>
-                  <span class="vol-task" id="vol-task-priya">Door Entrance A — Scanning passes & crowd routing</span>
+              <div class="vol-duty-item" id="vol-duty-suryansh" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="vol-avatar">🚪</span>
+                  <div class="vol-info">
+                    <strong>Suryansh</strong> <em style="font-size:0.75rem; color:#555;">(Crowd & Entrance Lead)</em>
+                    <span class="vol-task" id="vol-task-suryansh">Door Entrance A — Scanning passes & crowd routing</span>
+                  </div>
                 </div>
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Suryansh" data-phone="+918303009159" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Suryansh">
+                  💬 WhatsApp
+                </button>
               </div>
-              <div class="vol-duty-item" id="vol-duty-rohan">
-                <span class="vol-avatar">🎤</span>
-                <div class="vol-info">
-                  <strong>Rohan Sharma</strong> <em>(Lead Stage Volunteer)</em>
-                  <span class="vol-task" id="vol-task-rohan">Stage Front — Safety aisle clearance & mic checks</span>
+              <div class="vol-duty-item" id="vol-duty-shahid" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="vol-avatar">🎤</span>
+                  <div class="vol-info">
+                    <strong>Shahid</strong> <em style="font-size:0.75rem; color:#555;">(Stage & Operations Lead)</em>
+                    <span class="vol-task" id="vol-task-shahid">Stage Front — Safety aisle clearance & mic checks</span>
+                  </div>
                 </div>
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Shahid" data-phone="+916303570916" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Shahid">
+                  💬 WhatsApp
+                </button>
               </div>
-              <div class="vol-duty-item" id="vol-duty-ananya">
-                <span class="vol-avatar">🖥️</span>
-                <div class="vol-info">
-                  <strong>Ananya Sen</strong> <em>(AV & Stream Volunteer)</em>
-                  <span class="vol-task" id="vol-task-ananya">AV Desk — Cleared for stage setup when room is EMPTY</span>
+              <div class="vol-duty-item" id="vol-duty-aryan" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="vol-avatar">🖥️</span>
+                  <div class="vol-info">
+                    <strong>Aryan Pandey</strong> <em style="font-size:0.75rem; color:#555;">(Lead Systems Commander)</em>
+                    <span class="vol-task" id="vol-task-aryan">Central AV Desk — Perception monitoring & volunteer dispatch</span>
+                  </div>
                 </div>
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Aryan Pandey" data-phone="+919154276178" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Aryan">
+                  💬 WhatsApp
+                </button>
+              </div>
+            </div>
+
+            <!-- ONE-CLICK SEND ALL & GUEST SPEAKER ACTIONS -->
+            <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+              <button class="btn btn-sm btn-green w-full btn-dispatch-send-all" style="font-weight:900; font-size:0.8rem; border:2px solid #000; box-shadow:3px 3px 0px #000; display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px;">
+                <span>📢 SEND ALL (ONE-CLICK DISPATCH)</span>
+              </button>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-sm btn-white btn-open-speaker-directory" style="flex:1; font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                  🎤 Guest Speakers (Email & WA)
+                </button>
+                <button class="btn btn-sm btn-yellow btn-preview-compiled-msg" style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Preview current auto-compiled event message">
+                  📋 Live Message
+                </button>
               </div>
             </div>
           </div>
@@ -988,31 +1018,232 @@
 
           <!-- Assigned Volunteers & Coordinators Live Dispatch -->
           <div class="cctv-volunteers-card">
-            <div class="vol-card-header">
-              <span>🤝 ASSIGNED VOLUNTEERS ON DUTY (<span class="cctv-volunteers-venue-name">TURING HALL</span>)</span>
-              <span class="badge-mini-green">SYNCED</span>
+            <div class="vol-card-header" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>🤝 ASSIGNED COORDINATORS & DIRECTORY (<span class="cctv-volunteers-venue-name">TURING HALL</span>)</span>
+              <span class="badge-mini-green">3 SYNCED</span>
             </div>
             <div class="vol-duty-list">
-              <div class="vol-duty-item" id="vol-duty-priya">
-                <span class="vol-avatar">🚪</span>
-                <div class="vol-info">
-                  <strong>Priya Patel</strong> <em>(Crowd & Door Volunteer)</em>
-                  <span class="vol-task" id="vol-task-priya">Door Entrance A — Scanning passes & crowd routing</span>
+              <div class="vol-duty-item" id="modal-vol-duty-suryansh" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="vol-avatar">🚪</span>
+                  <div class="vol-info">
+                    <strong>Suryansh</strong> <em style="font-size:0.75rem; color:#555;">(Crowd & Entrance Lead)</em>
+                    <span class="vol-task" id="modal-vol-task-suryansh">Door Entrance A — Scanning passes & crowd routing</span>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Suryansh" data-phone="+918303009159" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Suryansh">
+                  💬 WhatsApp
+                </button>
+              </div>
+              <div class="vol-duty-item" id="modal-vol-duty-shahid" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="vol-avatar">🎤</span>
+                  <div class="vol-info">
+                    <strong>Shahid</strong> <em style="font-size:0.75rem; color:#555;">(Stage & Operations Lead)</em>
+                    <span class="vol-task" id="modal-vol-task-shahid">Stage Front — Safety aisle clearance & mic checks</span>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Shahid" data-phone="+916303570916" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Shahid">
+                  💬 WhatsApp
+                </button>
+              </div>
+              <div class="vol-duty-item" id="modal-vol-duty-aryan" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span class="vol-avatar">🖥️</span>
+                  <div class="vol-info">
+                    <strong>Aryan Pandey</strong> <em style="font-size:0.75rem; color:#555;">(Lead Systems Commander)</em>
+                    <span class="vol-task" id="modal-vol-task-aryan">Central AV Desk — Perception monitoring & volunteer dispatch</span>
+                  </div>
+                </div>
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Aryan Pandey" data-phone="+919154276178" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Aryan">
+                  💬 WhatsApp
+                </button>
+              </div>
+            </div>
+
+            <!-- ONE-CLICK SEND ALL & GUEST SPEAKER ACTIONS -->
+            <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
+              <button class="btn btn-sm btn-green w-full btn-dispatch-send-all" style="font-weight:900; font-size:0.8rem; border:2px solid #000; box-shadow:3px 3px 0px #000; display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px;">
+                <span>📢 SEND ALL (ONE-CLICK DISPATCH)</span>
+              </button>
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-sm btn-white btn-open-speaker-directory" style="flex:1; font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                  🎤 Guest Speakers (Email & WA)
+                </button>
+                <button class="btn btn-sm btn-yellow btn-preview-compiled-msg" style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Preview current auto-compiled event message">
+                  📋 Live Message
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ONE-CLICK SEND ALL WHATSAPP DISPATCH MODAL -->
+  <div id="cctv-dispatch-all-modal" class="modal-backdrop hidden" style="z-index: 100010;">
+    <div class="modal-card" style="max-width: 680px; width: 95%;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <h2 class="modal-title">📢 ONE-CLICK WHATSAPP DISPATCH TO ALL COORDINATORS</h2>
+        </div>
+        <button id="btn-close-dispatch-all-modal" class="btn-close-modal" aria-label="Close Modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <div style="background:#e0f2fe; border:2px solid #0284c7; border-radius:8px; padding:10px 14px; margin-bottom:16px; font-size:0.85rem; color:#0369a1; font-weight:600;">
+          ⚡ <strong>Self-Compiling Event Dispatcher:</strong> This message dynamically compiles room metrics, threshold warnings, and instructions based on the active event state in <span class="cctv-volunteers-venue-name" style="font-weight:800;">TURING HALL</span>.
+        </div>
+
+        <div class="mb-4">
+          <label style="font-weight:800; font-size:0.85rem; display:block; margin-bottom:6px;">
+            📝 Self-Compiled Alert Message (Auto-generated & Editable):
+          </label>
+          <textarea id="dispatch-all-compiled-message" rows="4" style="width:100%; border:2px solid #000; border-radius:8px; padding:10px; font-family:monospace; font-size:0.88rem; box-shadow:3px 3px 0px #000;"></textarea>
+        </div>
+
+        <div class="mb-4">
+          <label style="font-weight:800; font-size:0.85rem; display:block; margin-bottom:6px;">
+            👥 Recipient Coordinators (WhatsApp Connected):
+          </label>
+          <div style="display:flex; flex-direction:column; gap:8px;">
+            <div style="background:#f8f9fa; border:2px solid #000; border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong>Aryan Pandey</strong> <span style="font-size:0.75rem; color:#666;">(Lead Systems Commander)</span>
+                <div style="font-size:0.75rem; font-family:monospace; color:#2563eb; font-weight:700;">+91 91542 76178</div>
+              </div>
+              <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Aryan Pandey" data-phone="+919154276178" style="font-size:0.75rem; font-weight:800;">💬 Open Chat</button>
+            </div>
+            <div style="background:#f8f9fa; border:2px solid #000; border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong>Suryansh</strong> <span style="font-size:0.75rem; color:#666;">(Crowd Safety & Entrance Lead)</span>
+                <div style="font-size:0.75rem; font-family:monospace; color:#2563eb; font-weight:700;">+91 83030 09159</div>
+              </div>
+              <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Suryansh" data-phone="+918303009159" style="font-size:0.75rem; font-weight:800;">💬 Open Chat</button>
+            </div>
+            <div style="background:#f8f9fa; border:2px solid #000; border-radius:8px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <strong>Shahid</strong> <span style="font-size:0.75rem; color:#666;">(Stage & Operations Lead)</span>
+                <div style="font-size:0.75rem; font-family:monospace; color:#2563eb; font-weight:700;">+91 63035 70916</div>
+              </div>
+              <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Shahid" data-phone="+916303570916" style="font-size:0.75rem; font-weight:800;">💬 Open Chat</button>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:20px;">
+          <button id="btn-execute-send-all-wa" class="btn btn-green" style="flex:2; font-weight:900; font-size:0.95rem; border:2px solid #000; box-shadow:4px 4px 0px #000;">
+            🚀 DISPATCH TO ALL 3 (WHATSAPP)
+          </button>
+          <button id="btn-copy-compiled-text" class="btn btn-white" style="flex:1; font-weight:800; font-size:0.85rem; border:2px solid #000; box-shadow:3px 3px 0px #000;">
+            📋 Copy Text
+          </button>
+          <button id="btn-recompile-msg" class="btn btn-yellow" style="font-weight:800; font-size:0.85rem; border:2px solid #000; box-shadow:3px 3px 0px #000;" title="Re-fetch live metrics and recompile">
+            🔄 Re-compile
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GUEST SPEAKERS DIRECTORY & ANTI-SPAM EMAIL MODAL -->
+  <div id="cctv-speaker-directory-modal" class="modal-backdrop hidden" style="z-index: 100010;">
+    <div class="modal-card" style="max-width: 820px; width: 95%;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <h2 class="modal-title">🎤 GUEST SPEAKERS COMMUNICATIONS DIRECTORY</h2>
+        </div>
+        <button id="btn-close-speaker-directory-modal" class="btn-close-modal" aria-label="Close Modal">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <div style="background:#ecfdf5; border:2px solid #059669; border-radius:8px; padding:12px 16px; margin-bottom:18px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div>
+              <strong style="color:#065f46;">🛡️ Official Sender Authentication:</strong>
+              <div style="font-size:0.82rem; color:#047857; margin-top:2px;">
+                Authorized From Address: <code style="background:#d1fae5; padding:2px 6px; border-radius:4px; font-weight:800; color:#065f46;">aryan.pandey777hyd@gmail.com</code>
+              </div>
+            </div>
+            <span class="badge-mini-green" style="background:#059669; color:#fff;">SPF / DKIM / Anti-Spam Verified</span>
+          </div>
+          <div style="font-size:0.75rem; color:#047857; margin-top:6px;">
+            All emails use clean RFC 5322 semantic headers, personalized speaker salutations, physical venue coordinates, and plain-text alternatives to ensure 0% spam folder placement.
+          </div>
+        </div>
+
+        <div id="guest-speakers-list-container" style="display:flex; flex-direction:column; gap:12px;">
+          <!-- Dynamically populated or static cards -->
+          <div class="speaker-contact-card" style="background:#ffffff; border:2px solid #000; border-radius:10px; padding:14px; box-shadow:3px 3px 0px #000;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+              <div>
+                <div style="font-size:1rem; font-weight:900; color:#000;">🧑‍🔬 Dr. Aditi Sharma <span style="font-size:0.75rem; color:#4338ca; font-weight:700; background:#e0e7ff; padding:2px 8px; border-radius:4px; border:1px solid #4338ca;">Keynote Speaker</span></div>
+                <div style="font-size:0.82rem; color:#444; margin-top:2px;">Talk: <em>"Autonomous Agent Swarms: Coordination without Controllers"</em></div>
+                <div style="font-size:0.78rem; color:#666; margin-top:4px;">
+                  📍 Venue: <strong>Turing Hall</strong> • ⏱️ Slot: <strong>09:30 AM - 10:30 AM</strong>
+                </div>
+                <div style="font-size:0.78rem; font-family:monospace; color:#333; margin-top:4px;">
+                  📧 <strong>aditi.sharma@ai-research.in</strong> • 💬 <strong>+91 91234 56789</strong>
                 </div>
               </div>
-              <div class="vol-duty-item" id="vol-duty-rohan">
-                <span class="vol-avatar">🎤</span>
-                <div class="vol-info">
-                  <strong>Rohan Sharma</strong> <em>(Lead Stage Volunteer)</em>
-                  <span class="vol-task" id="vol-task-rohan">Stage Front — Safety aisle clearance & mic checks</span>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Dr. Aditi Sharma" data-phone="+919123456789" data-topic="Autonomous Agent Swarms" style="font-weight:800; font-size:0.75rem;">
+                  💬 WhatsApp
+                </button>
+                <button class="btn btn-sm btn-green btn-send-speaker-email" data-name="Dr. Aditi Sharma" data-email="aditi.sharma@ai-research.in" data-topic="Autonomous Agent Swarms" data-venue="Turing Hall" data-time="09:30 AM - 10:30 AM" style="font-weight:800; font-size:0.75rem;">
+                  📧 Send Official Email
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="speaker-contact-card" style="background:#ffffff; border:2px solid #000; border-radius:10px; padding:14px; box-shadow:3px 3px 0px #000;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+              <div>
+                <div style="font-size:1rem; font-weight:900; color:#000;">💻 Vikramaditya Verma <span style="font-size:0.75rem; color:#4338ca; font-weight:700; background:#e0e7ff; padding:2px 8px; border-radius:4px; border:1px solid #4338ca;">Keynote Speaker</span></div>
+                <div style="font-size:0.82rem; color:#444; margin-top:2px;">Talk: <em>"WebGPU Deep Dive: Raytracing in the Browser"</em></div>
+                <div style="font-size:0.78rem; color:#666; margin-top:4px;">
+                  📍 Venue: <strong>Lovelace Suite</strong> • ⏱️ Slot: <strong>11:00 AM - 12:00 PM</strong>
+                </div>
+                <div style="font-size:0.78rem; font-family:monospace; color:#333; margin-top:4px;">
+                  📧 <strong>vikram.verma@graphics.in</strong> • 💬 <strong>+91 99887 76655</strong>
                 </div>
               </div>
-              <div class="vol-duty-item" id="vol-duty-ananya">
-                <span class="vol-avatar">🖥️</span>
-                <div class="vol-info">
-                  <strong>Ananya Sen</strong> <em>(AV & Stream Volunteer)</em>
-                  <span class="vol-task" id="vol-task-ananya">AV Desk — Cleared for stage setup when room is EMPTY</span>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Vikramaditya Verma" data-phone="+919988776655" data-topic="WebGPU Deep Dive" style="font-weight:800; font-size:0.75rem;">
+                  💬 WhatsApp
+                </button>
+                <button class="btn btn-sm btn-green btn-send-speaker-email" data-name="Vikramaditya Verma" data-email="vikram.verma@graphics.in" data-topic="WebGPU Deep Dive: Raytracing in the Browser" data-venue="Lovelace Suite" data-time="11:00 AM - 12:00 PM" style="font-weight:800; font-size:0.75rem;">
+                  📧 Send Official Email
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="speaker-contact-card" style="background:#ffffff; border:2px solid #000; border-radius:10px; padding:14px; box-shadow:3px 3px 0px #000;">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:10px;">
+              <div>
+                <div style="font-size:1rem; font-weight:900; color:#000;">☁️ Priya Nair <span style="font-size:0.75rem; color:#4338ca; font-weight:700; background:#e0e7ff; padding:2px 8px; border-radius:4px; border:1px solid #4338ca;">Guest Speaker</span></div>
+                <div style="font-size:0.82rem; color:#444; margin-top:2px;">Talk: <em>"Kubernetes Auto-Healing Runtimes under Load Stress"</em></div>
+                <div style="font-size:0.78rem; color:#666; margin-top:4px;">
+                  📍 Venue: <strong>Hopper Room</strong> • ⏱️ Slot: <strong>01:30 PM - 02:30 PM</strong>
                 </div>
+                <div style="font-size:0.78rem; font-family:monospace; color:#333; margin-top:4px;">
+                  📧 <strong>priya.nair@devops.in</strong> • 💬 <strong>+91 98112 23344</strong>
+                </div>
+              </div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Priya Nair" data-phone="+919811223344" data-topic="Kubernetes Auto-Healing Runtimes" style="font-weight:800; font-size:0.75rem;">
+                  💬 WhatsApp
+                </button>
+                <button class="btn btn-sm btn-green btn-send-speaker-email" data-name="Priya Nair" data-email="priya.nair@devops.in" data-topic="Kubernetes Auto-Healing Runtimes under Load Stress" data-venue="Hopper Room" data-time="01:30 PM - 02:30 PM" style="font-weight:800; font-size:0.75rem;">
+                  📧 Send Official Email
+                </button>
               </div>
             </div>
           </div>

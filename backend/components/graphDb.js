@@ -31,19 +31,17 @@ const db = {
     ]
   },
   contacts: [
-    { id: 'cnt_01', name: 'Ananya Roy', role: 'Lead Event Coordinator', phone: '+91 98765 43210', email: 'ananya.roy@delta-engine.in', hall: 'Turing Hall & Lovelace Suite', status: 'Online' },
-    { id: 'cnt_02', name: 'Dr. Aditi Sharma', role: 'AI Keynote Speaker & Research Lead', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall', status: 'Online' },
-    { id: 'cnt_03', name: 'Vikramaditya Verma', role: 'WebGPU Speaker & Graphics Lead', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite', status: 'Online' },
-    { id: 'cnt_04', name: 'Priya Nair', role: 'DevOps Speaker & Cloud Lead', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room', status: 'Online' },
-    { id: 'cnt_05', name: 'Arjun Mehta', role: 'Super Admin & Infrastructure Director', phone: '+91 98990 01122', email: 'arjun.mehta@delta-engine.in', hall: 'ALL VENUES (Root)', status: 'Active' },
-    { id: 'cnt_06', name: 'Rohan Kulkarni', role: 'AV Systems & Facility Stage Lead', phone: '+91 97112 24455', email: 'rohan.kulkarni@venue-av.in', hall: 'All Venue Halls', status: 'Active' }
+    { id: 'cnt_01', name: 'Aryan Pandey', role: 'Lead Event Coordinator & Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', hall: 'ALL VENUES (Central Command)', status: 'Online' },
+    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A', status: 'Online' },
+    { id: 'cnt_03', name: 'Shahid', role: 'Stage & Hall Operations Coordinator', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', hall: 'Lovelace Suite & Stage Front', status: 'Online' },
+    { id: 'cnt_04', name: 'Dr. Aditi Sharma', role: 'Guest Keynote Speaker (AI Research Lead)', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall', status: 'Speaker Confirmed' },
+    { id: 'cnt_05', name: 'Vikramaditya Verma', role: 'Guest Keynote Speaker (Graphics Lead)', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite', status: 'Speaker Confirmed' },
+    { id: 'cnt_06', name: 'Priya Nair', role: 'Guest Speaker (DevOps Architect)', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room', status: 'Speaker Confirmed' }
   ],
   volunteers: [
-    { id: 'vol_01', name: 'Rohan Sharma', role: 'Lead Stage Volunteer', phone: '+91 98761 23456', assignedEvent: 'topic-1', location: 'Turing Hall (Stage Front)', task: 'Speaker Mic & Slide Clicker Check', status: 'ON DUTY' },
-    { id: 'vol_02', name: 'Priya Patel', role: 'Crowd & Door Volunteer', phone: '+91 98123 45678', assignedEvent: 'topic-1', location: 'Turing Hall (Door Entrance A)', task: 'Scanning QR Badges & Seating Pass', status: 'ON DUTY' },
-    { id: 'vol_03', name: 'Aarav Mehta', role: 'Q&A Mic Runner', phone: '+91 99001 12233', assignedEvent: 'topic-1', location: 'Turing Hall (Aisle 2)', task: 'Passing Wireless Mics to Audience', status: 'ACTIVE' },
-    { id: 'vol_04', name: 'Ananya Sen', role: 'AV & Stream Volunteer', phone: '+91 97890 12345', assignedEvent: 'topic-1', location: 'Turing Hall (AV Desk)', task: 'Monitoring 4K Live Stream Feed', status: 'ON DUTY' },
-    { id: 'vol_05', name: 'Kabir Verma', role: 'Lovelace Stage Volunteer', phone: '+91 96543 21098', assignedEvent: 'topic-2', location: 'Lovelace Suite', task: 'Pre-session Setup & Hospitality', status: 'READY' }
+    { id: 'vol_01', name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', assignedEvent: 'topic-1', location: 'Turing Hall (Door Entrance A)', task: 'Scanning passes & door routing', status: 'ON DUTY' },
+    { id: 'vol_02', name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', assignedEvent: 'topic-1', location: 'Turing Hall (Stage Front)', task: 'Safety aisle clearance & mic checks', status: 'ON DUTY' },
+    { id: 'vol_03', name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', assignedEvent: 'topic-1', location: 'Central AV & IoT Control Desk', task: 'Perception monitoring & volunteer dispatch', status: 'ON DUTY' }
   ],
   whatsappLogs: [],
   limiters: {

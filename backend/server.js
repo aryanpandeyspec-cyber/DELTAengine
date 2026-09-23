@@ -135,7 +135,7 @@ app.get('/api/state', (req, res) => {
   });
 });
 
-const { autoDispatchSelfHealingEmail } = require('./components/supabaseEmailIntegrator');
+const { autoDispatchSelfHealingEmail, autoDispatchSpeakerEmail } = require('./components/supabaseEmailIntegrator');
 
 app.post('/api/notify/whatsapp', (req, res) => {
   const { recipientName, phoneNumber, messageText } = req.body;
@@ -144,10 +144,48 @@ app.post('/api/notify/whatsapp', (req, res) => {
   }
   const result = sendWhatsAppNotification(
     recipientName,
-    phoneNumber || '+1 (555) 234-8901',
+    phoneNumber || '+91 91542 76178',
     messageText
   );
   res.json({ success: true, notification: result });
+});
+
+// Broadcast WhatsApp notification to all 3 core coordinators: Aryan, Suryansh, and Shahid
+app.post('/api/notify/whatsapp-all', (req, res) => {
+  const { messageText } = req.body;
+  if (!messageText) {
+    return res.status(400).json({ error: 'Missing messageText' });
+  }
+
+  const coordinators = [
+    { name: 'Aryan Pandey (Lead Coordinator)', phone: '+91 91542 76178' },
+    { name: 'Suryansh (Crowd & Safety Lead)', phone: '+91 83030 09159' },
+    { name: 'Shahid (Stage & Ops Lead)', phone: '+91 63035 70916' }
+  ];
+
+  const results = coordinators.map(c => sendWhatsAppNotification(c.name, c.phone, messageText));
+  res.json({ success: true, count: results.length, notifications: results });
+});
+
+// Dedicated Anti-Spam Guest Speaker Email Dispatcher
+app.post('/api/notify/speaker-email', async (req, res) => {
+  const { speakerName, speakerEmail, topicTitle, venueName, timeSlot, customNote } = req.body;
+  if (!speakerEmail) {
+    return res.status(400).json({ error: 'Missing speakerEmail' });
+  }
+
+  const fromEmail = 'aryan.pandey777hyd@gmail.com';
+  const result = await autoDispatchSpeakerEmail({
+    fromEmail,
+    speakerName: speakerName || 'Guest Speaker',
+    speakerEmail,
+    topicTitle: topicTitle || 'Keynote Presentation',
+    venueName: venueName || 'Turing Hall',
+    timeSlot: timeSlot || '09:30 AM - 10:30 AM',
+    customNote: customNote || ''
+  }, db, broadcast);
+
+  res.json({ success: true, email: result });
 });
 
 app.post('/api/notify/email', async (req, res) => {
@@ -194,7 +232,9 @@ app.post('/api/admin/action', (req, res) => {
     message = '[GRAPH DB] Force re-indexed Neo4j graph topology edges & node connections.';
   } else if (action === 'broadcast') {
     message = '[BROADCAST ALERT] Super Admin pushed emergency notification to all attendee webcal clients.';
-    sendWhatsAppNotification('Suryansh (Lead Coordinator)', '+1 (555) 234-8901', '⚠️ EMERGENCY BROADCAST: Super Admin initiated system-wide attendee alert.');
+    sendWhatsAppNotification('Aryan Pandey (Lead Coordinator)', '+91 91542 76178', '⚠️ EMERGENCY BROADCAST: Super Admin initiated system-wide attendee alert.');
+    sendWhatsAppNotification('Suryansh (Crowd Safety Lead)', '+91 83030 09159', '⚠️ EMERGENCY BROADCAST: Super Admin initiated system-wide attendee alert.');
+    sendWhatsAppNotification('Shahid (Stage Operations Lead)', '+91 63035 70916', '⚠️ EMERGENCY BROADCAST: Super Admin initiated system-wide attendee alert.');
     broadcast({
       type: 'TOAST',
       data: { message: '📢 EMERGENCY SYSTEM BROADCAST PUSHED BY SUPER ADMIN', type: 'conflict' }
@@ -354,22 +394,16 @@ app.post('/api/simulate/capacity', async (req, res) => {
   });
 });
 
-// Track running door passage counters
-let doorSensorTotalEntries = 0;
-let doorSensorTotalExits = 0;
-let doorSensorNetOccupancy = 0;
-
 app.post('/api/sensors/door', async (req, res) => {
   const { event, hallId, netOccupancy, entries, exits, dist1, dist2 } = req.body;
   const targetHallId = hallId || 'hall-1';
   const hall = db.graph.halls[targetHallId] || { name: 'Turing Auditorium', capacity: 150 };
+  const occupancy = parseInt(netOccupancy, 10) || 0;
   const timeStr = new Date().toLocaleTimeString();
 
-  // Every time the sensor glows / triggers, directly register an entry (decoupled from camera)
+  // Forward DOOR_TRIGGER to camera for face scanning
   if (event === 'DOOR_TRIGGER') {
-    doorSensorTotalEntries++;
-    doorSensorNetOccupancy++;
-    console.log(`[IoT Door Sensor] 💡 [SENSOR GLOW] Passage Registered (+1 Entry) -> Total Entries: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax (Dist: ${dist2 || dist1}mm)`);
+    console.log(`[IoT Door Sensor] ⚡ DOOR_TRIGGER received at ${timeStr} (Dist2: ${dist2}mm) -> Activating Camera Face Scan...`);
     broadcast({
       type: 'DOOR_TRIGGER',
       data: {
@@ -377,29 +411,11 @@ app.post('/api/sensors/door', async (req, res) => {
         hallName: hall.name,
         dist1: dist1 || 0,
         dist2: dist2 || 0,
-        entries: doorSensorTotalEntries,
-        occupancy: doorSensorNetOccupancy,
         timestamp: timeStr
       }
     });
-    broadcast({
-      type: 'ROOM_OCCUPANCY_UPDATE',
-      data: {
-        hallId: targetHallId,
-        hallName: hall.name,
-        capacity: hall.capacity,
-        occupancy: doorSensorNetOccupancy,
-        entries: doorSensorTotalEntries,
-        exits: doorSensorTotalExits,
-        event: 'ENTRY',
-        timestamp: timeStr
-      }
-    });
-    return res.json({ success: true, entries: doorSensorTotalEntries, occupancy: doorSensorNetOccupancy });
+    return res.json({ success: true, triggerBroadcast: true });
   }
-
-  const occupancy = parseInt(netOccupancy, 10) || doorSensorNetOccupancy;
-
 
   console.log(`[IoT Door Sensor] ${event}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries}, Out: ${exits})`);
 
@@ -972,15 +988,16 @@ app.post('/api/sensors/camera', (req, res) => {
         capacity: targetCap,
         timestamp: cameraPayload.timestamp,
         assignedVolunteers: [
-          { name: 'Priya Patel', role: 'Door & Crowd Volunteer', location: 'Turing Hall (Entrance A)', task: 'HALT ENTRANCE & REDIRECT ATTENDEES' },
-          { name: 'Rohan Sharma', role: 'Lead Stage Volunteer', location: 'Turing Hall (Stage Front)', task: 'FIRE SAFETY & AISLE CLEARANCE' },
-          { name: 'Aarav Mehta', role: 'Crowd Runner', location: 'Aisle 2', task: 'PREVENT CHAIR OVERCROWDING' }
+          { name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', location: `${hall.name} (Entrance A)`, task: 'HALT ENTRANCE & REDIRECT ATTENDEES' },
+          { name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', location: `${hall.name} (Stage Front)`, task: 'FIRE SAFETY & AISLE CLEARANCE' },
+          { name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', location: 'Central AV & IoT Control Desk', task: 'EMERGENCY OVERFLOW DISPATCH' }
         ],
         assignedCoordinators: [
-          { name: 'Ananya Roy', role: 'Lead Event Coordinator', phone: '+91 98765 43210' },
-          { name: 'Arjun Mehta', role: 'Super Admin', phone: '+91 98990 01122' }
+          { name: 'Aryan Pandey', role: 'Lead Event Coordinator', phone: '+91 91542 76178' },
+          { name: 'Suryansh', role: 'Crowd Operations Lead', phone: '+91 83030 09159' },
+          { name: 'Shahid', role: 'Stage Operations Lead', phone: '+91 63035 70916' }
         ],
-        message: `🚨 CCTV ALERT: "${hall.name}" is ${occupiedPercent}% FULL (${emptyPercent}% Empty)! Capacity reached (${currentCount}/${targetCap} pax). Volunteers deployed to redirect incoming crowd to Lovelace Suite.`
+        message: `🚨 CCTV ALERT: "${hall.name}" is ${occupiedPercent}% FULL (${emptyPercent}% Empty)! Capacity reached (${currentCount}/${targetCap} pax). Volunteers deployed to redirect incoming crowd to overflow halls.`
       };
 
       broadcast({
@@ -989,15 +1006,21 @@ app.post('/api/sensors/camera', (req, res) => {
       });
 
       sendWhatsAppNotification(
-        'Priya Patel (Door Volunteer)',
-        '+91 98123 45678',
-        `🚨 [CCTV URGENT] ${hall.name} is ${occupiedPercent}% FULL! Halt admissions and direct attendees to Lovelace Suite.`
+        'Suryansh (Crowd Lead)',
+        '+91 83030 09159',
+        `🚨 [CCTV URGENT] ${hall.name} is ${occupiedPercent}% FULL (${currentCount}/${targetCap} Pax)! Halt admissions and direct attendees to overflow halls.`
       );
 
       sendWhatsAppNotification(
-        'Ananya Roy (Lead Coordinator)',
-        '+91 98765 43210',
-        `🚨 [CCTV BREACH] ${hall.name} capacity reached (${occupiedPercent}% Occupied). Gate closure active.`
+        'Shahid (Stage Lead)',
+        '+91 63035 70916',
+        `🚨 [CCTV URGENT] ${hall.name} at 100% capacity! Clear safety aisles and verify stage emergency exits.`
+      );
+
+      sendWhatsAppNotification(
+        'Aryan Pandey (Lead Coordinator)',
+        '+91 91542 76178',
+        `🚨 [CCTV BREACH] ${hall.name} capacity breached (${occupiedPercent}% Occupied). Gate closure active.`
       );
 
     } else if (currentStatus === 'NEAR_CAPACITY' || (occupiedPercent >= 80 && occupiedPercent < 95)) {
@@ -1016,11 +1039,11 @@ app.post('/api/sensors/camera', (req, res) => {
         capacity: targetCap,
         timestamp: cameraPayload.timestamp,
         assignedVolunteers: [
-          { name: 'Priya Patel', role: 'Door & Crowd Volunteer', location: 'Turing Hall (Entrance A)', task: 'PREPARE OVERFLOW ROUTING TO LOVELACE' },
-          { name: 'Aarav Mehta', role: 'Crowd Runner', location: 'Aisle 2', task: 'MONITOR SEAT OCCUPANCY DENSITY' }
+          { name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', location: `${hall.name} (Entrance A)`, task: 'PREPARE OVERFLOW ROUTING' },
+          { name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', location: `${hall.name} (Stage Front)`, task: 'MONITOR SEAT OCCUPANCY DENSITY' }
         ],
         assignedCoordinators: [
-          { name: 'Ananya Roy', role: 'Lead Event Coordinator', phone: '+91 98765 43210' }
+          { name: 'Aryan Pandey', role: 'Lead Event Coordinator', phone: '+91 91542 76178' }
         ],
         message: `⚠️ CCTV WARNING: "${hall.name}" is ${occupiedPercent}% FULL (${emptyPercent}% Empty)! 80% room capacity threshold reached (${currentCount}/${targetCap} pax). Crowd volunteers alerted to prepare overflow routing.`
       };
@@ -1031,14 +1054,20 @@ app.post('/api/sensors/camera', (req, res) => {
       });
 
       sendWhatsAppNotification(
-        'Priya Patel (Door Volunteer)',
-        '+91 98123 45678',
-        `⚠️ [CCTV 80% WARNING] ${hall.name} is ${occupiedPercent}% FULL! Prepare overflow queue management for Lovelace Suite.`
+        'Suryansh (Crowd Lead)',
+        '+91 83030 09159',
+        `⚠️ [CCTV 80% WARNING] ${hall.name} is ${occupiedPercent}% FULL! Prepare overflow queue management.`
       );
 
       sendWhatsAppNotification(
-        'Ananya Roy (Lead Coordinator)',
-        '+91 98765 43210',
+        'Shahid (Stage Lead)',
+        '+91 63035 70916',
+        `⚠️ [CCTV 80% NOTICE] ${hall.name} reached ${occupiedPercent}% capacity. Monitor seat row density.`
+      );
+
+      sendWhatsAppNotification(
+        'Aryan Pandey (Lead Coordinator)',
+        '+91 91542 76178',
         `⚠️ [CCTV 80% NOTICE] ${hall.name} has reached ${occupiedPercent}% capacity. Near capacity warning active.`
       );
 
@@ -1058,11 +1087,11 @@ app.post('/api/sensors/camera', (req, res) => {
         capacity: targetCap,
         timestamp: cameraPayload.timestamp,
         assignedVolunteers: [
-          { name: 'Ananya Sen', role: 'AV & Stream Volunteer', location: 'Turing Hall (AV Desk)', task: 'STAGE & LIVE STREAM SETUP PERMITTED' },
-          { name: 'Rohan Sharma', role: 'Stage Lead', location: 'Stage Front', task: 'SPEAKER PODIUM & MIC PREP' }
+          { name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', location: `${hall.name} (Stage Front)`, task: 'SPEAKER PODIUM & MIC PREP' },
+          { name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', location: 'AV Desk', task: 'STAGE & LIVE STREAM SETUP PERMITTED' }
         ],
         assignedCoordinators: [
-          { name: 'Rohan Kulkarni', role: 'AV Systems & Facility Stage Lead', phone: '+91 97112 24455' }
+          { name: 'Aryan Pandey', role: 'Lead Coordinator', phone: '+91 91542 76178' }
         ],
         message: `ℹ️ CCTV NOTICE: "${hall.name}" is EMPTY (${emptyPercent}% Vacant, ${occupiedPercent}% Occupied). Stage and AV volunteers cleared to enter for session setup.`
       };
@@ -1073,9 +1102,15 @@ app.post('/api/sensors/camera', (req, res) => {
       });
 
       sendWhatsAppNotification(
-        'Ananya Sen (AV Volunteer)',
-        '+91 97890 12345',
+        'Shahid (Stage Lead)',
+        '+91 63035 70916',
         `ℹ️ [CCTV NOTICE] ${hall.name} is now EMPTY (${emptyPercent}% Vacant). You are cleared to begin stage AV setup.`
+      );
+
+      sendWhatsAppNotification(
+        'Aryan Pandey (Lead Coordinator)',
+        '+91 91542 76178',
+        `ℹ️ [CCTV NOTICE] ${hall.name} is cleared and ready for next session setup.`
       );
     } else if (currentStatus === 'OPTIMAL') {
       lastCctvAlertState = 'OPTIMAL';
