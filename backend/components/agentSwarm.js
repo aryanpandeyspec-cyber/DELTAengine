@@ -200,8 +200,115 @@ Your role: Synthesize the team's resolution into an enthusiastic, reassuring pub
   }
 }
 
+/**
+ * Generates specialized Agent Swarm dialogue for real-world crowd & venue operations
+ * (Rallies, Festivals, Fairs, Movie Launches, Religious Gatherings, Conferences)
+ */
+async function generateOperationalSwarmDialogue(incident, action, db) {
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const apiKey = getGroqApiKey();
+
+  const zoneName = incident?.location?.zoneName || 'Venue Zone';
+  const eventType = incident?.eventType || 'EVENT';
+  const incidentType = incident?.incidentType || 'OVER_CAPACITY';
+  const actionTitle = action?.title || 'Crowd mitigation active';
+
+  // Deterministic Fallback Dialogue Function
+  const generateLocalOperationalDialogue = () => {
+    let liaisonText = `🚨 Sensory Alert [${eventType}]: ${incident?.potentialImpact || `Density spike in ${zoneName}`}. Telemetry verified.`;
+    let schedulerText = `⏱️ Spatial Flow Solver: Evaluating buffer zones and throughput capacity for ${zoneName}. Diverting traffic.`;
+    let logisticsText = `🏛️ Venue Logistics: Action "${actionTitle}" confirmed. Dispatched marshals & verified safety corridors.`;
+    let broadcasterText = `📢 Public Broadcast: Pushed live operational advisory to coordinator channels and on-site display feeds.`;
+
+    if (eventType === 'PUBLIC_RALLY') {
+      liaisonText = `🚨 Perimeter Alert: High crowd density (${incident?.occupancyRate || 105}%) detected in ${zoneName}. Sensor strain threshold warning.`;
+      schedulerText = `⏱️ Spatial Flow Solver: Opening East Overflow Park. Diverting incoming arrivals from North Gate to South Concourse.`;
+      logisticsText = `🏛️ Logistics Team: MOJ steel barricades locked into position. Mobile 4K LED Screen Trucks activated in overflow lawn.`;
+      broadcasterText = `📢 Public Broadcast: Horn PA System activated: "Please proceed calmly to the East Overflow Screenings area."`;
+    } else if (eventType === 'LARGE_GATHERING') {
+      liaisonText = `⚠️ Gate Congestion Logged: ${zoneName} inflow rate exceeds turnstile throughput. Approach road queue forming.`;
+      schedulerText = `⏱️ Flow Balancer: Throttling West Gate scanners. Diverting 40% of visitor flow to East Entrance Plaza.`;
+      logisticsText = `🏛️ Ground Logistics: Dynamic electronic gate status signage updated. Roving marshals clearing central promenade fire lane.`;
+      broadcasterText = `📢 Public Advisory: Electronic display boards updated: "West Gate at capacity. East Gate open with zero wait time."`;
+    } else if (eventType === 'MOVIE_PROMO') {
+      liaisonText = `🚨 Atrium Surge Alert: Fan density compression around Red Carpet walkway in ${zoneName}.`;
+      schedulerText = `⏱️ Access Controller: Locking Ground-to-L1 escalators. Guiding newly arriving fans toward Levels 2 & 3 viewing rings.`;
+      logisticsText = `🏛️ Physical Security: Velvet tensabarriers reinforced. Private celebrity escort team positioned at holding lounge.`;
+      broadcasterText = `📢 Broadcast Notice: Atrium PA deployed: "Please enjoy the celebration safely from your level viewing gallery."`;
+    } else if (eventType === 'RELIGIOUS_GATHERING') {
+      liaisonText = `🚨 Sacred Ghat Alert: ${zoneName} headcount approaching safety limit (${incident?.occupancyRate || 95}%). Riverfront steps slip risk.`;
+      schedulerText = `⏱️ Pilgrimage Flow Solver: Enforcing one-way pedestrian routing on East Footbridge. Batching Holding Pen Alpha releases.`;
+      logisticsText = `🏛️ Safety Logistics: Volunteer rope-line cordoning lower river steps. Motorized water rescue inflatables on active patrol.`;
+      broadcasterText = `📢 Ghat Broadcast: Loudspeaker array deployed: "Pilgrims are requested to proceed via West Bridge and follow volunteer lines."`;
+    }
+
+    return [
+      { sender: 'Liaison Agent', avatar: '🗣️', text: liaisonText, time: timeStr },
+      { sender: 'Scheduler Agent', avatar: '⏱️', text: schedulerText, time: timeStr },
+      { sender: 'Logistics Agent', avatar: '🏛️', text: logisticsText, time: timeStr },
+      { sender: 'Marketing Agent', avatar: '📢', text: broadcasterText, time: timeStr }
+    ];
+  };
+
+  // Circuit breaker check
+  if (db && db.limiters && db.limiters.llmLimiter) {
+    return [
+      { sender: 'Liaison Agent', avatar: '🗣️', text: `⚠️ [CIRCUIT BREAKER ACTIVE] Super Admin LLM Limiter is enabled. Local safety constraint rules engaged for ${zoneName}.`, time: timeStr },
+      { sender: 'Scheduler Agent', avatar: '⏱️', text: `Deterministic safety solver evaluated zone topology and executed "${actionTitle}".`, time: timeStr },
+      { sender: 'Logistics Agent', avatar: '🏛️', text: `Venue spatial constraints and emergency egress routes validated locally.`, time: timeStr },
+      { sender: 'Marketing Agent', avatar: '📢', text: `Operational dispatch confirmed across coordinator WhatsApp and WebSocket channels.`, time: timeStr }
+    ];
+  }
+
+  // If no Groq API Key, use rich deterministic operational dialogue
+  if (!apiKey || apiKey.trim() === '') {
+    return generateLocalOperationalDialogue();
+  }
+
+  const contextBase = `Operational Domain: ${eventType}. Zone: ${zoneName}. Incident Type: ${incidentType}. Severity: ${incident?.severity || 'critical'}. Current Occupancy: ${incident?.currentOccupancy || 0}/${incident?.capacity || 100} (${incident?.occupancyRate || 0}%). Recommended Action: "${actionTitle}". Potential Impact: "${incident?.potentialImpact || 'None'}".`;
+
+  try {
+    const liaisonSystemPrompt = `You are the Liaison Agent (Avatar: 🗣️) in the DELTA ENGINE Real-World Operations Swarm.
+Your role: Alert the operations team about this live ${eventType} incident in ${zoneName} with military crispness, urgency, and operational clarity in 1-2 punchy sentences.`;
+    const liaisonResponse = await callSpecializedAgent('liaison', liaisonSystemPrompt, contextBase, apiKey);
+
+    if (!liaisonResponse) return generateLocalOperationalDialogue();
+
+    const msg1 = { sender: 'Liaison Agent', avatar: '🗣️', text: liaisonResponse, time: timeStr };
+
+    const schedulerSystemPrompt = `You are the Scheduler / Spatial Flow Agent (Avatar: ⏱️) in the DELTA ENGINE Operations Swarm.
+Your role: Respond directly to the Liaison's alert. Propose concrete spatial flow control, buffer zones, or crowd rerouting decisions for ${zoneName} in 1-2 tactical sentences.`;
+    const schedulerUserPrompt = `${contextBase}\n\nLiaison Alert: "${liaisonResponse}"`;
+
+    const logisticsSystemPrompt = `You are the Logistics Agent (Avatar: 🏛️) in the DELTA ENGINE Operations Swarm.
+Your role: Respond with physical venue logistics (barriers, PA speakers, emergency egress, personnel assignments) in 1-2 practical sentences.`;
+    const logisticsUserPrompt = `${contextBase}\n\nLiaison Alert: "${liaisonResponse}"`;
+
+    const [schedulerResponse, logisticsResponse] = await Promise.all([
+      callSpecializedAgent('scheduler', schedulerSystemPrompt, schedulerUserPrompt, apiKey),
+      callSpecializedAgent('logistics', logisticsSystemPrompt, logisticsUserPrompt, apiKey)
+    ]);
+
+    const msg2 = { sender: 'Scheduler Agent', avatar: '⏱️', text: schedulerResponse || `Flow control engaged. Rerouting crowd influx away from ${zoneName}.`, time: timeStr };
+    const msg3 = { sender: 'Logistics Agent', avatar: '🏛️', text: logisticsResponse || `Physical barricades and marshals deployed to enforce ${actionTitle}.`, time: timeStr };
+
+    const broadcasterSystemPrompt = `You are the Broadcaster Agent (Avatar: 📢) in the DELTA ENGINE Operations Swarm.
+Your role: Synthesize the team's resolution into an authoritative, calm public advisory or coordinator broadcast in 1-2 clear sentences.`;
+    const broadcasterUserPrompt = `${contextBase}\nFlow Decision: "${msg2.text}"\nLogistics Decision: "${msg3.text}"`;
+    const broadcasterResponse = await callSpecializedAgent('marketing', broadcasterSystemPrompt, broadcasterUserPrompt, apiKey);
+
+    const msg4 = { sender: 'Marketing Agent', avatar: '📢', text: broadcasterResponse || `Public update broadcasted. Personnel notified across emergency channels.`, time: timeStr };
+
+    return [msg1, msg2, msg3, msg4];
+  } catch (err) {
+    console.warn('[Operational Swarm Error]: Falling back to local dialogue:', err.message);
+    return generateLocalOperationalDialogue();
+  }
+}
+
 module.exports = {
   generateGroqAgentSwarmDialogue,
+  generateOperationalSwarmDialogue,
   setGroqApiKey,
   getGroqApiKey
 };

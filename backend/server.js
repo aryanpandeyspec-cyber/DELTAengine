@@ -10,6 +10,9 @@ const { runSelfHealingAgent } = require('./components/selfHealing');
 const { setGroqApiKey, getGroqApiKey } = require('./components/agentSwarm');
 const { loadGraphFromSupabase } = require('./components/supabaseDb');
 const { escapeHtml, rateLimiter, validateSlideFile } = require('./components/security');
+const { getScenarios, getScenario, getActiveScenario, setActiveScenario, getScenarioGraph } = require('./components/scenarioManager');
+const { processOperationalTelemetry, detectIncidentsFromTelemetry, assessOperationalImpact, solveOperationalAction, executeOperationalAction } = require('./components/operationsEngine');
+const { evaluateTelemetryRequirements, evaluateActionFeasibility } = require('./components/incidentModel');
 
 // Process Uncaught Crash Guards (Prevents server process from ever freezing or exiting on errors)
 process.on('uncaughtException', (err) => {
@@ -115,7 +118,9 @@ wss.on('connection', ws => {
       limiters: db.limiters,
       cctvState: db.cctvState,
       uptimeSeconds: Math.floor(process.uptime()),
-      tokensUsed: db.tokensUsed
+      tokensUsed: db.tokensUsed,
+      activeScenario: getActiveScenario().id,
+      scenarios: getScenarios()
     }
   }));
   ws.on('close', () => console.log('[WS] Client disconnected'));
@@ -133,7 +138,9 @@ app.get('/api/state', (req, res) => {
     limiters: db.limiters,
     cctvState: db.cctvState,
     uptimeSeconds: Math.floor(process.uptime()),
-    tokensUsed: db.tokensUsed
+    tokensUsed: db.tokensUsed,
+    activeScenario: getActiveScenario().id,
+    scenarios: getScenarios()
   });
 });
 
@@ -336,17 +343,16 @@ app.post('/api/schedule/set-date', (req, res) => {
 });
 
 app.post('/api/reset', (req, res) => {
-  for (const key in db.graph.speakers) {
-    db.graph.speakers[key].delay = 0;
+  if (typeof db.reset === 'function') {
+    db.reset();
+  } else {
+    for (const key in db.graph.speakers) {
+      db.graph.speakers[key].delay = 0;
+    }
+    if (db.graph.topics['topic-1']) db.graph.topics['topic-1'].interest = 210;
+    if (db.graph.topics['topic-2']) db.graph.topics['topic-2'].interest = 140;
+    if (db.graph.topics['topic-3']) db.graph.topics['topic-3'].interest = 180;
   }
-  db.schedule = {
-    'slot-1': { 'hall-1': 'topic-1', 'hall-2': 'topic-4', 'hall-3': 'topic-3' },
-    'slot-2': { 'hall-1': 'topic-2', 'hall-2': 'topic-5', 'hall-3': 'topic-6' },
-    'slot-3': { 'hall-1': 'topic-8', 'hall-2': null, 'hall-3': null },
-    'slot-4': { 'hall-1': 'topic-7', 'hall-2': null, 'hall-3': null }
-  };
-
-  db.syncScheduleEdges();
 
   broadcast({
     type: 'STATE_RESET',
@@ -748,6 +754,162 @@ app.post('/api/groq/set-key', (req, res) => {
     res.status(400).json({ error: 'Invalid apiKey parameter' });
   }
 });
+
+// =========================================================================
+// 🌐 AUTONOMOUS REAL-WORLD CROWD & EVENT OPERATIONS ENGINE APIS
+// =========================================================================
+
+// List all registered operational gathering scenarios
+app.get('/api/scenarios', (req, res) => {
+  res.json({
+    success: true,
+    activeScenario: getActiveScenario().id,
+    scenarios: getScenarios()
+  });
+});
+
+// Get current active scenario configuration & spatial topology
+app.get('/api/scenarios/active', (req, res) => {
+  const active = getActiveScenario();
+  res.json({
+    success: true,
+    scenario: active,
+    graph: getScenarioGraph(active.id)
+  });
+});
+
+// Select active scenario (e.g. 'CONFERENCE', 'PUBLIC_RALLY', 'LARGE_GATHERING', 'MOVIE_PROMO', 'RELIGIOUS_GATHERING')
+app.post('/api/scenarios/select', (req, res) => {
+  const { scenarioId } = req.body;
+  const updated = setActiveScenario(scenarioId);
+  db.applyScenario(updated);
+
+  broadcast({
+    type: 'SCENARIO_CHANGED',
+    data: {
+      activeScenario: updated.id,
+      scenarioName: updated.name,
+      category: updated.category,
+      venue: updated.venue,
+      timestamp: new Date().toLocaleTimeString()
+    }
+  });
+
+  res.json({
+    success: true,
+    message: `Active operational scenario switched to: ${updated.name}`,
+    scenario: updated
+  });
+});
+
+// Get detailed scenario topology by ID
+app.get('/api/scenarios/:id', (req, res) => {
+  const scenario = getScenario(req.params.id);
+  res.json({
+    success: true,
+    scenario,
+    graph: getScenarioGraph(scenario.id)
+  });
+});
+
+// Get internal requirements model (Data We Have vs Data We Need, Actions We Can vs Cannot Perform)
+app.get('/api/operations/requirements', (req, res) => {
+  const active = (req.query && req.query.scenarioId) ? (getScenario(req.query.scenarioId) || getActiveScenario()) : getActiveScenario();
+  const availableTelemetry = [
+    'zone_occupancy',
+    'zone_capacity',
+    'cctv_facial_variance',
+    'cctv_headcount',
+    'entry_passage_tof',
+    'exit_passage_tof'
+  ];
+  const missingTelemetryExample = [
+    'aerial_thermal_drone_feed',
+    'subsurface_vibration_sensors',
+    'turnstile_rfid_biometrics'
+  ];
+
+  const availableActions = active.supportedActions || [];
+  const unsupportedActions = [
+    'AUTOMATED_WATER_CANNON_DISPATCH',
+    'REMOTE_POLICE_HELICOPTER_DEPLOYMENT',
+    'CIVIL_CELLULAR_NETWORK_SHUTDOWN'
+  ];
+
+  res.json({
+    success: true,
+    scenario: active.id,
+    scenarioName: active.name,
+    requirementsModel: {
+      dataWeHave: availableTelemetry,
+      dataWeNeed: active.telemetrySources,
+      unsupportedTelemetry: missingTelemetryExample,
+      actionWeCanPerform: availableActions.map(a => a.name || a.type),
+      actionWeCannotPerform: unsupportedActions,
+      note: 'DELTA ENGINE relies strictly on verified physical IoT & computer vision inputs. External municipal interventions require authorized personnel confirmation.'
+    }
+  });
+});
+
+// Ingests and processes an operational incident
+app.post('/api/operations/incident', async (req, res) => {
+  const telemetryData = Object.assign({}, req.body, req.body.telemetry || {});
+  if (req.body.location && typeof req.body.location === 'string' && !telemetryData.zoneId) {
+    telemetryData.zoneId = req.body.location;
+  }
+  const scenarioId = req.body.scenarioId || (req.body.telemetry && req.body.telemetry.scenarioId);
+  const result = await processOperationalTelemetry(telemetryData, db, broadcast, { scenarioId });
+  res.json({
+    success: true,
+    ...result
+  });
+});
+
+// Get list of active and historical operational incidents
+app.get('/api/operations/incidents', (req, res) => {
+  const { eventType, severity, resolutionState } = req.query;
+  const incidents = db.getIncidents({ eventType, severity, resolutionState });
+  res.json({
+    success: true,
+    count: incidents.length,
+    incidents
+  });
+});
+
+// Simulate domain-specific crowd incidents (Rally, Fair, Movie Promo, Religious Gathering)
+app.post('/api/operations/simulate-crowd-incident', async (req, res) => {
+  const { scenarioId, incidentType, customZoneId, zoneId, occupancyCount, occupancy, severity } = req.body;
+  const targetScenario = getScenario(scenarioId || 'PUBLIC_RALLY');
+  
+  const targetZoneId = customZoneId || zoneId;
+  const zone = targetZoneId 
+    ? (targetScenario.zones.find(z => z.id === targetZoneId) || targetScenario.zones[0])
+    : targetScenario.zones[0];
+  
+  const simulatedCount = occupancyCount || occupancy || Math.round(zone.capacity * 1.15);
+
+  const telemetry = {
+    zoneId: zone.id,
+    peopleDetected: simulatedCount,
+    capacity: zone.capacity,
+    flowRate: 420,
+    flowRateMax: 300,
+    severity: severity || (simulatedCount >= zone.capacity * 1.2 ? 'emergency' : 'critical'),
+    source: 'SIMULATED_DOMAIN_TELEMETRY'
+  };
+
+  const result = await processOperationalTelemetry(telemetry, db, broadcast, { scenario: targetScenario });
+
+  res.json({
+    success: true,
+    simulatedScenario: targetScenario.name,
+    simulatedZone: zone.name,
+    simulatedOccupancy: simulatedCount,
+    zoneCapacity: zone.capacity,
+    ...result
+  });
+});
+
 
 app.get('/api/calendar/feed.ics', (req, res) => {
   let ics = [
