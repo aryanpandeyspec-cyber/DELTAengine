@@ -970,56 +970,9 @@ Email: ${fromEmail}`;
       return { count: 0, boxes: [], blocked: true };
     }
 
-    // Build fast integral image for O(1) luminance & texture variance lookups
-    if (!intLum || intLum.length < (sw + 1) * (sh + 1)) {
-      intLum = new Float64Array((sw + 1) * (sh + 1));
-      intLumSq = new Float64Array((sw + 1) * (sh + 1));
-    }
-
-    for (let y = 0, p = 0; y < sh; y++) {
-      let rowSum = 0;
-      let rowSqSum = 0;
-      const rowIdx = (y + 1) * (sw + 1);
-      const prevRowIdx = y * (sw + 1);
-      for (let x = 0; x < sw; x++, p++) {
-        const val = picoGrayBuffer[p];
-        rowSum += val;
-        rowSqSum += val * val;
-        intLum[rowIdx + (x + 1)] = intLum[prevRowIdx + (x + 1)] + rowSum;
-        intLumSq[rowIdx + (x + 1)] = intLumSq[prevRowIdx + (x + 1)] + rowSqSum;
-      }
-    }
-
-    function getAreaVariance(rx, ry, rw, rh) {
-      const x0 = Math.max(0, rx);
-      const y0 = Math.max(0, ry);
-      const x1 = Math.min(sw, rx + rw);
-      const y1 = Math.min(sh, ry + rh);
-      const area = (x1 - x0) * (y1 - y0);
-      if (area <= 4) return 0;
-      const stride = sw + 1;
-      const sum = intLum[y1 * stride + x1] - intLum[y0 * stride + x1] - intLum[y1 * stride + x0] + intLum[y0 * stride + x0];
-      const sumSq = intLumSq[y1 * stride + x1] - intLumSq[y0 * stride + x1] - intLumSq[y1 * stride + x0] + intLumSq[y0 * stride + x0];
-      const mean = sum / area;
-      return Math.max(0, (sumSq / area) - (mean * mean));
-    }
-
-    function getAreaMean(rx, ry, rw, rh) {
-      const x0 = Math.max(0, rx);
-      const y0 = Math.max(0, ry);
-      const x1 = Math.min(sw, rx + rw);
-      const y1 = Math.min(sh, ry + rh);
-      const area = (x1 - x0) * (y1 - y0);
-      if (area <= 4) return 128;
-      const stride = sw + 1;
-      const sum = intLum[y1 * stride + x1] - intLum[y0 * stride + x1] - intLum[y1 * stride + x0] + intLum[y0 * stride + x0];
-      return sum / area;
-    }
-
-    const detectedHeads = [];
-
-    // PASS 1: Enhanced Multi-Scale Pico Cascade (Frontal, Semi-Profile, Distant Far & Near)
+    // Pico Real-Time Tree-Cascade Face Detector (Viola-Jones evolution, 200+ FPS)
     if (!picoClassifyRegion) initPico();
+
     if (picoClassifyRegion) {
       try {
         const image = {
@@ -1030,10 +983,10 @@ Email: ${fromEmail}`;
         };
 
         const params = {
-          shiftfactor: 0.08,
-          minsize: 12,       // Matches distant far rows down to 24px in 640x480
-          maxsize: 240,      // Close-up attendees & speakers
-          scalefactor: 1.08  // Granular multi-scale stepping
+          shiftfactor: 0.1,
+          minsize: 24,  // Matches human heads across typical meeting room distances
+          maxsize: 240, // Close-up attendees / speakers
+          scalefactor: 1.1
         };
 
         let dets = pico.run_cascade(image, picoClassifyRegion, params);
@@ -1042,169 +995,42 @@ Email: ${fromEmail}`;
         }
         const clusters = pico.cluster_detections(dets, 0.2);
 
-        for (let i = 0; i < clusters.length && detectedHeads.length < 35; i++) {
+        const picoBoxes = [];
+        // Real heads score 35-180+; empty space/textured fabric scores < 2.5
+        for (let i = 0; i < clusters.length && picoBoxes.length < 35; i++) {
           const c = clusters[i];
-          const cy = c[0];
-          const cx = c[1];
-          const size = c[2];
-          const score = c[3];
+          if (c[3] >= 15.0) {
+            const cy = c[0];
+            const cx = c[1];
+            const size = c[2];
 
-          const headW = Math.round(size * 0.95);
-          const headH = Math.round(headW * 1.20);
-          const left = Math.max(0, Math.round(cx - headW / 2));
-          const top = Math.max(0, Math.round(cy - headH * 0.48));
+            // Strict cranial head area bounding box:
+            // Width = size * 0.95, Height = Width * 1.20
+            // Centered on face, framing forehead/hair down to chin
+            const targetW = Math.round(size * 0.95);
+            const targetH = Math.round(targetW * 1.20);
+            const left = Math.max(0, Math.round(cx - targetW / 2));
+            const top = Math.max(0, Math.round(cy - targetH * 0.48));
 
-          const variance = getAreaVariance(left, top, headW, headH);
-          if (score >= 4.5 || (score >= 1.5 && variance >= 650)) {
-            detectedHeads.push({
+            picoBoxes.push({
               x: left * 2,
               y: top * 2,
-              w: Math.min(640 - left * 2, headW * 2),
-              h: Math.min(480 - top * 2, headH * 2),
-              score: Math.min(100, Math.round(score * 12))
+              w: Math.min(640 - left * 2, targetW * 2),
+              h: Math.min(480 - top * 2, targetH * 2),
+              score: c[3],
+              label: 'HEAD'
             });
           }
         }
+
+        // Return exact detected heads. When empty space, count is 0 with 0 boxes!
+        return { count: picoBoxes.length, boxes: picoBoxes, blocked: false };
       } catch (picoErr) {
         console.warn('[CCTV] Pico cascade pass warning:', picoErr);
       }
     }
 
-    // PASS 2: Multi-View Cranial & Rear Head Perception (Back of the head, Blurry, Profile)
-    // Morphology: Convex cranial arch + cervical neck narrowing + bilateral shoulder expansion
-    const candidateScales = [30, 48, 72, 108, 150];
-    for (const scale of candidateScales) {
-      const stepX = Math.max(10, Math.round(scale * 0.36));
-      const stepY = Math.max(10, Math.round(scale * 0.36));
-      const hHeight = Math.round(scale * 1.20);
-
-      for (let top = 10; top <= sh - hHeight - 15; top += stepY) {
-        for (let left = 8; left <= sw - scale - 8; left += stepX) {
-          const box2X = left * 2;
-          const box2Y = top * 2;
-          const box2W = scale * 2;
-          const box2H = hHeight * 2;
-
-          let overlaps = false;
-          for (let k = 0; k < detectedHeads.length; k++) {
-            const h = detectedHeads[k];
-            const ix = Math.max(box2X, h.x);
-            const iy = Math.max(box2Y, h.y);
-            const iw = Math.min(box2X + box2W, h.x + h.w) - ix;
-            const ih = Math.min(box2Y + box2H, h.y + h.h) - iy;
-            if (iw > 0 && ih > 0) {
-              const inter = iw * ih;
-              const union = box2W * box2H + h.w * h.h - inter;
-              if (inter / union > 0.18) {
-                overlaps = true;
-                break;
-              }
-            }
-          }
-          if (overlaps) continue;
-
-          // 1. Head interior texture variance (hair/cranium vs blank flat wall)
-          const headVar = getAreaVariance(left, top, scale, hHeight);
-          if (headVar < 750) continue; // Instantly rejects smooth painted walls, flat screens, empty desks
-
-          // 2. Cranial top contrast (arch against background above head)
-          const archH = Math.max(3, Math.round(scale * 0.18));
-          const aboveMean = getAreaMean(left + scale * 0.2, Math.max(0, top - archH), scale * 0.6, archH);
-          const archMean = getAreaMean(left + scale * 0.2, top, scale * 0.6, archH);
-          if (Math.abs(aboveMean - archMean) < 10) continue;
-
-          // 3. Bilateral Shoulder Widening Check (The universal Omega silhouette)
-          const neckTop = top + hHeight;
-          const shoulderH = Math.max(8, Math.round(scale * 0.40));
-          if (neckTop + shoulderH < sh) {
-            const shLeft = Math.max(0, Math.round(left - scale * 0.45));
-            const shWidth = Math.min(sw - shLeft, Math.round(scale * 1.90));
-            const shVar = getAreaVariance(shLeft, neckTop, shWidth, shoulderH);
-            if (shVar >= 550) {
-              detectedHeads.push({
-                x: box2X,
-                y: box2Y,
-                w: box2W,
-                h: box2H,
-                score: Math.min(95, Math.round(headVar / 15))
-              });
-            }
-          }
-        }
-      }
-    }
-
-    // PASS 3: Peripheral Half-Face Scanning (Attendees cut off at left or right frame borders)
-    const edgeScales = [36, 56, 84, 120];
-    for (const scale of edgeScales) {
-      const hHeight = Math.round(scale * 1.25);
-      const edgePositions = [
-        { left: 0, w: Math.round(scale * 0.65) },
-        { left: sw - Math.round(scale * 0.65), w: Math.round(scale * 0.65) }
-      ];
-
-      for (const edge of edgePositions) {
-        for (let top = 10; top <= sh - hHeight - 10; top += Math.round(scale * 0.4)) {
-          const box2X = edge.left * 2;
-          const box2Y = top * 2;
-          const box2W = edge.w * 2;
-          const box2H = hHeight * 2;
-
-          let overlaps = false;
-          for (let k = 0; k < detectedHeads.length; k++) {
-            const h = detectedHeads[k];
-            const ix = Math.max(box2X, h.x);
-            const iy = Math.max(box2Y, h.y);
-            const iw = Math.min(box2X + box2W, h.x + h.w) - ix;
-            const ih = Math.min(box2Y + box2H, h.y + h.h) - iy;
-            if (iw > 0 && ih > 0) {
-              const inter = iw * ih;
-              const union = box2W * box2H + h.w * h.h - inter;
-              if (inter / union > 0.20) {
-                overlaps = true;
-                break;
-              }
-            }
-          }
-          if (overlaps) continue;
-
-          const edgeVar = getAreaVariance(edge.left, top, edge.w, hHeight);
-          if (edgeVar >= 800) {
-            let skinPixels = 0;
-            const sampleCount = 30;
-            for (let s = 0; s < sampleCount; s++) {
-              const sx = edge.left + Math.floor(Math.random() * edge.w);
-              const sy = top + Math.floor(Math.random() * hHeight);
-              const pIdx = (sy * sw + sx) * 4;
-              const r = d[pIdx];
-              const g = d[pIdx + 1];
-              const b = d[pIdx + 2];
-              if (r > 60 && g > 40 && b > 20 && r > g && r > b) skinPixels++;
-            }
-            if (skinPixels >= 10) {
-              detectedHeads.push({
-                x: box2X,
-                y: box2Y,
-                w: box2W,
-                h: box2H,
-                score: Math.min(90, Math.round(edgeVar / 14))
-              });
-            }
-          }
-        }
-      }
-    }
-
-    const finalBoxes = detectedHeads.map(h => ({
-      x: h.x,
-      y: h.y,
-      w: h.w,
-      h: h.h,
-      score: h.score,
-      label: 'HEAD'
-    }));
-
-    return { count: finalBoxes.length, boxes: finalBoxes, blocked: false };
+    return { count: 0, boxes: [], blocked: false };
   }
 
   // Temporal centroid tracker to eliminate frame-to-frame flicker and maintain steady counts
