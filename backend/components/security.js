@@ -23,6 +23,11 @@ const rateLimitMap = new Map();
 const MAX_REQUESTS_PER_MINUTE = 100;
 
 function rateLimiter(req, res, next) {
+  // Allow high-frequency sensor & CCTV perception telemetry to bypass web limiter
+  if (req.path.startsWith('/api/sensors/') || req.path.startsWith('/api/cctv/')) {
+    return next();
+  }
+
   const ip = req.ip || req.connection.remoteAddress || '127.0.0.1';
   const now = Date.now();
 
