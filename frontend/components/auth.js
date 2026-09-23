@@ -10,7 +10,7 @@
     else if (window.location.pathname.includes('admin')) currentUserRole = 'admin';
     if (savedName) currentUserName = savedName;
     else if (currentUserRole === 'admin') currentUserName = 'Marcus Aurelius (Super Admin)';
-  } catch (e) {}
+  } catch (e) { }
 
   window.addEventListener('DOMContentLoaded', () => {
     bindAuthEventListeners();
@@ -18,7 +18,7 @@
     startLiveAdminTimers();
     fetch('/api/state').then(r => r.json()).then(data => {
       if (typeof window.syncAdminDashboard === 'function') window.syncAdminDashboard(data);
-    }).catch(() => {});
+    }).catch(() => { });
   });
 
   function bindAuthEventListeners() {
@@ -52,7 +52,7 @@
         tabAdmin.classList.remove('active');
         if (hiddenRoleInput) hiddenRoleInput.value = 'coordinator';
         if (usernameLabel) usernameLabel.textContent = 'Coordinator Username / ID';
-        if (inputUsername) inputUsername.value = 'elena.vance';
+        if (inputUsername) inputUsername.value = 'Suryansh';
       });
 
       tabAdmin.addEventListener('click', (e) => {
@@ -119,7 +119,7 @@
     try {
       localStorage.setItem('delta_user_role', role);
       localStorage.setItem('delta_user_name', displayName);
-    } catch (e) {}
+    } catch (e) { }
 
     const modal = document.getElementById('auth-login-modal');
     if (modal) modal.classList.add('hidden');
@@ -223,7 +223,7 @@
   // Contacts & WhatsApp Notification State (Indian Personnel & +91 Format)
   const defaultContacts = [
     { id: 'cnt_01', name: 'Aryan Pandey', role: 'Lead Event Coordinator & Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', hall: 'ALL VENUES (Central Command)' },
-    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A' },
+    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'Suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A' },
     { id: 'cnt_03', name: 'Shahid', role: 'Stage & Hall Operations Coordinator', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', hall: 'Lovelace Suite & Stage Front' },
     { id: 'cnt_04', name: 'Dr. Aditi Sharma', role: 'Guest Keynote Speaker (AI Research Lead)', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall' },
     { id: 'cnt_05', name: 'Vikramaditya Verma', role: 'Guest Keynote Speaker (Graphics Lead)', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite' },

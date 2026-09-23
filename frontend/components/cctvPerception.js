@@ -23,7 +23,7 @@
     const savedVenueName = localStorage.getItem('delta_current_venue_name');
     if (savedVenueId) currentVenueId = savedVenueId;
     if (savedVenueName) currentVenueName = savedVenueName;
-  } catch (e) {}
+  } catch (e) { }
 
   let currentCapacity = 25; // Default demo capacity
   try {
@@ -32,7 +32,7 @@
       const parsed = parseInt(savedCap, 10);
       if (parsed > 0) currentCapacity = parsed;
     }
-  } catch (e) {}
+  } catch (e) { }
 
   let manualCount = 0;
   let isCameraActive = false;
@@ -44,7 +44,7 @@
   let selectedCameraDeviceId = '';
   try {
     selectedCameraDeviceId = localStorage.getItem('delta_selected_camera_id') || '';
-  } catch (e) {}
+  } catch (e) { }
 
   // --- ATTENDEE PROFILE DATABASE & RE-ENTRY TRACKING ---
   // Maps attendeeId -> { id, name, signature, state: 'INSIDE'|'OUTSIDE', entryCount, lastSeen }
@@ -160,7 +160,7 @@
       localStorage.setItem('delta_current_venue_id', currentVenueId);
       localStorage.setItem('delta_current_venue_name', currentVenueName);
       localStorage.setItem('delta_current_room_capacity', currentCapacity.toString());
-    } catch (e) {}
+    } catch (e) { }
 
     // Synchronize all venue dropdowns across the page
     if (updateSelects) {
@@ -299,10 +299,10 @@
       });
 
       const unlockAndRefresh = async () => {
-        const hasUnlabeled = Array.from(sel.options).some(o => 
-          o.textContent.startsWith('📹 Video Input') || 
-          o.textContent.startsWith('Camera ') || 
-          o.value === '' || 
+        const hasUnlabeled = Array.from(sel.options).some(o =>
+          o.textContent.startsWith('📹 Video Input') ||
+          o.textContent.startsWith('Camera ') ||
+          o.value === '' ||
           !o.textContent.includes('(')
         );
         if (hasUnlabeled || sel.options.length <= 1) {
@@ -366,7 +366,7 @@
         const val = parseInt(e.target.value, 10);
         if (!isNaN(val) && val >= 1) {
           currentCapacity = val;
-          try { localStorage.setItem('delta_current_room_capacity', currentCapacity.toString()); } catch (err) {}
+          try { localStorage.setItem('delta_current_room_capacity', currentCapacity.toString()); } catch (err) { }
           syncCapacityControls(currentCapacity);
           updateThresholdLabels(currentCapacity);
           updateDensityMetrics(true);
@@ -377,7 +377,7 @@
         if (isNaN(val) || val < 2) val = 2;
         currentCapacity = val;
         e.target.value = val;
-        try { localStorage.setItem('delta_current_room_capacity', currentCapacity.toString()); } catch (err) {}
+        try { localStorage.setItem('delta_current_room_capacity', currentCapacity.toString()); } catch (err) { }
         syncCapacityControls(currentCapacity);
         updateThresholdLabels(currentCapacity);
         updateDensityMetrics(true);
@@ -391,7 +391,7 @@
     document.querySelectorAll('.cctv-capacity-slider').forEach(slider => {
       slider.addEventListener('input', (e) => {
         currentCapacity = parseInt(e.target.value, 10);
-        try { localStorage.setItem('delta_current_room_capacity', currentCapacity.toString()); } catch (err) {}
+        try { localStorage.setItem('delta_current_room_capacity', currentCapacity.toString()); } catch (err) { }
         syncCapacityControls(currentCapacity);
         updateThresholdLabels(currentCapacity);
         updateDensityMetrics(true);
@@ -581,7 +581,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ messageText: msg })
           });
-        } catch (e) {}
+        } catch (e) { }
 
         // Launch WhatsApp chats with pre-filled message
         const targets = [
@@ -652,7 +652,7 @@
         const rawPhone = btn.getAttribute('data-phone') || '919154276178';
         const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
         const msg = compileEventMessage();
-        
+
         // Log to backend
         try {
           fetch('/api/notify/whatsapp', {
@@ -660,7 +660,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ recipientName: name, phoneNumber: cleanPhone, messageText: msg })
           });
-        } catch (err) {}
+        } catch (err) { }
 
         const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello ${name},\n\n${msg}`)}`;
         window.open(waUrl, '_blank');
@@ -708,7 +708,7 @@
               timeSlot: spkTime
             })
           });
-        } catch (err) {}
+        } catch (err) { }
 
         // 2. Open client-side mailto with From reference & anti-spam formatted body
         const subject = `[DELTA ENGINE] Speaker Logistics Confirmation: ${spkTopic} (${spkVenue})`;
@@ -803,7 +803,7 @@ Email: ${fromEmail}`;
     selectedCameraDeviceId = deviceId;
     try {
       localStorage.setItem('delta_selected_camera_id', deviceId);
-    } catch (e) {}
+    } catch (e) { }
 
     // Synchronize all camera dropdowns across the page
     document.querySelectorAll('.cctv-select:not(.cctv-venue-select)').forEach(sel => {
@@ -827,7 +827,7 @@ Email: ${fromEmail}`;
     const deviceId = requestedDeviceId || selectedCameraDeviceId || document.querySelector('.cctv-select:not(.cctv-venue-select)')?.value;
     if (deviceId) {
       selectedCameraDeviceId = deviceId;
-      try { localStorage.setItem('delta_selected_camera_id', deviceId); } catch (e) {}
+      try { localStorage.setItem('delta_selected_camera_id', deviceId); } catch (e) { }
     }
 
     // Stop any existing tracks
@@ -875,7 +875,7 @@ Email: ${fromEmail}`;
       try {
         stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo, audio: false });
       } catch (err) {
-        try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); } catch (e) {}
+        try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); } catch (e) { }
       }
     }
 
@@ -883,7 +883,7 @@ Email: ${fromEmail}`;
       mediaStream = stream;
       if (videoEl) {
         videoEl.srcObject = mediaStream;
-        try { await videoEl.play(); } catch (e) {}
+        try { await videoEl.play(); } catch (e) { }
       }
       isCameraActive = true;
       updateCameraStateUI(true);
@@ -1325,7 +1325,7 @@ Email: ${fromEmail}`;
         entries: totalEntries,
         exits: totalExits
       })
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   // Real-time canvas rendering loop
@@ -1778,8 +1778,8 @@ Email: ${fromEmail}`;
     alert.assignedVolunteers.forEach(v => {
       const lowerName = v.name.toLowerCase();
       let targetIds = [];
-      if (lowerName.includes('suryansh') || lowerName.includes('priya')) {
-        targetIds = ['vol-task-suryansh', 'modal-vol-task-suryansh', 'admin-vol-task-suryansh', 'vol-task-priya'];
+      if (lowerName.includes('Suryansh') || lowerName.includes('priya')) {
+        targetIds = ['vol-task-Suryansh', 'modal-vol-task-Suryansh', 'admin-vol-task-Suryansh', 'vol-task-priya'];
       } else if (lowerName.includes('shahid') || lowerName.includes('rohan')) {
         targetIds = ['vol-task-shahid', 'modal-vol-task-shahid', 'admin-vol-task-shahid', 'vol-task-rohan'];
       } else if (lowerName.includes('aryan') || lowerName.includes('ananya')) {
@@ -1815,8 +1815,8 @@ Email: ${fromEmail}`;
               const badgeHtml = alert.type === 'ROOM_FULL'
                 ? `<span style="background:#fee2e2; border:1px solid #dc2626; color:#991b1b; font-weight:800; padding:1px 6px; border-radius:4px; font-size:0.7rem; margin-left:6px;">🚨 BREACH: ${v.task}</span>`
                 : alert.type === 'ROOM_80_PERCENT'
-                ? `<span style="background:#fef3c7; border:1px solid #d97706; color:#b45309; font-weight:800; padding:1px 6px; border-radius:4px; font-size:0.7rem; margin-left:6px;">⚠️ 80% ALERT: ${v.task}</span>`
-                : `<span style="background:#dbeafe; border:1px solid #2563eb; color:#1d4ed8; font-weight:800; padding:1px 6px; border-radius:4px; font-size:0.7rem; margin-left:6px;">⚪ CLEARED: ${v.task}</span>`;
+                  ? `<span style="background:#fef3c7; border:1px solid #d97706; color:#b45309; font-weight:800; padding:1px 6px; border-radius:4px; font-size:0.7rem; margin-left:6px;">⚠️ 80% ALERT: ${v.task}</span>`
+                  : `<span style="background:#dbeafe; border:1px solid #2563eb; color:#1d4ed8; font-weight:800; padding:1px 6px; border-radius:4px; font-size:0.7rem; margin-left:6px;">⚪ CLEARED: ${v.task}</span>`;
               taskDiv.innerHTML = `📍 ${v.location || currentVenueName || 'Turing Hall'} • 📋 ${badgeHtml}`;
             }
           }
@@ -1953,7 +1953,7 @@ Email: ${fromEmail}`;
       msgEl.textContent = alert.message;
 
       if (tagEl && alert.assignedVolunteers) {
-        tagEl.innerHTML = alert.assignedVolunteers.map(v => 
+        tagEl.innerHTML = alert.assignedVolunteers.map(v =>
           `<span class="badge-volunteer-chip">👤 ${v.name} (${v.role}): <strong>${v.task}</strong></span>`
         ).join(' ');
       }

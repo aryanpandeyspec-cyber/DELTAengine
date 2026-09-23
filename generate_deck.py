@@ -185,7 +185,7 @@ def build_presentation():
     bp1.font.color.rgb = CHARCOAL
 
     bp2 = btf.add_paragraph()
-    bp2.text = "25BK2A66D5 - ARYAN PANDEY   •   25BK1A66J2 - SHAIK SHAHIDUDDIN   •   25BK1A66J6 - SURYANSH SINGH"
+    bp2.text = "25BK2A66D5 - ARYAN PANDEY   •   25BK1A66J2 - SHAIK SHAHIDUDDIN   •   25BK1A66J6 - Suryansh SINGH"
     bp2.font.name = FONT_MONO
     bp2.font.size = Pt(11)
     bp2.font.bold = True
@@ -590,7 +590,7 @@ def build_presentation():
     team_members = [
         "25BK2A66D5 - ARYAN PANDEY",
         "25BK1A66J2 - SHAIK SHAHIDUDDIN",
-        "25BK1A66J6 - SURYANSH SINGH"
+        "25BK1A66J6 - Suryansh SINGH"
     ]
     for i, member in enumerate(team_members):
         p = rbtf.add_paragraph() if i > 0 else rbtf.paragraphs[0]

@@ -83,7 +83,7 @@ async function autoDispatchSelfHealingEmail(eventDetails, db, broadcast) {
   const recipients = db && db.contacts
     ? db.contacts.map(c => ({ name: c.name, email: c.email, role: c.role }))
     : [
-      { name: 'Suryansh', email: 'elena.vance@delta-engine.io', role: 'Lead Coordinator' },
+      { name: 'Suryansh', email: 'Suryansh@delta-engine.io', role: 'Lead Coordinator' },
       { name: 'Dr. Evelyn Wright', email: 'evelyn.wright@ai-research.org', role: 'Speaker' },
       { name: 'Carlos Santana', email: 'carlos.santana@graphics.dev', role: 'Speaker' },
       { name: 'Marcus Aurelius', email: 'admin.marcus@delta-engine.io', role: 'Super Admin' }

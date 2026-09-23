@@ -44,8 +44,11 @@
           <span id="live-dynamic-time" class="live-dynamic-time" style="color:#2563eb;">--:--:--</span>
         </div>
         <div class="auth-nav-buttons">
-          <button id="btn-open-cctv" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;" title="Open CCTV Room Density Perception HUD">📹 CCTV HUD <span class="cctv-live-dot"></span></button>
-          <a href="index.html" class="btn btn-sm btn-blue" style="font-weight:700; text-decoration:none;">💻 OS Dashboard</a>
+          <button id="btn-open-cctv" class="btn btn-sm btn-yellow"
+            style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+            title="Open CCTV Room Density Perception HUD">📹 CCTV HUD <span class="cctv-live-dot"></span></button>
+          <a href="index.html" class="btn btn-sm btn-blue" style="font-weight:700; text-decoration:none;">💻 OS
+            Dashboard</a>
           <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Logout</a>
         </div>
       </div>
@@ -64,17 +67,20 @@
 
     <!-- VOLUNTEER & COORDINATOR REAL-TIME EMERGENCY ALERT BANNER -->
     <div id="volunteer-alert-banner" class="volunteer-alert-banner hidden">
-      <button id="btn-close-alert-banner" class="volunteer-alert-close-btn" title="Close Notification" aria-label="Close notification">&times;</button>
+      <button id="btn-close-alert-banner" class="volunteer-alert-close-btn" title="Close Notification"
+        aria-label="Close notification">&times;</button>
       <div class="volunteer-alert-content">
         <div class="volunteer-alert-icon-box">
           <span class="volunteer-alert-icon">🚨</span>
         </div>
         <div class="volunteer-alert-text-block">
           <div id="volunteer-alert-title" class="volunteer-alert-title">CAPACITY BREACH ALERT</div>
-          <div id="volunteer-alert-message" class="volunteer-alert-msg">Turing Hall has reached capacity. Volunteers deployed.</div>
+          <div id="volunteer-alert-message" class="volunteer-alert-msg">Turing Hall has reached capacity. Volunteers
+            deployed.</div>
           <div id="volunteer-alert-recipients" class="volunteer-alert-recipients"></div>
         </div>
-        <button id="btn-dismiss-volunteer-banner" class="btn btn-sm btn-white" style="font-weight:800;">Acknowledge ✕</button>
+        <button id="btn-dismiss-volunteer-banner" class="btn btn-sm btn-white" style="font-weight:800;">Acknowledge
+          ✕</button>
       </div>
     </div>
 
@@ -101,7 +107,8 @@
           </select>
           <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
           <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
-          <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;" title="Toggle between Full Camera HUD and Compact Bar">🔼 Minimize View</button>
+          <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;"
+            title="Toggle between Full Camera HUD and Compact Bar">🔼 Minimize View</button>
         </div>
       </div>
 
@@ -142,44 +149,63 @@
             </div>
 
             <div class="cctv-headcount-sub">
-              <span><span id="cctv-venue-detected-lbl" class="cctv-venue-detected-lbl">👥 Detected In Turing Hall:</span> <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
+              <span><span id="cctv-venue-detected-lbl" class="cctv-venue-detected-lbl">👥 Detected In Turing
+                  Hall:</span> <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
               <span id="cctv-occupancy-status-pill" class="status-pill neutral">⚪ ROOM EMPTY (0%)</span>
             </div>
           </div>
 
           <!-- Capacity Controller Slider & Direct Input -->
           <div class="cctv-capacity-box mb-3">
-            <div class="capacity-slider-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-              <label for="cctv-capacity-slider"><strong id="cctv-target-venue-lbl" class="cctv-target-venue-lbl">🎯 Target Room Capacity (Turing Hall):</strong></label>
+            <div class="capacity-slider-header"
+              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <label for="cctv-capacity-slider"><strong id="cctv-target-venue-lbl" class="cctv-target-venue-lbl">🎯
+                  Target Room Capacity (Turing Hall):</strong></label>
               <div style="display:flex; align-items:center; gap:6px;">
-                <input type="number" id="cctv-capacity-input" class="cctv-capacity-input" min="2" max="1000" value="25" style="width:74px; padding:3px 6px; font-weight:800; border:2px solid #000; border-radius:6px; font-size:0.85rem; text-align:center; box-shadow:2px 2px 0px #000;" title="Directly type target venue capacity">
+                <input type="number" id="cctv-capacity-input" class="cctv-capacity-input" min="2" max="1000" value="25"
+                  style="width:74px; padding:3px 6px; font-weight:800; border:2px solid #000; border-radius:6px; font-size:0.85rem; text-align:center; box-shadow:2px 2px 0px #000;"
+                  title="Directly type target venue capacity">
                 <span id="cctv-capacity-val" class="capacity-val-badge">25 Pax</span>
               </div>
             </div>
-            <input type="range" id="cctv-capacity-slider" class="cctv-capacity-slider neubrutalist-slider" min="2" max="500" value="25" step="1">
-            <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#555; margin-top:4px;">
+            <input type="range" id="cctv-capacity-slider" class="cctv-capacity-slider neubrutalist-slider" min="2"
+              max="500" value="25" step="1">
+            <div
+              style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#555; margin-top:4px;">
               <span>Min: 2 Pax</span>
-              <span style="color:#d97706;">⚠️ 80% Alert: <strong id="cctv-80-threshold-lbl" class="cctv-80-threshold-lbl">20 Pax</strong></span>
-              <span style="color:#dc2626;">🚨 100% Alert: <strong id="cctv-100-threshold-lbl" class="cctv-100-threshold-lbl">25 Pax</strong></span>
+              <span style="color:#d97706;">⚠️ 80% Alert: <strong id="cctv-80-threshold-lbl"
+                  class="cctv-80-threshold-lbl">20 Pax</strong></span>
+              <span style="color:#dc2626;">🚨 100% Alert: <strong id="cctv-100-threshold-lbl"
+                  class="cctv-100-threshold-lbl">25 Pax</strong></span>
               <span id="cctv-max-capacity-lbl" class="cctv-max-capacity-lbl">Max: 500 Pax</span>
             </div>
           </div>
 
           <!-- Attendance & Pitch Controls (Camera + Manual Fusion) -->
           <div class="cctv-sim-controls mb-3">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+            <div
+              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
               <span class="sim-label">⚡ Attendance Controls (Camera + Sensor Fusion):</span>
               <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
                 <span>Manual Count:</span>
-                <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000" value="0" style="width:68px; padding:2px 6px; border:2px solid #000; border-radius:6px; font-weight:800; text-align:center; box-shadow:2px 2px 0px #000;" title="Directly set attendee headcount manually">
+                <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
+                  value="0"
+                  style="width:68px; padding:2px 6px; border:2px solid #000; border-radius:6px; font-weight:800; text-align:center; box-shadow:2px 2px 0px #000;"
+                  title="Directly set attendee headcount manually">
               </div>
             </div>
             <div class="sim-btn-row">
-              <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Door Sensor (+1 Entry)</button>
+              <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
+                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Door Sensor (+1
+                Entry)</button>
               <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
               <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
-              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80% Full</button>
-              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100% Full</button>
+              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
+                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80%
+                Full</button>
+              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
+                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100%
+                Full</button>
               <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
               <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
             </div>
@@ -211,8 +237,10 @@
           <!-- Event Metrics & Details -->
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-              <span id="featured-event-slot-badge" class="status-chip active" style="background:#ea4335; color:#fff; font-weight:900;">🔴 LIVE NOW (Slot 1)</span>
-              <span id="featured-event-hall-name" style="font-family:var(--font-mono); font-size:0.8rem; font-weight:800;">📍 Turing Hall</span>
+              <span id="featured-event-slot-badge" class="status-chip active"
+                style="background:#ea4335; color:#fff; font-weight:900;">🔴 LIVE NOW (Slot 1)</span>
+              <span id="featured-event-hall-name"
+                style="font-family:var(--font-mono); font-size:0.8rem; font-weight:800;">📍 Turing Hall</span>
             </div>
 
             <h3 id="featured-event-title"
@@ -220,7 +248,8 @@
               Autonomous Agent Swarms: Coordination without Controllers
             </h3>
 
-            <div id="featured-event-speaker" style="font-size:0.9rem; font-weight:700; color:#4285f4; margin-bottom:12px;">
+            <div id="featured-event-speaker"
+              style="font-size:0.9rem; font-weight:700; color:#4285f4; margin-bottom:12px;">
               🧑‍🔬 Speaker: Dr. Aditi Sharma <span style="color:#666; font-weight:500;">(AI Research Director)</span>
             </div>
 
@@ -228,34 +257,48 @@
             <div class="admin-diag-grid">
               <div class="diag-item">
                 <span class="diag-label">📊 Attendee Occupancy Rate:</span>
-                <span id="featured-event-occupancy-rate" class="diag-val success" style="color:#ea4335;">210 / 250 Pax (84% Full | 16% Empty)</span>
+                <span id="featured-event-occupancy-rate" class="diag-val success" style="color:#ea4335;">210 / 250 Pax
+                  (84% Full | 16% Empty)</span>
               </div>
               <!-- Real-time CCTV Room Perception Widget -->
-              <div class="diag-item" style="grid-column: span 2; background: #ffffff; border: 2px solid #000; padding: 12px 14px; border-radius: 10px; margin-top: 4px; box-shadow: 2px 2px 0px #000;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:nowrap; gap:10px;">
-                  <span class="diag-label cctv-admin-feed-hall-lbl" style="font-weight:800; color:#000; font-size:0.85rem; white-space:nowrap;">📹 CCTV Turing Hall Feed:</span>
-                  <button id="btn-open-cctv-secondary" class="btn btn-sm btn-yellow" style="font-size:0.75rem; font-weight:800; padding:4px 10px; border:2px solid #000; cursor:pointer; white-space:nowrap;" title="Jump to Top CCTV Perception Station">
+              <div class="diag-item"
+                style="grid-column: span 2; background: #ffffff; border: 2px solid #000; padding: 12px 14px; border-radius: 10px; margin-top: 4px; box-shadow: 2px 2px 0px #000;">
+                <div
+                  style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:nowrap; gap:10px;">
+                  <span class="diag-label cctv-admin-feed-hall-lbl"
+                    style="font-weight:800; color:#000; font-size:0.85rem; white-space:nowrap;">📹 CCTV Turing Hall
+                    Feed:</span>
+                  <button id="btn-open-cctv-secondary" class="btn btn-sm btn-yellow"
+                    style="font-size:0.75rem; font-weight:800; padding:4px 10px; border:2px solid #000; cursor:pointer; white-space:nowrap;"
+                    title="Jump to Top CCTV Perception Station">
                     🔍 View Camera Feed ⬆️
                   </button>
                 </div>
                 <div style="display:flex; gap:12px; align-items:center;">
                   <div style="flex:1;">
-                    <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:0.75rem; font-weight:800; margin-bottom:4px;">
+                    <div
+                      style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:0.75rem; font-weight:800; margin-bottom:4px;">
                       <span id="admin-cctv-occupied-label" style="color:#ef4444;">🔴 OCCUPIED: 0%</span>
                       <span id="admin-cctv-empty-label" style="color:#2563eb;">🔵 EMPTY: 100%</span>
                     </div>
-                    <div style="height:12px; border:2px solid #000; border-radius:6px; overflow:hidden; display:flex; background:#e5e7eb;">
-                      <div id="admin-cctv-bar-occupied" style="width:0%; background:#10b981; transition: width 0.3s ease, background-color 0.3s ease;"></div>
-                      <div id="admin-cctv-bar-empty" style="width:100%; background:#3b82f6; transition: width 0.3s ease;"></div>
+                    <div
+                      style="height:12px; border:2px solid #000; border-radius:6px; overflow:hidden; display:flex; background:#e5e7eb;">
+                      <div id="admin-cctv-bar-occupied"
+                        style="width:0%; background:#10b981; transition: width 0.3s ease, background-color 0.3s ease;">
+                      </div>
+                      <div id="admin-cctv-bar-empty"
+                        style="width:100%; background:#3b82f6; transition: width 0.3s ease;"></div>
                     </div>
-                    <div style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; color:#555; margin-top:4px;">
+                    <div
+                      style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; color:#555; margin-top:4px;">
                       <span>📥 In: <strong id="cctv-count-entries" style="color:#16a34a;">0</strong></span>
                       <span>🚪 Out: <strong id="cctv-count-exits" style="color:#dc2626;">0</strong></span>
                       <span>🔁 Re-entry: <strong id="cctv-count-reentries" style="color:#d97706;">0</strong></span>
                       <span>👥 Net: <strong id="cctv-count-net" style="color:#2563eb;">0 Pax</strong></span>
                     </div>
                   </div>
-                  <span id="admin-cctv-status-pill" class="status-pill neutral" style="font-size:0.72rem; padding:3px 8px; font-weight:800; white-space:nowrap;">⚪ EMPTY (0%)</span>
+                  <span id="admin-cctv-status-pill" class="status-pill neutral"
+                    style="font-size:0.72rem; padding:3px 8px; font-weight:800; white-space:nowrap;">⚪ EMPTY (0%)</span>
                 </div>
               </div>
               <div class="diag-item">
@@ -467,7 +510,8 @@
           <div class="cctv-feed-header">
             <span class="cctv-status-badge">⚪ <strong>CAMERA INITIALIZING...</strong></span>
             <div class="cctv-device-selector-wrap" style="display:flex; gap:6px; flex-wrap:wrap;">
-              <select id="modal-cctv-venue-select" class="cctv-select cctv-venue-select" title="Switch Conference Hall / Venue">
+              <select id="modal-cctv-venue-select" class="cctv-select cctv-venue-select"
+                title="Switch Conference Hall / Venue">
                 <option value="hall-1" data-capacity="250" data-name="Turing Hall">🏛️ Turing Hall (250)</option>
                 <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
                 <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
@@ -485,8 +529,10 @@
           </div>
 
           <div class="cctv-camera-action-bar">
-            <button id="btn-modal-cctv-start" class="btn btn-sm btn-green btn-cctv-start" style="font-weight:800;">▶️ Start Camera</button>
-            <button id="btn-modal-cctv-stop" class="btn btn-sm btn-white btn-cctv-stop" style="font-weight:800;">⏹️ Stop Camera</button>
+            <button id="btn-modal-cctv-start" class="btn btn-sm btn-green btn-cctv-start" style="font-weight:800;">▶️
+              Start Camera</button>
+            <button id="btn-modal-cctv-stop" class="btn btn-sm btn-white btn-cctv-stop" style="font-weight:800;">⏹️ Stop
+              Camera</button>
             <span class="cctv-device-sub">Live CCTV & Optical AI Perception Feed</span>
           </div>
         </div>
@@ -514,44 +560,58 @@
             </div>
 
             <div class="cctv-headcount-sub">
-              <span><span class="cctv-venue-detected-lbl">👥 Detected In Turing Hall:</span> <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
+              <span><span class="cctv-venue-detected-lbl">👥 Detected In Turing Hall:</span> <strong
+                  id="cctv-metric-headcount">0 / 25 Pax</strong></span>
               <span id="cctv-occupancy-status-pill" class="status-pill neutral">⚪ ROOM EMPTY (0%)</span>
             </div>
           </div>
 
           <!-- Capacity Controller Slider -->
           <div class="cctv-capacity-box mb-4">
-            <div class="capacity-slider-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-              <label for="cctv-capacity-slider"><strong class="cctv-target-venue-lbl">🎯 Target Room Capacity (Turing Hall):</strong></label>
+            <div class="capacity-slider-header"
+              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <label for="cctv-capacity-slider"><strong class="cctv-target-venue-lbl">🎯 Target Room Capacity (Turing
+                  Hall):</strong></label>
               <div style="display:flex; align-items:center; gap:6px;">
-                <input type="number" class="cctv-capacity-input" min="2" max="1000" value="25" style="width:74px; padding:3px 6px; font-weight:800; border:2px solid #000; border-radius:6px; font-size:0.85rem; text-align:center; box-shadow:2px 2px 0px #000;" title="Directly type target venue capacity">
+                <input type="number" class="cctv-capacity-input" min="2" max="1000" value="25"
+                  style="width:74px; padding:3px 6px; font-weight:800; border:2px solid #000; border-radius:6px; font-size:0.85rem; text-align:center; box-shadow:2px 2px 0px #000;"
+                  title="Directly type target venue capacity">
                 <span class="capacity-val-badge">25 Pax</span>
               </div>
             </div>
             <input type="range" class="cctv-capacity-slider neubrutalist-slider" min="2" max="500" value="25" step="1">
-            <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#555; margin-top:4px;">
+            <div
+              style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#555; margin-top:4px;">
               <span>Min: 2 Pax</span>
               <span style="color:#d97706;">⚠️ 80% Alert: <strong class="cctv-80-threshold-lbl">20 Pax</strong></span>
               <span style="color:#dc2626;">🚨 100% Alert: <strong class="cctv-100-threshold-lbl">25 Pax</strong></span>
               <span class="cctv-max-capacity-lbl">Max: 500 Pax</span>
             </div>
-            <span class="capacity-hint">💡 Tip for demo: Slide capacity down to 2 or 5 pax to demonstrate 80% & 100% alerts live!</span>
+            <span class="capacity-hint">💡 Tip for demo: Slide capacity down to 2 or 5 pax to demonstrate 80% & 100%
+              alerts live!</span>
           </div>
 
           <!-- Live Pitch Testing & Attendee Simulator -->
           <div class="cctv-sim-controls mb-4">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+            <div
+              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
               <span class="sim-label">⚡ Attendance & Pitch Controls (Camera + Manual Fusion):</span>
               <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
                 <span>Manual Count:</span>
-                <input type="number" class="cctv-manual-pax-input" min="0" max="1000" value="0" style="width:68px; padding:2px 6px; border:2px solid #000; border-radius:6px; font-weight:800; text-align:center; box-shadow:2px 2px 0px #000;" title="Directly set attendee headcount manually">
+                <input type="number" class="cctv-manual-pax-input" min="0" max="1000" value="0"
+                  style="width:68px; padding:2px 6px; border:2px solid #000; border-radius:6px; font-weight:800; text-align:center; box-shadow:2px 2px 0px #000;"
+                  title="Directly set attendee headcount manually">
               </div>
             </div>
             <div class="sim-btn-row">
               <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
               <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
-              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80% Full</button>
-              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100% Full</button>
+              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
+                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80%
+                Full</button>
+              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
+                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100%
+                Full</button>
               <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
               <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
             </div>
@@ -560,23 +620,29 @@
           <!-- Assigned Volunteers & Coordinators Live Dispatch -->
           <div class="cctv-volunteers-card">
             <div class="vol-card-header" style="display:flex; justify-content:space-between; align-items:center;">
-              <span>🤝 ASSIGNED COORDINATORS & DIRECTORY (<span class="cctv-volunteers-venue-name">TURING HALL</span>)</span>
+              <span>🤝 ASSIGNED COORDINATORS & DIRECTORY (<span class="cctv-volunteers-venue-name">TURING
+                  HALL</span>)</span>
               <span class="badge-mini-green">3 SYNCED</span>
             </div>
             <div class="vol-duty-list">
-              <div class="vol-duty-item" id="admin-vol-duty-suryansh" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <div class="vol-duty-item" id="admin-vol-duty-Suryansh"
+                style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span class="vol-avatar">🚪</span>
                   <div class="vol-info">
                     <strong>Suryansh</strong> <em style="font-size:0.75rem; color:#555;">(Crowd & Entrance Lead)</em>
-                    <span class="vol-task" id="vol-task-suryansh">Door Entrance A — Scanning passes & crowd routing</span>
+                    <span class="vol-task" id="vol-task-Suryansh">Door Entrance A — Scanning passes & crowd
+                      routing</span>
                   </div>
                 </div>
-                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Suryansh" data-phone="+918303009159" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Suryansh">
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Suryansh" data-phone="+918303009159"
+                  style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;"
+                  title="Open WhatsApp chat with Suryansh">
                   💬 WhatsApp
                 </button>
               </div>
-              <div class="vol-duty-item" id="admin-vol-duty-shahid" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <div class="vol-duty-item" id="admin-vol-duty-shahid"
+                style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span class="vol-avatar">🎤</span>
                   <div class="vol-info">
@@ -584,19 +650,26 @@
                     <span class="vol-task" id="vol-task-shahid">Stage Front — Safety aisle clearance & mic checks</span>
                   </div>
                 </div>
-                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Shahid" data-phone="+916303570916" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Shahid">
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Shahid" data-phone="+916303570916"
+                  style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;"
+                  title="Open WhatsApp chat with Shahid">
                   💬 WhatsApp
                 </button>
               </div>
-              <div class="vol-duty-item" id="admin-vol-duty-aryan" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+              <div class="vol-duty-item" id="admin-vol-duty-aryan"
+                style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
                 <div style="display:flex; align-items:center; gap:8px;">
                   <span class="vol-avatar">🖥️</span>
                   <div class="vol-info">
-                    <strong>Aryan Pandey</strong> <em style="font-size:0.75rem; color:#555;">(Lead Systems Commander)</em>
-                    <span class="vol-task" id="vol-task-aryan">Central AV Desk — Perception monitoring & volunteer dispatch</span>
+                    <strong>Aryan Pandey</strong> <em style="font-size:0.75rem; color:#555;">(Lead Systems
+                      Commander)</em>
+                    <span class="vol-task" id="vol-task-aryan">Central AV Desk — Perception monitoring & volunteer
+                      dispatch</span>
                   </div>
                 </div>
-                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Aryan Pandey" data-phone="+919154276178" style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;" title="Open WhatsApp chat with Aryan">
+                <button class="btn btn-sm btn-yellow btn-wa-single" data-name="Aryan Pandey" data-phone="+919154276178"
+                  style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap;"
+                  title="Open WhatsApp chat with Aryan">
                   💬 WhatsApp
                 </button>
               </div>
@@ -604,14 +677,18 @@
 
             <!-- ONE-CLICK SEND ALL & GUEST SPEAKER ACTIONS -->
             <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
-              <button class="btn btn-sm btn-green w-full btn-dispatch-send-all" style="font-weight:900; font-size:0.8rem; border:2px solid #000; box-shadow:3px 3px 0px #000; display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px;">
+              <button class="btn btn-sm btn-green w-full btn-dispatch-send-all"
+                style="font-weight:900; font-size:0.8rem; border:2px solid #000; box-shadow:3px 3px 0px #000; display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px;">
                 <span>📢 SEND ALL (ONE-CLICK DISPATCH)</span>
               </button>
               <div style="display:flex; gap:6px;">
-                <button class="btn btn-sm btn-white btn-open-speaker-directory" style="flex:1; font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                <button class="btn btn-sm btn-white btn-open-speaker-directory"
+                  style="flex:1; font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
                   🎤 Guest Speakers (Email & WA)
                 </button>
-                <button class="btn btn-sm btn-yellow btn-preview-compiled-msg" style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Preview current auto-compiled event message">
+                <button class="btn btn-sm btn-yellow btn-preview-compiled-msg"
+                  style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;"
+                  title="Preview current auto-compiled event message">
                   📋 Live Message
                 </button>
               </div>

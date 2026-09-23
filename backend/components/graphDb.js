@@ -32,7 +32,7 @@ const db = {
   },
   contacts: [
     { id: 'cnt_01', name: 'Aryan Pandey', role: 'Lead Event Coordinator & Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', hall: 'ALL VENUES (Central Command)', status: 'Online' },
-    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A', status: 'Online' },
+    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'Suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A', status: 'Online' },
     { id: 'cnt_03', name: 'Shahid', role: 'Stage & Hall Operations Coordinator', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', hall: 'Lovelace Suite & Stage Front', status: 'Online' },
     { id: 'cnt_04', name: 'Dr. Aditi Sharma', role: 'Guest Keynote Speaker (AI Research Lead)', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall', status: 'Speaker Confirmed' },
     { id: 'cnt_05', name: 'Vikramaditya Verma', role: 'Guest Keynote Speaker (Graphics Lead)', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite', status: 'Speaker Confirmed' },
@@ -80,7 +80,7 @@ const db = {
       const dateNum = Array.from(this.activeDate).reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const shift = dateNum % 3;
       const topicIds = Object.keys(this.graph.topics);
-      
+
       this.schedulesByDate[this.activeDate] = {
         'slot-1': { 'hall-1': topicIds[shift % topicIds.length] || null, 'hall-2': null, 'hall-3': null },
         'slot-2': { 'hall-1': topicIds[(shift + 1) % topicIds.length] || null, 'hall-2': null, 'hall-3': null },

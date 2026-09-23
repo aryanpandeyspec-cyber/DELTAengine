@@ -985,14 +985,14 @@ app.post('/api/sensors/camera', (req, res) => {
   const { hallId, peopleDetected, capacity, status, source } = req.body;
   const targetHallId = hallId || 'hall-1';
   const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
-  
+
   const currentCount = parseInt(peopleDetected, 10) >= 0 ? parseInt(peopleDetected, 10) : 0;
   const targetCap = parseInt(capacity, 10) > 0 ? parseInt(capacity, 10) : hall.capacity;
-  
+
   // Calculate exact percentages
   const occupiedPercent = Math.min(100, Math.round((currentCount / targetCap) * 100));
   const emptyPercent = Math.max(0, 100 - occupiedPercent);
-  
+
   let currentStatus = status;
   if (!currentStatus) {
     if (occupiedPercent >= 95) currentStatus = 'ROOM_FULL';
