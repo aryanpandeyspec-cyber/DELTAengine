@@ -202,14 +202,18 @@
           <!-- Attendance & Pitch Controls (Camera + Manual Fusion) -->
           <div class="cctv-sim-controls mb-3">
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
-              <span class="sim-label">⚡ Attendance Controls (Camera + Manual Fusion):</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="sim-label">⚡ Attendance Controls (Camera + Sensor Fusion):</span>
+                <span id="cctv-sensor-status-badge" class="cctv-sensor-status-badge" style="display:inline-block; padding:2px 8px; border-radius:12px; font-size:0.7rem; font-weight:800; background:#e0f2fe; color:#0369a1; border:1px solid #0284c7;">⚡ ESP32 Sensor: Ready (COM7)</span>
+              </div>
               <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
                 <span>Manual Count:</span>
                 <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000" value="0" style="width:68px; padding:2px 6px; border:2px solid #000; border-radius:6px; font-weight:800; text-align:center; box-shadow:2px 2px 0px #000;" title="Directly set attendee headcount manually">
               </div>
             </div>
             <div class="sim-btn-row">
-              <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Door Sensor (750mm)</button>
+              <button id="btn-cctv-connect-usb" class="btn btn-sm btn-green btn-cctv-connect-usb" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Connect directly to ESP32 on COM7 via Web Serial API">🔌 Connect USB Sensor</button>
+              <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Sensor (+1 Entry)</button>
               <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
               <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
               <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80% Full</button>
@@ -1007,6 +1011,8 @@
               </div>
             </div>
             <div class="sim-btn-row">
+              <button class="btn btn-sm btn-green btn-cctv-connect-usb" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Connect directly to ESP32 on COM7 via Web Serial API">🔌 Connect USB Sensor</button>
+              <button class="btn btn-sm btn-yellow btn-cctv-trigger-sensor" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Sensor (+1 Entry)</button>
               <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
               <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
               <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80% Full</button>

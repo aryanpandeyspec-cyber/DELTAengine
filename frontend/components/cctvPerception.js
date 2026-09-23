@@ -54,12 +54,16 @@
   let totalExits = 0;
   let totalReEntries = 0;
   let currentNetOccupancy = 0;
+  let doorSensorNetCount = 0;
   let passageCooldown = 0; // Debounce between passage events
   let lastPassageInfo = null;
 
-  // --- IOT DOOR SENSOR FUSION STATE ---
+  // --- IOT DOOR SENSOR FUSION & WEB SERIAL STATE ---
   let sensorActiveWindowUntil = 0; // Timestamp when 3.5s active scan window closes
   let lastTriggerDist = 750;       // mm threshold from ESP32
+  let serialPort = null;
+  let serialReader = null;
+  let isSerialReading = false;
 
   // Temporal tracking for stable face/head perception without flickering
   let trackedHeads = [];
@@ -427,6 +431,13 @@
       });
     }
 
+    // Bind Connect USB Serial Sensor button
+    document.querySelectorAll('#btn-cctv-connect-usb, .btn-cctv-connect-usb').forEach(btn => {
+      btn.addEventListener('click', () => {
+        connectWebSerial();
+      });
+    });
+
     // Bind Physical Door Sensor manual test button
     document.querySelectorAll('#btn-cctv-trigger-sensor, .btn-cctv-trigger-sensor').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -461,6 +472,7 @@
         totalExits = 0;
         totalReEntries = 0;
         currentNetOccupancy = 0;
+        doorSensorNetCount = 0;
         manualCount = 0;
         lastPassageInfo = null;
         syncManualCountControls(0);
@@ -1299,9 +1311,30 @@ Email: ${fromEmail}`;
     sensorActiveWindowUntil = Date.now() + 3500;
     lastTriggerDist = dist || 750;
     playCctvAlertTone('TRIGGER');
+
+    totalEntries++;
+    doorSensorNetCount++;
+    currentNetOccupancy = Math.max(currentNetOccupancy, doorSensorNetCount);
+    updateDensityMetrics(true);
+
     if (typeof createToast === 'function') {
-      createToast(`⚡ [IoT Door Sensor] Passage at ${lastTriggerDist}mm — Scanning Face...`, 'info');
+      createToast(`⚡ [IoT Door Sensor] Passage registered (+1 Entry, ${lastTriggerDist}mm)! Net: ${currentNetOccupancy} Pax`, 'info');
     }
+
+    // Forward to DELTA Engine Server
+    fetch('/api/sensors/door', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        event: 'DOOR_TRIGGER',
+        hallId: currentVenueId || 'hall-1',
+        dist2: lastTriggerDist,
+        dist1: lastTriggerDist,
+        netOccupancy: currentNetOccupancy,
+        entries: totalEntries,
+        exits: totalExits
+      })
+    }).catch(() => {});
   }
 
   // Real-time canvas rendering loop
@@ -1331,11 +1364,12 @@ Email: ${fromEmail}`;
         processFaceAtDoor(detectedBoxes[0]);
       }
 
-      // When live camera is running, detected visible heads in the room drive live occupancy!
+      // When live camera is running, detected visible heads in the room drive live occupancy,
+      // fused with physical door sensor entries and manual adjustments!
       if (detectedBoxes.length > 0) {
-        currentNetOccupancy = Math.max(detectedBoxes.length, manualCount);
-      } else if (manualCount === 0 && !isCameraBlocked) {
-        currentNetOccupancy = 0;
+        currentNetOccupancy = Math.max(detectedBoxes.length, doorSensorNetCount, manualCount);
+      } else {
+        currentNetOccupancy = Math.max(doorSensorNetCount, manualCount);
       }
     } else {
       // Clean synthetic graphic (NO false attendee shapes)
@@ -1493,7 +1527,7 @@ Email: ${fromEmail}`;
   }
 
   function updateDensityMetrics(forcePost = false) {
-    const totalCount = Math.max(currentNetOccupancy, manualCount);
+    const totalCount = Math.max(currentNetOccupancy, doorSensorNetCount, manualCount);
     const occupiedPct = Math.min(100, Math.round((totalCount / currentCapacity) * 100));
     const emptyPct = Math.max(0, 100 - occupiedPct);
 
@@ -1827,6 +1861,105 @@ Email: ${fromEmail}`;
     if (btnCloseX) btnCloseX.addEventListener('click', dismissHandler);
   }
 
+  // --- WEB SERIAL API DRIVER (DIRECT HARDWARE ESP32 COM7 IN BROWSER) ---
+  async function connectWebSerial() {
+    if (!('serial' in navigator)) {
+      if (typeof createToast === 'function') {
+        createToast('Web Serial is available on Chrome/Edge. Alternatively, run python hardware/door_serial_bridge.py', 'warning');
+      }
+      return;
+    }
+
+    try {
+      serialPort = await navigator.serial.requestPort();
+      await serialPort.open({ baudRate: 115200 });
+
+      const textDecoder = new TextDecoderStream();
+      serialPort.readable.pipeTo(textDecoder.writable);
+      const reader = textDecoder.readable.getReader();
+      serialReader = reader;
+      isSerialReading = true;
+
+      updateSerialBadge(true);
+      if (typeof createToast === 'function') {
+        createToast('🔌 [ESP32 Hardware Sensor] Connected via USB Serial (115200 baud)! Counting active.', 'success');
+      }
+
+      let lineBuffer = '';
+      while (isSerialReading) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        if (value) {
+          lineBuffer += value;
+          const lines = lineBuffer.split('\n');
+          lineBuffer = lines.pop();
+          for (const line of lines) {
+            handleIncomingSerialLine(line.trim());
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[WebSerial] Connection cancelled or closed:', err);
+      updateSerialBadge(false);
+    }
+  }
+
+  function updateSerialBadge(connected) {
+    document.querySelectorAll('#cctv-sensor-status-badge, .cctv-sensor-status-badge').forEach(el => {
+      if (connected) {
+        el.textContent = '🟢 ESP32 Sensor: CONNECTED (COM7)';
+        el.style.background = '#dcfce7';
+        el.style.color = '#15803d';
+        el.style.borderColor = '#16a34a';
+      } else {
+        el.textContent = '⚡ ESP32 Sensor: Ready (COM7)';
+        el.style.background = '#e0f2fe';
+        el.style.color = '#0369a1';
+        el.style.borderColor = '#0284c7';
+      }
+    });
+  }
+
+  function handleIncomingSerialLine(rawLine) {
+    if (!rawLine) return;
+    console.log('[ESP32 Hardware Inbound]:', rawLine);
+
+    if (rawLine.startsWith('{') && rawLine.endsWith('}')) {
+      try {
+        const payload = JSON.parse(rawLine);
+        if (payload.event === 'DOOR_TRIGGER' || payload.dist1 || payload.dist2) {
+          window.handleDoorSensorTrigger(payload);
+        } else if (payload.event === 'ENTRY' || payload.event === 'EXIT') {
+          window.handleRoomOccupancyUpdate(payload);
+        }
+
+        // Forward to server
+        fetch('/api/sensors/door', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).catch(() => {});
+      } catch (e) {}
+    } else if (
+      rawLine.includes('TARGET DETECTED') ||
+      rawLine.includes('PASSAGE IN PROGRESS') ||
+      rawLine.includes('LED BLINK') ||
+      rawLine.includes('Passage registered')
+    ) {
+      window.handleDoorSensorTrigger({ dist1: 80, dist2: 80 });
+      fetch('/api/sensors/door', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          event: 'DOOR_TRIGGER',
+          hallId: currentVenueId || 'hall-1',
+          dist1: 80,
+          dist2: 80
+        })
+      }).catch(() => {});
+    }
+  }
+
   // --- PUBLIC WEBSOCKET HOOKS ---
 
   // Inbound Door Sensor Trigger event from ESP32 ToF
@@ -1835,8 +1968,18 @@ Email: ${fromEmail}`;
     lastTriggerDist = data.dist2 || data.dist1 || 750;
     playCctvAlertTone('TRIGGER');
 
+    if (data.entries !== undefined) {
+      totalEntries = data.entries;
+      doorSensorNetCount = data.occupancy !== undefined ? data.occupancy : (doorSensorNetCount + 1);
+    } else {
+      totalEntries++;
+      doorSensorNetCount++;
+    }
+    currentNetOccupancy = Math.max(currentNetOccupancy, doorSensorNetCount);
+    updateDensityMetrics(true);
+
     if (typeof createToast === 'function') {
-      createToast(`⚡ [IoT Door Sensor] Physical Trigger at ${lastTriggerDist}mm — Scanning Face...`, 'info');
+      createToast(`⚡ [IoT Door Sensor] Passage registered (+1 Pax, ${lastTriggerDist}mm) — Net: ${currentNetOccupancy}`, 'info');
     }
   };
 
@@ -1845,22 +1988,31 @@ Email: ${fromEmail}`;
     if (data.totalEntries !== undefined) totalEntries = data.totalEntries;
     if (data.totalExits !== undefined) totalExits = data.totalExits;
     if (data.reEntries !== undefined) totalReEntries = data.reEntries;
-    if (data.occupancy !== undefined) currentNetOccupancy = data.occupancy;
-    updateDensityMetrics(false);
+    if (data.occupancy !== undefined) {
+      doorSensorNetCount = data.occupancy;
+      currentNetOccupancy = Math.max(currentNetOccupancy, doorSensorNetCount);
+    }
+    updateDensityMetrics(true);
   };
 
   // Inbound Occupancy sync from server
   window.handleRoomOccupancyUpdate = function (data) {
-    if (data.occupancy !== undefined) currentNetOccupancy = data.occupancy;
+    if (data.occupancy !== undefined) {
+      doorSensorNetCount = data.occupancy;
+      currentNetOccupancy = Math.max(currentNetOccupancy, doorSensorNetCount);
+    }
     if (data.entries !== undefined) totalEntries = data.entries;
     if (data.exits !== undefined) totalExits = data.exits;
     if (data.reEntries !== undefined) totalReEntries = data.reEntries;
-    updateDensityMetrics(false);
+    updateDensityMetrics(true);
   };
 
   window.handleCctvOccupancyUpdate = function (data) {
-    if (data.peopleDetected !== undefined) currentNetOccupancy = data.peopleDetected;
-    updateDensityMetrics(false);
+    if (data.peopleDetected !== undefined) {
+      doorSensorNetCount = data.peopleDetected;
+      currentNetOccupancy = Math.max(currentNetOccupancy, doorSensorNetCount);
+    }
+    updateDensityMetrics(true);
   };
 
   // Public hook for Volunteer Dispatches

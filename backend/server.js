@@ -394,16 +394,31 @@ app.post('/api/simulate/capacity', async (req, res) => {
   });
 });
 
+// Track running door passage counters
+let doorSensorTotalEntries = 0;
+let doorSensorTotalExits = 0;
+let doorSensorNetOccupancy = 0;
+
 app.post('/api/sensors/door', async (req, res) => {
   const { event, hallId, netOccupancy, entries, exits, dist1, dist2 } = req.body;
   const targetHallId = hallId || 'hall-1';
   const hall = db.graph.halls[targetHallId] || { name: 'Turing Auditorium', capacity: 150 };
-  const occupancy = parseInt(netOccupancy, 10) || 0;
   const timeStr = new Date().toLocaleTimeString();
 
-  // Forward DOOR_TRIGGER to camera for face scanning
+  // Every time the sensor glows / triggers, directly register an entry (decoupled from camera)
   if (event === 'DOOR_TRIGGER') {
-    console.log(`[IoT Door Sensor] ⚡ DOOR_TRIGGER received at ${timeStr} (Dist2: ${dist2}mm) -> Activating Camera Face Scan...`);
+    doorSensorTotalEntries++;
+    doorSensorNetOccupancy++;
+    console.log(`[IoT Door Sensor] 💡 [SENSOR GLOW] Passage Registered (+1 Entry) -> Total Entries: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax (Dist: ${dist2 || dist1}mm)`);
+
+    // Update db.cctvState
+    if (db.cctvState && db.cctvState[targetHallId]) {
+      db.cctvState[targetHallId].peopleDetected = doorSensorNetOccupancy;
+      db.cctvState[targetHallId].occupiedPercent = Math.min(100, Math.round((doorSensorNetOccupancy / hall.capacity) * 100));
+      db.cctvState[targetHallId].emptyPercent = Math.max(0, 100 - db.cctvState[targetHallId].occupiedPercent);
+      db.cctvState[targetHallId].timestamp = timeStr;
+    }
+
     broadcast({
       type: 'DOOR_TRIGGER',
       data: {
@@ -411,13 +426,48 @@ app.post('/api/sensors/door', async (req, res) => {
         hallName: hall.name,
         dist1: dist1 || 0,
         dist2: dist2 || 0,
+        entries: doorSensorTotalEntries,
+        occupancy: doorSensorNetOccupancy,
         timestamp: timeStr
       }
     });
-    return res.json({ success: true, triggerBroadcast: true });
+
+    broadcast({
+      type: 'ROOM_OCCUPANCY_UPDATE',
+      data: {
+        hallId: targetHallId,
+        hallName: hall.name,
+        capacity: hall.capacity,
+        occupancy: doorSensorNetOccupancy,
+        entries: doorSensorTotalEntries,
+        exits: doorSensorTotalExits,
+        event: 'ENTRY',
+        timestamp: timeStr
+      }
+    });
+
+    return res.json({ success: true, entries: doorSensorTotalEntries, occupancy: doorSensorNetOccupancy });
   }
 
-  console.log(`[IoT Door Sensor] ${event}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries}, Out: ${exits})`);
+  if (event === 'ENTRY') {
+    doorSensorTotalEntries = (entries !== undefined && entries > 0) ? entries : (doorSensorTotalEntries + 1);
+    doorSensorNetOccupancy = (netOccupancy !== undefined && netOccupancy > 0) ? netOccupancy : (doorSensorNetOccupancy + 1);
+  } else if (event === 'EXIT') {
+    doorSensorTotalExits = (exits !== undefined && exits > 0) ? exits : (doorSensorTotalExits + 1);
+    if (doorSensorNetOccupancy > 0) doorSensorNetOccupancy--;
+  }
+
+  const occupancy = parseInt(netOccupancy, 10) || doorSensorNetOccupancy;
+
+  console.log(`[IoT Door Sensor] ${event}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries || doorSensorTotalEntries}, Out: ${exits || doorSensorTotalExits})`);
+
+  // Update db.cctvState
+  if (db.cctvState && db.cctvState[targetHallId]) {
+    db.cctvState[targetHallId].peopleDetected = occupancy;
+    db.cctvState[targetHallId].occupiedPercent = Math.min(100, Math.round((occupancy / hall.capacity) * 100));
+    db.cctvState[targetHallId].emptyPercent = Math.max(0, 100 - db.cctvState[targetHallId].occupiedPercent);
+    db.cctvState[targetHallId].timestamp = timeStr;
+  }
 
   // Broadcast live occupancy update to all connected frontend clients
   broadcast({
@@ -427,8 +477,8 @@ app.post('/api/sensors/door', async (req, res) => {
       hallName: hall.name,
       capacity: hall.capacity,
       occupancy: occupancy,
-      entries: entries || 0,
-      exits: exits || 0,
+      entries: entries || doorSensorTotalEntries,
+      exits: exits || doorSensorTotalExits,
       event: event || 'ENTRY',
       timestamp: timeStr
     }
