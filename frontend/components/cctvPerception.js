@@ -16,7 +16,24 @@
   let ctx = null;
   let animFrameId = null;
 
+  let currentVenueId = 'hall-1';
+  let currentVenueName = 'Turing Hall';
+  try {
+    const savedVenueId = localStorage.getItem('delta_current_venue_id');
+    const savedVenueName = localStorage.getItem('delta_current_venue_name');
+    if (savedVenueId) currentVenueId = savedVenueId;
+    if (savedVenueName) currentVenueName = savedVenueName;
+  } catch (e) {}
+
   let currentCapacity = 25; // Default demo capacity
+  try {
+    const savedCap = localStorage.getItem('delta_current_room_capacity');
+    if (savedCap) {
+      const parsed = parseInt(savedCap, 10);
+      if (parsed > 0) currentCapacity = parsed;
+    }
+  } catch (e) {}
+
   let manualCount = 0;
   let isCameraActive = false;
   let isCameraBlocked = false;
@@ -133,23 +150,89 @@
     }
   }
 
+  function updateVenueAndCapacity(venueId, venueName, newCapacity, updateSelects = true) {
+    if (venueId) currentVenueId = venueId;
+    if (venueName) currentVenueName = venueName;
+    if (newCapacity && newCapacity > 0) currentCapacity = newCapacity;
+
+    try {
+      localStorage.setItem('delta_current_venue_id', currentVenueId);
+      localStorage.setItem('delta_current_venue_name', currentVenueName);
+      localStorage.setItem('delta_current_room_capacity', currentCapacity.toString());
+    } catch (e) {}
+
+    // Synchronize all venue dropdowns across the page
+    if (updateSelects) {
+      document.querySelectorAll('.cctv-venue-select').forEach(sel => {
+        if (sel.value !== currentVenueId) sel.value = currentVenueId;
+      });
+    }
+
+    // Update all dynamic venue labels
+    document.querySelectorAll('.cctv-target-venue-lbl').forEach(el => {
+      el.textContent = `🎯 Target Room Capacity (${currentVenueName}):`;
+    });
+    document.querySelectorAll('.cctv-venue-detected-lbl').forEach(el => {
+      el.textContent = `👥 Detected In ${currentVenueName}:`;
+    });
+    document.querySelectorAll('.cctv-volunteers-venue-name').forEach(el => {
+      el.textContent = currentVenueName.toUpperCase();
+    });
+
+    // Update Admin portal cards if present
+    const adminHallName = document.getElementById('featured-event-hall-name');
+    if (adminHallName) adminHallName.textContent = `📍 ${currentVenueName}`;
+    const adminFeedLbl = document.querySelector('.cctv-admin-feed-hall-lbl');
+    if (adminFeedLbl) adminFeedLbl.textContent = `📹 CCTV ${currentVenueName} Feed:`;
+
+    syncCapacityControls(currentCapacity);
+    updateThresholdLabels(currentCapacity);
+    updateDensityMetrics(true);
+  }
+
+  function syncCapacityControls(cap) {
+    document.querySelectorAll('.cctv-capacity-input').forEach(inp => {
+      if (parseInt(inp.value, 10) !== cap) inp.value = cap;
+    });
+
+    document.querySelectorAll('.cctv-capacity-slider').forEach(slider => {
+      const maxVal = parseInt(slider.max, 10) || 500;
+      if (cap > maxVal) {
+        slider.max = Math.max(cap, 1000);
+      }
+      if (parseInt(slider.value, 10) !== cap) slider.value = cap;
+    });
+
+    document.querySelectorAll('.cctv-max-capacity-lbl, #cctv-max-capacity-lbl').forEach(lbl => {
+      lbl.textContent = `Max: ${Math.max(500, cap)} Pax`;
+    });
+
+    document.querySelectorAll('#cctv-capacity-val, .capacity-val-badge').forEach(badge => {
+      badge.textContent = `${cap} Pax`;
+    });
+  }
+
+  function syncManualCountControls(count) {
+    manualCount = Math.max(0, count);
+    document.querySelectorAll('.cctv-manual-pax-input').forEach(inp => {
+      if (parseInt(inp.value, 10) !== manualCount) inp.value = manualCount;
+    });
+  }
+
+  function updateThresholdLabels(cap) {
+    const lbl80 = document.querySelectorAll('#cctv-80-threshold-lbl, .cctv-80-threshold-lbl');
+    const lbl100 = document.querySelectorAll('#cctv-100-threshold-lbl, .cctv-100-threshold-lbl');
+    lbl80.forEach(el => el.textContent = `${Math.round(cap * 0.80)} Pax`);
+    lbl100.forEach(el => el.textContent = `${cap} Pax`);
+  }
+
   function bindCctvElements() {
     const btnOpen = document.getElementById('btn-open-cctv');
     const btnOpenSecondary = document.getElementById('btn-open-cctv-secondary');
     const btnClose = document.getElementById('btn-close-cctv-modal');
     const modal = document.getElementById('cctv-perception-modal');
-    const sliderCap = document.getElementById('cctv-capacity-slider');
-    const capValDisplay = document.getElementById('cctv-capacity-val');
     const btnToggleView = document.getElementById('btn-toggle-cctv-view');
     const hubBody = document.getElementById('cctv-hub-body');
-
-    const btnAddPerson = document.getElementById('btn-cctv-add-pax');
-    const btnSubPerson = document.getElementById('btn-cctv-sub-pax');
-    const btnClearPax = document.getElementById('btn-cctv-clear-pax');
-    const btnTrigger80 = document.getElementById('btn-cctv-trigger-80');
-    const btnTriggerFull = document.getElementById('btn-cctv-trigger-full');
-    const btnTriggerEmpty = document.getElementById('btn-cctv-trigger-empty');
-    const btnTriggerSensor = document.getElementById('btn-cctv-trigger-sensor');
 
     videoEl = document.getElementById('cctv-hidden-video');
     canvasEl = document.getElementById('cctv-hud-canvas');
@@ -198,7 +281,7 @@
     // Bind ALL Start Buttons (Top Hub & Modal)
     document.querySelectorAll('#btn-cctv-start, .btn-cctv-start').forEach(btn => {
       btn.addEventListener('click', () => {
-        const chosenId = selectedCameraDeviceId || document.querySelector('.cctv-select')?.value;
+        const chosenId = selectedCameraDeviceId || document.querySelector('.cctv-select:not(.cctv-venue-select)')?.value;
         startWebcam(chosenId);
       });
     });
@@ -208,8 +291,8 @@
       btn.addEventListener('click', () => stopWebcam());
     });
 
-    // Bind ALL Camera Select Dropdowns (Top Hub & Modal)
-    document.querySelectorAll('.cctv-select').forEach(sel => {
+    // Bind ALL Camera Select Dropdowns (Excluding Venue Select)
+    document.querySelectorAll('.cctv-select:not(.cctv-venue-select)').forEach(sel => {
       sel.addEventListener('change', async (e) => {
         await switchCamera(e.target.value);
       });
@@ -240,6 +323,102 @@
       sel.addEventListener('mousedown', unlockAndRefresh);
     });
 
+    // Bind ALL Venue Select Dropdowns (Multi-Venue Switcher)
+    document.querySelectorAll('.cctv-venue-select').forEach(sel => {
+      sel.addEventListener('change', (e) => {
+        const chosenVenue = e.target.value;
+        const opt = e.target.selectedOptions[0];
+        let venueName = opt ? (opt.getAttribute('data-name') || opt.textContent.trim()) : 'Conference Room';
+        let venueCap = opt ? parseInt(opt.getAttribute('data-capacity'), 10) : 250;
+
+        if (chosenVenue === 'custom') {
+          const customName = prompt('Enter Custom Venue / Hall Name:', 'Exhibition Hall');
+          if (customName && customName.trim()) {
+            venueName = customName.trim();
+          }
+          const customCapStr = prompt(`Enter Target Max Capacity for "${venueName}":`, '100');
+          const parsedCap = parseInt(customCapStr, 10);
+          venueCap = (!isNaN(parsedCap) && parsedCap > 0) ? parsedCap : 100;
+
+          // Update custom option across all venue dropdowns
+          document.querySelectorAll('.cctv-venue-select').forEach(vSel => {
+            const custOpt = vSel.querySelector('option[value="custom"]');
+            if (custOpt) {
+              custOpt.textContent = `✨ ${venueName} (${venueCap})`;
+              custOpt.setAttribute('data-name', venueName);
+              custOpt.setAttribute('data-capacity', venueCap);
+            }
+          });
+        }
+
+        updateVenueAndCapacity(chosenVenue, venueName, venueCap, true);
+
+        if (typeof createToast === 'function') {
+          createToast(`🏛️ Switched Venue to: ${venueName} (Capacity: ${venueCap} Pax)`, 'success');
+        }
+      });
+    });
+
+    // Bind Direct Capacity Numeric Inputs (Top Hub & Modal)
+    document.querySelectorAll('.cctv-capacity-input').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 1) {
+          currentCapacity = val;
+          try { localStorage.setItem('delta_current_room_capacity', currentCapacity.toString()); } catch (err) {}
+          syncCapacityControls(currentCapacity);
+          updateThresholdLabels(currentCapacity);
+          updateDensityMetrics(true);
+        }
+      });
+      inp.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 2) val = 2;
+        currentCapacity = val;
+        e.target.value = val;
+        try { localStorage.setItem('delta_current_room_capacity', currentCapacity.toString()); } catch (err) {}
+        syncCapacityControls(currentCapacity);
+        updateThresholdLabels(currentCapacity);
+        updateDensityMetrics(true);
+        if (typeof createToast === 'function') {
+          createToast(`🎯 Room capacity set to ${currentCapacity} Pax (${currentVenueName})`, 'info');
+        }
+      });
+    });
+
+    // Bind Capacity Range Sliders (Top Hub & Modal)
+    document.querySelectorAll('.cctv-capacity-slider').forEach(slider => {
+      slider.addEventListener('input', (e) => {
+        currentCapacity = parseInt(e.target.value, 10);
+        try { localStorage.setItem('delta_current_room_capacity', currentCapacity.toString()); } catch (err) {}
+        syncCapacityControls(currentCapacity);
+        updateThresholdLabels(currentCapacity);
+        updateDensityMetrics(true);
+      });
+    });
+
+    // Bind Manual Headcount Attendance Input (Camera + Manual Fusion)
+    document.querySelectorAll('.cctv-manual-pax-input').forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        manualCount = isNaN(val) ? 0 : Math.max(0, val);
+        currentNetOccupancy = Math.max(currentNetOccupancy, manualCount);
+        syncManualCountControls(manualCount);
+        updateDensityMetrics(true);
+      });
+      inp.addEventListener('change', (e) => {
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 0) val = 0;
+        manualCount = val;
+        currentNetOccupancy = Math.max(currentNetOccupancy, manualCount);
+        syncManualCountControls(manualCount);
+        updateDensityMetrics(true);
+        if (typeof createToast === 'function') {
+          createToast(`👥 Manual Attendance Count set to: ${manualCount} Pax`, 'info');
+        }
+      });
+    });
+
     // USB Camera Plug / Unplug Hotplug Listener
     if (navigator.mediaDevices && navigator.mediaDevices.addEventListener) {
       navigator.mediaDevices.addEventListener('devicechange', async () => {
@@ -248,36 +427,32 @@
       });
     }
 
-    if (sliderCap) {
-      sliderCap.addEventListener('input', (e) => {
-        currentCapacity = parseInt(e.target.value, 10);
-        if (capValDisplay) capValDisplay.textContent = `${currentCapacity} Pax`;
-        updateThresholdLabels(currentCapacity);
-        updateDensityMetrics();
-      });
-    }
-
-    // Simulate Door Sensor Trigger manually
-    if (btnTriggerSensor) {
-      btnTriggerSensor.addEventListener('click', () => {
+    // Bind Physical Door Sensor manual test button
+    document.querySelectorAll('#btn-cctv-trigger-sensor, .btn-cctv-trigger-sensor').forEach(btn => {
+      btn.addEventListener('click', () => {
         triggerDoorSensorLocal(620);
       });
-    }
+    });
 
-    if (btnAddPerson) {
-      btnAddPerson.addEventListener('click', () => {
+    // Bind Add Person (+1) buttons (Top Hub & Modal)
+    document.querySelectorAll('#btn-cctv-add-pax, .btn-cctv-add-pax').forEach(btn => {
+      btn.addEventListener('click', () => {
         simulateAttendeeAction('ENTRY');
+        syncManualCountControls(currentNetOccupancy);
       });
-    }
+    });
 
-    if (btnSubPerson) {
-      btnSubPerson.addEventListener('click', () => {
+    // Bind Subtract Person (-1) buttons (Top Hub & Modal)
+    document.querySelectorAll('#btn-cctv-sub-pax, .btn-cctv-sub-pax').forEach(btn => {
+      btn.addEventListener('click', () => {
         simulateAttendeeAction('EXIT');
+        syncManualCountControls(currentNetOccupancy);
       });
-    }
+    });
 
-    if (btnClearPax) {
-      btnClearPax.addEventListener('click', () => {
+    // Bind Reset Pax buttons (Top Hub & Modal)
+    document.querySelectorAll('#btn-cctv-clear-pax, .btn-cctv-clear-pax').forEach(btn => {
+      btn.addEventListener('click', () => {
         attendeeDb.clear();
         trackedHeads = [];
         nextTrackId = 1;
@@ -288,39 +463,45 @@
         currentNetOccupancy = 0;
         manualCount = 0;
         lastPassageInfo = null;
+        syncManualCountControls(0);
         updateDensityMetrics(true);
         if (typeof createToast === 'function') createToast('🧹 Room attendee registry reset to 0.', 'info');
       });
-    }
+    });
 
-    // 80% Room Capacity Trigger Button
-    if (btnTrigger80) {
-      btnTrigger80.addEventListener('click', () => {
+    // Bind 80% Room Capacity Trigger Buttons (Top Hub & Modal)
+    document.querySelectorAll('#btn-cctv-trigger-80, .btn-cctv-trigger-80').forEach(btn => {
+      btn.addEventListener('click', () => {
         currentNetOccupancy = Math.max(1, Math.round(currentCapacity * 0.80));
         manualCount = currentNetOccupancy;
+        syncManualCountControls(manualCount);
         updateDensityMetrics(true);
       });
-    }
+    });
 
-    // 100% Room Full Trigger Button
-    if (btnTriggerFull) {
-      btnTriggerFull.addEventListener('click', () => {
+    // Bind 100% Room Full Trigger Buttons (Top Hub & Modal)
+    document.querySelectorAll('#btn-cctv-trigger-full, .btn-cctv-trigger-full').forEach(btn => {
+      btn.addEventListener('click', () => {
         currentNetOccupancy = currentCapacity;
         manualCount = currentCapacity;
+        syncManualCountControls(manualCount);
         updateDensityMetrics(true);
       });
-    }
+    });
 
-    // 0% Room Empty Trigger Button
-    if (btnTriggerEmpty) {
-      btnTriggerEmpty.addEventListener('click', () => {
+    // Bind 0% Room Empty Trigger Buttons (Top Hub & Modal)
+    document.querySelectorAll('#btn-cctv-trigger-empty, .btn-cctv-trigger-empty').forEach(btn => {
+      btn.addEventListener('click', () => {
         currentNetOccupancy = 0;
         manualCount = 0;
+        syncManualCountControls(0);
         updateDensityMetrics(true);
       });
-    }
+    });
 
-    updateThresholdLabels(currentCapacity);
+    // Initialize venue, capacity, and metrics
+    updateVenueAndCapacity(currentVenueId, currentVenueName, currentCapacity, true);
+
     // Initial camera discovery with proactive permission query
     if (navigator.permissions && navigator.permissions.query) {
       navigator.permissions.query({ name: 'camera' }).then(res => {
@@ -339,20 +520,13 @@
     }
   }
 
-  function updateThresholdLabels(cap) {
-    const lbl80 = document.getElementById('cctv-80-threshold-lbl');
-    const lbl100 = document.getElementById('cctv-100-threshold-lbl');
-    if (lbl80) lbl80.textContent = `${Math.round(cap * 0.80)} Pax`;
-    if (lbl100) lbl100.textContent = `${cap} Pax`;
-  }
-
   async function enumerateCameras() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
 
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = devices.filter(d => d.kind === 'videoinput');
-      const selects = document.querySelectorAll('.cctv-select');
+      const selects = document.querySelectorAll('.cctv-select:not(.cctv-venue-select)');
       if (selects.length === 0) return;
 
       selects.forEach(select => {
@@ -374,9 +548,7 @@
           let label = rawLabel || `Camera ${idx + 1}`;
           const lower = label.toLowerCase();
 
-          if (lower.includes('zebronics') || lower.includes('crystal') || lower.includes('zeb') || lower.includes('349c')) {
-            opt.textContent = `⭐ ${label} (Zebronics Crystal Pro 480p)`;
-          } else if (lower.includes('720p') || lower.includes('integrated') || lower.includes('internal') || lower.includes('built-in')) {
+          if (lower.includes('720p') || lower.includes('integrated') || lower.includes('internal') || lower.includes('built-in')) {
             opt.textContent = `💻 ${label} (Integrated Webcam)`;
           } else if (rawLabel) {
             opt.textContent = `📹 ${label}`;
@@ -391,12 +563,10 @@
           select.value = prevVal;
           selectedCameraDeviceId = prevVal;
         } else if (videoDevices.length > 0) {
-          const zebOpt = Array.from(select.options).find(o => 
-            o.textContent.includes('Zebronics') || o.textContent.includes('Crystal') || o.textContent.includes('⭐')
-          );
-          if (zebOpt) {
-            select.value = zebOpt.value;
-            selectedCameraDeviceId = zebOpt.value;
+          const extOpt = Array.from(select.options).find(o => !o.textContent.includes('Integrated'));
+          if (extOpt) {
+            select.value = extOpt.value;
+            selectedCameraDeviceId = extOpt.value;
           } else {
             select.value = videoDevices[0].deviceId;
             selectedCameraDeviceId = videoDevices[0].deviceId;
@@ -416,11 +586,11 @@
     } catch (e) {}
 
     // Synchronize all camera dropdowns across the page
-    document.querySelectorAll('.cctv-select').forEach(sel => {
+    document.querySelectorAll('.cctv-select:not(.cctv-venue-select)').forEach(sel => {
       if (sel.value !== deviceId) sel.value = deviceId;
     });
 
-    const activeOptText = document.querySelector('.cctv-select option:checked')?.textContent || 'Camera';
+    const activeOptText = document.querySelector('.cctv-select:not(.cctv-venue-select) option:checked')?.textContent || 'Camera';
 
     // Directly start/switch to selected camera so choosing from dropdown immediately displays feed
     if (typeof createToast === 'function') createToast(`🔄 Switching camera to: ${activeOptText}...`, 'info');
@@ -434,7 +604,7 @@
       return;
     }
 
-    const deviceId = requestedDeviceId || selectedCameraDeviceId || document.querySelector('.cctv-select')?.value;
+    const deviceId = requestedDeviceId || selectedCameraDeviceId || document.querySelector('.cctv-select:not(.cctv-venue-select)')?.value;
     if (deviceId) {
       selectedCameraDeviceId = deviceId;
       try { localStorage.setItem('delta_selected_camera_id', deviceId); } catch (e) {}
@@ -449,7 +619,8 @@
     let stream = null;
     const baseVideo = {
       width: { ideal: 640 },
-      height: { ideal: 480 }
+      height: { ideal: 480 },
+      frameRate: { ideal: 30 }
     };
 
     if (deviceId) {
@@ -458,7 +629,8 @@
           video: {
             ...baseVideo,
             deviceId: { exact: deviceId }
-          }
+          },
+          audio: false
         });
       } catch (exactErr) {
         console.warn('[CCTV] Exact deviceId constraint failed, trying ideal constraint:', exactErr);
@@ -467,12 +639,13 @@
             video: {
               ...baseVideo,
               deviceId: { ideal: deviceId }
-            }
+            },
+            audio: false
           });
         } catch (idealErr) {
           console.warn('[CCTV] Ideal constraint failed, trying basic video:', idealErr);
           try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
           } catch (basicErr) {
             console.warn('[CCTV] Video stream failed completely:', basicErr);
           }
@@ -480,9 +653,9 @@
       }
     } else {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo });
+        stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo, audio: false });
       } catch (err) {
-        try { stream = await navigator.mediaDevices.getUserMedia({ video: true }); } catch (e) {}
+        try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); } catch (e) {}
       }
     }
 
@@ -499,7 +672,7 @@
       // Immediately re-enumerate now that getUserMedia has unlocked the true hardware device labels!
       await enumerateCameras();
 
-      const activeLabel = document.querySelector('.cctv-select option:checked')?.textContent || 'Zebronics 480p';
+      const activeLabel = document.querySelector('.cctv-select:not(.cctv-venue-select) option:checked')?.textContent || 'Zebronics 480p';
       if (typeof createToast === 'function') createToast(`📹 ${activeLabel} feed connected!`, 'success');
     } else {
       isCameraActive = true;
@@ -532,7 +705,7 @@
       if (active) {
         statusText.innerHTML = isSim
           ? '🟢 <strong>SIMULATED FEED</strong> (640x480)'
-          : '🟢 <strong>ZEBRONICS 480P LIVE</strong>';
+          : '🟢 <strong>CAMERA FEED LIVE</strong>';
         statusText.style.color = '#10b981';
       } else {
         statusText.innerHTML = '⚪ <strong>CAMERA READY</strong>';
@@ -1050,18 +1223,20 @@
     });
 
     // Top Header Banner
+    const bannerW = Math.max(390, Math.min(w - 24, 460));
     c.fillStyle = 'rgba(17, 24, 39, 0.92)';
-    c.fillRect(12, 12, 380, 68);
+    c.fillRect(12, 12, bannerW, 68);
     c.strokeStyle = isSensorScanning ? '#f59e0b' : '#2563eb';
     c.lineWidth = 2;
-    c.strokeRect(12, 12, 380, 68);
+    c.strokeRect(12, 12, bannerW, 68);
 
     c.fillStyle = '#ffffff';
     c.font = 'bold 13px "Space Grotesk", sans-serif';
-    c.fillText('ZEBRONICS 480P + IOT DOOR SENSOR FUSION', 22, 32);
+    const venueUpper = (currentVenueName || 'TURING HALL').toUpperCase();
+    c.fillText(`CCTV FEED • ${venueUpper}`, 22, 32);
 
     let statusColor = '#10b981';
-    let statusText = `🟢 NET INSIDE: ${count} PAX (${occupiedPct}% FULL)`;
+    let statusText = `🟢 NET INSIDE: ${count} / ${cap} PAX (${occupiedPct}% FULL)`;
 
     if (isCameraBlocked) {
       statusColor = '#9ca3af';
@@ -1236,7 +1411,7 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          hallId: 'hall-1',
+          hallId: currentVenueId || 'hall-1',
           event: eventType,
           attendeeId: attendee.id,
           attendeeName: attendee.name,
@@ -1262,13 +1437,13 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          hallId: 'hall-1',
+          hallId: currentVenueId || 'hall-1',
           peopleDetected: count,
           capacity: cap,
           occupiedPercent: occupiedPct,
           emptyPercent: emptyPct,
           status,
-          source: 'Zebronics 480P + IoT Door Sensor'
+          source: 'CCTV / Webcam Perception + IoT Door Sensor'
         })
       });
     } catch (e) {
@@ -1394,7 +1569,7 @@
                 : alert.type === 'ROOM_80_PERCENT'
                 ? `<span style="background:#fef3c7; border:1px solid #d97706; color:#b45309; font-weight:800; padding:1px 6px; border-radius:4px; font-size:0.7rem; margin-left:6px;">⚠️ 80% ALERT: ${v.task}</span>`
                 : `<span style="background:#dbeafe; border:1px solid #2563eb; color:#1d4ed8; font-weight:800; padding:1px 6px; border-radius:4px; font-size:0.7rem; margin-left:6px;">⚪ CLEARED: ${v.task}</span>`;
-              taskDiv.innerHTML = `📍 ${v.location || 'Turing Hall'} • 📋 ${badgeHtml}`;
+              taskDiv.innerHTML = `📍 ${v.location || currentVenueName || 'Turing Hall'} • 📋 ${badgeHtml}`;
             }
           }
         });
@@ -1499,7 +1674,7 @@
         iconSymbol = '🚨';
       } else if (alert.type === 'ROOM_80_PERCENT') {
         bannerClass = 'warning-amber';
-        titleText = `⚠️ CAPACITY WARNING: TURING HALL IS 80% FULL (${alert.occupiedPercent}%)`;
+        titleText = `⚠️ CAPACITY WARNING: ${(currentVenueName || 'TURING HALL').toUpperCase()} IS 80% FULL (${alert.occupiedPercent}%)`;
         iconSymbol = '⚠️';
       }
 

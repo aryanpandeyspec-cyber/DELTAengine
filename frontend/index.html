@@ -57,7 +57,7 @@
           <span class="user-name-text" id="user-name-text">Suryansh</span>
         </div>
         <div class="auth-nav-buttons">
-          <button id="btn-open-cctv" class="btn btn-sm btn-yellow" style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;" title="Open Zebronics CCTV Room Density Perception HUD">📹 CCTV Density HUD <span class="cctv-live-dot"></span></button>
+          <button id="btn-open-cctv" class="btn btn-sm btn-yellow" style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;" title="Open CCTV Room Density Perception HUD">📹 CCTV Density HUD <span class="cctv-live-dot"></span></button>
           <button id="btn-sound-toggle" class="btn btn-sm btn-white" style="font-weight:700;" title="Toggle Synthesized Audio Feedback">🔊 SFX: ON</button>
           <button id="btn-shortcuts-modal" class="btn btn-sm btn-white" style="font-weight:700;" title="Keyboard Hotkeys [?]">⌨️ Hotkeys</button>
           <a href="admin.html" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;">👑 Admin
@@ -103,12 +103,19 @@
           <span class="dot red"></span>
           <span class="dot yellow"></span>
           <span class="dot green"></span>
-          <h2 class="cctv-hub-title">📹 CCTV ROOM PERCEPTION — ZEBRONICS CRYSTAL PRO 480P</h2>
+          <h2 class="cctv-hub-title">📹 CCTV ROOM PERCEPTION</h2>
           <span id="cctv-stream-status" class="cctv-status-badge">⚪ <strong>CAMERA READY</strong></span>
         </div>
         <div class="cctv-hub-header-actions">
+          <select id="cctv-venue-select" class="cctv-select cctv-venue-select" title="Switch Conference Hall / Venue">
+            <option value="hall-1" data-capacity="250" data-name="Turing Hall">🏛️ Turing Hall (250)</option>
+            <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
+            <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
+            <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
+            <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
+          </select>
           <select id="cctv-device-select" class="cctv-select">
-            <option value="">Detecting Zebronics Crystal Pro...</option>
+            <option value="">Detecting Available Cameras...</option>
           </select>
           <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
           <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
@@ -153,7 +160,7 @@
             </div>
 
             <div class="cctv-headcount-sub">
-              <span>👥 Detected In Turing Hall: <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
+              <span><span id="cctv-venue-detected-lbl" class="cctv-venue-detected-lbl">👥 Detected In Turing Hall:</span> <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
               <span id="cctv-occupancy-status-pill" class="status-pill neutral">⚪ ROOM EMPTY (0%)</span>
             </div>
 
@@ -174,24 +181,33 @@
             </div>
           </div>
 
-          <!-- Capacity Controller Slider -->
+          <!-- Capacity Controller Slider & Direct Input -->
           <div class="cctv-capacity-box mb-3">
-            <div class="capacity-slider-header">
-              <label for="cctv-capacity-slider"><strong>🎯 Target Venue Capacity (Turing Hall):</strong></label>
-              <span id="cctv-capacity-val" class="capacity-val-badge">25 Pax</span>
+            <div class="capacity-slider-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <label for="cctv-capacity-slider"><strong id="cctv-target-venue-lbl" class="cctv-target-venue-lbl">🎯 Target Room Capacity (Turing Hall):</strong></label>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <input type="number" id="cctv-capacity-input" class="cctv-capacity-input" min="2" max="1000" value="25" style="width:74px; padding:3px 6px; font-weight:800; border:2px solid #000; border-radius:6px; font-size:0.85rem; text-align:center; box-shadow:2px 2px 0px #000;" title="Directly type target venue capacity">
+                <span id="cctv-capacity-val" class="capacity-val-badge">25 Pax</span>
+              </div>
             </div>
-            <input type="range" id="cctv-capacity-slider" min="2" max="250" value="25" step="1" class="neubrutalist-slider">
+            <input type="range" id="cctv-capacity-slider" class="cctv-capacity-slider neubrutalist-slider" min="2" max="500" value="25" step="1">
             <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#555; margin-top:4px;">
               <span>Min: 2 Pax</span>
-              <span style="color:#d97706;">⚠️ 80% Alert: <strong id="cctv-80-threshold-lbl">20 Pax</strong></span>
-              <span style="color:#dc2626;">🚨 100% Alert: <strong id="cctv-100-threshold-lbl">25 Pax</strong></span>
-              <span>Max: 250 Pax</span>
+              <span style="color:#d97706;">⚠️ 80% Alert: <strong id="cctv-80-threshold-lbl" class="cctv-80-threshold-lbl">20 Pax</strong></span>
+              <span style="color:#dc2626;">🚨 100% Alert: <strong id="cctv-100-threshold-lbl" class="cctv-100-threshold-lbl">25 Pax</strong></span>
+              <span id="cctv-max-capacity-lbl" class="cctv-max-capacity-lbl">Max: 500 Pax</span>
             </div>
           </div>
 
-          <!-- Pitch Testing & Calibration Buttons -->
+          <!-- Attendance & Pitch Controls (Camera + Manual Fusion) -->
           <div class="cctv-sim-controls mb-3">
-            <span class="sim-label">⚡ Pitch Simulation Triggers:</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+              <span class="sim-label">⚡ Attendance Controls (Camera + Manual Fusion):</span>
+              <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
+                <span>Manual Count:</span>
+                <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000" value="0" style="width:68px; padding:2px 6px; border:2px solid #000; border-radius:6px; font-weight:800; text-align:center; box-shadow:2px 2px 0px #000;" title="Directly set attendee headcount manually">
+              </div>
+            </div>
             <div class="sim-btn-row">
               <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Door Sensor (750mm)</button>
               <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
@@ -206,7 +222,7 @@
           <!-- Assigned Volunteers Quick Duty Sync -->
           <div class="cctv-volunteers-card">
             <div class="vol-card-header">
-              <span>🤝 ASSIGNED VOLUNTEERS ON DUTY (TURING HALL)</span>
+              <span>🤝 ASSIGNED VOLUNTEERS ON DUTY (<span id="cctv-volunteers-venue-name" class="cctv-volunteers-venue-name">TURING HALL</span>)</span>
               <span class="badge-mini-green">SYNCED</span>
             </div>
             <div class="vol-duty-list">
@@ -869,7 +885,7 @@
           <span class="dot red"></span>
           <span class="dot yellow"></span>
           <span class="dot green"></span>
-          <h2 class="modal-title">📹 CCTV ROOM PERCEPTION — ZEBRONICS CRYSTAL PRO 480P</h2>
+          <h2 class="modal-title">📹 CCTV ROOM PERCEPTION</h2>
         </div>
         <button id="btn-close-cctv-modal" class="btn-close-modal" aria-label="Close Modal">&times;</button>
       </div>
@@ -879,9 +895,16 @@
         <div class="cctv-video-container">
           <div class="cctv-feed-header">
             <span class="cctv-status-badge">⚪ <strong>CAMERA INITIALIZING...</strong></span>
-            <div class="cctv-device-selector-wrap">
+            <div class="cctv-device-selector-wrap" style="display:flex; gap:6px; flex-wrap:wrap;">
+              <select id="modal-cctv-venue-select" class="cctv-select cctv-venue-select" title="Switch Conference Hall / Venue">
+                <option value="hall-1" data-capacity="250" data-name="Turing Hall">🏛️ Turing Hall (250)</option>
+                <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
+                <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
+                <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
+                <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
+              </select>
               <select id="modal-cctv-device-select" class="cctv-select">
-                <option value="">Detecting Zebronics Crystal Pro...</option>
+                <option value="">Detecting Available Cameras...</option>
               </select>
             </div>
           </div>
@@ -893,7 +916,7 @@
           <div class="cctv-camera-action-bar">
             <button id="btn-modal-cctv-start" class="btn btn-sm btn-green btn-cctv-start" style="font-weight:800;">▶️ Start Camera</button>
             <button id="btn-modal-cctv-stop" class="btn btn-sm btn-white btn-cctv-stop" style="font-weight:800;">⏹️ Stop Camera</button>
-            <span class="cctv-device-sub">Target: Zebronics ZEB-CRYSTAL PRO (480p / 640x480)</span>
+            <span class="cctv-device-sub">Live CCTV & Optical AI Perception Feed</span>
           </div>
         </div>
 
@@ -920,24 +943,39 @@
             </div>
 
             <div class="cctv-headcount-sub">
-              <span>👥 Detected Attendees: <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
+              <span><span class="cctv-venue-detected-lbl">👥 Detected In Turing Hall:</span> <strong id="cctv-metric-headcount">0 / 25 Pax</strong></span>
               <span id="cctv-occupancy-status-pill" class="status-pill neutral">⚪ ROOM EMPTY (0%)</span>
             </div>
           </div>
 
           <!-- Capacity Controller Slider -->
           <div class="cctv-capacity-box mb-4">
-            <div class="capacity-slider-header">
-              <label for="cctv-capacity-slider"><strong>🎯 Target Venue Capacity (Turing Hall):</strong></label>
-              <span id="cctv-capacity-val" class="capacity-val-badge">25 Pax</span>
+            <div class="capacity-slider-header" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <label for="cctv-capacity-slider"><strong class="cctv-target-venue-lbl">🎯 Target Room Capacity (Turing Hall):</strong></label>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <input type="number" class="cctv-capacity-input" min="2" max="1000" value="25" style="width:74px; padding:3px 6px; font-weight:800; border:2px solid #000; border-radius:6px; font-size:0.85rem; text-align:center; box-shadow:2px 2px 0px #000;" title="Directly type target venue capacity">
+                <span class="capacity-val-badge">25 Pax</span>
+              </div>
             </div>
-            <input type="range" id="cctv-capacity-slider" min="2" max="250" value="25" step="1" class="neubrutalist-slider">
-            <span class="capacity-hint">💡 Tip for pitch/demo: Slide capacity down to 2 or 5 pax to demonstrate 100% Full alerts live!</span>
+            <input type="range" class="cctv-capacity-slider neubrutalist-slider" min="2" max="500" value="25" step="1">
+            <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-weight:700; color:#555; margin-top:4px;">
+              <span>Min: 2 Pax</span>
+              <span style="color:#d97706;">⚠️ 80% Alert: <strong class="cctv-80-threshold-lbl">20 Pax</strong></span>
+              <span style="color:#dc2626;">🚨 100% Alert: <strong class="cctv-100-threshold-lbl">25 Pax</strong></span>
+              <span class="cctv-max-capacity-lbl">Max: 500 Pax</span>
+            </div>
+            <span class="capacity-hint">💡 Tip for organizers: Select your hall above or type exact capacity (e.g. 50, 120, 250 Pax) to calibrate 80% & 100% capacity alerts live!</span>
           </div>
 
           <!-- Live Pitch Testing & Attendee Simulator -->
           <div class="cctv-sim-controls mb-4">
-            <span class="sim-label">⚡ Live Pitch Test Actions:</span>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
+              <span class="sim-label">⚡ Attendance & Pitch Controls (Camera + Manual Fusion):</span>
+              <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
+                <span>Manual Count:</span>
+                <input type="number" class="cctv-manual-pax-input" min="0" max="1000" value="0" style="width:68px; padding:2px 6px; border:2px solid #000; border-radius:6px; font-weight:800; text-align:center; box-shadow:2px 2px 0px #000;" title="Directly set attendee headcount manually">
+              </div>
+            </div>
             <div class="sim-btn-row">
               <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
               <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
@@ -951,7 +989,7 @@
           <!-- Assigned Volunteers & Coordinators Live Dispatch -->
           <div class="cctv-volunteers-card">
             <div class="vol-card-header">
-              <span>🤝 ASSIGNED VOLUNTEERS ON DUTY (TURING HALL)</span>
+              <span>🤝 ASSIGNED VOLUNTEERS ON DUTY (<span class="cctv-volunteers-venue-name">TURING HALL</span>)</span>
               <span class="badge-mini-green">SYNCED</span>
             </div>
             <div class="vol-duty-list">
@@ -994,7 +1032,7 @@
   <script src="components/customCursor.js"></script>
   <script src="components/pico.js?v=3.0"></script>
   <script src="components/facefinder.js?v=3.0"></script>
-  <script src="components/cctvPerception.js?v=3.0"></script>
+  <script src="components/cctvPerception.js?v=3.2"></script>
 </body>
 
 </html>
