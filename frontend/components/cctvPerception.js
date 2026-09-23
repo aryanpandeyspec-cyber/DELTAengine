@@ -44,11 +44,6 @@
   let sensorActiveWindowUntil = 0; // Timestamp when 3.5s active scan window closes
   let lastTriggerDist = 750;       // mm threshold from ESP32
 
-  // Native Shape Detection API (DirectML / Windows MediaFoundation hardware ML model)
-  let nativeFaceDetector = null;
-  let isNativeDetectorRunning = false;
-  let lastDetectedFaces = [];
-
   // Temporal tracking for stable face/head perception without flickering
   let trackedHeads = [];
   let nextTrackId = 1;
@@ -126,15 +121,6 @@
     sigCanvas.width = 32;
     sigCanvas.height = 32;
     sigCtx = sigCanvas.getContext('2d', { willReadFrequently: true });
-
-    if (typeof window !== 'undefined' && 'FaceDetector' in window) {
-      try {
-        nativeFaceDetector = new window.FaceDetector({ fastMode: false, maxDetectedFaces: 35 });
-        console.log('[CCTV] Native hardware-accelerated FaceDetector initialized in high-precision multi-face mode.');
-      } catch (e) {
-        nativeFaceDetector = null;
-      }
-    }
   }
 
   function requestPushPermission() {
@@ -620,10 +606,10 @@
         const clusters = pico.cluster_detections(dets, 0.2);
 
         const picoBoxes = [];
-        // Real faces score 35-180+; empty space/textured fabric scores < 2.5
+        // Real heads score 35-180+; empty space/textured fabric scores < 2.5
         for (let i = 0; i < clusters.length && picoBoxes.length < 35; i++) {
           const c = clusters[i];
-          if (c[3] >= 12.0) {
+          if (c[3] >= 15.0) {
             const cy = c[0];
             const cx = c[1];
             const size = c[2];
@@ -657,46 +643,14 @@
     return { count: 0, boxes: [], blocked: false };
   }
 
-  // Asynchronously query native hardware FaceDetector with cranial clamping
-  async function runNativeFaceDetection() {
-    if (!nativeFaceDetector || !videoEl || videoEl.readyState !== 4 || isNativeDetectorRunning) return;
-    isNativeDetectorRunning = true;
-
-    try {
-      const faces = await nativeFaceDetector.detect(videoEl);
-      if (faces && Array.isArray(faces)) {
-        lastDetectedFaces = faces.map(f => {
-          let bx = Math.round(f.boundingBox.x);
-          let by = Math.round(f.boundingBox.y);
-          let bw = Math.round(f.boundingBox.width);
-          let bh = Math.round(f.boundingBox.height);
-
-          // Clamped strictly to the head area (forehead to chin, 1.20 aspect ratio)
-          const targetH = Math.round(bw * 1.20);
-          const cy = by + bh * 0.48;
-          by = Math.max(0, Math.round(cy - targetH * 0.48));
-          bh = targetH;
-
-          return {
-            x: Math.max(0, bx),
-            y: Math.max(0, by),
-            w: Math.min(640 - bx, bw),
-            h: Math.min(480 - by, bh),
-            landmarks: f.landmarks || [],
-            isNative: true,
-            label: 'HEAD'
-          };
-        });
-      }
-    } catch (e) {
-      // Non-blocking fallback
-    } finally {
-      isNativeDetectorRunning = false;
-    }
-  }
-
   // Temporal centroid tracker to eliminate frame-to-frame flicker and maintain steady counts
   function updateTrackedHeads(rawBoxes) {
+    // Zero-hallucination guarantee: when camera sees blank space / 0 heads, clear instantly!
+    if (!rawBoxes || rawBoxes.length === 0) {
+      trackedHeads = [];
+      return [];
+    }
+
     const now = Date.now();
     const matched = new Set();
     const currentTracks = [];
@@ -726,7 +680,6 @@
         track.w = Math.round(track.w * 0.65 + b.w * 0.35);
         track.h = Math.round(track.h * 0.65 + b.h * 0.35);
         track.score = b.score || track.score || 0;
-        track.isNative = b.isNative || false;
         track.framesSeen++;
         track.framesLost = 0;
         track.lastSeen = now;
@@ -752,7 +705,6 @@
           w: b.w,
           h: b.h,
           score: b.score || 0,
-          isNative: b.isNative || false,
           framesSeen: 1,
           framesLost: 0,
           lastSeen: now,
@@ -763,14 +715,8 @@
 
     trackedHeads = currentTracks;
 
-    // Zero-hallucination guarantee: when camera sees blank space / 0 heads, clear instantly!
-    if (rawBoxes.length === 0) {
-      trackedHeads = [];
-      return [];
-    }
-
     // Return confirmed heads: require framesSeen >= 2 (or score >= 25.0) and framesLost <= 1
-    return trackedHeads.filter(t => (t.framesSeen >= 2 || t.score >= 25 || t.isNative) && t.framesLost <= 1);
+    return trackedHeads.filter(t => (t.framesSeen >= 2 || t.score >= 25) && t.framesLost <= 1);
   }
 
   // --- ATTENDEE FACE SIGNATURE & RE-ENTRY RESOLUTION ---
@@ -980,22 +926,10 @@
       // Draw live video frame
       ctx.drawImage(videoEl, 0, 0, w, h);
 
-      // Trigger native face detector asynchronously if available
-      if (nativeFaceDetector) {
-        runNativeFaceDetection();
-      }
-
-      // Check if native detector found faces
-      let rawBoxes = [];
-      if (lastDetectedFaces.length > 0) {
-        rawBoxes = lastDetectedFaces;
-        isCameraBlocked = false;
-      } else {
-        // Fallback zero-hallucination multi-cue face detector
-        const result = detectFacesZeroHallucination();
-        isCameraBlocked = result.blocked;
-        rawBoxes = result.boxes;
-      }
+      // High-precision zero-hallucination face & head perception
+      const result = detectFacesZeroHallucination();
+      isCameraBlocked = result.blocked;
+      const rawBoxes = result.boxes;
 
       // Smooth & track heads over time without jitter
       detectedBoxes = isCameraBlocked ? [] : updateTrackedHeads(rawBoxes);
