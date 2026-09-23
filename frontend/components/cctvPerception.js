@@ -1484,7 +1484,9 @@ Email: ${fromEmail}`;
     c.fillStyle = '#ffffff';
     c.font = 'bold 13px "Space Grotesk", sans-serif';
     const venueUpper = (currentVenueName || 'TURING HALL').toUpperCase();
-    c.fillText(`CCTV FEED • ${venueUpper}`, 22, 32);
+    const liveTime = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const liveDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }).toUpperCase();
+    c.fillText(`CCTV FEED • ${venueUpper} • ${liveDate} ${liveTime}`, 22, 32);
 
     let statusColor = '#10b981';
     let statusText = `🟢 NET INSIDE: ${count} / ${cap} PAX (${occupiedPct}% FULL)`;

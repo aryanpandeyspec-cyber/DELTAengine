@@ -56,6 +56,13 @@
           <span class="user-role-badge coordinator" id="user-role-badge">👤 Coordinator</span>
           <span class="user-name-text" id="user-name-text">Suryansh</span>
         </div>
+        <!-- Live Dynamic Date & Time Clock Widget -->
+        <div class="live-clock-pill" id="live-clock-pill" title="Live System Date & Universal Local Time">
+          <span class="live-clock-pulse"></span>
+          <span id="live-dynamic-date" class="live-dynamic-date">Wed, 23 Sep 2026</span>
+          <span style="color:#9ca3af;">•</span>
+          <span id="live-dynamic-time" class="live-dynamic-time" style="color:#2563eb;">--:--:--</span>
+        </div>
         <div class="auth-nav-buttons">
           <button id="btn-open-cctv" class="btn btn-sm btn-yellow" style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;" title="Open CCTV Room Density Perception HUD">📹 CCTV Density HUD <span class="cctv-live-dot"></span></button>
           <button id="btn-sound-toggle" class="btn btn-sm btn-white" style="font-weight:700;" title="Toggle Synthesized Audio Feedback">🔊 SFX: ON</button>
@@ -390,8 +397,8 @@
                 <div style="display:flex; align-items:center; gap:8px;">
                   <input type="text" id="matrix-search-input" placeholder="🔍 Quick filter talks..." class="input-text"
                     style="font-family:var(--font-mono); font-size:0.78rem; padding:4px 10px; width:180px; border-radius:20px; border:2px solid #000;">
-                  <input type="date" id="schedule-date-picker" value="2026-08-07" class="input-select"
-                    style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; padding:4px 8px; cursor:pointer;">
+                  <input type="date" id="schedule-date-picker" class="input-select"
+                    style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; padding:4px 8px; cursor:pointer;" title="Select Calendar Date to View Schedule Matrix">
                   <span class="badge badge-blue">Dynamic Grid</span>
                 </div>
               </div>

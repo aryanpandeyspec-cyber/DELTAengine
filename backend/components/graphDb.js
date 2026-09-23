@@ -1,7 +1,7 @@
-// --- IN-MEMORY DYNAMIC GRAPH DATABASE ---
+const todayDateStr = new Date().toISOString().split('T')[0];
 
 const db = {
-  activeDate: '2026-08-07',
+  activeDate: todayDateStr,
   graph: {
     speakers: {
       'speaker-1': { id: 'speaker-1', name: 'Dr. Aditi Sharma', role: 'AI Research Director', bio: 'Pioneering agentic swarm coordination models.', avatar: '🧑‍🔬', delay: 0 },
@@ -49,6 +49,12 @@ const db = {
     dbLimiter: false
   },
   schedulesByDate: {
+    [todayDateStr]: {
+      'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
+      'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
+      'slot-3': { 'hall-1': 'topic-3', 'hall-2': null, 'hall-3': null },
+      'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
+    },
     '2026-08-07': {
       'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
       'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
@@ -102,7 +108,8 @@ const db = {
     }
   },
   reset() {
-    this.activeDate = '2026-08-07';
+    const todayStr = new Date().toISOString().split('T')[0];
+    this.activeDate = todayStr;
     for (const id in this.graph.speakers) {
       this.graph.speakers[id].delay = 0;
     }
@@ -110,7 +117,7 @@ const db = {
     this.graph.topics['topic-2'].interest = 140;
     this.graph.topics['topic-3'].interest = 180;
 
-    this.schedulesByDate['2026-08-07'] = {
+    this.schedulesByDate[todayStr] = {
       'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
       'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
       'slot-3': { 'hall-1': 'topic-3', 'hall-2': null, 'hall-3': null },

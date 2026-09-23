@@ -108,6 +108,7 @@ wss.on('connection', ws => {
     data: {
       graph: db.graph,
       schedule: db.schedule,
+      activeDate: db.activeDate,
       contacts: db.contacts,
       volunteers: db.volunteers,
       whatsappLogs: db.whatsappLogs,
@@ -125,6 +126,7 @@ app.get('/api/state', (req, res) => {
   res.json({
     graph: db.graph,
     schedule: db.schedule,
+    activeDate: db.activeDate,
     contacts: db.contacts,
     volunteers: db.volunteers,
     whatsappLogs: db.whatsappLogs,

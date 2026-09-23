@@ -82,6 +82,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initICalModal();
   initSentimentSimulator();
   initContentUploadPipeline(); // Trigger content uploader drag and drop
+  initDynamicClockAndDate(); // Live dynamic clock, calendar date & active slot indicator
   initDatePicker(); // Bind schedule date picker change handler
   initSoundEffects(); // Synthesized Web Audio feedback
   initKeyboardShortcuts(); // Neubrutalist keyboard shortcuts & modal
@@ -95,6 +96,12 @@ window.addEventListener('DOMContentLoaded', () => {
 function initDatePicker() {
   const datePicker = document.getElementById('schedule-date-picker');
   if (!datePicker) return;
+
+  // Initialize dynamic date to today if not set or default
+  const todayStr = new Date().toISOString().split('T')[0];
+  if (!datePicker.value || datePicker.value === '2026-08-07') {
+    datePicker.value = todayStr;
+  }
 
   datePicker.addEventListener('change', (e) => {
     const selectedDate = e.target.value;
@@ -115,6 +122,64 @@ function initDatePicker() {
     })
     .catch(err => console.error('Date change fetch failed:', err));
   });
+}
+
+function initDynamicClockAndDate() {
+  function tick() {
+    const now = new Date();
+    const dateOpts = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' };
+    const dateStr = now.toLocaleDateString('en-US', dateOpts);
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+
+    document.querySelectorAll('#live-dynamic-date, .live-dynamic-date').forEach(el => {
+      el.textContent = dateStr;
+    });
+
+    document.querySelectorAll('#live-dynamic-time, .live-dynamic-time').forEach(el => {
+      el.textContent = timeStr;
+    });
+
+    updateActiveSlotIndicator(now);
+  }
+
+  tick();
+  setInterval(tick, 1000);
+}
+
+function updateActiveSlotIndicator(now) {
+  const hours = now.getHours() + now.getMinutes() / 60;
+  let activeSlot = null;
+  if (hours >= 9.5 && hours < 10.75) activeSlot = 'slot-1';
+  else if (hours >= 11.0 && hours < 12.25) activeSlot = 'slot-2';
+  else if (hours >= 13.5 && hours < 14.75) activeSlot = 'slot-3';
+  else if (hours >= 15.0 && hours < 16.25) activeSlot = 'slot-4';
+
+  const slotMap = {
+    'slot-1': { id: 'th-slot-1', baseText: '09:30 AM' },
+    'slot-2': { id: 'th-slot-2', baseText: '11:00 AM' },
+    'slot-3': { id: 'th-slot-3', baseText: '01:30 PM' },
+    'slot-4': { id: 'th-slot-4', baseText: '03:00 PM' }
+  };
+
+  for (const sId in slotMap) {
+    const th = document.getElementById(slotMap[sId].id);
+    if (!th) continue;
+    if (sId === activeSlot) {
+      if (!th.dataset.isLive) {
+        th.dataset.isLive = 'true';
+        th.innerHTML = `${slotMap[sId].baseText} <span class="slot-live-badge" style="background:#ef4444; color:#fff; font-size:0.65rem; padding:2px 6px; border-radius:10px; margin-left:4px; font-weight:800; border:1px solid #000; box-shadow:1px 1px 0px #000;">🔴 LIVE</span>`;
+        th.style.background = '#fef2f2';
+        th.style.borderBottom = '3px solid #ef4444';
+      }
+    } else {
+      if (th.dataset.isLive) {
+        delete th.dataset.isLive;
+        th.textContent = slotMap[sId].baseText;
+        th.style.background = '';
+        th.style.borderBottom = '';
+      }
+    }
+  }
 }
 
 // --- CORE FORMS HANDLERS ---
