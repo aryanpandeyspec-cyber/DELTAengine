@@ -58,12 +58,9 @@
   let passageCooldown = 0; // Debounce between passage events
   let lastPassageInfo = null;
 
-  // --- IOT DOOR SENSOR FUSION & WEB SERIAL STATE ---
+  // --- IOT DOOR SENSOR FUSION STATE ---
   let sensorActiveWindowUntil = 0; // Timestamp when 3.5s active scan window closes
   let lastTriggerDist = 750;       // mm threshold from ESP32
-  let serialPort = null;
-  let serialReader = null;
-  let isSerialReading = false;
 
   // Temporal tracking for stable face/head perception without flickering
   let trackedHeads = [];
@@ -431,12 +428,6 @@
       });
     }
 
-    // Bind Connect USB Serial Sensor button
-    document.querySelectorAll('#btn-cctv-connect-usb, .btn-cctv-connect-usb').forEach(btn => {
-      btn.addEventListener('click', () => {
-        connectWebSerial();
-      });
-    });
 
     // Bind Physical Door Sensor manual test button
     document.querySelectorAll('#btn-cctv-trigger-sensor, .btn-cctv-trigger-sensor').forEach(btn => {
@@ -1863,104 +1854,7 @@ Email: ${fromEmail}`;
     if (btnCloseX) btnCloseX.addEventListener('click', dismissHandler);
   }
 
-  // --- WEB SERIAL API DRIVER (DIRECT HARDWARE ESP32 COM7 IN BROWSER) ---
-  async function connectWebSerial() {
-    if (!('serial' in navigator)) {
-      if (typeof createToast === 'function') {
-        createToast('Web Serial is available on Chrome/Edge. Alternatively, run python hardware/door_serial_bridge.py', 'warning');
-      }
-      return;
-    }
 
-    try {
-      serialPort = await navigator.serial.requestPort();
-      await serialPort.open({ baudRate: 115200 });
-
-      const textDecoder = new TextDecoderStream();
-      serialPort.readable.pipeTo(textDecoder.writable);
-      const reader = textDecoder.readable.getReader();
-      serialReader = reader;
-      isSerialReading = true;
-
-      updateSerialBadge(true);
-      if (typeof createToast === 'function') {
-        createToast('🔌 [ESP32 Hardware Sensor] Connected via USB Serial (115200 baud)! Counting active.', 'success');
-      }
-
-      let lineBuffer = '';
-      while (isSerialReading) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        if (value) {
-          lineBuffer += value;
-          const lines = lineBuffer.split('\n');
-          lineBuffer = lines.pop();
-          for (const line of lines) {
-            handleIncomingSerialLine(line.trim());
-          }
-        }
-      }
-    } catch (err) {
-      console.warn('[WebSerial] Connection cancelled or closed:', err);
-      updateSerialBadge(false);
-    }
-  }
-
-  function updateSerialBadge(connected) {
-    document.querySelectorAll('#cctv-sensor-status-badge, .cctv-sensor-status-badge').forEach(el => {
-      if (connected) {
-        el.textContent = '🟢 ESP32 Sensor: CONNECTED (COM7)';
-        el.style.background = '#dcfce7';
-        el.style.color = '#15803d';
-        el.style.borderColor = '#16a34a';
-      } else {
-        el.textContent = '⚡ ESP32 Sensor: Ready (COM7)';
-        el.style.background = '#e0f2fe';
-        el.style.color = '#0369a1';
-        el.style.borderColor = '#0284c7';
-      }
-    });
-  }
-
-  function handleIncomingSerialLine(rawLine) {
-    if (!rawLine) return;
-    console.log('[ESP32 Hardware Inbound]:', rawLine);
-
-    if (rawLine.startsWith('{') && rawLine.endsWith('}')) {
-      try {
-        const payload = JSON.parse(rawLine);
-        if (payload.event === 'DOOR_TRIGGER' || payload.dist1 || payload.dist2) {
-          window.handleDoorSensorTrigger(payload);
-        } else if (payload.event === 'ENTRY' || payload.event === 'EXIT') {
-          window.handleRoomOccupancyUpdate(payload);
-        }
-
-        // Forward to server
-        fetch('/api/sensors/door', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).catch(() => {});
-      } catch (e) {}
-    } else if (
-      rawLine.includes('TARGET DETECTED') ||
-      rawLine.includes('PASSAGE IN PROGRESS') ||
-      rawLine.includes('LED BLINK') ||
-      rawLine.includes('Passage registered')
-    ) {
-      window.handleDoorSensorTrigger({ dist1: 80, dist2: 80 });
-      fetch('/api/sensors/door', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'DOOR_TRIGGER',
-          hallId: currentVenueId || 'hall-1',
-          dist1: 80,
-          dist2: 80
-        })
-      }).catch(() => {});
-    }
-  }
 
   // --- PUBLIC WEBSOCKET HOOKS ---
 
