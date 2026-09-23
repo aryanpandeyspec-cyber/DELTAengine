@@ -25,7 +25,7 @@
 #define ONBOARD_LED 2
 
 // Distance threshold for hand/door passage detection (15 cm = 150 mm)
-#define DISTANCE_THRESHOLD_MM 750
+#define DISTANCE_THRESHOLD_MM 150
 #define MIN_DISTANCE_MM 35 // Ignore anything under 3.5 cm (filters out close wires and surface crosstalk)
 
 // Create two independent Adafruit_VL53L0X instances on separate I2C buses

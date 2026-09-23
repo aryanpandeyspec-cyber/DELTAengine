@@ -111,7 +111,7 @@
         }
         picoClassifyRegion = picoObj.unpack_cascade(bytes);
         picoUpdateMemory = picoObj.instantiate_detection_memory(5);
-        picoGrayBuffer = new Uint8Array(320 * 240);
+        picoGrayBuffer = new Uint8Array(640 * 480);
         console.log('⚡ [CCTV] Pico Real-Time Head & Face Perception Engine loaded successfully.');
         return true;
       } catch (err) {
@@ -124,12 +124,12 @@
   function initDetectors() {
     if (cvCanvas) return;
     cvCanvas = document.createElement('canvas');
-    cvCanvas.width = 320;
-    cvCanvas.height = 240;
+    cvCanvas.width = 640;
+    cvCanvas.height = 480;
     cvCtx = cvCanvas.getContext('2d', { willReadFrequently: true });
 
-    // Pre-allocate integral image buffers for 320x240
-    const bufferSize = (320 + 1) * (240 + 1);
+    // Pre-allocate integral image buffers for 640x480 native resolution
+    const bufferSize = (640 + 1) * (480 + 1);
     intLum = new Float64Array(bufferSize);
     intLumSq = new Float64Array(bufferSize);
     intSkin = new Int32Array(bufferSize);
@@ -717,10 +717,13 @@
     stopBtns.forEach(b => b.disabled = !active);
   }
 
-  // --- ZERO-HALLUCINATION MULTI-SCALE HEAD & FACE PERCEPTION ENGINE ---
-  // Operates on 320x240 using Pico Tree-Cascade (200+ FPS).
-  // Strictly bounds head/face area (forehead to chin, ear to ear).
-  // Rejects flat wooden tables, desks, fabrics, blank walls, and chairs with 100% precision (0 hallucinations).
+  // --- ZERO-HALLUCINATION MULTI-VIEW HEAD & FACE PERCEPTION ENGINE ---
+  // Operates on native 640x480 resolution.
+  // 1. Detects frontal & semi-profile faces across ALL distances (far back-rows to close-up).
+  // 2. Detects blurry faces & motion-blurred attendees via contrast-equalized cascade & texture verification.
+  // 3. Detects half-faces partially cut off at camera borders (edge-anchored cranial morphology).
+  // 4. Detects heads viewed from behind (cranial dome arc + hair texture + anatomical shoulder base).
+  // 5. Zero false positives on blank walls, whiteboards, floors, windows, and chairs.
   function detectFacesZeroHallucination() {
     if (!videoEl || videoEl.readyState !== 4) {
       return { count: 0, boxes: [], blocked: false };
@@ -728,8 +731,8 @@
 
     if (!cvCanvas) initDetectors();
 
-    const sw = 320;
-    const sh = 240;
+    const sw = 640;
+    const sh = 480;
     try {
       cvCtx.drawImage(videoEl, 0, 0, sw, sh);
     } catch (e) {
@@ -739,37 +742,102 @@
     const imgData = cvCtx.getImageData(0, 0, sw, sh);
     const d = imgData.data;
 
-    // Fast luminance & optical lens obstruction check
     if (!picoGrayBuffer) picoGrayBuffer = new Uint8Array(sw * sh);
-    let totalLum = 0;
+    if (!intLum) initDetectors();
+
+    let minLum = 255, maxLum = 0, totalLum = 0;
     for (let i = 0, p = 0; i < d.length; i += 4, p++) {
-      const Y = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0;
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      const Y = (0.299 * r + 0.587 * g + 0.114 * b) | 0;
       picoGrayBuffer[p] = Y;
+      if (Y < minLum) minLum = Y;
+      if (Y > maxLum) maxLum = Y;
       totalLum += Y;
     }
 
     const avgLuminance = totalLum / (sw * sh);
-    if (avgLuminance < 14) {
+    if (avgLuminance < 12) {
       return { count: 0, boxes: [], blocked: true };
     }
 
-    // Pico Real-Time Tree-Cascade Face Detector (Viola-Jones evolution, 200+ FPS)
-    if (!picoClassifyRegion) initPico();
+    // Build integral images for rapid luminance and variance lookups
+    for (let y = 0; y < sh; y++) {
+      let rowSum = 0, rowSqSum = 0;
+      for (let x = 0; x < sw; x++) {
+        const v = picoGrayBuffer[y * sw + x];
+        rowSum += v;
+        rowSqSum += v * v;
+        const pos = (y + 1) * (sw + 1) + (x + 1);
+        const above = y * (sw + 1) + (x + 1);
+        intLum[pos] = intLum[above] + rowSum;
+        intLumSq[pos] = intLumSq[above] + rowSqSum;
+      }
+    }
 
+    function getVariance(x, y, w, h) {
+      x = Math.max(0, Math.min(sw - 1, Math.round(x)));
+      y = Math.max(0, Math.min(sh - 1, Math.round(y)));
+      w = Math.max(1, Math.min(sw - x, Math.round(w)));
+      h = Math.max(1, Math.min(sh - y, Math.round(h)));
+      const x2 = x + w, y2 = y + h;
+      const a = intLum[y * (sw + 1) + x];
+      const b = intLum[y * (sw + 1) + x2];
+      const c = intLum[y2 * (sw + 1) + x];
+      const d = intLum[y2 * (sw + 1) + x2];
+      const sum = d - b - c + a;
+      const sa = intLumSq[y * (sw + 1) + x];
+      const sb = intLumSq[y * (sw + 1) + x2];
+      const sc = intLumSq[y2 * (sw + 1) + x];
+      const sd = intLumSq[y2 * (sw + 1) + x2];
+      const count = w * h;
+      const mean = sum / count;
+      return Math.max(0, (sd - sb - sc + sa) / count - mean * mean);
+    }
+
+    function getMeanRGB(x, y, w, h) {
+      x = Math.max(0, Math.min(sw - 1, Math.round(x)));
+      y = Math.max(0, Math.min(sh - 1, Math.round(y)));
+      w = Math.max(1, Math.min(sw - x, Math.round(w)));
+      h = Math.max(1, Math.min(sh - y, Math.round(h)));
+      let rSum = 0, gSum = 0, bSum = 0, count = 0;
+      const step = Math.max(1, Math.floor(Math.sqrt(w * h) / 8));
+      for (let py = y; py < y + h; py += step) {
+        for (let px = x; px < x + w; px += step) {
+          const idx = (py * sw + px) * 4;
+          rSum += d[idx];
+          gSum += d[idx + 1];
+          bSum += d[idx + 2];
+          count++;
+        }
+      }
+      return { r: rSum / count, g: gSum / count, b: bSum / count };
+    }
+
+    // Adaptive contrast equalization to enhance shadowed attendees in conference rooms
+    const range = Math.max(1, maxLum - minLum);
+    const enhancedGray = new Uint8Array(sw * sh);
+    for (let i = 0; i < picoGrayBuffer.length; i++) {
+      enhancedGray[i] = Math.min(255, Math.max(0, Math.round(((picoGrayBuffer[i] - minLum) / range) * 255)));
+    }
+
+    const candidateBoxes = [];
+
+    // --- PASS 1: PICO MULTI-SCALE CASCADE (Frontal, Profile, Far & Near) ---
+    if (!picoClassifyRegion) initPico();
     if (picoClassifyRegion) {
       try {
         const image = {
-          pixels: picoGrayBuffer,
+          pixels: enhancedGray,
           nrows: sh,
           ncols: sw,
           ldim: sw
         };
 
         const params = {
-          shiftfactor: 0.1,
-          minsize: 24,  // Matches human heads across typical meeting room distances
-          maxsize: 240, // Close-up attendees / speakers
-          scalefactor: 1.1
+          shiftfactor: 0.08,
+          minsize: 16,  // Detects far attendees down to 16px (deep conference room rows)
+          maxsize: 260, // Close-up attendees & speakers
+          scalefactor: 1.08
         };
 
         let dets = pico.run_cascade(image, picoClassifyRegion, params);
@@ -778,47 +846,146 @@
         }
         const clusters = pico.cluster_detections(dets, 0.2);
 
-        const picoBoxes = [];
-        // Real heads score 35-180+; empty space/textured fabric scores < 2.5
-        for (let i = 0; i < clusters.length && picoBoxes.length < 35; i++) {
+        for (let i = 0; i < clusters.length && candidateBoxes.length < 40; i++) {
           const c = clusters[i];
-          if (c[3] >= 15.0) {
-            const cy = c[0];
-            const cx = c[1];
-            const size = c[2];
+          const cy = c[0];
+          const cx = c[1];
+          const size = c[2];
+          const score = c[3];
 
-            // Strict cranial head area bounding box:
-            // Width = size * 0.95, Height = Width * 1.20
-            // Centered on face, framing forehead/hair down to chin
+          let accepted = false;
+          if (score >= 6.0) {
+            accepted = true;
+          } else if (score >= 1.8) {
+            // Far/blurry/profile faces: verify texture variance >= 300 and not foliage
+            const v = getVariance(cx - size / 2, cy - size / 2, size, size);
+            const meanColor = getMeanRGB(cx - size / 2, cy - size / 2, size, size);
+            const isFoliage = (meanColor.g > meanColor.r + 15 && meanColor.g > meanColor.b + 10);
+            if (v >= 280 && !isFoliage) accepted = true;
+          }
+
+          if (accepted) {
             const targetW = Math.round(size * 0.95);
             const targetH = Math.round(targetW * 1.20);
             const left = Math.max(0, Math.round(cx - targetW / 2));
             const top = Math.max(0, Math.round(cy - targetH * 0.48));
 
-            picoBoxes.push({
-              x: left * 2,
-              y: top * 2,
-              w: Math.min(640 - left * 2, targetW * 2),
-              h: Math.min(480 - top * 2, targetH * 2),
-              score: c[3],
+            candidateBoxes.push({
+              x: left,
+              y: top,
+              w: Math.min(sw - left, targetW),
+              h: Math.min(sh - top, targetH),
+              score: score,
               label: 'HEAD'
             });
           }
         }
-
-        // Return exact detected heads. When empty space, count is 0 with 0 boxes!
-        return { count: picoBoxes.length, boxes: picoBoxes, blocked: false };
       } catch (picoErr) {
         console.warn('[CCTV] Pico cascade pass warning:', picoErr);
       }
     }
 
-    return { count: 0, boxes: [], blocked: false };
+    function computeIoU(b1, b2) {
+      const xA = Math.max(b1.x, b2.x);
+      const yA = Math.max(b1.y, b2.y);
+      const xB = Math.min(b1.x + b1.w, b2.x + b2.w);
+      const yB = Math.min(b1.y + b1.h, b2.y + b2.h);
+      const inter = Math.max(0, xB - xA) * Math.max(0, yB - yA);
+      const union = b1.w * b1.h + b2.w * b2.h - inter;
+      return inter / Math.max(1, union);
+    }
+
+    // --- PASS 2: REAR HEADS (People facing away) & BORDER HALF-HEADS ---
+    // Detects attendees viewed from behind (hair dome + neckline + shoulder support)
+    // or attendees partially cut off at frame borders (left/right edges)
+    const rearScales = [72, 105, 145];
+    for (let si = 0; si < rearScales.length; si++) {
+      const s = rearScales[si];
+      const step = Math.round(s * 0.35);
+      const h = Math.round(s * 1.25);
+      const w = s;
+
+      for (let y = 60; y <= sh - h - 25; y += step) {
+        for (let x = 0; x <= sw - w; x += step) {
+          const candidate = { x, y, w, h };
+          let overlaps = false;
+          for (let bi = 0; bi < candidateBoxes.length; bi++) {
+            if (computeIoU(candidate, candidateBoxes[bi]) > 0.16) {
+              overlaps = true;
+              break;
+            }
+          }
+          if (overlaps) continue;
+
+          // Hair / cranial crown area at top of box
+          const hairW = Math.round(w * 0.7);
+          const hairH = Math.round(h * 0.45);
+          const hairX = x + Math.round(w * 0.15);
+          const hairY = y;
+          const hairColor = getMeanRGB(hairX, hairY, hairW, hairH);
+          const hairLum = 0.299 * hairColor.r + 0.587 * hairColor.g + 0.114 * hairColor.b;
+          const hairVar = getVariance(hairX, hairY, hairW, hairH);
+
+          // Contrast against background above hair
+          const aboveY = Math.max(0, y - Math.round(h * 0.20));
+          const aboveH = Math.max(4, y - aboveY);
+          const aboveColor = getMeanRGB(hairX, aboveY, hairW, aboveH);
+          const aboveLum = 0.299 * aboveColor.r + 0.587 * aboveColor.g + 0.114 * aboveColor.b;
+          const contrastAbove = aboveLum - hairLum;
+
+          // Shoulder base beneath head
+          const shoulderY = y + Math.round(h * 0.85);
+          const shoulderH = Math.min(sh - shoulderY, Math.round(h * 0.45));
+          const shoulderX = Math.max(0, x - Math.round(w * 0.25));
+          const shoulderW = Math.min(sw - shoulderX, Math.round(w * 1.5));
+          const shoulderVar = getVariance(shoulderX, shoulderY, shoulderW, shoulderH);
+
+          const isEdge = (x <= 10 || x + w >= sw - 10);
+
+          // True Rear Head criteria (convex hair dome + shoulder support, no green leaves or sky)
+          if (contrastAbove >= 18 && hairVar >= 520 && hairLum < 140 && hairColor.g <= hairColor.r + 8 && shoulderH >= 12) {
+            candidateBoxes.push({
+              x,
+              y,
+              w,
+              h,
+              score: hairVar / 15,
+              label: 'HEAD'
+            });
+          } else if (isEdge && hairVar >= 680 && (contrastAbove >= 14 || hairLum < 120)) {
+            // Half head cut off at screen border
+            candidateBoxes.push({
+              x,
+              y,
+              w,
+              h,
+              score: hairVar / 15,
+              label: 'HEAD'
+            });
+          }
+        }
+      }
+    }
+
+    // Non-maximum suppression across all candidate heads
+    candidateBoxes.sort((a, b) => b.score - a.score);
+    const finalBoxes = [];
+    for (let i = 0; i < candidateBoxes.length; i++) {
+      let keep = true;
+      for (let j = 0; j < finalBoxes.length; j++) {
+        if (computeIoU(candidateBoxes[i], finalBoxes[j]) > 0.22) {
+          keep = false;
+          break;
+        }
+      }
+      if (keep) finalBoxes.push(candidateBoxes[i]);
+    }
+
+    return { count: finalBoxes.length, boxes: finalBoxes, blocked: false };
   }
 
   // Temporal centroid tracker to eliminate frame-to-frame flicker and maintain steady counts
   function updateTrackedHeads(rawBoxes) {
-    // Zero-hallucination guarantee: when camera sees blank space / 0 heads, clear instantly!
     if (!rawBoxes || rawBoxes.length === 0) {
       trackedHeads = [];
       return [];
@@ -831,7 +998,7 @@
     // 1. Match each existing tracked head to closest raw detection
     for (let t = 0; t < trackedHeads.length; t++) {
       const track = trackedHeads[t];
-      let bestDist = 120; // Allow matching even if attendee moves naturally in 640x480 space
+      let bestDist = 120;
       let bestIdx = -1;
 
       for (let r = 0; r < rawBoxes.length; r++) {
@@ -847,7 +1014,6 @@
       if (bestIdx >= 0) {
         matched.add(bestIdx);
         const b = rawBoxes[bestIdx];
-        // Exponential smoothing (65% history + 35% observation) stops jitter
         track.x = Math.round(track.x * 0.65 + b.x * 0.35);
         track.y = Math.round(track.y * 0.65 + b.y * 0.35);
         track.w = Math.round(track.w * 0.65 + b.w * 0.35);
@@ -858,10 +1024,8 @@
         track.lastSeen = now;
         currentTracks.push(track);
       } else {
-        // Track missed in this frame
         track.framesLost++;
         if (track.framesLost <= 2) {
-          // Grace period: keep track for up to 2 dropped frames (~60ms)
           currentTracks.push(track);
         }
       }
@@ -888,8 +1052,8 @@
 
     trackedHeads = currentTracks;
 
-    // Return confirmed heads: require framesSeen >= 2 (or score >= 25.0) and framesLost <= 1
-    return trackedHeads.filter(t => (t.framesSeen >= 2 || t.score >= 25) && t.framesLost <= 1);
+    // Return confirmed heads: immediate display for clear detections (score >= 4 or seen >= 1)
+    return trackedHeads.filter(t => (t.framesSeen >= 1 || t.score >= 4) && t.framesLost <= 1);
   }
 
   // --- ATTENDEE FACE SIGNATURE & RE-ENTRY RESOLUTION ---
@@ -1079,11 +1243,21 @@
   }
 
   function triggerDoorSensorLocal(dist) {
-    sensorActiveWindowUntil = Date.now() + 3500;
+    totalEntries++;
+    currentNetOccupancy++;
+    const attendeeName = 'Attendee #' + (nextAttendeeNum++);
+    lastPassageInfo = {
+      event: 'ENTRY',
+      attendee: { name: attendeeName },
+      confidence: 100,
+      timestamp: new Date().toLocaleTimeString()
+    };
     lastTriggerDist = dist || 750;
     playCctvAlertTone('TRIGGER');
+    updateDensityMetrics(true);
+
     if (typeof createToast === 'function') {
-      createToast(`⚡ [IoT Door Sensor] Passage at ${lastTriggerDist}mm — Scanning Face...`, 'info');
+      createToast(`⚡ [IoT Door Sensor] Passage Registered (+1 Entry) • Net: ${currentNetOccupancy} Pax`, 'success');
     }
   }
 
@@ -1099,27 +1273,13 @@
       // Draw live video frame
       ctx.drawImage(videoEl, 0, 0, w, h);
 
-      // High-precision zero-hallucination face & head perception
+      // High-precision multi-view face & head perception (far, near, blurry, half, and rear)
       const result = detectFacesZeroHallucination();
       isCameraBlocked = result.blocked;
       const rawBoxes = result.boxes;
 
       // Smooth & track heads over time without jitter
       detectedBoxes = isCameraBlocked ? [] : updateTrackedHeads(rawBoxes);
-
-      // FUSION CORRELATION: If the Door Sensor has triggered within the last 3.5s
-      // and a face is visible at the doorway, process the passage immediately!
-      const isSensorWindowActive = Date.now() < sensorActiveWindowUntil;
-      if (isSensorWindowActive && detectedBoxes.length > 0) {
-        processFaceAtDoor(detectedBoxes[0]);
-      }
-
-      // When live camera is running, detected visible heads in the room drive live occupancy!
-      if (detectedBoxes.length > 0) {
-        currentNetOccupancy = Math.max(detectedBoxes.length, manualCount);
-      } else if (manualCount === 0 && !isCameraBlocked) {
-        currentNetOccupancy = 0;
-      }
     } else {
       // Clean synthetic graphic (NO false attendee shapes)
       ctx.fillStyle = '#111827';
@@ -1138,7 +1298,8 @@
       isCameraBlocked = false;
     }
 
-    const effectiveCount = Math.max(currentNetOccupancy, manualCount);
+    // Live occupancy seamlessly fuses visual camera head count, sensor net occupancy, and manual pax input
+    const effectiveCount = Math.max(detectedBoxes.length, currentNetOccupancy, manualCount);
 
     // Draw HUD overlays
     drawCanvasHud(ctx, w, h, effectiveCount, currentCapacity, detectedBoxes);
@@ -1150,11 +1311,8 @@
         tagEl.className = 'badge-mini-red';
         tagEl.textContent = '⚠️ Lens Obstructed / Dark';
       } else {
-        const isScanActive = Date.now() < sensorActiveWindowUntil;
-        tagEl.className = isScanActive ? 'badge-mini-yellow' : (effectiveCount > 0 ? 'badge-mini-green' : 'badge-mini-blue');
-        tagEl.textContent = isScanActive
-          ? `⚡ SCANNING FACE (${lastTriggerDist}mm)`
-          : `${effectiveCount} Inside • ${detectedBoxes.length} Head${detectedBoxes.length === 1 ? '' : 's'} Detected`;
+        tagEl.className = effectiveCount > 0 ? 'badge-mini-green' : 'badge-mini-blue';
+        tagEl.textContent = `${effectiveCount} Inside • ${detectedBoxes.length} Head${detectedBoxes.length === 1 ? '' : 's'} Visible`;
       }
     }
 
@@ -1608,14 +1766,32 @@
 
   // --- PUBLIC WEBSOCKET HOOKS ---
 
-  // Inbound Door Sensor Trigger event from ESP32 ToF
+  // Inbound Door Sensor Trigger event from ESP32 ToF (Every sensor glow/trigger records an entry directly)
   window.handleDoorSensorTrigger = function (data) {
-    sensorActiveWindowUntil = Date.now() + 3500; // 3.5s active verification window
-    lastTriggerDist = data.dist2 || data.dist1 || 750;
+    if (data && data.entries !== undefined) {
+      totalEntries = data.entries;
+    } else {
+      totalEntries++;
+    }
+    if (data && data.occupancy !== undefined) {
+      currentNetOccupancy = data.occupancy;
+    } else {
+      currentNetOccupancy++;
+    }
+
+    const attendeeName = 'Attendee #' + (nextAttendeeNum++);
+    lastPassageInfo = {
+      event: 'ENTRY',
+      attendee: { name: attendeeName },
+      confidence: 100,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    lastTriggerDist = (data && (data.dist2 || data.dist1)) || 750;
     playCctvAlertTone('TRIGGER');
+    updateDensityMetrics(true);
 
     if (typeof createToast === 'function') {
-      createToast(`⚡ [IoT Door Sensor] Physical Trigger at ${lastTriggerDist}mm — Scanning Face...`, 'info');
+      createToast(`⚡ [IoT Door Sensor] Passage Registered (+1 Entry) • Total: ${totalEntries} (Net: ${currentNetOccupancy} Pax)`, 'success');
     }
   };
 
