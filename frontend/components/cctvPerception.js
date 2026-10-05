@@ -84,6 +84,14 @@
   let sigCanvas = null;
   let sigCtx = null;
 
+  // --- CAMERA COLOR CORRECTION & PINK IR-TINT AUTO-FIX STATE ---
+  let colorCorrectionMode = 'auto'; // 'auto' | 'fix-pink' | 'bw' | 'raw'
+  try {
+    colorCorrectionMode = localStorage.getItem('delta_cctv_color_mode') || 'auto';
+  } catch (e) { }
+  let isPinkTintDetected = false;
+  let syncColorModeUI = () => { };
+
   function bootCctv() {
     initDetectors();
     initPico();
@@ -290,6 +298,51 @@
     // Bind ALL Stop Buttons (Top Hub & Modal)
     document.querySelectorAll('#btn-cctv-stop, .btn-cctv-stop').forEach(btn => {
       btn.addEventListener('click', () => stopWebcam());
+    });
+
+    // Bind Tint Auto-Fix Toggle Buttons
+    syncColorModeUI = () => {
+      document.querySelectorAll('#btn-cctv-tint-fix, .btn-cctv-tint-fix').forEach(btn => {
+        if (colorCorrectionMode === 'auto') {
+          btn.innerHTML = isPinkTintDetected ? '🪄 Tint: Fixed (Pink IR)' : '🎨 Tint: Auto-Fix';
+          btn.style.background = isPinkTintDetected ? '#dbeafe' : '#ffffff';
+          btn.style.borderColor = isPinkTintDetected ? '#2563eb' : '#000000';
+        } else if (colorCorrectionMode === 'fix-pink') {
+          btn.innerHTML = '🪄 Tint: Force-Fix (IR)';
+          btn.style.background = '#fef3c7';
+          btn.style.borderColor = '#d97706';
+        } else if (colorCorrectionMode === 'bw') {
+          btn.innerHTML = '⚪ Tint: High-Contrast B&W';
+          btn.style.background = '#f3f4f6';
+          btn.style.borderColor = '#4b5563';
+        } else {
+          btn.innerHTML = '📷 Tint: Raw Feed';
+          btn.style.background = '#ffffff';
+          btn.style.borderColor = '#000000';
+        }
+      });
+    };
+    syncColorModeUI();
+
+    document.querySelectorAll('#btn-cctv-tint-fix, .btn-cctv-tint-fix').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (colorCorrectionMode === 'auto') colorCorrectionMode = 'fix-pink';
+        else if (colorCorrectionMode === 'fix-pink') colorCorrectionMode = 'bw';
+        else if (colorCorrectionMode === 'bw') colorCorrectionMode = 'raw';
+        else colorCorrectionMode = 'auto';
+
+        try { localStorage.setItem('delta_cctv_color_mode', colorCorrectionMode); } catch (e) { }
+        syncColorModeUI();
+        if (typeof createToast === 'function') {
+          const names = {
+            'auto': '🎨 Color Mode: Auto-Detect (Auto-fixes Pink IR Tints)',
+            'fix-pink': '🪄 Color Mode: Force Pink/IR Tint Correction',
+            'bw': '⚪ Color Mode: High-Contrast B&W CCTV Mode',
+            'raw': '📷 Color Mode: Raw Unfiltered Camera Feed'
+          };
+          createToast(names[colorCorrectionMode] || 'Color mode updated', 'info');
+        }
+      });
     });
 
     // Bind ALL Camera Select Dropdowns (Excluding Venue Select)
@@ -959,11 +1012,39 @@ Email: ${fromEmail}`;
     const imgData = cvCtx.getImageData(0, 0, sw, sh);
     const d = imgData.data;
 
+    // Fast color balance check to detect IR camera / stuck IR-cut filter (Pink/Magenta cast)
+    let sumR = 0, sumG = 0, sumB = 0, sCnt = 0;
+    for (let i = 0; i < d.length; i += 64) {
+      sumR += d[i];
+      sumG += d[i + 1];
+      sumB += d[i + 2];
+      sCnt++;
+    }
+    const mR = sumR / sCnt;
+    const mG = sumG / sCnt;
+    const mB = sumB / sCnt;
+    // Magenta/Pink condition: Red and Blue significantly higher than Green
+    const prevTintState = isPinkTintDetected;
+    isPinkTintDetected = (mR > 1.30 * mG) && (mB > 1.30 * mG) && (mR > 50 || mB > 50);
+    if (prevTintState !== isPinkTintDetected) {
+      syncColorModeUI();
+    }
+
+    const shouldFixPink = (colorCorrectionMode === 'fix-pink') || (colorCorrectionMode === 'auto' && isPinkTintDetected);
+
     // Fast luminance & optical lens obstruction check
     if (!picoGrayBuffer) picoGrayBuffer = new Uint8Array(sw * sh);
     let totalLum = 0;
     for (let i = 0, p = 0; i < d.length; i += 4, p++) {
-      const Y = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0;
+      let Y;
+      if (colorCorrectionMode === 'bw') {
+        Y = (0.333 * d[i] + 0.333 * d[i + 1] + 0.333 * d[i + 2]) | 0;
+      } else if (shouldFixPink) {
+        // Equalize luminance so missing/weak green doesn't destroy facial contrast
+        Y = (0.48 * d[i] + 0.12 * d[i + 1] + 0.40 * d[i + 2]) | 0;
+      } else {
+        Y = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0;
+      }
       picoGrayBuffer[p] = Y;
       totalLum += Y;
     }
@@ -1132,10 +1213,13 @@ Email: ${fromEmail}`;
     for (let gy = 0; gy < 8; gy++) {
       for (let gx = 0; gx < 8; gx++) {
         let sumLum = 0;
+        const shouldFixPink = (colorCorrectionMode === 'fix-pink') || (colorCorrectionMode === 'auto' && isPinkTintDetected);
         for (let py = 0; py < 4; py++) {
           for (let px = 0; px < 4; px++) {
             const idx = ((gy * 4 + py) * 32 + (gx * 4 + px)) * 4;
-            const Y = 0.299 * d[idx] + 0.587 * d[idx + 1] + 0.114 * d[idx + 2];
+            const Y = shouldFixPink
+              ? (0.48 * d[idx] + 0.12 * d[idx + 1] + 0.40 * d[idx + 2])
+              : (0.299 * d[idx] + 0.587 * d[idx + 1] + 0.114 * d[idx + 2]);
             sumLum += Y;
           }
         }
@@ -1337,8 +1421,18 @@ Email: ${fromEmail}`;
     let detectedBoxes = [];
 
     if (videoEl && videoEl.readyState === 4) {
-      // Draw live video frame
+      // Draw live video frame with smart color-balance filter if camera is pink or in B&W mode
+      const shouldFixPink = (colorCorrectionMode === 'fix-pink') || (colorCorrectionMode === 'auto' && isPinkTintDetected);
+      if (colorCorrectionMode === 'bw') {
+        ctx.filter = 'grayscale(100%) contrast(1.15)';
+      } else if (shouldFixPink) {
+        // Shift magenta (300°) by ~85° to natural skin/amber tones (~25°-30°) and balance saturation
+        ctx.filter = 'hue-rotate(85deg) saturate(0.85) contrast(1.15)';
+      } else {
+        ctx.filter = 'none';
+      }
       ctx.drawImage(videoEl, 0, 0, w, h);
+      ctx.filter = 'none'; // reset so HUD text, bounding boxes, and overlays are not affected
 
       // High-precision zero-hallucination face & head perception
       const result = detectFacesZeroHallucination();
