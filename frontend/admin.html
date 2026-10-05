@@ -413,6 +413,113 @@
       </div>
     </div>
 
+    <!-- SECTION 1.5: ACTIVE CLOUD AI & MESSAGING INTEGRATIONS HUB -->
+    <div class="dash-card admin-card mb-6">
+      <div class="card-header">
+        <span class="card-title">⚡ ACTIVE CLOUD AI & MESSAGING INFRASTRUCTURE</span>
+        <span class="card-badge green">4 CLOUD ENGINES INTEGRATED</span>
+      </div>
+      <div class="card-body">
+        <div class="integrations-summary-bar">
+          
+          <!-- RESEND CLOUD MAILER -->
+          <div class="integration-chip-card">
+            <div>
+              <div class="integration-header">
+                <span class="integration-title">📧 Resend Cloud</span>
+                <span class="integration-status-pill active">LIVE DKIM</span>
+              </div>
+              <div class="integration-meta">
+                <strong>Provider:</strong> Resend API<br>
+                <strong>Sender:</strong> <code>onboarding@resend.dev</code><br>
+                <strong>Verified Admin:</strong> <code>aryan.pandey777hyd@gmail.com</code>
+              </div>
+            </div>
+            <button id="btn-admin-test-resend" class="btn btn-sm btn-blue w-full" style="font-weight:800; font-size:0.75rem;">
+              🚀 Test Email Dispatch
+            </button>
+          </div>
+
+          <!-- ELEVENLABS VOICE STUDIO -->
+          <div class="integration-chip-card">
+            <div>
+              <div class="integration-header">
+                <span class="integration-title">🎙️ ElevenLabs Voice</span>
+                <span class="integration-status-pill active">FLASH v2.5</span>
+              </div>
+              <div class="integration-meta">
+                <strong>Model:</strong> <code>eleven_flash_v2_5</code><br>
+                <strong>Voice:</strong> Daniel (Broadcaster)<br>
+                <strong>Mode:</strong> Autonomous Venue PA
+              </div>
+            </div>
+            <button id="btn-admin-test-elevenlabs" class="btn btn-sm btn-yellow w-full" style="font-weight:800; font-size:0.75rem;">
+              🔊 Test PA Announcement
+            </button>
+          </div>
+
+          <!-- GOOGLE GEMINI FLASH -->
+          <div class="integration-chip-card">
+            <div>
+              <div class="integration-header">
+                <span class="integration-title">🧠 Google Gemini</span>
+                <span class="integration-status-pill active">3.5 / 3.8 FLASH</span>
+              </div>
+              <div class="integration-meta">
+                <strong>Models:</strong> Gemini 3.5 & 3.8 Flash<br>
+                <strong>Role:</strong> Crowd Bottleneck Reasoner<br>
+                <strong>Perception:</strong> Egress & Stampede Guard
+              </div>
+            </div>
+            <button id="btn-admin-run-gemini-audit" class="btn btn-sm btn-green w-full" style="font-weight:800; font-size:0.75rem;">
+              ✨ Run Safety Audit
+            </button>
+          </div>
+
+          <!-- TWILIO WHATSAPP -->
+          <div class="integration-chip-card">
+            <div>
+              <div class="integration-header">
+                <span class="integration-title">💬 Twilio Messaging</span>
+                <span class="integration-status-pill ready">CLICK-TO-CHAT</span>
+              </div>
+              <div class="integration-meta">
+                <strong>API Status:</strong> Ready for SID/Token<br>
+                <strong>Mode:</strong> Direct WhatsApp Intent<br>
+                <strong>Active Lines:</strong> 3 Coordinators (+91)
+              </div>
+            </div>
+            <button id="btn-admin-test-twilio" class="btn btn-sm btn-white w-full" style="font-weight:800; font-size:0.75rem;">
+              💬 Test WhatsApp Alert
+            </button>
+          </div>
+
+        </div>
+
+        <!-- LIVE GEMINI PERCEPTION & SAFETY AUDIT DISPLAY -->
+        <div id="gemini-audit-container" class="gemini-audit-box" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.2rem;">🧠</span>
+              <strong style="font-size:0.95rem;">Google Gemini Live Perception & Egress Safety Audit</strong>
+              <span id="gemini-audit-model-badge" style="font-size:0.72rem; background:#eff6ff; color:#1d4ed8; font-weight:800; padding:2px 8px; border-radius:4px; border:1px solid #bfdbfe;">gemini-3.5-flash</span>
+            </div>
+            <div id="gemini-audit-rating-box"></div>
+          </div>
+          <div style="font-size:0.85rem; color:#1f2937; margin-bottom:8px;" id="gemini-audit-summary">
+            Running inference...
+          </div>
+          <div style="background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:10px; font-size:0.8rem; margin-bottom:8px;">
+            <strong style="color:#b91c1c;">🚨 Identified Bottleneck:</strong> <span id="gemini-audit-bottleneck">--</span>
+          </div>
+          <div style="background:#eef2ff; border-left:4px solid #4f46e5; border-radius:0 8px 8px 0; padding:10px; font-size:0.82rem;">
+            <strong style="color:#3730a3;">🎙️ Synthesized PA Script:</strong> <span id="gemini-audit-script">--</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- SECTION 2: AUTOMATED WHATSAPP DISPATCH & GLOBAL OVERRIDES -->
     <div class="admin-grid mb-6">
       <!-- Widget 3: Live Automated WhatsApp Notification Dispatch Feed -->

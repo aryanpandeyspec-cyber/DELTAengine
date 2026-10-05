@@ -68,6 +68,9 @@
             style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
             title="Open CCTV Room Density Perception HUD">📹 CCTV Density HUD <span
               class="cctv-live-dot"></span></button>
+          <button id="btn-trigger-pa-test" class="btn btn-sm btn-yellow"
+            style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
+            title="Test ElevenLabs Voice PA Broadcast">🎙️ Test PA Voice</button>
           <button id="btn-sound-toggle" class="btn btn-sm btn-white" style="font-weight:700;"
             title="Toggle Synthesized Audio Feedback">🔊 SFX: ON</button>
           <button id="btn-shortcuts-modal" class="btn btn-sm btn-white" style="font-weight:700;"
@@ -91,6 +94,37 @@
         <p class="subtitle">The Self-Healing & Agentic Conference Coordinator</p>
       </div>
     </header>
+
+    <!-- AUTONOMOUS VENUE PA VOICE BROADCASTER BANNER -->
+    <div id="venue-pa-live-banner" class="venue-pa-live-banner" style="display:none;">
+      <div class="venue-pa-left">
+        <div class="venue-pa-icon-box">🎙️</div>
+        <div>
+          <div class="venue-pa-title">
+            ELEVENLABS AUTONOMOUS VENUE PA SYSTEM
+            <span class="audio-equalizer">
+              <span class="audio-bar"></span>
+              <span class="audio-bar"></span>
+              <span class="audio-bar"></span>
+              <span class="audio-bar"></span>
+              <span class="audio-bar"></span>
+            </span>
+          </div>
+          <div id="venue-pa-live-text" class="venue-pa-text">"Attention attendees. Autonomous perception system active."</div>
+          <div style="font-size:0.75rem; color:#c7d2fe; margin-top:2px;">
+            Voice: <span style="font-weight:800; color:#fff;">Daniel (Broadcaster)</span> • Broadcasted: <span id="venue-pa-live-time">Live</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="btn-replay-pa-audio" class="btn btn-sm btn-white" style="font-weight:800; border:2px solid #fff;">
+          🔊 Replay Audio
+        </button>
+        <button id="btn-dismiss-pa-banner" class="btn btn-sm btn-white" style="font-weight:800; border:2px solid #fff;">
+          ✕
+        </button>
+      </div>
+    </div>
 
     <!-- VOLUNTEER & COORDINATOR REAL-TIME EMERGENCY ALERT BANNER -->
     <div id="volunteer-alert-banner" class="volunteer-alert-banner hidden">

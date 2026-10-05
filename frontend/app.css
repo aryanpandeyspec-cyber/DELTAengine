@@ -3917,4 +3917,190 @@ input:checked + .slider:before {
   }
 }
 
+/* ==========================================================================
+   4. CLOUD INTEGRATIONS & AUTONOMOUS VENUE VOICE PA STYLES
+   ========================================================================== */
+.integrations-summary-bar {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.integration-chip-card {
+  background: #ffffff;
+  border: 3px solid #000000;
+  border-radius: 12px;
+  box-shadow: 4px 4px 0px #000000;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.integration-chip-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0px #000000;
+}
+
+.integration-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.integration-title {
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: #000000;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.integration-status-pill {
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1.5px solid #000000;
+}
+
+.integration-status-pill.active {
+  background: #34a853;
+  color: #ffffff;
+}
+
+.integration-status-pill.ready {
+  background: #f9ab00;
+  color: #000000;
+}
+
+.integration-meta {
+  font-size: 0.78rem;
+  color: #4b5563;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+/* Live Venue PA Banner */
+.venue-pa-live-banner {
+  background: #1e1b4b;
+  color: #ffffff;
+  border: 3px solid #000000;
+  border-radius: 14px;
+  box-shadow: 5px 5px 0px #000000;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.venue-pa-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.venue-pa-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #4338ca;
+  border: 2px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  animation: pulse-ring 2s infinite;
+}
+
+@keyframes pulse-ring {
+  0% { box-shadow: 0 0 0 0 rgba(165, 180, 252, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(165, 180, 252, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(165, 180, 252, 0); }
+}
+
+.venue-pa-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #a5b4fc;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.venue-pa-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+/* Audio wave bars */
+.audio-equalizer {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 18px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.audio-bar {
+  width: 3px;
+  background: #34d399;
+  border-radius: 2px;
+  animation: soundwave 1.2s infinite ease-in-out;
+}
+
+.audio-bar:nth-child(1) { height: 8px; animation-delay: 0.1s; }
+.audio-bar:nth-child(2) { height: 16px; animation-delay: 0.3s; }
+.audio-bar:nth-child(3) { height: 12px; animation-delay: 0.2s; }
+.audio-bar:nth-child(4) { height: 18px; animation-delay: 0.4s; }
+.audio-bar:nth-child(5) { height: 10px; animation-delay: 0.25s; }
+
+@keyframes soundwave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+/* Gemini Audit Card */
+.gemini-audit-box {
+  background: #f8fafc;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 14px;
+}
+
+.gemini-rating-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 900;
+  font-size: 0.85rem;
+  border: 2px solid #000000;
+}
+
+.gemini-rating-badge.rating-critical {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.gemini-rating-badge.rating-nominal {
+  background: #dcfce7;
+  color: #166534;
+}
+
+
 

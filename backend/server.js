@@ -10,6 +10,9 @@ const { runSelfHealingAgent } = require('./components/selfHealing');
 const { setGroqApiKey, getGroqApiKey } = require('./components/agentSwarm');
 const { loadGraphFromSupabase } = require('./components/supabaseDb');
 const { escapeHtml, rateLimiter, validateSlideFile } = require('./components/security');
+const { generateVenueVoiceAnnouncement } = require('./components/voiceAnnouncer');
+const { auditVenueCrowdAndRisks, composeDynamicPAScript } = require('./components/geminiAuditor');
+const { dispatchTwilioWhatsApp, isTwilioConfigured } = require('./components/twilioDispatcher');
 
 // Process Uncaught Crash Guards (Prevents server process from ever freezing or exiting on errors)
 process.on('uncaughtException', (err) => {
@@ -77,15 +80,17 @@ function broadcast(message) {
   });
 }
 
-function sendWhatsAppNotification(recipientName, phoneNumber, messageText) {
+async function sendWhatsAppNotification(recipientName, phoneNumber, messageText) {
+  const twilioRes = await dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText });
   const notification = {
-    id: 'wa_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    id: twilioRes.sid || ('wa_' + Date.now() + '_' + Math.floor(Math.random() * 1000)),
+    timestamp: twilioRes.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
     recipientName,
     phoneNumber,
     messageText,
-    status: 'DELIVERED (AI Dispatch)',
-    agent: '🤖 DELTA WhatsApp AI Liaison'
+    status: twilioRes.mode === 'TWILIO_REST_API' ? 'DELIVERED (Twilio Cloud API)' : 'DELIVERED (AI Dispatch)',
+    agent: '🤖 DELTA WhatsApp AI Liaison',
+    waUrl: twilioRes.waUrl
   };
 
   if (!db.whatsappLogs) db.whatsappLogs = [];
@@ -139,12 +144,12 @@ app.get('/api/state', (req, res) => {
 
 const { autoDispatchSelfHealingEmail, autoDispatchSpeakerEmail } = require('./components/supabaseEmailIntegrator');
 
-app.post('/api/notify/whatsapp', (req, res) => {
+app.post('/api/notify/whatsapp', async (req, res) => {
   const { recipientName, phoneNumber, messageText } = req.body;
   if (!recipientName || !messageText) {
     return res.status(400).json({ error: 'Missing recipientName or messageText' });
   }
-  const result = sendWhatsAppNotification(
+  const result = await sendWhatsAppNotification(
     recipientName,
     phoneNumber || '+91 91542 76178',
     messageText
@@ -153,7 +158,7 @@ app.post('/api/notify/whatsapp', (req, res) => {
 });
 
 // Broadcast WhatsApp notification to all 3 core coordinators: Aryan, Suryansh, and Shahid
-app.post('/api/notify/whatsapp-all', (req, res) => {
+app.post('/api/notify/whatsapp-all', async (req, res) => {
   const { messageText } = req.body;
   if (!messageText) {
     return res.status(400).json({ error: 'Missing messageText' });
@@ -165,8 +170,68 @@ app.post('/api/notify/whatsapp-all', (req, res) => {
     { name: 'Shahid (Stage & Ops Lead)', phone: '+91 63035 70916' }
   ];
 
-  const results = coordinators.map(c => sendWhatsAppNotification(c.name, c.phone, messageText));
+  const results = [];
+  for (const c of coordinators) {
+    results.push(await sendWhatsAppNotification(c.name, c.phone, messageText));
+  }
   res.json({ success: true, count: results.length, notifications: results });
+});
+
+// Autonomous ElevenLabs Venue PA Voice Announcement Route
+app.post('/api/voice/announce', async (req, res) => {
+  const { text, voiceId } = req.body || {};
+  const result = await generateVenueVoiceAnnouncement(text, voiceId);
+  if (result.success) {
+    broadcast({
+      type: 'VOICE_ANNOUNCEMENT',
+      data: result
+    });
+  }
+  res.json(result);
+});
+
+// Real-Time Google Gemini 3.8/3.5 Flash Safety & Capacity Perception Audit
+app.post('/api/gemini/audit', async (req, res) => {
+  const { hallTelemetry, conflicts } = req.body || {};
+  const currentTelemetry = hallTelemetry || {
+    'Turing Hall': { capacity: 250, currentOccupancy: (db.cctvState && db.cctvState.turingHallOccupancy) || 285, status: 'SURGE_WARNING' },
+    'Lovelace Suite': { capacity: 180, currentOccupancy: 82, status: 'NOMINAL' },
+    'Hopper Room': { capacity: 120, currentOccupancy: 64, status: 'NOMINAL' }
+  };
+  const result = await auditVenueCrowdAndRisks({
+    hallTelemetry: currentTelemetry,
+    scheduleState: db.schedule,
+    conflicts: conflicts || ['Turing Hall occupancy surge +14% over safe threshold']
+  });
+  res.json(result);
+});
+
+// Cloud Integrations Diagnostic & Connection Status
+app.get('/api/system/integrations', (req, res) => {
+  res.json({
+    resend: {
+      connected: !!process.env.RESEND_API_KEY,
+      provider: 'Resend Cloud Mailer (DKIM/SPF)',
+      sender: 'onboarding@resend.dev',
+      verifiedRecipient: 'aryan.pandey777hyd@gmail.com'
+    },
+    elevenlabs: {
+      connected: !!process.env.ELEVENLABS_API_KEY,
+      provider: 'ElevenLabs Studio Voice API',
+      model: 'eleven_flash_v2_5',
+      voice: 'Daniel (Steady Broadcaster)'
+    },
+    gemini: {
+      connected: !!process.env.GEMINI_API_KEY,
+      provider: 'Google Gemini Flash',
+      models: ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.5-flash-lite']
+    },
+    twilio: {
+      connected: isTwilioConfigured(),
+      provider: 'Twilio Programmable Messaging',
+      status: isTwilioConfigured() ? 'Active Twilio API' : 'Direct WhatsApp Click-to-Chat (Ready for SID)'
+    }
+  });
 });
 
 // Dedicated Anti-Spam Guest Speaker Email Dispatcher

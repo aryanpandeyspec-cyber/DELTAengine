@@ -217,6 +217,12 @@ function initWebSockets() {
         }
         break;
 
+      case 'VOICE_ANNOUNCEMENT':
+        if (typeof window.handleVoiceAnnouncement === 'function') {
+          window.handleVoiceAnnouncement(payload.data);
+        }
+        break;
+
       case 'ADMIN_AUDIT':
         const auditBox = document.getElementById('admin-audit-log-container');
         if (auditBox) {
