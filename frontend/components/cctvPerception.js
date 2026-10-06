@@ -104,6 +104,7 @@
   try {
     crowdPerceptionMode = localStorage.getItem('delta_crowd_mode') || 'auto';
   } catch (e) { }
+  let syncCrowdModeUI = () => { };
 
   const CROWD_GRID_COLS = 16;
   const CROWD_GRID_ROWS = 12;
@@ -270,6 +271,7 @@
 
     syncCapacityControls(currentCapacity);
     updateThresholdLabels(currentCapacity);
+    if (typeof syncCrowdModeUI === 'function') syncCrowdModeUI();
     updateDensityMetrics(true);
   }
 
@@ -420,20 +422,21 @@
     });
 
     // Bind Mega-Crowd Perception Mode Toggle Buttons
-    const syncCrowdModeUI = () => {
+    syncCrowdModeUI = () => {
+      const isMegaVenue = (currentCapacity >= 1000);
       document.querySelectorAll('#btn-cctv-crowd-mode, .btn-cctv-crowd-mode').forEach(btn => {
         if (crowdPerceptionMode === 'auto') {
-          btn.innerHTML = (currentCapacity >= 200) ? '👥 Mode: Auto (Mega-Crowd)' : '👥 Mode: Auto (Room)';
+          btn.innerHTML = isMegaVenue ? '👥 Auto: Mega-Crowd (1,000+)' : '👥 Auto: Standard Precision';
           btn.style.background = '#ffffff';
           btn.style.borderColor = '#000000';
           btn.style.color = '#000000';
         } else if (crowdPerceptionMode === 'mega-crowd') {
-          btn.innerHTML = '🌊 Mode: Mega-Crowd (1,000+)';
+          btn.innerHTML = '🌊 Forced: Mega-Crowd Grid';
           btn.style.background = '#fef3c7';
           btn.style.borderColor = '#d97706';
           btn.style.color = '#92400e';
         } else {
-          btn.innerHTML = '👤 Mode: Precision Boxes (Room)';
+          btn.innerHTML = '👤 Forced: Standard Boxes';
           btn.style.background = '#ecfdf5';
           btn.style.borderColor = '#10b981';
           btn.style.color = '#065f46';
@@ -452,9 +455,9 @@
         syncCrowdModeUI();
         if (typeof createToast === 'function') {
           const names = {
-            'auto': '👥 Crowd Mode: Auto (Auto-scales for 1,000+ gatherings & rallies)',
+            'auto': `👥 Crowd Mode: Auto (${currentCapacity >= 1000 ? 'Mega-Crowd Grid for 1,000+ gatherings' : 'Standard Precision Detector for Hackathons & Rooms'})`,
             'mega-crowd': '🌊 Crowd Mode: Forced Eulerian Mega-Crowd Grid (Kumbh Mela / Rally mode)',
-            'room': '👤 Crowd Mode: Forced Precision Room Bounding Boxes'
+            'room': '👤 Crowd Mode: Forced Standard Person Bounding Boxes'
           };
           createToast(names[crowdPerceptionMode] || 'Crowd mode updated', 'info');
         }
@@ -1240,7 +1243,7 @@ Email: ${fromEmail}`;
   // 2. Cellular crowd density heatmap (people/m² and congestion hotspots).
   // 3. Motion flux velocity vectors [vx, vy] across grid cells.
   // 4. Stampede & Surge Risk Index (detects sudden coherent rushes and counter-flows).
-  function computeEulerianCrowdField(sw, sh) {
+  function computeEulerianCrowdField(sw, sh, knownBoxes = []) {
     if (!picoGrayBuffer) return megaCrowdState;
 
     const cellW = sw / CROWD_GRID_COLS; // 20 px
@@ -1257,6 +1260,16 @@ Email: ${fromEmail}`;
 
     const curCellLuma = new Float32Array(CROWD_GRID_COLS * CROWD_GRID_ROWS);
 
+    // Map known boxes to 320x240 coordinates
+    const scaleX = sw / (videoEl?.videoWidth || 640);
+    const scaleY = sh / (videoEl?.videoHeight || 480);
+    const scaledBoxes = (knownBoxes || []).map(b => ({
+      x: b.x * scaleX,
+      y: b.y * scaleY,
+      w: b.w * scaleX,
+      h: b.h * scaleY
+    }));
+
     for (let r = 0; r < CROWD_GRID_ROWS; r++) {
       for (let c = 0; c < CROWD_GRID_COLS; c++) {
         const idx = r * CROWD_GRID_COLS + c;
@@ -1266,7 +1279,8 @@ Email: ${fromEmail}`;
         const endY = Math.floor((r + 1) * cellH);
 
         let sumL = 0;
-        let gradSum = 0;
+        let gradXSum = 0;
+        let gradYSum = 0;
         let pCount = 0;
 
         let minVal = 255;
@@ -1283,39 +1297,28 @@ Email: ${fromEmail}`;
             if (val < minVal) { minVal = val; minX = x; minY = y; }
             if (val > maxVal) { maxVal = val; }
 
-            // Spatial high-frequency edge gradient
+            // Spatial high-frequency edge gradients in both X and Y
             if (x + 1 < endX) {
-              gradSum += Math.abs(val - picoGrayBuffer[rowOffset + x + 1]);
+              gradXSum += Math.abs(val - picoGrayBuffer[rowOffset + x + 1]);
             }
             if (y + 1 < endY) {
-              gradSum += Math.abs(val - picoGrayBuffer[(y + 1) * sw + x]);
+              gradYSum += Math.abs(val - picoGrayBuffer[(y + 1) * sw + x]);
             }
           }
         }
 
         const avgL = pCount > 0 ? (sumL / pCount) : 0;
-        const avgGrad = pCount > 0 ? (gradSum / pCount) : 0;
+        const avgGradX = pCount > 0 ? (gradXSum / pCount) : 0;
+        const avgGradY = pCount > 0 ? (gradYSum / pCount) : 0;
+        const avgGrad = (avgGradX + avgGradY) * 0.5;
         curCellLuma[idx] = avgL;
-
-        // Head crown peak detection within this cell:
-        const contrastSpread = maxVal - minVal;
-        let cellHeadCount = 0;
-
-        if (avgGrad > 14 && contrastSpread > 35 && avgL > 25 && avgL < 235) {
-          const headX = (minX + 1) * 2; // Scale to 640x480 canvas
-          const headY = (minY + 1) * 2;
-          headCentroids.push({ x: headX, y: headY, r: 4 });
-          cellHeadCount = 1;
-
-          if (avgGrad > 28) cellHeadCount = 2;
-          if (avgGrad > 42) cellHeadCount = 3;
-        }
 
         // Motion flux & Velocity Vector computation:
         let vx = 0;
         let vy = 0;
+        let deltaL = 0;
         if (prevCellLuma) {
-          const deltaL = avgL - prevCellLuma[idx];
+          deltaL = Math.abs(avgL - prevCellLuma[idx]);
           const leftL = c > 0 ? prevCellLuma[r * CROWD_GRID_COLS + (c - 1)] : avgL;
           const rightL = c < CROWD_GRID_COLS - 1 ? prevCellLuma[r * CROWD_GRID_COLS + (c + 1)] : avgL;
           const upL = r > 0 ? prevCellLuma[(r - 1) * CROWD_GRID_COLS + c] : avgL;
@@ -1324,9 +1327,9 @@ Email: ${fromEmail}`;
           const dLx = (rightL - leftL) * 0.5;
           const dLy = (downL - upL) * 0.5;
 
-          const denom = (dLx * dLx + dLy * dLy) + 12.0;
-          vx = (-deltaL * dLx) / denom;
-          vy = (-deltaL * dLy) / denom;
+          const denom = (dLx * dLx + dLy * dLy) + 16.0;
+          vx = (- (avgL - prevCellLuma[idx]) * dLx) / denom;
+          vy = (- (avgL - prevCellLuma[idx]) * dLy) / denom;
 
           vx = Math.max(-5, Math.min(5, vx));
           vy = Math.max(-5, Math.min(5, vy));
@@ -1337,8 +1340,41 @@ Email: ${fromEmail}`;
         netVx += vx;
         netVy += vy;
 
-        // Cell density (people / m² equivalent index)
-        const cellDensity = Math.min(6.0, (avgGrad / 12.0) + (cellHeadCount * 0.9));
+        // Check if cell intersects any known person detection box
+        const intersectsKnownPerson = scaledBoxes.some(b =>
+          startX < b.x + b.w && endX > b.x && startY < b.y + b.h && endY > b.y
+        );
+
+        // A cell is active ONLY if it contains a known person OR has active optical movement
+        const hasActiveMotion = velMag > 0.4 || deltaL > 4.0;
+        const isForeground = intersectsKnownPerson || hasActiveMotion;
+
+        let cellHeadCount = 0;
+        const contrastSpread = maxVal - minVal;
+
+        // Head crown peak requires radial contrast (both X and Y gradient) and foreground activity
+        if (isForeground && avgGradX > 16 && avgGradY > 16 && contrastSpread > 40 && avgL > 20 && avgL < 240) {
+          const headX = (minX + 1) * 2; // Scale to 640x480 canvas
+          const headY = (minY + 1) * 2;
+          headCentroids.push({ x: headX, y: headY, r: 4 });
+          cellHeadCount = 1;
+
+          // In ultra-dense clusters with high kinetic activity:
+          if (avgGrad > 32 && velMag > 0.8) cellHeadCount = 2;
+          if (avgGrad > 48 && velMag > 1.4) cellHeadCount = 3;
+        }
+
+        // Cell density (people / m² equivalent index):
+        // STATIC BACKGROUND CELLS ALWAYS HAVE 0.0 DENSITY!
+        let cellDensity = 0.0;
+        if (intersectsKnownPerson) {
+          cellDensity = Math.max(1.0, cellHeadCount * 1.2);
+        } else if (hasActiveMotion && cellHeadCount > 0) {
+          cellDensity = Math.min(6.0, (avgGrad / 15.0) + (cellHeadCount * 1.1));
+        } else if (hasActiveMotion && avgGrad > 25) {
+          cellDensity = Math.min(3.0, avgGrad / 20.0);
+        }
+
         totalDensitySum += cellDensity;
 
         const isHotspot = cellDensity >= 3.8;
@@ -1397,9 +1433,14 @@ Email: ${fromEmail}`;
       stampedeStatus = 'ELEVATED';
     }
 
-    const baseDensityScale = (currentCapacity >= 500) ? (currentCapacity / (numCells * 2.8)) : 3.8;
-    const rawHeadcount = Math.round(totalDensitySum * baseDensityScale);
-    const estimatedHeadcount = Math.max(headCentroids.length, rawHeadcount);
+    // ACCURATE ZERO-HALLUCINATION HEADCOUNT:
+    const knownCount = (knownBoxes || []).length;
+    let estimatedHeadcount = Math.max(knownCount, headCentroids.length);
+
+    // If in massive crowd venue (Kumbh Mela, Stadium, Rally) where centroids exceed individual boxes:
+    if (currentCapacity >= 1000 && headCentroids.length > knownCount) {
+      estimatedHeadcount = headCentroids.length;
+    }
 
     megaCrowdState = {
       active: true,
@@ -1410,7 +1451,7 @@ Email: ${fromEmail}`;
       averageVelocity: avgVel.toFixed(2),
       coherence: Math.round(coherence * 100),
       hotspotCount,
-      headCentroids: headCentroids.slice(0, 200),
+      headCentroids: headCentroids.slice(0, 500),
       gridCells: cells
     };
 
@@ -1757,26 +1798,34 @@ Email: ${fromEmail}`;
       const result = detectFacesZeroHallucination();
       isCameraBlocked = result.blocked;
 
-      // Compute Eulerian Mega-Crowd Field on 320x240 buffer (O(1) complexity, ~1.2ms)
-      const eulerianData = computeEulerianCrowdField(320, 240);
-      const isMegaModeActive = (crowdPerceptionMode === 'mega-crowd') ||
-        (crowdPerceptionMode === 'auto' && (currentCapacity >= 200 || eulerianData.estimatedHeadcount > 30));
-
+      // Select candidate detection boxes (prioritize COCO-SSD WebGL GPU)
       let rawBoxes = [];
       if (!isCameraBlocked) {
-        if (!isMegaModeActive && cocoPersonBoxes && cocoPersonBoxes.length > 0) {
+        if (cocoPersonBoxes && cocoPersonBoxes.length > 0) {
           rawBoxes = cocoPersonBoxes;
           activeVisionEngine = 'coco-ssd';
-        } else if (!isMegaModeActive) {
+        } else {
           rawBoxes = result.boxes;
           activeVisionEngine = 'pico';
-        } else {
-          activeVisionEngine = 'eulerian-flux';
         }
       }
 
       // Smooth & track heads/persons over time without jitter
       detectedBoxes = isCameraBlocked ? [] : updateTrackedHeads(rawBoxes);
+
+      // Compute Eulerian Mega-Crowd Field on 320x240 buffer (O(1) complexity, ~1.2ms)
+      // Pass detectedBoxes so background walls never hallucinate false people
+      const eulerianData = computeEulerianCrowdField(320, 240, detectedBoxes);
+
+      // Mode Selection:
+      // Auto mode uses Standard Precision unless venue capacity >= 1000 (Kumbh Mela, Political Rally, Stadium)
+      const isMegaVenue = (currentCapacity >= 1000);
+      const isMegaModeActive = (crowdPerceptionMode === 'mega-crowd') ||
+        (crowdPerceptionMode === 'auto' && isMegaVenue);
+
+      if (isMegaModeActive) {
+        activeVisionEngine = 'eulerian-flux';
+      }
 
       // FUSION CORRELATION: If the Door Sensor has triggered within the last 3.5s
       // and a face is visible at the doorway, process the passage immediately!
@@ -1785,9 +1834,9 @@ Email: ${fromEmail}`;
         processFaceAtDoor(detectedBoxes[0]);
       }
 
-      // When live camera is running:
+      // Calculate reliable net occupancy:
       if (isMegaModeActive) {
-        currentNetOccupancy = Math.max(eulerianData.estimatedHeadcount, doorSensorNetCount, manualCount);
+        currentNetOccupancy = Math.max(eulerianData.estimatedHeadcount, detectedBoxes.length, doorSensorNetCount, manualCount);
       } else if (detectedBoxes.length > 0) {
         currentNetOccupancy = Math.max(detectedBoxes.length, doorSensorNetCount, manualCount);
       } else {
@@ -1834,7 +1883,7 @@ Email: ${fromEmail}`;
       if (isCameraBlocked) {
         tagEl.className = 'badge-mini-red';
         tagEl.textContent = '⚠️ Lens Obstructed / Dark';
-      } else if (megaCrowdState.active && ((crowdPerceptionMode === 'mega-crowd') || (currentCapacity >= 200))) {
+      } else if (megaCrowdState.active && ((crowdPerceptionMode === 'mega-crowd') || (currentCapacity >= 1000))) {
         tagEl.className = megaCrowdState.stampedeRisk >= 75 ? 'badge-mini-red' : (megaCrowdState.stampedeRisk >= 50 ? 'badge-mini-yellow' : 'badge-mini-green');
         tagEl.textContent = `🌊 MEGA-CROWD: ${effectiveCount} Pax • Flux ${megaCrowdState.averageVelocity} m/s • Risk ${megaCrowdState.stampedeRisk}%`;
       } else {
@@ -1877,33 +1926,31 @@ Email: ${fromEmail}`;
   function drawCanvasHud(c, w, h, count, cap, boxes) {
     const occupiedPct = Math.min(100, Math.round((count / cap) * 100));
     const isSensorScanning = Date.now() < sensorActiveWindowUntil;
+    const isMegaVenue = (cap >= 1000);
     const isMegaModeActive = (crowdPerceptionMode === 'mega-crowd') ||
-      (crowdPerceptionMode === 'auto' && (cap >= 200 || count > 30));
+      (crowdPerceptionMode === 'auto' && isMegaVenue);
 
     if (isMegaModeActive && megaCrowdState.gridCells && megaCrowdState.gridCells.length > 0) {
-      // 1. Draw Translucent Eulerian Density Heatmap
+      // 1. Draw Translucent Eulerian Density Heatmap (only for actual dense clusters >= 2.0)
       megaCrowdState.gridCells.forEach(cell => {
-        if (cell.density > 0.6) {
+        if (cell.density >= 2.0) {
           if (cell.isHotspot) {
             c.fillStyle = 'rgba(239, 68, 68, 0.40)';
             c.strokeStyle = '#ef4444';
-          } else if (cell.density >= 2.2) {
+          } else {
             c.fillStyle = 'rgba(245, 158, 11, 0.28)';
             c.strokeStyle = '#f59e0b';
-          } else {
-            c.fillStyle = 'rgba(16, 185, 129, 0.18)';
-            c.strokeStyle = 'rgba(16, 185, 129, 0.5)';
           }
           c.fillRect(cell.x, cell.y, cell.w, cell.h);
           c.lineWidth = 1;
           c.strokeRect(cell.x, cell.y, cell.w, cell.h);
         }
 
-        // 2. Draw Motion Velocity Flux Vector Arrows
-        if (cell.velMag > 0.6) {
+        // 2. Draw Motion Velocity Flux Vector Arrows (only for significant motion)
+        if (cell.velMag > 1.0) {
           const cx = cell.x + cell.w / 2;
           const cy = cell.y + cell.h / 2;
-          const arrowLen = Math.min(18, cell.velMag * 5);
+          const arrowLen = Math.min(18, cell.velMag * 4);
           const angle = Math.atan2(cell.vy, cell.vx);
           const ex = cx + Math.cos(angle) * arrowLen;
           const ey = cy + Math.sin(angle) * arrowLen;
@@ -1913,9 +1960,6 @@ Email: ${fromEmail}`;
           c.beginPath();
           c.moveTo(cx, cy);
           c.lineTo(ex, ey);
-          c.lineTo(ex - 4 * Math.cos(angle - Math.PI / 6), ey - 4 * Math.sin(angle - Math.PI / 6));
-          c.moveTo(ex, ey);
-          c.lineTo(ex - 4 * Math.cos(angle + Math.PI / 6), ey - 4 * Math.sin(angle + Math.PI / 6));
           c.stroke();
         }
       });
@@ -1930,8 +1974,9 @@ Email: ${fromEmail}`;
         c.lineWidth = 1;
         c.stroke();
       });
-    } else {
-    // Draw bounding boxes around tracked attendees
+    }
+
+    // Draw bounding boxes around tracked attendees in all modes
     boxes.forEach((b, idx) => {
       let boxColor = '#10b981'; // Green (Inside)
       let labelText = b.label === 'PERSON'
@@ -1970,7 +2015,6 @@ Email: ${fromEmail}`;
       c.font = 'bold 10px "Space Grotesk", sans-serif';
       c.fillText(labelText, b.x + 4, Math.max(13, b.y - 4));
     });
-  }
 
   // Top Header Banner
   const bannerW = Math.max(420, Math.min(w - 24, 490));
