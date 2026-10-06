@@ -269,6 +269,16 @@ function initWebSockets() {
           window.handleRoomOccupancyUpdate(payload.data);
         }
         break;
+
+      case 'GEMINI_OCCLUSION_ALERT':
+        if (typeof window.handleGeminiOcclusionAlert === 'function') {
+          window.handleGeminiOcclusionAlert(payload.data);
+        }
+        if (typeof createToast === 'function') {
+          const occText = (payload.data && payload.data.occluded > 0) ? ` (${payload.data.occluded} occluded behind pillars)` : '';
+          createToast(`🤖 Autonomous Vision: ${payload.data.hall || 'Venue'} verified at ${payload.data.count || 0} Pax${occText}. Self-healing active!`, 'info');
+        }
+        break;
     }
   };
 

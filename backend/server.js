@@ -206,7 +206,7 @@ app.post('/api/gemini/audit', async (req, res) => {
   res.json(result);
 });
 
-// Deep Visual Scene & Occlusion Perception Audit via Google Gemini Flash
+// Autonomous Deep Visual Scene & Occlusion Perception via Google Gemini Flash (Tesla-style zero-click)
 app.post('/api/cctv/gemini-scene-audit', async (req, res) => {
   const { imageBase64, hallName, capacity, currentCount } = req.body || {};
   if (!imageBase64) {
@@ -219,17 +219,39 @@ app.post('/api/cctv/gemini-scene-audit', async (req, res) => {
     currentCount: currentCount || 0
   });
 
-  // If Gemini detected an overcapacity breach, broadcast to all UI dashboards
-  if (result.success && result.exactPersonCount > (capacity || 250)) {
+  if (result.success) {
+    const targetHallId = Object.keys(db.graph.halls).find(k => db.graph.halls[k].name === hallName) || 'hall-1';
+    const hall = db.graph.halls[targetHallId] || { name: hallName || 'Turing Hall', capacity: capacity || 250 };
+    hall.currentOccupancy = result.exactPersonCount;
+
+    let healingReport = null;
+    // If autonomous vision confirms an overcapacity breach (including hidden/occluded attendees), trigger self-healing autonomously!
+    if (result.exactPersonCount > hall.capacity) {
+      let activeTopicId = null;
+      for (const slotId in db.schedule) {
+        if (db.schedule[slotId][targetHallId]) {
+          activeTopicId = db.schedule[slotId][targetHallId];
+          break;
+        }
+      }
+      if (activeTopicId && db.graph.topics[activeTopicId]) {
+        const topic = db.graph.topics[activeTopicId];
+        topic.interest = result.exactPersonCount;
+        const eventDesc = `🤖 Autonomous Vision: "${hall.name}" crowd surge verified! Gemini Flash detected ${result.exactPersonCount} attendees (${result.occludedPersonsCount || 0} occluded behind pillars/obstacles), exceeding limit of ${hall.capacity}. Autonomously reallocating schedule.`;
+        healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+      }
+    }
+
     broadcast({
       type: 'GEMINI_OCCLUSION_ALERT',
       data: {
-        hall: hallName || 'Turing Hall',
+        hall: hall.name,
         count: result.exactPersonCount,
-        capacity: capacity || 250,
+        capacity: hall.capacity,
         occluded: result.occludedPersonsCount,
         observation: result.visualObservation,
         recommendation: result.safetyRecommendation,
+        healingReport,
         time: new Date().toLocaleTimeString()
       }
     });

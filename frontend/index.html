@@ -170,8 +170,6 @@
           <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
           <button id="btn-cctv-tint-fix" class="btn btn-sm btn-white btn-cctv-tint-fix" style="font-weight:800;"
             title="Toggle Camera Color Correction / IR Pink Fix">🎨 Tint: Auto-Fix</button>
-          <button id="btn-cctv-gemini-audit" class="btn btn-sm btn-blue" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;"
-            title="Run Google Gemini Flash Multimodal Audit for Obstructed / Hidden Persons">🧠 Gemini Scene Audit</button>
           <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;"
             title="Toggle between Full Camera HUD and Compact Bar">🔼 Minimize View</button>
         </div>
@@ -1437,57 +1435,6 @@
                 </div>
               </div>
             </div>
-    <!-- DEEP GEMINI SCENE AUDIT MODAL -->
-    <div id="cctv-gemini-audit-modal" class="modal-overlay hidden">
-      <div class="modal-content" style="max-width: 600px;">
-        <div class="modal-header">
-          <h2 class="modal-title">🧠 GEMINI FLASH MULTIMODAL SCENE AUDIT</h2>
-          <button id="btn-close-gemini-audit-modal" class="modal-close-btn">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div style="background: #1e1b4b; border-radius: 12px; padding: 14px 18px; color: #ffffff; margin-bottom: 16px; border: 2px solid #000;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-              <span style="font-weight:800; font-size:0.85rem; color:#a5b4fc;">DEEP OCCLUSION REASONING</span>
-              <span id="gemini-modal-status-badge" class="badge-mini-green">AI AUDIT COMPLETE</span>
-            </div>
-            <div style="font-size:0.78rem; color:#e0e7ff;">
-              Google Gemini 3.5 Flash inspected raw camera telemetry to identify partially hidden attendees behind pillars, columns, and hackathon desks.
-            </div>
-          </div>
-
-          <!-- Scene Snapshot Image Preview -->
-          <div style="margin-bottom:14px; text-align:center;">
-            <img id="gemini-modal-frame-preview" style="max-width:100%; max-height:220px; height:auto; border:2px solid #000; border-radius:8px; box-shadow:3px 3px 0px #000; display:none;" alt="CCTV Snapshot">
-          </div>
-
-          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-bottom:14px;">
-            <div style="background:#f8fafc; border:2px solid #000; border-radius:8px; padding:12px;">
-              <div style="font-size:0.75rem; color:#6b7280; font-weight:700;">TOTAL ATTENDEES</div>
-              <div id="gemini-modal-headcount" style="font-size:1.6rem; font-weight:900; color:#111827;">--</div>
-            </div>
-            <div style="background:#f8fafc; border:2px solid #000; border-radius:8px; padding:12px;">
-              <div style="font-size:0.75rem; color:#6b7280; font-weight:700;">BEHIND OBSTACLES / PILLARS</div>
-              <div id="gemini-modal-occluded" style="font-size:1.6rem; font-weight:900; color:#d97706;">--</div>
-            </div>
-          </div>
-
-          <div style="background:#ffffff; border:2px solid #000; border-radius:8px; padding:12px; margin-bottom:12px;">
-            <div style="font-weight:800; font-size:0.82rem; margin-bottom:4px; color:#111827;">🔍 Visual Observations:</div>
-            <div id="gemini-modal-observation" style="font-size:0.84rem; color:#374151; line-height:1.4;">Analyzing scene...</div>
-          </div>
-
-          <div style="background:#eff6ff; border-left:4px solid #3b82f6; border-radius:0 8px 8px 0; padding:12px; margin-bottom:16px;">
-            <div style="font-weight:800; font-size:0.82rem; margin-bottom:4px; color:#1d4ed8;">🛡️ Safety Recommendation:</div>
-            <div id="gemini-modal-recommendation" style="font-size:0.84rem; color:#1e40af; line-height:1.4;">--</div>
-          </div>
-
-          <div style="display:flex; justify-content:flex-end; gap:10px;">
-            <button id="btn-gemini-modal-apply" class="btn btn-sm btn-green" style="font-weight:800;">
-              ✅ Sync Count to Matrix
-            </button>
-            <button id="btn-gemini-modal-close" class="btn btn-sm btn-white" style="font-weight:800;">
-              Close
-            </button>
           </div>
         </div>
       </div>

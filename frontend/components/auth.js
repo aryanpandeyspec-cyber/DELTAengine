@@ -607,7 +607,6 @@
   function bindCloudIntegrationsControls() {
     const btnResend = document.getElementById('btn-admin-test-resend');
     const btnEleven = document.getElementById('btn-admin-test-elevenlabs');
-    const btnGemini = document.getElementById('btn-admin-run-gemini-audit');
     const btnTwilio = document.getElementById('btn-admin-test-twilio');
 
     if (btnResend) {
@@ -670,62 +669,31 @@
       });
     }
 
-    if (btnGemini) {
-      btnGemini.addEventListener('click', async () => {
-        btnGemini.disabled = true;
-        btnGemini.textContent = '🧠 Running Gemini...';
-        const container = document.getElementById('gemini-audit-container');
-        if (container) container.style.display = 'block';
+    // Autonomous Tesla-style Live Occlusion Guard (Updates automatically from WebSocket broadcast)
+    window.handleGeminiOcclusionAlert = function (data) {
+      if (!data) return;
+      const summaryEl = document.getElementById('gemini-audit-summary');
+      const bottleneckEl = document.getElementById('gemini-audit-bottleneck');
+      const scriptEl = document.getElementById('gemini-audit-script');
+      const ratingBox = document.getElementById('gemini-audit-rating-box');
 
-        const summaryEl = document.getElementById('gemini-audit-summary');
-        const bottleneckEl = document.getElementById('gemini-audit-bottleneck');
-        const scriptEl = document.getElementById('gemini-audit-script');
-        const ratingBox = document.getElementById('gemini-audit-rating-box');
-        const modelBadge = document.getElementById('gemini-audit-model-badge');
-
-        if (summaryEl) summaryEl.textContent = 'Running real-time Gemini perception reasoning...';
-
-        try {
-          const res = await fetch('/api/gemini/audit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              hallTelemetry: {
-                'Turing Hall': { capacity: 250, currentOccupancy: 285, status: 'SURGE_WARNING' },
-                'Lovelace Suite': { capacity: 180, currentOccupancy: 82, status: 'NOMINAL' },
-                'Hopper Room': { capacity: 120, currentOccupancy: 64, status: 'NOMINAL' }
-              },
-              conflicts: ['Turing Hall occupancy threshold breached (+14% over limit)']
-            })
-          });
-          const data = await res.json();
-          if (data) {
-            if (modelBadge) modelBadge.textContent = data.model || 'gemini-3.5-flash';
-            if (summaryEl) summaryEl.textContent = data.aiSummary || 'Perception check completed.';
-            if (bottleneckEl) bottleneckEl.textContent = data.bottleneckIdentified || 'Turing Hall Main Entrance Aisle';
-            if (scriptEl) scriptEl.textContent = data.paAnnouncementScript || 'Attention guests. Please keep aisles clear.';
-
-            if (ratingBox) {
-              const isCrit = data.safetyRating === 'CRITICAL' || data.safetyRating === 'C';
-              ratingBox.innerHTML = `
-                <span class="gemini-rating-badge ${isCrit ? 'rating-critical' : 'rating-nominal'}">
-                  Safety Rating: ${data.safetyRating || 'A'} • Risk: ${data.riskLevel || 'LOW'}
-                </span>
-              `;
-            }
-
-            if (typeof createToast === 'function') {
-              createToast(`🧠 Gemini Perception Audit Completed (Risk: ${data.riskLevel || 'LOW'})`, 'success');
-            }
-          }
-        } catch (e) {
-          console.error(e);
-        } finally {
-          btnGemini.disabled = false;
-          btnGemini.textContent = '✨ Run Safety Audit';
-        }
-      });
-    }
+      if (summaryEl) {
+        summaryEl.textContent = `🚨 [${data.time || 'Live'}] Autonomous Vision in ${data.hall}: ${data.count} attendees detected (${data.occluded || 0} occluded behind pillars). Self-healing dispatched!`;
+      }
+      if (bottleneckEl && data.observation) {
+        bottleneckEl.textContent = data.observation;
+      }
+      if (scriptEl && data.recommendation) {
+        scriptEl.textContent = data.recommendation;
+      }
+      if (ratingBox) {
+        ratingBox.innerHTML = `
+          <span class="gemini-rating-badge rating-critical" style="font-size:0.7rem; font-weight:800; padding:2px 8px; border-radius:4px; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">
+            SURGE VERIFIED • SELF-HEALING ACTIVE
+          </span>
+        `;
+      }
+    };
 
     if (btnTwilio) {
       btnTwilio.addEventListener('click', () => {

@@ -141,7 +141,6 @@
     initCocoSsd();
     bindCctvElements();
     initVolunteerAlertBanner();
-    bindGeminiSceneAudit();
     requestPushPermission();
   }
 
@@ -1587,6 +1586,12 @@ Email: ${fromEmail}`;
       postCctvTelemetry(effectiveCount, currentCapacity);
     }
 
+    // Tesla-Style Autonomous Background Perception Guard
+    // When occupancy reaches 80% or surge occurs, automatically run visual verification
+    if (effectiveCount >= currentCapacity * 0.8) {
+      autoTriggerBackgroundScenePerception(effectiveCount, currentCapacity);
+    }
+
     animFrameId = requestAnimationFrame(processVideoFrame);
   }
 
@@ -2139,98 +2144,68 @@ Email: ${fromEmail}`;
     }
   };
 
-  // --- GOOGLE GEMINI FLASH DEEP SCENE AUDIT MODAL BINDINGS ---
-  function bindGeminiSceneAudit() {
-    const btnAudit = document.getElementById('btn-cctv-gemini-audit');
-    const modal = document.getElementById('cctv-gemini-audit-modal');
-    const btnClose = document.getElementById('btn-close-gemini-audit-modal');
-    const btnModalClose = document.getElementById('btn-gemini-modal-close');
-    const btnApply = document.getElementById('btn-gemini-modal-apply');
+  // --- TESLA-STYLE AUTONOMOUS BACKGROUND PERCEPTION & OCCLUSION GUARD ---
+  // No manual audit buttons or popups. Runs automatically in the background
+  // when density hits 80%+ or surge occurs, cross-verifying hidden/occluded attendees.
+  let lastAutoPerceptionTime = 0;
+  let isAutoPerceptionInProgress = false;
 
-    let lastGeminiAuditCount = null;
+  async function autoTriggerBackgroundScenePerception(count, cap) {
+    if (!isCameraActive || !canvasEl || isAutoPerceptionInProgress) return;
+    const now = Date.now();
+    // Debounce to at most once every 30 seconds to respect API rates
+    if (now - lastAutoPerceptionTime < 30000) return;
 
-    if (btnAudit) {
-      btnAudit.addEventListener('click', async () => {
-        if (!isCameraActive || !canvasEl) {
-          if (typeof createToast === 'function') createToast('Please start the camera feed first!', 'warning');
-          return;
-        }
+    const ratio = count / Math.max(cap, 1);
+    if (ratio < 0.8) return;
 
-        btnAudit.disabled = true;
-        btnAudit.textContent = '🧠 Auditing Scene...';
-        if (typeof createToast === 'function') createToast('🧠 Capturing frame for Google Gemini Flash Vision...', 'info');
+    lastAutoPerceptionTime = now;
+    isAutoPerceptionInProgress = true;
+    console.log(`🤖 [Autonomous Perception] Capacity threshold triggered (${(ratio * 100).toFixed(0)}% • ${count}/${cap}). Running background multimodal visual verification...`);
 
-        try {
-          const frameBase64 = canvasEl.toDataURL('image/jpeg', 0.82);
-
-          const res = await fetch('/api/cctv/gemini-scene-audit', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              imageBase64: frameBase64,
-              hallName: currentVenueName || 'Turing Hall',
-              capacity: currentCapacity || 250,
-              currentCount: currentNetOccupancy || 0
-            })
-          });
-
-          const data = await res.json();
-          if (data && data.success) {
-            lastGeminiAuditCount = data.exactPersonCount;
-
-            // Open modal and display deep multimodal breakdown
-            if (modal) modal.classList.remove('hidden');
-
-            const imgPreview = document.getElementById('gemini-modal-frame-preview');
-            if (imgPreview) {
-              imgPreview.src = frameBase64;
-              imgPreview.style.display = 'inline-block';
-            }
-
-            const countEl = document.getElementById('gemini-modal-headcount');
-            if (countEl) countEl.textContent = `${data.exactPersonCount} Pax`;
-
-            const occludedEl = document.getElementById('gemini-modal-occluded');
-            if (occludedEl) occludedEl.textContent = `${data.occludedPersonsCount || 0} Hidden`;
-
-            const obsEl = document.getElementById('gemini-modal-observation');
-            if (obsEl) obsEl.textContent = data.visualObservation || 'Scene analyzed by Gemini Flash.';
-
-            const recEl = document.getElementById('gemini-modal-recommendation');
-            if (recEl) recEl.textContent = data.safetyRecommendation || 'No immediate hazard.';
-
-            if (typeof createToast === 'function') {
-              createToast(`🧠 Gemini Vision: ${data.exactPersonCount} attendees detected (${data.occludedPersonsCount || 0} behind obstacles)!`, 'success');
-            }
-          } else {
-            if (typeof createToast === 'function') {
-              createToast('Gemini Vision notice: ' + (data.reason || 'Could not complete scene audit'), 'warning');
-            }
-          }
-        } catch (err) {
-          console.error('[Gemini Audit Error]:', err);
-        } finally {
-          btnAudit.disabled = false;
-          btnAudit.textContent = '🧠 Gemini Scene Audit';
-        }
+    try {
+      const frameBase64 = canvasEl.toDataURL('image/jpeg', 0.82);
+      const res = await fetch('/api/cctv/gemini-scene-audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageBase64: frameBase64,
+          hallName: currentVenueName || 'Turing Hall',
+          capacity: currentCapacity || 250,
+          currentCount: count || 0
+        })
       });
-    }
 
-    if (btnClose) btnClose.addEventListener('click', () => modal && modal.classList.add('hidden'));
-    if (btnModalClose) btnModalClose.addEventListener('click', () => modal && modal.classList.add('hidden'));
-
-    if (btnApply) {
-      btnApply.addEventListener('click', () => {
-        if (lastGeminiAuditCount !== null) {
-          manualCount = lastGeminiAuditCount;
-          currentNetOccupancy = lastGeminiAuditCount;
+      const data = await res.json();
+      if (data && data.success) {
+        console.log(`🤖 [Autonomous Perception] Verified: ${data.exactPersonCount} attendees (${data.occludedPersonsCount || 0} occluded).`);
+        if (data.exactPersonCount > currentNetOccupancy) {
+          currentNetOccupancy = data.exactPersonCount;
+          manualCount = Math.max(manualCount, data.exactPersonCount);
           syncManualCountControls(manualCount);
           updateDensityMetrics(true);
-          if (typeof createToast === 'function') createToast(`✅ Synchronized room occupancy to ${lastGeminiAuditCount} Pax from Gemini!`, 'success');
         }
-        if (modal) modal.classList.add('hidden');
-      });
+        if (typeof createToast === 'function') {
+          createToast(`🤖 Autonomous Vision: Verified ${data.exactPersonCount} attendees (${data.occludedPersonsCount || 0} occluded behind pillars). Self-healing active.`, 'info');
+        }
+      }
+    } catch (err) {
+      console.warn('[Autonomous Perception]', err);
+    } finally {
+      isAutoPerceptionInProgress = false;
     }
   }
+
+  // Autonomous Inbound Gemini Perception Sync from Swarm WebSockets
+  window.handleGeminiOcclusionAlert = function (data) {
+    if (data && data.count) {
+      if (data.count > currentNetOccupancy) {
+        currentNetOccupancy = data.count;
+        manualCount = Math.max(manualCount, data.count);
+        syncManualCountControls(manualCount);
+        updateDensityMetrics(true);
+      }
+    }
+  };
 
 })();
