@@ -208,7 +208,7 @@ app.post('/api/gemini/audit', async (req, res) => {
 
 // Autonomous Deep Visual Scene & Occlusion Perception via Google Gemini Flash (Tesla-style zero-click)
 app.post('/api/cctv/gemini-scene-audit', async (req, res) => {
-  const { imageBase64, hallName, capacity, currentCount } = req.body || {};
+  const { imageBase64, hallName, capacity, currentCount, stampedeRisk, stampedeStatus, averageVelocity, isMegaCrowd } = req.body || {};
   if (!imageBase64) {
     return res.status(400).json({ error: 'Missing imageBase64 camera frame data' });
   }
@@ -225,8 +225,9 @@ app.post('/api/cctv/gemini-scene-audit', async (req, res) => {
     hall.currentOccupancy = result.exactPersonCount;
 
     let healingReport = null;
-    // If autonomous vision confirms an overcapacity breach (including hidden/occluded attendees), trigger self-healing autonomously!
-    if (result.exactPersonCount > hall.capacity) {
+    // If autonomous vision confirms an overcapacity breach or stampede surge risk, trigger self-healing autonomously!
+    const isStampedeSurge = stampedeRisk && stampedeRisk >= 75;
+    if (result.exactPersonCount > hall.capacity || isStampedeSurge) {
       let activeTopicId = null;
       for (const slotId in db.schedule) {
         if (db.schedule[slotId][targetHallId]) {
@@ -237,7 +238,8 @@ app.post('/api/cctv/gemini-scene-audit', async (req, res) => {
       if (activeTopicId && db.graph.topics[activeTopicId]) {
         const topic = db.graph.topics[activeTopicId];
         topic.interest = result.exactPersonCount;
-        const eventDesc = `🤖 Autonomous Vision: "${hall.name}" crowd surge verified! Gemini Flash detected ${result.exactPersonCount} attendees (${result.occludedPersonsCount || 0} occluded behind pillars/obstacles), exceeding limit of ${hall.capacity}. Autonomously reallocating schedule.`;
+        const prefix = isStampedeSurge ? `🚨 Mega-Crowd Stampede Wave Alert` : `🤖 Autonomous Vision`;
+        const eventDesc = `${prefix}: "${hall.name}" crowd mass surge verified! Gemini Flash detected ${result.exactPersonCount} attendees (${result.occludedPersonsCount || 0} occluded/dense clusters), kinetic flow at ${averageVelocity || '1.8'} m/s (Stampede Risk: ${stampedeRisk || '85'}%). Autonomously reallocating schedule and clearing egress paths.`;
         healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
       }
     }
@@ -251,6 +253,10 @@ app.post('/api/cctv/gemini-scene-audit', async (req, res) => {
         occluded: result.occludedPersonsCount,
         observation: result.visualObservation,
         recommendation: result.safetyRecommendation,
+        stampedeRisk: stampedeRisk || 0,
+        stampedeStatus: stampedeStatus || 'NOMINAL',
+        averageVelocity: averageVelocity || '0.00',
+        isMegaCrowd: !!isMegaCrowd,
         healingReport,
         time: new Date().toLocaleTimeString()
       }

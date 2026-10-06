@@ -16,7 +16,11 @@ const db = {
     halls: {
       'hall-1': { id: 'hall-1', name: 'Turing Hall', capacity: 250 },
       'hall-2': { id: 'hall-2', name: 'Lovelace Suite', capacity: 120 },
-      'hall-3': { id: 'hall-3', name: 'Hopper Room', capacity: 60 }
+      'hall-3': { id: 'hall-3', name: 'Hopper Room', capacity: 60 },
+      'hall-4': { id: 'hall-4', name: 'Keynote Arena', capacity: 500 },
+      'hall-kumbh': { id: 'hall-kumbh', name: 'Kumbh Mela Sector A (Ghat)', capacity: 1200 },
+      'hall-rally': { id: 'hall-rally', name: 'Mega Election Rally Grounds', capacity: 2500 },
+      'hall-stadium': { id: 'hall-stadium', name: 'Olympic / Tech Stadium Arena', capacity: 5000 }
     },
     slots: {
       'slot-1': { id: 'slot-1', time: '09:30 AM - 10:30 AM', startHour: 9.5 },

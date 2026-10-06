@@ -64,11 +64,8 @@ Do not include markdown code block backticks (like \`\`\`json), just the raw JSO
       const data = await res.json();
       if (res.ok && data.candidates && data.candidates[0]) {
         let rawText = data.candidates[0].content.parts[0].text.trim();
-        if (rawText.startsWith('```json')) rawText = rawText.slice(7);
-        if (rawText.startsWith('```')) rawText = rawText.slice(3);
-        if (rawText.endsWith('```')) rawText = rawText.slice(0, -3);
-        rawText = rawText.trim();
-
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) rawText = jsonMatch[0];
         const parsed = JSON.parse(rawText);
         console.log(`[Gemini Auditor] 🧠 Safety Audit completed by ${model} (Rating: ${parsed.safetyRating}, Risk: ${parsed.riskLevel})`);
         return {
@@ -151,24 +148,26 @@ async function auditVisualSceneWithGemini({ imageBase64, hallName, capacity, cur
     return { success: false, reason: 'NO_IMAGE_DATA' };
   }
 
-  const prompt = `You are DELTA Engine's Computer Vision Perception Auditor for venue hall "${hallName || 'Turing Hall'}" (Safe Capacity: ${capacity || 250} pax).
-Examine this CCTV / webcam camera snapshot:
-1. Count all human attendees visible:
+  const isMega = (capacity >= 500) || (currentCount >= 200);
+  const prompt = `You are DELTA Engine's Computer Vision Perception Auditor for "${hallName || 'Turing Hall'}" (Safe Capacity: ${capacity || 250} pax).
+${isMega ? 'NOTE: This is a LARGE-SCALE MEGA-CROWD GATHERING (e.g. Kumbh Mela / Political Rally / Stadium). Analyze crowd mass density, flow bottlenecks, barricade pressures, and stampede collision risks.' : ''}
+Examine this camera snapshot:
+1. Count or estimate total human attendees visible across the crowd mass:
    - Include people facing front, side, or rear (backs of heads/shoulders)
-   - Include people partially occluded or hidden behind pillars, columns, desks, monitors, laptops, or chairs
+   - Include people partially occluded or hidden behind pillars, columns, barricades, desks, or in dense crowd clusters
    - Include people sitting, standing, or walking
-2. Identify crowd density, doorway bottlenecks, or aisle obstructions.
-3. Determine if safe occupancy is breached.
+2. Identify crowd density, doorway bottlenecks, barricade pressure points, or stampede crush zones.
+3. Determine if safe occupancy or flow threshold is breached.
 
 Respond STRICTLY with valid JSON (no markdown formatting, no backticks, no code blocks):
 {
   "exactPersonCount": <integer count of total attendees>,
-  "occludedPersonsCount": <integer count of partially hidden attendees behind obstacles/pillars>,
+  "occludedPersonsCount": <integer count of partially hidden attendees behind obstacles/pillars/crowd>,
   "rearFacingCount": <integer count of attendees viewed from behind>,
   "densityLevel": "LOW" | "MODERATE" | "HIGH" | "CRITICAL",
-  "bottlenecks": "<concise description of any blocked aisles or crowd clumps, or 'None'>",
+  "bottlenecks": "<concise description of any blocked aisles, chokepoints, or crowd clumps>",
   "visualObservation": "<concise 1-2 sentence description of what you observe in the scene>",
-  "safetyRecommendation": "<immediate 1-sentence action for hackathon venue coordinators>"
+  "safetyRecommendation": "<immediate 1-sentence action for venue / rally safety coordinators>"
 }`;
 
   for (const model of GEMINI_MODELS) {
@@ -193,11 +192,8 @@ Respond STRICTLY with valid JSON (no markdown formatting, no backticks, no code 
       const data = await res.json();
       if (res.ok && data.candidates && data.candidates[0]) {
         let rawText = data.candidates[0].content.parts[0].text.trim();
-        if (rawText.startsWith('```json')) rawText = rawText.slice(7);
-        if (rawText.startsWith('```')) rawText = rawText.slice(3);
-        if (rawText.endsWith('```')) rawText = rawText.slice(0, -3);
-        rawText = rawText.trim();
-
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) rawText = jsonMatch[0];
         const parsed = JSON.parse(rawText);
         console.log(`[Gemini Vision] 👁️ Visual Scene Audit by ${model}: ${parsed.exactPersonCount} people (${parsed.occludedPersonsCount} behind obstacles)`);
         return {
