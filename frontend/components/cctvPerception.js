@@ -92,11 +92,56 @@
   let isPinkTintDetected = false;
   let syncColorModeUI = () => { };
 
+  // --- REAL-TIME WEBGL COCO-SSD PERSON & OCCLUSION DETECTOR ---
+  // Detects full bodies, rear-facing attendees, seated hackers, and people behind pillars/desks
+  let cocoModel = null;
+  let isCocoLoading = false;
+  let cocoPersonBoxes = [];
+  let lastCocoInferTime = 0;
+  let isCocoInferring = false;
+  let activeVisionEngine = 'pico'; // 'coco-ssd' | 'pico'
+
+  async function initCocoSsd() {
+    if (cocoModel || isCocoLoading) return;
+    const tfLoaded = typeof window !== 'undefined' && (window.tf || typeof tf !== 'undefined');
+    const cocoLoaded = typeof window !== 'undefined' && (window.cocoSsd || typeof cocoSsd !== 'undefined');
+
+    if (cocoLoaded && tfLoaded) {
+      try {
+        isCocoLoading = true;
+        console.log('⚡ [CCTV] Initializing WebGL GPU COCO-SSD Person Detector...');
+        const loader = window.cocoSsd || cocoSsd;
+        cocoModel = await loader.load({ base: 'mobilenet_v2' });
+        activeVisionEngine = 'coco-ssd';
+        console.log('✅ [CCTV] WebGL COCO-SSD Loaded! Ready for full-body, rear-facing & occluded attendees.');
+        updateVisionEngineTag();
+      } catch (err) {
+        console.warn('[CCTV] COCO-SSD initialization notice:', err.message);
+      } finally {
+        isCocoLoading = false;
+      }
+    } else {
+      // If scripts take a moment to load from CDN, poll once after 1.5s
+      setTimeout(() => {
+        if (!cocoModel && !isCocoLoading) initCocoSsd();
+      }, 1500);
+    }
+  }
+
+  function updateVisionEngineTag() {
+    const tagEl = document.getElementById('cctv-optical-detection-tag');
+    if (tagEl && !isCameraBlocked) {
+      tagEl.title = `Active Engine: ${activeVisionEngine === 'coco-ssd' ? 'TensorFlow.js COCO-SSD (WebGL GPU)' : 'Pico Fast Facefinder'}`;
+    }
+  }
+
   function bootCctv() {
     initDetectors();
     initPico();
+    initCocoSsd();
     bindCctvElements();
     initVolunteerAlertBanner();
+    bindGeminiSceneAudit();
     requestPushPermission();
   }
 
@@ -1434,12 +1479,41 @@ Email: ${fromEmail}`;
       ctx.drawImage(videoEl, 0, 0, w, h);
       ctx.filter = 'none'; // reset so HUD text, bounding boxes, and overlays are not affected
 
-      // High-precision zero-hallucination face & head perception
+      // 1. Asynchronous WebGL GPU Person Detection (COCO-SSD)
+      if (cocoModel && !isCocoInferring && (Date.now() - lastCocoInferTime > 75)) {
+        isCocoInferring = true;
+        cocoModel.detect(videoEl).then(predictions => {
+          lastCocoInferTime = Date.now();
+          isCocoInferring = false;
+          // Filter for 'person' class with confident score
+          const persons = predictions.filter(p => p.class === 'person' && p.score >= 0.35);
+          cocoPersonBoxes = persons.map(p => ({
+            x: Math.max(0, Math.round(p.bbox[0])),
+            y: Math.max(0, Math.round(p.bbox[1])),
+            w: Math.round(p.bbox[2]),
+            h: Math.round(p.bbox[3]),
+            score: Math.round(p.score * 100),
+            label: 'PERSON'
+          }));
+        }).catch(() => { isCocoInferring = false; });
+      }
+
+      // Optical obstruction check & face cascade fallback
       const result = detectFacesZeroHallucination();
       isCameraBlocked = result.blocked;
-      const rawBoxes = result.boxes;
 
-      // Smooth & track heads over time without jitter
+      let rawBoxes = [];
+      if (!isCameraBlocked) {
+        if (cocoPersonBoxes && cocoPersonBoxes.length > 0) {
+          rawBoxes = cocoPersonBoxes;
+          activeVisionEngine = 'coco-ssd';
+        } else {
+          rawBoxes = result.boxes;
+          activeVisionEngine = 'pico';
+        }
+      }
+
+      // Smooth & track heads/persons over time without jitter
       detectedBoxes = isCameraBlocked ? [] : updateTrackedHeads(rawBoxes);
 
       // FUSION CORRELATION: If the Door Sensor has triggered within the last 3.5s
@@ -1520,10 +1594,12 @@ Email: ${fromEmail}`;
     const occupiedPct = Math.min(100, Math.round((count / cap) * 100));
     const isSensorScanning = Date.now() < sensorActiveWindowUntil;
 
-    // Draw bounding boxes around tracked real heads (strictly head area only)
+    // Draw bounding boxes around tracked attendees
     boxes.forEach((b, idx) => {
       let boxColor = '#10b981'; // Green (Inside)
-      let labelText = `HEAD #${idx + 1} [INSIDE]`;
+      let labelText = b.label === 'PERSON'
+        ? `👤 PERSON #${idx + 1} [${b.score || 95}%]`
+        : `HEAD #${idx + 1} [INSIDE]`;
 
       if (isSensorScanning) {
         boxColor = '#f59e0b'; // Amber (Active Scan)
@@ -2062,5 +2138,99 @@ Email: ${fromEmail}`;
       }
     }
   };
+
+  // --- GOOGLE GEMINI FLASH DEEP SCENE AUDIT MODAL BINDINGS ---
+  function bindGeminiSceneAudit() {
+    const btnAudit = document.getElementById('btn-cctv-gemini-audit');
+    const modal = document.getElementById('cctv-gemini-audit-modal');
+    const btnClose = document.getElementById('btn-close-gemini-audit-modal');
+    const btnModalClose = document.getElementById('btn-gemini-modal-close');
+    const btnApply = document.getElementById('btn-gemini-modal-apply');
+
+    let lastGeminiAuditCount = null;
+
+    if (btnAudit) {
+      btnAudit.addEventListener('click', async () => {
+        if (!isCameraActive || !canvasEl) {
+          if (typeof createToast === 'function') createToast('Please start the camera feed first!', 'warning');
+          return;
+        }
+
+        btnAudit.disabled = true;
+        btnAudit.textContent = '🧠 Auditing Scene...';
+        if (typeof createToast === 'function') createToast('🧠 Capturing frame for Google Gemini Flash Vision...', 'info');
+
+        try {
+          const frameBase64 = canvasEl.toDataURL('image/jpeg', 0.82);
+
+          const res = await fetch('/api/cctv/gemini-scene-audit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              imageBase64: frameBase64,
+              hallName: currentVenueName || 'Turing Hall',
+              capacity: currentCapacity || 250,
+              currentCount: currentNetOccupancy || 0
+            })
+          });
+
+          const data = await res.json();
+          if (data && data.success) {
+            lastGeminiAuditCount = data.exactPersonCount;
+
+            // Open modal and display deep multimodal breakdown
+            if (modal) modal.classList.remove('hidden');
+
+            const imgPreview = document.getElementById('gemini-modal-frame-preview');
+            if (imgPreview) {
+              imgPreview.src = frameBase64;
+              imgPreview.style.display = 'inline-block';
+            }
+
+            const countEl = document.getElementById('gemini-modal-headcount');
+            if (countEl) countEl.textContent = `${data.exactPersonCount} Pax`;
+
+            const occludedEl = document.getElementById('gemini-modal-occluded');
+            if (occludedEl) occludedEl.textContent = `${data.occludedPersonsCount || 0} Hidden`;
+
+            const obsEl = document.getElementById('gemini-modal-observation');
+            if (obsEl) obsEl.textContent = data.visualObservation || 'Scene analyzed by Gemini Flash.';
+
+            const recEl = document.getElementById('gemini-modal-recommendation');
+            if (recEl) recEl.textContent = data.safetyRecommendation || 'No immediate hazard.';
+
+            if (typeof createToast === 'function') {
+              createToast(`🧠 Gemini Vision: ${data.exactPersonCount} attendees detected (${data.occludedPersonsCount || 0} behind obstacles)!`, 'success');
+            }
+          } else {
+            if (typeof createToast === 'function') {
+              createToast('Gemini Vision notice: ' + (data.reason || 'Could not complete scene audit'), 'warning');
+            }
+          }
+        } catch (err) {
+          console.error('[Gemini Audit Error]:', err);
+        } finally {
+          btnAudit.disabled = false;
+          btnAudit.textContent = '🧠 Gemini Scene Audit';
+        }
+      });
+    }
+
+    if (btnClose) btnClose.addEventListener('click', () => modal && modal.classList.add('hidden'));
+    if (btnModalClose) btnModalClose.addEventListener('click', () => modal && modal.classList.add('hidden'));
+
+    if (btnApply) {
+      btnApply.addEventListener('click', () => {
+        if (lastGeminiAuditCount !== null) {
+          manualCount = lastGeminiAuditCount;
+          currentNetOccupancy = lastGeminiAuditCount;
+          syncManualCountControls(manualCount);
+          updateDensityMetrics(true);
+          if (typeof createToast === 'function') createToast(`✅ Synchronized room occupancy to ${lastGeminiAuditCount} Pax from Gemini!`, 'success');
+        }
+        if (modal) modal.classList.add('hidden');
+      });
+    }
+  }
 
 })();

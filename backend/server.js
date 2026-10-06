@@ -11,7 +11,7 @@ const { setGroqApiKey, getGroqApiKey } = require('./components/agentSwarm');
 const { loadGraphFromSupabase } = require('./components/supabaseDb');
 const { escapeHtml, rateLimiter, validateSlideFile } = require('./components/security');
 const { generateVenueVoiceAnnouncement } = require('./components/voiceAnnouncer');
-const { auditVenueCrowdAndRisks, composeDynamicPAScript } = require('./components/geminiAuditor');
+const { auditVenueCrowdAndRisks, composeDynamicPAScript, auditVisualSceneWithGemini } = require('./components/geminiAuditor');
 const { dispatchTwilioWhatsApp, isTwilioConfigured } = require('./components/twilioDispatcher');
 
 // Process Uncaught Crash Guards (Prevents server process from ever freezing or exiting on errors)
@@ -203,6 +203,38 @@ app.post('/api/gemini/audit', async (req, res) => {
     scheduleState: db.schedule,
     conflicts: conflicts || ['Turing Hall occupancy surge +14% over safe threshold']
   });
+  res.json(result);
+});
+
+// Deep Visual Scene & Occlusion Perception Audit via Google Gemini Flash
+app.post('/api/cctv/gemini-scene-audit', async (req, res) => {
+  const { imageBase64, hallName, capacity, currentCount } = req.body || {};
+  if (!imageBase64) {
+    return res.status(400).json({ error: 'Missing imageBase64 camera frame data' });
+  }
+  const result = await auditVisualSceneWithGemini({
+    imageBase64,
+    hallName: hallName || 'Turing Hall',
+    capacity: capacity || 250,
+    currentCount: currentCount || 0
+  });
+
+  // If Gemini detected an overcapacity breach, broadcast to all UI dashboards
+  if (result.success && result.exactPersonCount > (capacity || 250)) {
+    broadcast({
+      type: 'GEMINI_OCCLUSION_ALERT',
+      data: {
+        hall: hallName || 'Turing Hall',
+        count: result.exactPersonCount,
+        capacity: capacity || 250,
+        occluded: result.occludedPersonsCount,
+        observation: result.visualObservation,
+        recommendation: result.safetyRecommendation,
+        time: new Date().toLocaleTimeString()
+      }
+    });
+  }
+
   res.json(result);
 });
 
