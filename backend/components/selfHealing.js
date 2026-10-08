@@ -5,7 +5,7 @@ const { generateVenueVoiceAnnouncement } = require('./voiceAnnouncer');
 async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}) {
   const logs = [];
   logs.push(`[Agent Agentic OS] Initiating check run. Event: "${eventDescription}"`);
-  
+
   let iterations = 0;
   const MAX_ITERATIONS = 10;
   let hasConflicts = true;
@@ -88,7 +88,7 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
         text: `Scheduling conflict detected! Analyzed availability overlap constraint. Commencing heal solvers.`,
         time: timeStr
       });
-      
+
       notifications.forEach((n) => {
         if (n.message.includes('moved') || n.message.includes('rescheduled') || n.message.includes('Shifted') || n.message.includes('reschedule')) {
           swarmChat.push({
@@ -237,7 +237,7 @@ function resolveSpeakerDelay(topicId, slotId, hallId, availabilityStartHour, log
   const schedule = db.schedule;
 
   logs.push(`[Solver: Delay] Attempting to re-schedule "${graph.topics[topicId].title}" to a slot starting after ${formatHour(availabilityStartHour)}.`);
-  
+
   const originalSlot = graph.slots[slotId];
   const originalHall = graph.halls[hallId];
 
@@ -246,11 +246,11 @@ function resolveSpeakerDelay(topicId, slotId, hallId, availabilityStartHour, log
     if (targetSlot.startHour >= availabilityStartHour) {
       for (const targetHallId in graph.halls) {
         const currentTopicIdInTarget = schedule[targetSlotId][targetHallId];
-        
+
         if (!currentTopicIdInTarget) {
           schedule[slotId][hallId] = null;
           schedule[targetSlotId][targetHallId] = topicId;
-          
+
           logs.push(`[Action] Shifted "${graph.topics[topicId].title}" from slot ${slotId} to empty hall "${graph.halls[targetHallId].name}" in slot ${targetSlotId} (${targetSlot.time}).`);
           notifications.push({
             topicId,
@@ -270,9 +270,9 @@ function resolveSpeakerDelay(topicId, slotId, hallId, availabilityStartHour, log
           if (isTargetSpeakerAvailableInOriginal && doesTargetTopicFitOriginalHall && doesDelayedTopicFitTargetHall) {
             schedule[slotId][hallId] = currentTopicIdInTarget;
             schedule[targetSlotId][targetHallId] = topicId;
-            
+
             logs.push(`[Action] Swapped "${graph.topics[topicId].title}" (delayed) with "${targetTopic.title}" (scheduled at ${targetSlot.time} in ${targetHall.name}).`);
-            
+
             notifications.push({
               topicId,
               message: `Schedule Update: "${graph.topics[topicId].title}" is rescheduled to ${targetSlot.time} in ${targetHall.name} due to speaker delay.`,
@@ -298,7 +298,7 @@ function resolveSpeakerDelay(topicId, slotId, hallId, availabilityStartHour, log
         const currentTopicIdInTarget = schedule[targetSlotId][targetHallId];
         schedule[slotId][hallId] = currentTopicIdInTarget;
         schedule[targetSlotId][targetHallId] = topicId;
-        
+
         logs.push(`[Action: Fallback Swap] Swapped "${graph.topics[topicId].title}" with "${currentTopicIdInTarget ? graph.topics[currentTopicIdInTarget].title : 'Empty Slot'}" in slot ${targetSlotId}.`);
         notifications.push({
           topicId,
@@ -321,15 +321,15 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
 
   for (const targetHallId in graph.halls) {
     if (targetHallId === hallId) continue;
-    
+
     const targetHall = graph.halls[targetHallId];
     if (targetHall.capacity >= topic.interest) {
       const topicIdInTargetHall = schedule[slotId][targetHallId];
-      
+
       if (!topicIdInTargetHall) {
         schedule[slotId][hallId] = null;
         schedule[slotId][targetHallId] = topicId;
-        
+
         logs.push(`[Action] Moved "${topic.title}" to empty larger hall "${targetHall.name}" in the same slot (${graph.slots[slotId].time}).`);
         notifications.push({
           topicId,
@@ -342,7 +342,7 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
         if (targetTopic.interest <= currentHall.capacity) {
           schedule[slotId][hallId] = topicIdInTargetHall;
           schedule[slotId][targetHallId] = topicId;
-          
+
           logs.push(`[Action] Swapped halls for "${topic.title}" (moved to ${targetHall.name}) and "${targetTopic.title}" (moved to ${currentHall.name}) in the same time slot.`);
           notifications.push({
             topicId,
@@ -364,16 +364,16 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
   for (const targetSlotId in graph.slots) {
     if (targetSlotId === slotId) continue;
     const targetSlot = graph.slots[targetSlotId];
-    
+
     for (const targetHallId in graph.halls) {
       const targetHall = graph.halls[targetHallId];
       if (targetHall.capacity >= topic.interest) {
         const topicIdInTarget = schedule[targetSlotId][targetHallId];
-        
+
         if (!topicIdInTarget) {
           const speaker = graph.speakers[topic.speakerId];
           const speakerAvailability = 9.0 + (speaker.delay / 60);
-          
+
           let isSpeakerBusy = false;
           for (const hId in schedule[targetSlotId]) {
             const tId = schedule[targetSlotId][hId];
@@ -385,7 +385,7 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
           if (targetSlot.startHour >= speakerAvailability && !isSpeakerBusy) {
             schedule[slotId][hallId] = null;
             schedule[targetSlotId][targetHallId] = topicId;
-            
+
             logs.push(`[Action] Relocated and rescheduled "${topic.title}" to "${targetHall.name}" at ${targetSlot.time}.`);
             notifications.push({
               topicId,
