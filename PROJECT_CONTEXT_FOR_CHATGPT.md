@@ -156,7 +156,11 @@ DELTAengine-main/
 │   ├── signage.html                       # Fullscreen digital signage TV kiosk portal
 │   ├── presentation.html                  # Slide presentation viewer
 │   ├── announcement_test.mp3              # Local fallback audio for PA announcements
-│   └── audio_announcements/               # Cached Nico Robin voice MP3 files
+│   ├── audio_announcements/               # Cached Nico Robin voice MP3 files
+│   ├── venue_room_plan_blueprint.pdf      # Architectural CAD vector blueprint mock data PDF
+│   ├── venue_room_plan_blueprint.png      # 1200x900 Architectural blueprint mock photo PNG
+│   └── sample_advanced_wasm_presentation.pdf # Multi-slide keynote mock presentation PDF
+├── generate_mock_pdf.py                   # ReportLab & Pillow synthetic mock data generator
 ├── hardware/
 │   ├── DELTA_Door_Counter/
 │   │   └── DELTA_Door_Counter.ino         # ESP32 dual I2C firmware (VL53L0X ToF lasers)
@@ -180,8 +184,11 @@ npm start
 # Server boots at: http://localhost:3000
 ```
 
-### Access Portals
+### Access Portals & Ingest Mock Data
 - **Coordinator Dashboard & 3D Room Twin**: `http://localhost:3000/index.html`
+  - *Instant 1-Click Feed*: Click `📄 Load Blueprint PDF`, `🖼️ Load Blueprint Photo`, or `📊 Load Sample Slides` in the uploader card.
+  - *Drag & Drop*: Drop `venue_room_plan_blueprint.pdf` or `venue_room_plan_blueprint.png` to review dimensions, calculate people capacity, and spin the live 3D room model.
 - **Super Admin Command Center**: `http://localhost:3000/admin.html`
 - **Digital Signage TV Kiosk**: `http://localhost:3000/signage.html`
 - **Presentation Deck**: `http://localhost:3000/presentation.html`
+

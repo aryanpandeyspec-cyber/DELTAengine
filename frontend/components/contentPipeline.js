@@ -41,6 +41,47 @@ function initContentUploadPipeline() {
     }
   });
 
+  // 1-Click Mock Sample Feed Handlers
+  const btnBlueprint = document.getElementById('btn-feed-sample-blueprint');
+  const btnPhoto = document.getElementById('btn-feed-sample-photo');
+  const btnSlides = document.getElementById('btn-feed-sample-slides');
+
+  async function loadSampleMockFile(url, fileName, mimeType) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const blob = await response.blob();
+      const file = new File([blob], fileName, { type: mimeType });
+      openUploadReviewModal(file);
+    } catch (err) {
+      console.error('Failed to load sample mock file:', err);
+      if (typeof window.showNotification === 'function') {
+        window.showNotification(`Error loading ${fileName}: ${err.message}`, 'error');
+      }
+    }
+  }
+
+  if (btnBlueprint) {
+    btnBlueprint.addEventListener('click', (e) => {
+      e.stopPropagation();
+      loadSampleMockFile('/venue_room_plan_blueprint.pdf', 'venue_room_plan_blueprint.pdf', 'application/pdf');
+    });
+  }
+
+  if (btnPhoto) {
+    btnPhoto.addEventListener('click', (e) => {
+      e.stopPropagation();
+      loadSampleMockFile('/venue_room_plan_blueprint.png', 'venue_room_plan_blueprint.png', 'image/png');
+    });
+  }
+
+  if (btnSlides) {
+    btnSlides.addEventListener('click', (e) => {
+      e.stopPropagation();
+      loadSampleMockFile('/sample_advanced_wasm_presentation.pdf', 'sample_advanced_wasm_presentation.pdf', 'application/pdf');
+    });
+  }
+
   initReviewModalListeners();
 }
 

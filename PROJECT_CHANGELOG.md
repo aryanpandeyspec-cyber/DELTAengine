@@ -73,12 +73,24 @@ This ledger provides an unabridged audit trail for all engineering work on DELTA
   - **Added**: User-editable field overrides for talk titles, speakers, summaries, tags, halls, and slots.
   - **Added**: Post-upload action button `✏️ Review & Edit Ingested Data` allowing users to edit ingested data anytime without re-uploading.
   - **Added**: Post-upload `🏛️ Live 3D Spatial Digital Twin` dashboard card rendering the interactive room twin directly in the results view.
+  - **Added**: 1-Click Mock Sample Feed Handlers (`#btn-feed-sample-blueprint`, `#btn-feed-sample-photo`, `#btn-feed-sample-slides`) that load mock files asynchronously via Fetch Blob API into the review pipeline.
 - [`frontend/components/websockets.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/websockets.js):
   - **Added**: WebSocket handler for `VENUE_SPATIAL_MODEL_UPDATE` updating hall capacities and triggering safe UI re-renders.
 - [`frontend/index.html`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/index.html):
   - **Added**: Ingestion Review & Calibration modal markup (`#modal-upload-review`).
   - **Added**: Live 3D Spatial Digital Twin result card (`#spatial-result-card`) and post-ingestion action container (`#pipeline-results-actions`).
+  - **Added**: 1-Click Mock Sample Feed buttons in the content pipeline card.
   - **Added**: Script inclusion for `components/roomSpatialModel.js`.
+
+### Test Assets & Synthetic Data Suite
+- [`venue_room_plan_blueprint.pdf`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/venue_room_plan_blueprint.pdf) & [`frontend/venue_room_plan_blueprint.pdf`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/venue_room_plan_blueprint.pdf):
+  - Architectural CAD vector blueprint mock data PDF (Turing Hall, $20\text{m} \times 30\text{m} = 600\text{ m}^2$, $5.5\text{m}$ ceiling, elevated keynote stage, 3-sector seating rows, Gate A with dual VL53L0X ToF laser tripwire symbol, Gate B emergency exit, NFPA/IBC fire capacity matrix: 333 safe / 429 theater / 800 standing, 180 pax/min egress discharge).
+- [`venue_room_plan_blueprint.png`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/venue_room_plan_blueprint.png) & [`frontend/venue_room_plan_blueprint.png`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/venue_room_plan_blueprint.png):
+  - High-resolution $1200 \times 900$ architectural blueprint PNG image for testing photo/pic blueprint upload and computer vision ingestion.
+- [`sample_advanced_wasm_presentation.pdf`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/sample_advanced_wasm_presentation.pdf) & [`frontend/sample_advanced_wasm_presentation.pdf`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/sample_advanced_wasm_presentation.pdf):
+  - Realistic multi-slide keynote presentation deck ("Advanced WebAssembly Runtimes & Edge Swarms" by Dr. Elena Rostova) for testing slide ingestion and automated schedule graph weaving.
+- [`generate_mock_pdf.py`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/generate_mock_pdf.py):
+  - Deterministic Python generator script leveraging ReportLab 5.0 and Pillow to synthesize all CAD blueprint PDFs, PNGs, and presentation decks.
 
 ---
 

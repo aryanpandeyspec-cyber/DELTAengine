@@ -503,7 +503,17 @@ DELTAengine-main/
 
 ---
 
-## 17. End-to-End Live Demo Execution Guide
+## 17. End-to-End Live Demo Execution Guide & Mock Data Suite
+
+### Available Mock Data Test Assets
+The repository contains complete, high-fidelity mock data assets generated via [`generate_mock_pdf.py`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/generate_mock_pdf.py):
+1. **Architectural Blueprint Mock PDF**: [`venue_room_plan_blueprint.pdf`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/venue_room_plan_blueprint.pdf) (also in `frontend/`)
+   - Vector CAD architectural blueprint of Turing Hall ($20\text{m} \times 30\text{m} = 600\text{ m}^2$).
+   - Contains outer walls, dimension callouts, keynote stage, audience seating array, Gate A (with dual VL53L0X laser tripwire symbol), Gate B (emergency egress), and Life Safety occupancy standards (333 safe / 429 theater / 800 standing).
+2. **Architectural Blueprint Mock Photo PNG**: [`venue_room_plan_blueprint.png`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/venue_room_plan_blueprint.png) (also in `frontend/`)
+   - $1200 \times 900$ high-resolution blueprint image for testing photo/pic drag-and-drop ingestion.
+3. **Keynote Presentation Slides Mock PDF**: [`sample_advanced_wasm_presentation.pdf`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/sample_advanced_wasm_presentation.pdf) (also in `frontend/`)
+   - Multi-slide deck ("Advanced WebAssembly Runtimes & Edge Swarms" by Dr. Elena Rostova) for testing session ingestion, semantic tag extraction, and schedule matrix auto-weaving.
 
 ### Step 1: Start the Backend Server
 ```powershell
@@ -512,13 +522,20 @@ npm start
 *Expected Output*: `[DELTA ENGINE] Running on http://localhost:3000`
 
 ### Step 2: Ingest a 3D Room Plan Blueprint
-1. Open `http://localhost:3000/index.html`.
-2. Drag and drop any venue photo or blueprint image into the uploader zone.
-3. The **Ingestion Review & Calibration Modal** opens instantly.
-4. Observe the interactive 3D spatial room model rotating in the preview canvas.
-5. Edit width (e.g. $20\text{m}$) and length ($30\text{m}$); observe the people capacity dynamically calculate to $330\text{ pax}$.
-6. Click **`🚀 Confirm & Ingest into DELTA Engine`**.
-7. The live 3D room digital twin activates immediately on the dashboard, with hall capacity calibrated across the operating system!
+There are three ways to feed mock data:
+- **Option A (1-Click UI Button)**: In the **Automated Content Pipeline** card, click **`📄 Load Blueprint PDF`** or **`🖼️ Load Blueprint Photo`**.
+- **Option B (Drag & Drop)**: Drag `venue_room_plan_blueprint.pdf` or `venue_room_plan_blueprint.png` directly into the uploader zone.
+- **Option C (Terminal API)**:
+  ```powershell
+  curl.exe -F "slides=@venue_room_plan_blueprint.pdf" http://localhost:3000/api/upload-slides
+  ```
+
+### Step 3: Review, Edit & Calibrate
+1. The **Ingestion Review & Calibration Modal** opens instantly.
+2. Observe the interactive 3D spatial room model rotating in the preview canvas.
+3. Edit width ($20\text{m}$) and length ($30\text{m}$); observe the people capacity dynamically calculate to $333\text{ pax}$ (safe egress) or $429\text{ pax}$ (high density).
+4. Click **`🚀 Confirm & Ingest into DELTA Engine`**.
+5. The live 3D room digital twin activates immediately on the dashboard, with hall capacity calibrated across the operating system!
 
 ---
 

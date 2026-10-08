@@ -640,6 +640,19 @@
                   <input type="file" id="file-input" style="display:none;" accept=".pdf,.pptx,.ppt,.txt,.png,.jpg,.jpeg,.webp,.svg">
                 </div>
 
+                <!-- 1-Click Mock Sample Feed Actions -->
+                <div class="sample-feed-buttons" style="display: flex; gap: 8px; justify-content: center; margin-top: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+                  <button type="button" class="btn btn-sm" id="btn-feed-sample-blueprint" title="Load sample architectural CAD blueprint PDF" style="font-size: 0.72rem; padding: 5px 12px; background: #eff6ff; border: 2px solid #2563eb; color: #1e40af; border-radius: 6px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;">
+                    📄 Load Blueprint PDF
+                  </button>
+                  <button type="button" class="btn btn-sm" id="btn-feed-sample-photo" title="Load sample architectural floor plan PNG photo" style="font-size: 0.72rem; padding: 5px 12px; background: #f0fdf4; border: 2px solid #16a34a; color: #15803d; border-radius: 6px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;">
+                    🖼️ Load Blueprint Photo
+                  </button>
+                  <button type="button" class="btn btn-sm" id="btn-feed-sample-slides" title="Load sample keynote presentation slides PDF" style="font-size: 0.72rem; padding: 5px 12px; background: #fefce8; border: 2px solid #ca8a04; color: #854d0e; border-radius: 6px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;">
+                    📊 Load Sample Slides
+                  </button>
+                </div>
+
                 <!-- Content Ingestion Stage Loading Status -->
                 <div class="pipeline-loader mb-4" id="pipeline-loader" style="display: none;">
                   <div class="loader-stages">
