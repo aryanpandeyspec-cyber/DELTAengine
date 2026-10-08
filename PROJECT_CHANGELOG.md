@@ -40,9 +40,12 @@ This ledger provides an unabridged audit trail for all engineering work on DELTA
   - **Added**: Route `/api/whatsapp/incoming` enabling 2-way volunteer command processing from WhatsApp (`GATE CLEAR`, `OVERFLOW OPEN`, `AUTOPILOT ON/OFF`, `STATUS`).
   - **Added**: Route `/api/notify/whatsapp-all` broadcasting simultaneously to Aryan, Suryansh, and Shahid.
   - **Added**: Route `/signage` and `/api/calendar/feed.ics` live endpoints.
+  - **Added**: Global Cross-Origin Resource Sharing (CORS) headers middleware (`Access-Control-Allow-Origin: *`, `Methods`, `Headers`) enabling requests from any dev environment, Live Server, or host.
+  - **Updated**: Route `/api/upload-slides` hardened with top-level `try...catch` block, null-safe file buffers, defensive self-healing agent wrappers, and support for calibrating room plans without requiring a physical file re-upload.
   - **Updated**: Defensive speaker fallback initialization and `try...catch` wrapper on `runSelfHealingAgent()` to eliminate unhandled crash hangs.
 - [`backend/components/security.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/security.js):
-  - **Updated**: `validateSlideFile()` now accepts images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.svg`) alongside document formats (`.pdf`, `.pptx`, `.ppt`, `.txt`).
+  - **Updated**: `validateSlideFile()` now accepts images (`.png`, `.jpg`, `.jpeg`, `.webp`, `.svg`) alongside document formats (`.pdf`, `.pptx`, `.ppt`, `.txt`), with `isOptional` flag for room calibrations.
+  - **Updated**: `rateLimiter` updated to exempt localhost loopback (`127.0.0.1`, `::1`) and upload endpoints (`/api/upload*`, `/api/spatial*`) from strict 100 req/min rate limits during testing.
 - [`backend/components/selfHealing.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/selfHealing.js):
   - **Updated**: Added null safety guards for `speaker` and `hall` lookups in schedule auditing loops, preventing undefined member access exceptions (`Cannot read properties of undefined (reading 'delay')`).
 - [`backend/components/voiceAnnouncer.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/voiceAnnouncer.js):
@@ -73,7 +76,9 @@ This ledger provides an unabridged audit trail for all engineering work on DELTA
   - **Added**: User-editable field overrides for talk titles, speakers, summaries, tags, halls, and slots.
   - **Added**: Post-upload action button `✏️ Review & Edit Ingested Data` allowing users to edit ingested data anytime without re-uploading.
   - **Added**: Post-upload `🏛️ Live 3D Spatial Digital Twin` dashboard card rendering the interactive room twin directly in the results view.
-  - **Added**: 1-Click Mock Sample Feed Handlers (`#btn-feed-sample-blueprint`, `#btn-feed-sample-photo`, `#btn-feed-sample-slides`) that load mock files asynchronously via Fetch Blob API into the review pipeline.
+  - **Added**: 1-Click Mock Sample Feed Handlers (`#btn-feed-sample-blueprint`, `#btn-feed-sample-photo`, `#btn-feed-sample-slides`) that load mock files asynchronously into the review pipeline with instant local in-memory fallbacks.
+  - **Refined**: Eliminated artificial 2.4-second delay in `executeIngestion`: uploads now dispatch immediately with smooth non-blocking micro-stage animations.
+  - **Refined**: Replaced generic network error toasts with descriptive, actionable error reporting and safe JSON extraction.
 - [`frontend/components/websockets.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/websockets.js):
   - **Added**: WebSocket handler for `VENUE_SPATIAL_MODEL_UPDATE` updating hall capacities and triggering safe UI re-renders.
 - [`frontend/index.html`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/index.html):

@@ -531,11 +531,12 @@ There are three ways to feed mock data:
   ```
 
 ### Step 3: Review, Edit & Calibrate
-1. The **Ingestion Review & Calibration Modal** opens instantly.
+1. The **Ingestion Review & Calibration Modal** opens instantly with zero lag.
 2. Observe the interactive 3D spatial room model rotating in the preview canvas.
 3. Edit width ($20\text{m}$) and length ($30\text{m}$); observe the people capacity dynamically calculate to $333\text{ pax}$ (safe egress) or $429\text{ pax}$ (high density).
 4. Click **`🚀 Confirm & Ingest into DELTA Engine`**.
-5. The live 3D room digital twin activates immediately on the dashboard, with hall capacity calibrated across the operating system!
+5. The upload request dispatches immediately (zero artificial waiting delays) with real-time CORS headers and server-level crash guards.
+6. The live 3D room digital twin activates immediately on the dashboard, with hall capacity calibrated across the operating system!
 
 ---
 
