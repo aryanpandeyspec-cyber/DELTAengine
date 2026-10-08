@@ -3,10 +3,11 @@
 // assess stampede / egress bottleneck risks, and compose dynamic PA broadcast scripts.
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.5-flash-lite'];
+const GEMINI_MODELS = ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
+const GEMINI_MODEL = GEMINI_MODELS[0];
 
 /**
- * Invokes Gemini 3.8 Flash to perform an autonomous safety & venue flow audit.
+ * Invokes Gemini Flash to perform an autonomous safety & venue flow audit.
  */
 async function auditVenueCrowdAndRisks({ hallTelemetry, scheduleState, conflicts }) {
   const apiKey = process.env.GEMINI_API_KEY || GEMINI_API_KEY;
@@ -56,7 +57,7 @@ Do not include markdown code block backticks (like \`\`\`json), just the raw JSO
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 600
+            maxOutputTokens: 2048
           }
         })
       });
@@ -184,7 +185,7 @@ Respond STRICTLY with valid JSON (no markdown formatting, no backticks, no code 
           }],
           generationConfig: {
             temperature: 0.1,
-            maxOutputTokens: 500
+            maxOutputTokens: 2048
           }
         })
       });

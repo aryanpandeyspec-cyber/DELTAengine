@@ -290,8 +290,18 @@ app.get('/api/system/integrations', (req, res) => {
     },
     gemini: {
       connected: !!process.env.GEMINI_API_KEY,
-      provider: 'Google Gemini Flash',
-      models: ['gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-3.5-flash-lite']
+      provider: 'Google Gemini Multimodal Safety Engine',
+      models: ['gemini-3.5-flash', 'gemini-3.8-flash']
+    },
+    groq: {
+      connected: !!(process.env.GROQ_API_KEY || getGroqApiKey()),
+      provider: 'Groq Cloud High-Speed LPU',
+      models: ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b']
+    },
+    supabase: {
+      connected: !!(process.env.SUPABASE_URL && (process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY)),
+      provider: 'Supabase PostgreSQL & Cloud Auth',
+      url: process.env.SUPABASE_URL || 'Disconnected'
     },
     twilio: {
       connected: isTwilioConfigured(),

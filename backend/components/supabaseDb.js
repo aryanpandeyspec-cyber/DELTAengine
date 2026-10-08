@@ -4,7 +4,7 @@ require('dotenv').config();
 const { createClient } = require('@supabase/supabase-js');
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_PUBLISHABLE_KEY;
 
 const supabase = (supabaseUrl && supabaseKey) 
   ? createClient(supabaseUrl, supabaseKey) 
@@ -29,8 +29,14 @@ async function loadGraphFromSupabase(dbContainer) {
     }
 
     if (speakers && speakers.length > 0) {
-      speakers.forEach(s => { dbContainer.graph.speakers[s.id] = s; });
-      topics.forEach(t => { dbContainer.graph.topics[t.id] = t; });
+      speakers.forEach(s => { dbContainer.graph.speakers[s.id] = { ...s, delay: s.delay || 0 }; });
+      topics.forEach(t => { 
+        dbContainer.graph.topics[t.id] = { 
+          ...t, 
+          speakerId: t.speakerId || t.speaker_id,
+          slidesUploaded: t.slidesUploaded !== undefined ? t.slidesUploaded : (t.slides_uploaded ?? true)
+        }; 
+      });
       halls.forEach(h => { dbContainer.graph.halls[h.id] = h; });
       
       if (schedule && schedule.length > 0) {

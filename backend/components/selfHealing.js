@@ -29,8 +29,10 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
         if (!topicId) continue;
 
         const topic = graph.topics[topicId];
-        const speaker = graph.speakers[topic.speakerId];
+        if (!topic) continue;
+        const speaker = graph.speakers[topic.speakerId || topic.speaker_id];
         const hall = graph.halls[hallId];
+        if (!speaker || !hall) continue;
 
         if (speaker.delay > 0) {
           const availabilityStartHour = 9.5 + (speaker.delay / 60);
