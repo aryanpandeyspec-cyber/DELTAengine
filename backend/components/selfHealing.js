@@ -29,10 +29,11 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
         if (!topicId) continue;
 
         const topic = graph.topics[topicId];
-        const speaker = graph.speakers[topic.speakerId];
-        const hall = graph.halls[hallId];
+        if (!topic) continue;
+        const speaker = (graph.speakers && graph.speakers[topic.speakerId]) || { name: 'Featured Speaker', delay: 0 };
+        const hall = (graph.halls && graph.halls[hallId]) || { name: 'Hall Venue', capacity: 250 };
 
-        if (speaker.delay > 0) {
+        if (speaker && speaker.delay > 0) {
           const availabilityStartHour = 9.5 + (speaker.delay / 60);
           if (slot.startHour < availabilityStartHour) {
             logs.push(`[CONFLICT] Speaker "${speaker.name}" is delayed by ${speaker.delay} mins. Available at ${formatHour(availabilityStartHour)}, but talk "${topic.title}" is scheduled at ${slot.time} in ${hall.name}.`);

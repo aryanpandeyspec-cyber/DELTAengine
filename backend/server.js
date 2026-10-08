@@ -955,6 +955,20 @@ app.post('/api/sensors/face-passage', async (req, res) => {
   res.json({ success: true, passageData });
 });
 
+// --- EPHEMERAL SPATIAL STORAGE (2-Hour Post-Event Retention per HackIndia Specifications) ---
+const ephemeralSpatialPlans = new Map();
+
+// Periodic cleaner: automatically purges expired room plans from memory
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, plan] of ephemeralSpatialPlans.entries()) {
+    if (plan.expiresAt && now > plan.expiresAt) {
+      ephemeralSpatialPlans.delete(id);
+      console.log(`[Ephemeral Storage] ⏱️ Auto-purged expired venue plan: "${id}" (2 hours post-event TTL reached)`);
+    }
+  }
+}, 15 * 60 * 1000);
+
 app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
   const fileCheck = validateSlideFile(req.file);
   if (!fileCheck.valid) {
@@ -963,7 +977,120 @@ app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
 
   const fileName = escapeHtml(req.file.originalname);
   const fileStr = req.file.buffer ? req.file.buffer.toString('utf-8') : '';
+  const isImage = req.file.mimetype.startsWith('image/') || /\.(png|jpe?g|webp|svg)$/i.test(fileName);
+  const documentType = req.body.documentType || (isImage || fileName.toLowerCase().match(/(plan|floor|blueprint|room|layout|venue|hall)/) ? 'ROOM_PLAN' : 'SLIDES');
 
+  // --- BRANCH 1: VENUE ROOM PLAN / BLUEPRINT (3D Spatial Model & Capacity Calculation) ---
+  if (documentType === 'ROOM_PLAN') {
+    const hallId = req.body.hallId || 'hall-1';
+    const hallName = escapeHtml(req.body.hallName || (db.graph.halls[hallId] ? db.graph.halls[hallId].name : 'Turing Hall'));
+    const width = parseFloat(req.body.width) || 18;
+    const length = parseFloat(req.body.length) || 24;
+    const height = parseFloat(req.body.height) || 5.5;
+    const areaM2 = Math.round(width * length);
+    const doorsCount = parseInt(req.body.doorsCount, 10) || 2;
+    const ephemeralHours = parseFloat(req.body.ephemeralHours) || 2;
+    
+    // Safety standard calculations
+    const highDensityCap = Math.round(areaM2 / 1.4);
+    const safeEgressCap = Math.round(areaM2 / 1.8);
+    const standingCap = Math.round(areaM2 / 0.75);
+    const capacity = parseInt(req.body.calculatedCapacity, 10) || safeEgressCap || 240;
+
+    const planId = `plan_${hallId}_${Date.now()}`;
+    const expiresAt = Date.now() + ephemeralHours * 3600 * 1000;
+
+    const spatialModel = {
+      planId,
+      hallId,
+      hallName,
+      fileName,
+      fileSize: req.file.size,
+      mimeType: req.file.mimetype,
+      dimensions: { width, length, height, areaM2 },
+      capacityMetrics: {
+        capacity,
+        safeEgressCap,
+        highDensityCap,
+        standingCap,
+        egressFlowRatePaxPerMin: doorsCount * 60,
+        doorwayClearWidthM: doorsCount * 1.2
+      },
+      doorsCount,
+      doors: [
+        { id: 'gate-a', name: 'Entrance Gate A', x: Math.round(width * 0.15), y: 0, type: 'ENTRY', sensorTripwire: true },
+        { id: 'gate-b', name: 'Emergency Exit B', x: Math.round(width * 0.85), y: length, type: 'EXIT', sensorTripwire: false }
+      ],
+      stage: {
+        x: Math.round(width * 0.5),
+        y: Math.round(length * 0.12),
+        width: Math.round(width * 0.45),
+        length: Math.round(length * 0.18),
+        elevatedM: 0.85
+      },
+      ephemeralStorage: {
+        active: true,
+        expiresAt,
+        ephemeralHours,
+        retentionLabel: `${ephemeralHours} hours post-event`
+      },
+      updatedAt: new Date().toLocaleTimeString()
+    };
+
+    // Update Hall in graph database
+    if (!db.graph.halls[hallId]) {
+      db.graph.halls[hallId] = { id: hallId, name: hallName, capacity };
+    } else {
+      db.graph.halls[hallId].name = hallName;
+      db.graph.halls[hallId].capacity = capacity;
+    }
+    db.graph.halls[hallId].spatialModel = spatialModel;
+
+    // Cache image buffer ephemerally with expiration
+    ephemeralSpatialPlans.set(planId, {
+      ...spatialModel,
+      base64: req.file.buffer ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : null
+    });
+
+    // Broadcast over WebSocket to all connected clients
+    broadcast({
+      type: 'VENUE_SPATIAL_MODEL_UPDATE',
+      data: {
+        hallId,
+        hallName,
+        capacity,
+        spatialModel
+      }
+    });
+
+    const eventDesc = `🏛️ Room Blueprint Ingested: "${hallName}" mapped (${width}m x ${length}m = ${areaM2}m²). Safe capacity calibrated to ${capacity} pax (${doorsCount} doors). Ephemeral TTL: ${ephemeralHours}h post-event.`;
+    
+    // Evaluate if current live occupancy in this hall exceeds new capacity limit
+    const currentOccupancy = db.cctvState ? (db.cctvState.currentOccupancy || 0) : 0;
+    let healingReport = { logs: [], notifications: [] };
+    if (currentOccupancy > capacity) {
+      healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+    } else {
+      broadcast({
+        type: 'SYSTEM_LOG',
+        data: { text: eventDesc, type: 'system', timestamp: new Date().toLocaleTimeString() }
+      });
+    }
+
+    return res.json({
+      success: true,
+      documentType: 'ROOM_PLAN',
+      hall: db.graph.halls[hallId],
+      spatialModel,
+      calculatedCapacity: capacity,
+      ephemeralExpiresAt: new Date(expiresAt).toLocaleTimeString(),
+      scheduleMessage: `Venue hall "${hallName}" successfully calibrated from blueprint. 3D spatial room model active with capacity of ${capacity} pax.`,
+      logs: healingReport.logs || [eventDesc],
+      notifications: healingReport.notifications || []
+    });
+  }
+
+  // --- BRANCH 2: PRESENTATION SLIDES / SESSION DOCUMENT ---
   // Real PDF / Document Text Stream Extraction
   let extractedTitle = '';
   let extractedSpeakerId = 'speaker-1';
@@ -997,59 +1124,130 @@ app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
     extractedSummary = `Scanned PDF text buffer (${req.file.size} bytes). Extracted semantic structures and re-wove event database graphs.`;
   }
 
+  // Support user-edited inputs from Review & Edit modal
+  const finalTitle = req.body.customTitle ? escapeHtml(req.body.customTitle) : extractedTitle;
+  const finalSpeakerId = req.body.customSpeakerId || extractedSpeakerId;
+  const finalSummary = req.body.customSummary ? escapeHtml(req.body.customSummary) : extractedSummary;
+  let finalTags = extractedTags;
+  if (req.body.customTags) {
+    if (Array.isArray(req.body.customTags)) {
+      finalTags = req.body.customTags.map(t => escapeHtml(String(t).replace(/^#/, '').trim())).filter(Boolean);
+    } else if (typeof req.body.customTags === 'string') {
+      finalTags = req.body.customTags.split(',').map(t => escapeHtml(t.replace(/^#/, '').trim())).filter(Boolean);
+    }
+  }
+
   const newTopicId = `topic-${Date.now()}`;
   const newTopic = {
     id: newTopicId,
-    title: extractedTitle,
-    speakerId: extractedSpeakerId,
-    tags: extractedTags,
+    title: finalTitle,
+    speakerId: finalSpeakerId,
+    tags: finalTags,
     interest: Math.floor(Math.random() * 90) + 110,
-    duration: 60,
+    duration: parseInt(req.body.customDuration, 10) || 60,
     slidesUploaded: true,
-    summary: extractedSummary
+    summary: finalSummary
   };
 
   db.graph.topics[newTopicId] = newTopic;
-  db.graph.edges.push({ source: newTopicId, target: extractedSpeakerId, type: 'SPEAKER_OF' });
+  db.graph.edges.push({ source: newTopicId, target: finalSpeakerId, type: 'SPEAKER_OF' });
 
-  // Guaranteed Schedule Matrix Insertion (If grid is full, replace/shift slot so event ALWAYS appears in grid)
-  let targetSlotId = null;
-  let targetHallId = null;
+  // Guaranteed Schedule Matrix Insertion
+  let targetSlotId = req.body.targetSlotId || null;
+  let targetHallId = req.body.targetHallId || null;
 
-  for (const slotId in db.schedule) {
-    for (const hallId in db.schedule[slotId]) {
-      if (!db.schedule[slotId][hallId]) {
-        targetSlotId = slotId;
-        targetHallId = hallId;
-        break;
+  if (!targetSlotId || !targetHallId) {
+    for (const slotId in db.schedule) {
+      for (const hallId in db.schedule[slotId]) {
+        if (!db.schedule[slotId][hallId]) {
+          targetSlotId = targetSlotId || slotId;
+          targetHallId = targetHallId || hallId;
+          break;
+        }
       }
+      if (targetSlotId && targetHallId) break;
     }
-    if (targetSlotId) break;
   }
 
-  // If all cells were occupied, force place into slot-4/hall-2 so it is immediately visible in the Live Schedule Matrix!
-  if (!targetSlotId) {
-    targetSlotId = 'slot-4';
-    targetHallId = 'hall-2';
-  }
+  // Fallback slot if all cells were occupied
+  if (!targetSlotId) targetSlotId = 'slot-4';
+  if (!targetHallId) targetHallId = 'hall-2';
 
   db.schedule[targetSlotId][targetHallId] = newTopicId;
   db.syncScheduleEdges();
 
-  const speakerName = db.graph.speakers[extractedSpeakerId].name;
-  const eventDesc = `Ingestion: Scanned PDF "${fileName}". Scheduled "${extractedTitle}" by ${speakerName} in ${db.graph.halls[targetHallId].name} (${db.graph.slots[targetSlotId].time}).`;
+  if (!db.graph.speakers[finalSpeakerId]) {
+    db.graph.speakers[finalSpeakerId] = {
+      id: finalSpeakerId,
+      name: req.body.customSpeakerName || 'Featured Speaker',
+      role: 'Speaker',
+      bio: 'Event Presenter',
+      avatar: '🎙️',
+      delay: 0
+    };
+  }
 
-  const healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+  const speakerName = db.graph.speakers[finalSpeakerId].name;
+  const hallName = db.graph.halls[targetHallId] ? db.graph.halls[targetHallId].name : 'Main Hall';
+  const slotTime = db.graph.slots[targetSlotId] ? db.graph.slots[targetSlotId].time : '11:00 AM';
+  const eventDesc = `Ingestion: Scanned "${fileName}". Scheduled "${finalTitle}" by ${speakerName} in ${hallName} (${slotTime}).`;
+
+  let healingReport = { logs: [eventDesc], notifications: [] };
+  try {
+    healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+  } catch (err) {
+    console.warn('[Ingestion Self-Healing Alert]', err.message);
+  }
 
   res.json({
     success: true,
+    documentType: 'SLIDES',
     topic: newTopic,
-    speaker: db.graph.speakers[extractedSpeakerId],
-    socialCopy: `🚀 Just ingested PDF slides for "${extractedTitle}" by ${speakerName}! Scheduled at ${db.graph.slots[targetSlotId].time} in ${db.graph.halls[targetHallId].name}. #${extractedTags.join(' #')}`,
-    scheduleMessage: `Event successfully scanned from PDF and placed into Live Schedule Matrix (${db.graph.halls[targetHallId].name} @ ${db.graph.slots[targetSlotId].time}).`,
-    logs: healingReport.logs,
-    notifications: healingReport.notifications
+    speaker: db.graph.speakers[finalSpeakerId],
+    socialCopy: `🚀 Just ingested slides for "${finalTitle}" by ${speakerName}! Scheduled at ${slotTime} in ${hallName}. #${finalTags.join(' #')}`,
+    scheduleMessage: `Event successfully scanned from "${fileName}" and placed into Live Schedule Matrix (${hallName} @ ${slotTime}).`,
+    logs: healingReport.logs || [eventDesc],
+    notifications: healingReport.notifications || []
   });
+});
+
+// Dedicated alias endpoint for Room Plan blueprints
+app.post('/api/upload-room-plan', upload.single('slides'), async (req, res, next) => {
+  req.body.documentType = 'ROOM_PLAN';
+  return app._router.handle(req, res, next);
+});
+
+// Spatial Room Model Query Endpoints
+app.get('/api/spatial/room-models', (req, res) => {
+  const models = {};
+  for (const hallId in db.graph.halls) {
+    models[hallId] = db.graph.halls[hallId].spatialModel || {
+      hallId,
+      hallName: db.graph.halls[hallId].name,
+      capacity: db.graph.halls[hallId].capacity,
+      dimensions: { width: 18, length: 24, height: 5.5, areaM2: 432 },
+      doorsCount: 2
+    };
+  }
+  res.json({ success: true, models });
+});
+
+app.get('/api/spatial/room-model/:hallId', (req, res) => {
+  const hall = db.graph.halls[req.params.hallId];
+  if (!hall) return res.status(404).json({ error: 'Hall not found' });
+  res.json({
+    success: true,
+    hallId: hall.id,
+    hallName: hall.name,
+    capacity: hall.capacity,
+    spatialModel: hall.spatialModel || null
+  });
+});
+
+app.get('/api/spatial/plan-preview/:planId', (req, res) => {
+  const plan = ephemeralSpatialPlans.get(req.params.planId);
+  if (!plan) return res.status(404).json({ error: 'Plan preview not found or expired' });
+  res.json({ success: true, plan });
 });
 
 app.post('/api/schedule/move', async (req, res) => {

@@ -50,16 +50,16 @@ function rateLimiter(req, res, next) {
 }
 
 /**
- * Validates file upload extension and size for slide pipeline security.
+ * Validates file upload extension and size for document & room blueprint pipeline security.
  */
 function validateSlideFile(file) {
   if (!file) return { valid: false, error: 'No file provided' };
   
-  const allowedExtensions = ['.pdf', '.pptx', '.ppt', '.txt'];
+  const allowedExtensions = ['.pdf', '.pptx', '.ppt', '.txt', '.png', '.jpg', '.jpeg', '.webp', '.svg'];
   const ext = file.originalname.substring(file.originalname.lastIndexOf('.')).toLowerCase();
   
   if (!allowedExtensions.includes(ext)) {
-    return { valid: false, error: `Invalid file format "${ext}". Only PDF and PPTX presentation slides are allowed.` };
+    return { valid: false, error: `Invalid file format "${ext}". Supported formats: PDF, PPTX, TXT, PNG, JPG, WEBP.` };
   }
 
   const MAX_SIZE_BYTES = 20 * 1024 * 1024; // 20 MB max

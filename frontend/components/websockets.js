@@ -277,6 +277,21 @@ function initWebSockets() {
         if (typeof createToast === 'function') createToast('Conference layout reset to default settings!', 'success');
         break;
 
+      case 'VENUE_SPATIAL_MODEL_UPDATE':
+        if (graphState && graphState.halls && payload.data.hallId) {
+          if (!graphState.halls[payload.data.hallId]) {
+            graphState.halls[payload.data.hallId] = { id: payload.data.hallId, name: payload.data.hallName, capacity: payload.data.capacity };
+          }
+          graphState.halls[payload.data.hallId].name = payload.data.hallName;
+          graphState.halls[payload.data.hallId].capacity = payload.data.capacity;
+          graphState.halls[payload.data.hallId].spatialModel = payload.data.spatialModel;
+        }
+        if (typeof createToast === 'function') {
+          createToast(`🏛️ Spatial Blueprint Synced: "${payload.data.hallName}" capacity updated to ${payload.data.capacity} pax.`, 'info');
+        }
+        safeSyncUI(selectedNodeId);
+        break;
+
       case 'WHATSAPP_DISPATCH':
         if (typeof window.handleWhatsAppDispatch === 'function') {
           window.handleWhatsAppDispatch(payload.data);

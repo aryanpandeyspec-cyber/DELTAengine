@@ -4,7 +4,7 @@
 > **Hackathon**: HackIndia Spark 2026 — South Central Region (Hyderabad, Telangana)  
 > **Repository**: [aryanpandeyspec-cyber/DELTAengine](https://github.com/aryanpandeyspec-cyber/DELTAengine)  
 > **Core Leadership**: Aryan Pandey (Lead Coordinator), Suryansh (Crowd & Safety Lead), Shahid (Stage & Ops Lead)  
-> **Last Updated**: October 2026 (Zero-Lag Performance Hardening & Multi-Modal Perception Release)
+> **Last Updated**: October 2026 (v3.5 — Multimodal Room Blueprint Ingestion & 3D Spatial Twin Release)
 
 ---
 
@@ -23,34 +23,36 @@
    - [Issue 4: ESP32 Guru Meditation Error Crash Loop](#issue-4-esp32-guru-meditation-error-crash-loop)
    - [Issue 5: The 2 cm (20 mm) Laser Self-Reflection Trap](#issue-5-the-2-cm-20-mm-laser-self-reflection-trap)
 5. [IoT Serial-to-Web Bridge (`door_serial_bridge.py`)](#5-iot-serial-to-web-bridge-door_serial_bridgepy)
-6. [Multi-Modal CCTV Room Perception & Crowd Dynamics Engine](#6-multi-modal-cctv-room-perception--crowd-dynamics-engine)
+6. [Multimodal 3D Room Blueprint Ingestion & Spatial Twin Engine](#6-multimodal-3d-room-blueprint-ingestion--spatial-twin-engine)
+   - [Ingestion Review & Calibration Modal (`#modal-upload-review`)](#ingestion-review--calibration-modal)
+   - [Mathematical People Quantity & Safety Capacity Standards](#mathematical-people-quantity--safety-capacity-standards)
+   - [Interactive 3D Spatial Room Model Engine (`roomSpatialModel.js`)](#interactive-3d-spatial-room-model-engine-roomspatialmodeljs)
+   - [Ephemeral Storage & Automated 2-Hour Cleanup (DPDP / GDPR)](#ephemeral-storage--automated-2-hour-cleanup)
+   - [Post-Ingestion Continuous Review & Edit System](#post-ingestion-continuous-review--edit-system)
+7. [Multi-Modal CCTV Room Perception & Crowd Dynamics Engine](#7-multi-modal-cctv-room-perception--crowd-dynamics-engine)
    - [Optical Metrics & Eulerian Flow Physics](#optical-metrics--eulerian-flow-physics)
    - [Barricade Pressure PSI & Automated Emergency Gate Release](#barricade-pressure-psi--automated-emergency-gate-release)
    - [Decoupled Vision Throttling & 60 FPS Zero-Lag Pipeline](#decoupled-vision-throttling--60-fps-zero-lag-pipeline)
-7. [Autonomous Voice Announcer Subsystem (`voiceAnnouncer.js`)](#7-autonomous-voice-announcer-subsystem-voiceannouncerjs)
+8. [Autonomous Voice Announcer Subsystem (`voiceAnnouncer.js`)](#8-autonomous-voice-announcer-subsystem-voiceannouncerjs)
    - [Nico Robin Character Persona & ElevenLabs Flash v2.5](#nico-robin-character-persona--elevenlabs-flash-v25)
    - [Low-Latency Caching & Multi-Tier Fallbacks](#low-latency-caching--multi-tier-fallbacks)
-8. [Google Gemini 3.8 Flash Venue Reasoning Auditor (`geminiAuditor.js`)](#8-google-gemini-38-flash-venue-reasoning-auditor-geminiauditorjs)
-9. [Multi-Agent Groq Self-Healing Swarm](#9-multi-agent-groq-self-healing-swarm)
-10. [Communications Fabric & 2-Way Volunteer WhatsApp Webhook](#10-communications-fabric--2-way-volunteer-whatsapp-webhook)
-11. [Frontend Portals, Neomorphic UI & Precision Custom Cursor](#11-frontend-portals-neomorphic-ui--precision-custom-cursor)
-    - [Electric Blue Hardware-Locked Cursor & Comet Tail Canvas](#electric-blue-hardware-locked-cursor--comet-tail-canvas)
-    - [Interactive Portals: Coordinator, Admin, Signage TV & Slides](#interactive-portals-coordinator-admin-signage-tv--slides)
-12. [Zero-Lag Hardening & Performance Engineering (October 2026)](#12-zero-lag-hardening--performance-engineering-october-2026)
-    - [Graph Visualizer Kinetic Energy Sleep](#graph-visualizer-kinetic-energy-sleep)
-    - [Persistent SVG Element In-Place Caching](#persistent-svg-element-in-place-caching)
-    - [WebSocket Event Render Debouncing](#websocket-event-render-debouncing)
-13. [Complete Backend REST & WebSocket API Catalog](#13-complete-backend-rest--websocket-api-catalog)
-14. [Complete Codebase File Tree](#14-complete-codebase-file-tree)
-15. [End-to-End Live Demo Execution Guide](#15-end-to-end-live-demo-execution-guide)
-16. [Master Changelog & Engineering History](#16-master-changelog--engineering-history)
+9. [Google Gemini 3.8 Flash Venue Reasoning Auditor (`geminiAuditor.js`)](#9-google-gemini-38-flash-venue-reasoning-auditor-geminiauditorjs)
+10. [Multi-Agent Groq Self-Healing Swarm](#10-multi-agent-groq-self-healing-swarm)
+11. [Communications Fabric & 2-Way Volunteer WhatsApp Webhook](#11-communications-fabric--2-way-volunteer-whatsapp-webhook)
+12. [Frontend Portals, Neomorphic UI & Precision Custom Cursor](#12-frontend-portals-neomorphic-ui--precision-custom-cursor)
+13. [Zero-Lag Hardening & Performance Engineering](#13-zero-lag-hardening--performance-engineering)
+14. [Complete Backend REST & WebSocket API Catalog](#14-complete-backend-rest--websocket-api-catalog)
+15. [Hardware & Architectural Roadmap (Engineering Notebook Plans)](#15-hardware--architectural-roadmap-engineering-notebook-plans)
+16. [Complete Codebase File Tree](#16-complete-codebase-file-tree)
+17. [End-to-End Live Demo Execution Guide](#17-end-to-end-live-demo-execution-guide)
+18. [Master Changelog & Engineering History](#18-master-changelog--engineering-history)
 
 ---
 
 ## 1. Executive Summary & Problem Statement
 
 ### The Problem in Large-Scale Event Management
-Conferences, trade summits, and hackathons frequently suffer from catastrophic room dynamics:
+Conferences, trade summits, and hackathons frequently suffer from chaotic room dynamics:
 - **Unannounced Capacity Breaches & Stampede Hazards**: High-demand keynote sessions routinely exceed hall fire ratings (e.g. 240+ attendees cramming into a 150-seat room).
 - **Delayed Intervention**: Coordinators rely on manual badge scans, walkie-talkies, or attendee complaints, reacting 20–40 minutes after fire hazards or door blocking occur.
 - **Manual Rescheduling Bottlenecks**: Swapping halls requires manual calendar re-coordination, contacting AV staff, updating attendees, and changing signage—causing cascading delays across the entire venue.
@@ -59,10 +61,11 @@ Conferences, trade summits, and hackathons frequently suffer from catastrophic r
 ### The DELTA ENGINE Solution
 DELTA ENGINE is an autonomous, physical-first operating system for live event venues:
 1. **Physical IoT Laser Tripwire**: Dual laser Time-of-Flight sensors on doorways track bi-directional human passage (Entry $+1$, Exit $-1$) with millimeter precision at under 15ms latency.
-2. **Edge Computer Vision HUD**: In-browser edge facial and crowd motion tracking computes room occupancy, Eulerian crowd flux, and stampede risks with 100% on-device privacy (no raw video leaves the client).
-3. **Autonomous Self-Healing Swarm**: When live physical occupancy exceeds room capacity, a heterogeneous Groq LLM agent swarm instantly detects the breach, negotiates venue reallocation, shifts schedules, and dispatches automated WhatsApp, email, and live voice alerts.
-4. **Studio-Grade PA Voice Announcer**: An autonomous voice announcer with a calm, intellectual "Nico Robin" (One Piece) character persona broadcasts reassuring safety notices over the venue sound system.
-5. **2-Way Volunteer WhatsApp Webhook**: Volunteers can text status commands (`GATE CLEAR`, `OVERFLOW OPEN`, `AUTOPILOT ON/OFF`) directly from WhatsApp to control the venue command center in real time.
+2. **Multimodal 3D Room Blueprint Engine**: Ingests images or PDFs of venue floor plans or pictures, allows visual review/editing, calculates physical people quantity, and synthesizes an interactive 3D spatial room model with 2-hour ephemeral storage.
+3. **Edge Computer Vision HUD**: In-browser edge facial and crowd motion tracking computes room occupancy, Eulerian crowd flux, and stampede risks with 100% on-device privacy.
+4. **Autonomous Self-Healing Swarm**: When live physical occupancy exceeds room capacity, a heterogeneous Groq LLM agent swarm instantly detects the breach, negotiates venue reallocation, shifts schedules, and dispatches automated WhatsApp, email, and live voice alerts.
+5. **Studio-Grade PA Voice Announcer**: An autonomous voice announcer with a calm, intellectual "Nico Robin" (One Piece) character persona broadcasts reassuring safety notices over the venue sound system.
+6. **2-Way Volunteer WhatsApp Webhook**: Volunteers can text status commands (`GATE CLEAR`, `OVERFLOW OPEN`, `AUTOPILOT ON/OFF`) directly from WhatsApp to control the venue command center in real time.
 
 ---
 
@@ -93,7 +96,8 @@ DELTA ENGINE is an autonomous, physical-first operating system for live event ve
                            [DELTA Engine Backend Server]
                   - Node.js + Express.js + WebSocket Server
                   - Updates live hall occupancy state in In-Memory Graph
-                  - Broadcasts ROOM_OCCUPANCY_UPDATE to clients
+                  - Ingests 3D Room Plans with 2-hour ephemeral storage
+                  - Broadcasts ROOM_OCCUPANCY_UPDATE & VENUE_SPATIAL_MODEL_UPDATE
                   - Checks: Is Occupancy > Hall Capacity?
                                         │
                    ┌────────────────────┴────────────────────┐
@@ -106,7 +110,7 @@ DELTA ENGINE is an autonomous, physical-first operating system for live event ve
    - Liaison Agent (llama-3.1-8b)                   - Turing Hall turns RED
    - Scheduler Agent (llama-3.3-70b)                - Real-time Headcount HUD
    - Logistics Agent (llama-3.3-70b)                - Audible Alarm Modal Pops
-   - Marketing Agent (llama-3.1-8b)                 - Custom Electric Blue Cursor
+   - Marketing Agent (llama-3.1-8b)                 - Interactive 3D Spatial Model
                    │                                         │
                    ├─────────────────────────────────────────┤
                    ▼                                         ▼
@@ -182,10 +186,10 @@ The firmware located at [`hardware/DELTA_Door_Counter/DELTA_Door_Counter.ino`](f
    - **Timeout**: If an attendee steps halfway and walks back, the state resets to `IDLE` after 2000 ms.
 2. **Crash-Proof Guards & Fallback**:
    - Stores boolean flags `sensor1Online` and `sensor2Online`.
-   - Never invokes `rangingTest()` on an uninitialized sensor (preventing NULL pointer dereferences).
-   - If only one sensor is detected, it operates in **Single-Sensor Mode** as a passage detector.
+   - Never invokes `rangingTest()` on an uninitialized sensor.
+   - If only one sensor is detected, operates in **Single-Sensor Mode**.
 3. **Auto-Pin Scanning Matrix**:
-   - Automatically scans pin permutations `(21, 22)`, `(22, 21)`, `(21, 23)`, `(23, 21)`, `(22, 23)` to accommodate wire swaps automatically.
+   - Scans pin permutations `(21, 22)`, `(22, 21)`, `(21, 23)`, `(23, 21)`, `(22, 23)` to accommodate wire swaps.
 4. **Tuned Optics & Noise Floor**:
    - `DISTANCE_THRESHOLD_MM = 150` (15 cm trigger zone).
    - `MIN_DISTANCE_MM = 35` (3.5 cm crosstalk suppression).
@@ -206,57 +210,40 @@ During the bring-up of the physical hardware, five distinct electrical, firmware
 
 ### Issue 1: Blank Serial Monitor on Boot
 - **Symptom**: Arduino IDE successfully flashed the ESP32, but opening the Serial Monitor resulted in a blank black screen.
-- **Root Cause**: The ESP32 reboots immediately upon flash completion via the RTS pin. By the time the user opens the Serial Monitor tab, the boot sequence has already executed. Because the code only prints on door crossings, the terminal remains silent.
-- **Fix**: Press the physical **`EN`** (or **`RST`**) button on the ESP32 while the Serial Monitor is open to replay the boot diagnostic report.
+- **Root Cause**: The ESP32 reboots immediately upon flash completion via RTS. By the time Serial Monitor opens, the boot sequence has already executed.
+- **Fix**: Press physical **`EN`** (or **`RST`**) button on the ESP32 while Serial Monitor is open to replay diagnostic boot report.
 
 ### Issue 2: Pin Misplacement (D23 vs D21 silkscreen trap)
 - **Symptom**: Serial Monitor reported: `Initializing Sensor 1 (Entry - GPIO 21/22)... ❌ FAILED! Check wiring on D21/D22.` while Sensor 2 was `✅ ONLINE`.
-- **Root Cause**: On standard 30-pin ESP32 boards, the top-right pins are ordered:  
-  `[D23] [D22] [TX0] [RX0] [D21]`.  
-  The user had plugged the red wire into `D23` (corner pin) thinking it was adjacent to `D21`. In reality, `D22` was empty, and `D21` was four pins lower down. The ESP32 was driving clock signals into an empty pin.
-- **Fix**: Relocated the red wire to `D22` and added an auto-pin scanner into the firmware that checks pin pairs dynamically.
+- **Root Cause**: On 30-pin ESP32 boards, the top-right pins are ordered: `[D23] [D22] [TX0] [RX0] [D21]`. The user had plugged into `D23` thinking it was adjacent to `D21`.
+- **Fix**: Relocated the red wire to `D22` and added an auto-pin scanner into the firmware.
 
 ### Issue 3: The Split Breadboard Power Rail Trap
 - **Symptom**: Sensor 1 refused to respond on any pin combination (`❌ SENSOR 1 NOT RESPONDING ON ANY PINS (21, 22, 23)`).
-- **Root Cause**: Inspection of user photos revealed that the ESP32's power input was plugged into the right side of the breadboard where Sensor 2 was mounted. Sensor 1 was mounted on the far left side. Half-size and full-size breadboards frequently have their **power rails physically split in the middle** without electrical continuity. Sensor 1 had 0.0 Volts.
-- **Fix**: Moved Sensor 1's `VIN` and `GND` jumpers to the right side of the breadboard directly adjacent to Sensor 2's power terminals.
+- **Root Cause**: Breadboards frequently have their **power rails physically split in the middle** without electrical continuity. Sensor 1 on the left side had 0.0 Volts.
+- **Fix**: Moved Sensor 1's `VIN` and `GND` jumpers directly adjacent to Sensor 2's power terminals.
 
 ### Issue 4: ESP32 Guru Meditation Error Crash Loop
-- **Symptom**: The ESP32 threw `Guru Meditation Error: Core 1 panic'ed (LoadProhibited) EXCVADDR: 0x00000040` every second, boot-looping continuously.
-- **Root Cause**: When Sensor 1 failed initialization, the internal pointer in the `Adafruit_VL53L0X` library remained null (`0x00000000`). When `loop()` executed `sensor1.rangingTest(&measure1, false)`, the firmware attempted to read member offset `0x40` of a null object, crashing the RTOS kernel.
-- **Fix**: Wrapped all measurement calls in boolean safety checks:
-  ```cpp
-  if (sensor1Online) {
-    sensor1.rangingTest(&measure1, false);
-    dist1 = (measure1.RangeStatus != 4) ? measure1.RangeMilliMeter : 9999;
-  }
-  ```
-  Added graceful single-sensor mode fallback if one sensor is unplugged.
+- **Symptom**: ESP32 threw `Guru Meditation Error: Core 1 panic'ed (LoadProhibited) EXCVADDR: 0x00000040` every second.
+- **Root Cause**: When Sensor 1 failed initialization, internal library pointer was null (`0x00000000`). Calling `sensor1.rangingTest()` attempted to read offset `0x40` of null.
+- **Fix**: Wrapped all measurement calls in boolean safety checks (`if (sensor1Online)`). Added single-sensor mode fallback.
 
 ### Issue 5: The 2 cm (20 mm) Laser Self-Reflection Trap
-- **Symptom**: Serial Monitor output showed Sensor 2 constantly reading `20 mm` (2 cm), triggering non-stop entry counts and beeping without any hand present.
-- **Root Cause**: Two contributing factors:
-  1. Factory protective optical film: VL53L0X sensors ship with an ultra-thin yellow/clear peel-off plastic film over the dual laser lenses. The 940nm laser bounced directly off the plastic 0.1mm away and saturated the SPAD receiver array.
-  2. Dangling wires: Arched jumper wires hung directly in the sensor's 25-degree field-of-view cone.
-- **Fix**:
-  1. Peeled off the factory protective sticker from the tiny black sensor aperture.
-  2. Routed jumper wires behind the sensor body.
-  3. Added `#define MIN_DISTANCE_MM 35` to ignore any reading $<3.5$ cm as physical crosstalk.
-  4. Tuned the target trigger zone to 3.5 cm – 15.0 cm (`#define DISTANCE_THRESHOLD_MM 150`).
+- **Symptom**: Serial Monitor output showed Sensor 2 constantly reading `20 mm` (2 cm), triggering non-stop entry counts and beeping.
+- **Root Cause**: Factory protective optical yellow peel-off film over lenses bounced laser 0.1mm away into SPAD receiver.
+- **Fix**: Peeled off protective film, routed wires behind sensor, added `#define MIN_DISTANCE_MM 35` noise filter.
 
 ---
 
 ## 5. IoT Serial-to-Web Bridge (`door_serial_bridge.py`)
 
-The bridge script at [`hardware/door_serial_bridge.py`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/hardware/door_serial_bridge.py) establishes bidirectional communication between the microcontroller and the web operating system:
+The bridge script at [`hardware/door_serial_bridge.py`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/hardware/door_serial_bridge.py) establishes bidirectional communication between microcontroller and web operating system:
 
 ```python
-# Core logic snippet
 PORT = "COM7"
 BAUD_RATE = 115200
 API_URL = "http://localhost:3000/api/sensors/door"
 
-# Automatic COM port discovery matching CP210x UART
 def find_esp32_port():
     ports = serial.tools.list_ports.comports()
     for p in ports:
@@ -265,134 +252,107 @@ def find_esp32_port():
     return PORT
 ```
 
-### Operational Capabilities
-- Filters debug lines from structured JSON payloads.
-- Automatically handles reconnection if the USB cord is cycled.
-- Emits terminal alerts when capacity breaches trigger self-healing:
-  ```text
-  🟢 [ENTRY] Net Occupancy: 151 | Dist1: 85mm | Dist2: 92mm
-  🔥 [DELTA SELF-HEALING TRIGGERED] Capacity overshoot detected! Reallocating room...
-  ```
+---
+
+## 6. Multimodal 3D Room Blueprint Ingestion & Spatial Twin Engine
+
+Engineered in direct alignment with **Point 1 of the DELTA Engine Engineering Roadmap**: DELTA Engine reads photos (`.png, .jpg, .jpeg, .webp`) and documents (`.pdf, .pptx, .txt`) of venue room plans, blueprints, or hall photos, dynamically constructs an interactive 3D spatial room model, and calculates safe people capacity.
+
+### Ingestion Review & Calibration Modal
+Located in [`frontend/index.html`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/index.html#modal-upload-review) and powered by [`frontend/components/contentPipeline.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/contentPipeline.js):
+- **Live Preview Window**: Shows visual thumbnail preview of uploaded photos or document stream badges.
+- **AI Classification Selector**: Toggle between 🏛️ **3D Room Plan / Blueprint** and 📄 **Presentation Slides / Talk**.
+- **Interactive Dimension Inputs**: Calibrates Width ($m$), Length ($m$), Height ($m$), and Doors (Gates).
+- **In-Modal 3D Spatial Canvas**: Renders real-time isometric 3D spatial twin updating immediately as dimensions or doors change.
+
+### Mathematical People Quantity & Safety Capacity Standards
+When calibrating a venue hall, DELTA Engine computes capacity using international crowd safety standards:
+1. **Total Floor Area**:
+   $$\text{Area } (m^2) = \text{Width} \times \text{Length}$$
+2. **Safe Fire Marshall Egress Capacity**:
+   $$\text{Safe Capacity} = \text{round}\left(\frac{\text{Area}}{1.8\text{ m}^2/\text{pax}}\right)$$
+3. **High-Density Conference Seating**:
+   $$\text{Dense Capacity} = \text{round}\left(\frac{\text{Area}}{1.4\text{ m}^2/\text{pax}}\right)$$
+4. **Standing Reception Limit**:
+   $$\text{Standing Capacity} = \text{round}\left(\frac{\text{Area}}{0.75\text{ m}^2/\text{pax}}\right)$$
+5. **Doorway Egress Flow Rate**:
+   $$\text{Egress Rate} = \text{Doors Count} \times 60\text{ persons/minute}$$
+
+### Interactive 3D Spatial Room Model Engine (`roomSpatialModel.js`)
+Located in [`frontend/components/roomSpatialModel.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/roomSpatialModel.js):
+- **3D Isometric Canvas**: Built with pure Canvas 2D isometric projection matrix without heavy 3D library overhead.
+- **Architectural Render Pipeline**:
+  - Outer raised walls with architectural corner columns.
+  - Floor tile grid ($2\text{m}$ intervals) with boundary highlighting.
+  - Elevated 3D stage with presenter podium and main screen.
+  - Audience seating array: renders individual chairs color-coded dynamically based on live hall headcount (green = occupied, slate = open).
+  - Entrance Gate A: highlighted with green indicator and pulse ring linked to physical Dual VL53L0X laser tripwires.
+  - Exit Gate B: highlighted with red emergency egress indicator.
+- **Zero-Lag Kinetic Sleep**: Simulation automatically sleeps when static (0% CPU/GPU overhead), only redrawing on mouse drag rotation or dimension changes.
+
+### Ephemeral Storage & Automated 2-Hour Cleanup
+Directly implementing the notebook's requirement: *"make the image store ephemerally or 2 hours extra until the event is over"*:
+- Uploaded blueprint images are stored in memory with an expiration timestamp:
+  $$\text{expiresAt} = \text{Date.now}() + \text{ephemeralHours} \times 3600 \times 1000$$
+- A periodic server cleaner runs every 15 minutes, automatically removing expired blueprint buffers from RAM.
+- Ensures zero persistent storage of attendee images or floor photos, fully complying with GDPR and the Indian Digital Personal Data Protection (DPDP) Act 2023.
+
+### Post-Ingestion Continuous Review & Edit System
+- In the dashboard results card, a persistent **`✏️ Review & Edit Ingested Data`** button allows operators to re-open the calibration modal at any time to modify room dimensions, talk titles, or speaker assignments without re-uploading from scratch.
+- The **`🏛️ Live 3D Spatial Digital Twin`** card renders directly on the dashboard, displaying live headcount synchronization with physical doorway sensors.
 
 ---
 
-## 6. Multi-Modal CCTV Room Perception & Crowd Dynamics Engine
+## 7. Multi-Modal CCTV Room Perception & Crowd Dynamics Engine
 
-DELTA ENGINE features a complete in-browser computer vision pipeline located in [`frontend/components/cctvPerception.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/cctvPerception.js), designed to operate with standard webcams and USB cameras (e.g. Zebronics ZEB-CRYSTAL PRO 480p):
-
-### Optical Metrics & Eulerian Flow Physics
+Located in [`frontend/components/cctvPerception.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/cctvPerception.js):
 - **Headcount Detection**: Uses WebAssembly `pico.js` (`facefinder.js`) for frontal facial detection and person tracking.
 - **Eulerian Crowd Motion Vectors**: Splits video frames into a 16x12 spatial grid to calculate optical velocity vectors ($\vec{v} = (\Delta x, \Delta y)$), identifying directional flow across aisles.
 - **Counter-Flow Stream Collision Detection**: Detects opposing crowd streams traveling against each other in narrow corridors, triggering pre-crush alerts.
-- **Stampede & Crowd Crush Risk Index ($0–100\%$)**:
-  $$\text{Risk} = f(\text{Density}, \text{Turbulence}, \text{Mean Velocity}, \text{Chokepoint Saturation})$$
-  Evaluated dynamically in real time.
-
-### Barricade Pressure PSI & Automated Emergency Gate Release
-- Measures simulated physical crowd pressure at exit barricades and gates.
-- When barricade pressure reaches **$\ge 8.5\text{ PSI}$**, the vision engine fires an automated emergency pulse to `/api/sensors/door` with action `EMERGENCY_RELEASE`, disengaging magnetic door locks on Gates A & B and playing an emergency audible tone.
-
-### Decoupled Vision Throttling & 60 FPS Zero-Lag Pipeline
-- **Problem**: Calling `ctx.getImageData()` synchronously on 320x240 canvases at 60 FPS saturated the browser's UI thread with 307KB GPU readbacks every 16ms, creating cursor lag.
-- **Solution**: The video canvas rendering remains locked at a buttery 60 FPS, while heavy vision analysis (Pico cascades, Eulerian matrix math, DOM writes) is throttled to run every **75 ms (~13.3 FPS)**. Results are cached and rendered between ticks, completely eliminating main-thread freezing.
+- **Stampede & Crowd Crush Risk Index ($0–100\%$)**: Evaluates density, turbulence, mean speed, and chokepoints.
+- **Barricade Pressure PSI & Automated Gate Release**: At $\ge 8.5\text{ PSI}$, fires automated emergency release pulse to `/api/sensors/door`, disengaging magnetic door locks on Gates A & B.
+- **Decoupled 60 FPS Video / 75ms Vision Throttling**: Video canvas stays at 60 FPS while heavy vision math is throttled to 75ms ticks with cached bounding boxes, eliminating main-thread lag.
 
 ---
 
-## 7. Autonomous Voice Announcer Subsystem (`voiceAnnouncer.js`)
+## 8. Autonomous Voice Announcer Subsystem (`voiceAnnouncer.js`)
 
-Located in [`backend/components/voiceAnnouncer.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/voiceAnnouncer.js), this subsystem provides venue-wide public address voice broadcasting:
-
-### Nico Robin Character Persona & ElevenLabs Flash v2.5
-- Modeled after **Nico Robin** from *One Piece*—a calm, composed, elegant, and intellectual female voice that reassures attendees during emergencies rather than causing panic.
-- Uses ElevenLabs `eleven_flash_v2_5` with voice ID `EXAVITQu4vr4xnSDxMaL` (Sarah), tuned with:
-  - `stability: 0.72` (serene, composed delivery)
-  - `similarity_boost: 0.85` (velvety vocal resonance)
-  - `style: 0.20` (intellectual, unhurried cadence)
-- Phrases announcements with archaeological and composed intellectual phrasing (e.g., *"Attention scholars and attendees. A gentle room reallocation is now in progress..."*).
-
-### Low-Latency Caching & Multi-Tier Fallbacks
-1. **MD5 Audio Cache**: Hashes `voiceId + cleanText` to serve repetitive venue alerts in **$<1\text{ ms}$** from `frontend/audio_announcements/cache_{hash}.mp3`.
-2. **Local Audio Fallback**: If ElevenLabs API key is absent or offline, instantly serves `frontend/announcement_test.mp3`.
-3. **Web Speech API Client Fallback**: Client-side synthesis triggers if audio files cannot play.
+Located in [`backend/components/voiceAnnouncer.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/voiceAnnouncer.js):
+- **Nico Robin Character Persona**: Calm, elegant, intellectual female voice modeled after Nico Robin (*One Piece*).
+- **ElevenLabs Flash v2.5**: Powered by voice ID `EXAVITQu4vr4xnSDxMaL` (Sarah) with `stability: 0.72`, `similarity_boost: 0.85`, `style: 0.20`.
+- **MD5 Audio Cache**: Serves repetitive venue alerts in $<1\text{ms}$ from `frontend/audio_announcements/cache_{hash}.mp3`.
+- **Multi-Tier Fallbacks**: Local audio file (`announcement_test.mp3`) $\rightarrow$ Browser Web Speech API.
 
 ---
 
-## 8. Google Gemini 3.8 Flash Venue Reasoning Auditor (`geminiAuditor.js`)
+## 9. Google Gemini 3.8 Flash Venue Reasoning Auditor (`geminiAuditor.js`)
 
 Located in [`backend/components/geminiAuditor.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/geminiAuditor.js):
-- Ingests real-time multi-hall occupancy telemetry, door passage rates, and active conflict flags.
-- Employs **Google Gemini 3.8 Flash** (`gemini-3.8-flash` / `gemini-3.5-flash`) via REST API to perform a cognitive audit of crowd dynamics.
-- Returns structured JSON containing:
-  - `safetyRating`: `A+`, `A`, `B`, `C`, or `CRITICAL`
-  - `riskLevel`: `LOW`, `ELEVATED`, `HIGH`, `CRITICAL`
-  - `bottleneckIdentified`: Detailed description of the crowd chokepoint
-  - `aiSummary`: Executive reasoning behind current venue conditions
-  - `recommendedActions`: Bulleted list of immediate operational mitigations
-  - `paAnnouncementScript`: Script composed dynamically for the Nico Robin PA voice announcer.
-- Includes `auditVisualSceneWithGemini()` to analyze captured base64 CCTV camera frames and autonomously verify room states.
+- Evaluates multi-hall occupancy telemetry, door passage rates, and active conflict flags using **Google Gemini 3.8 Flash**.
+- Returns structured JSON safety ratings (`A+`, `A`, `B`, `C`, `CRITICAL`), risk levels, executive summaries, operational mitigations, and auto-generated PA announcement scripts.
+- Visual Scene Auditing: Inspects base64 camera frames for visual verification of hall congestion.
 
 ---
 
-## 9. Multi-Agent Groq Self-Healing Swarm
+## 10. Multi-Agent Groq Self-Healing Swarm
 
 When a capacity threshold is breached, DELTA ENGINE invokes a specialized 4-agent swarm powered by Groq's low-latency inference:
-
-```
-                          [Disruption Detected]
-                         (Occupancy: 151 / 150)
-                                    │
-                                    ▼
-                      ┌───────────────────────────┐
-                      │    🗣️ Liaison Agent       │
-                      │  (llama-3.1-8b-instant)   │
-                      └─────────────┬─────────────┘
-                                    │ Assesses urgency & synthesizes incident telemetry
-                                    ▼
-                      ┌───────────────────────────┐
-                      │    ⏱️ Scheduler Agent     │
-                      │ (llama-3.3-70b-versatile) │
-                      └─────────────┬─────────────┘
-                                    │ Evaluates hall capacities & speaker dependencies
-                                    ▼
-                      ┌───────────────────────────┐
-                      │    🏛️ Logistics Agent     │
-                      │ (llama-3.3-70b-versatile) │
-                      └─────────────┬─────────────┘
-                                    │ Selects Lovelace Suite (Cap: 250); adjusts AV/HVAC
-                                    ▼
-                      ┌───────────────────────────┐
-                      │    📢 Marketing Agent     │
-                      │  (llama-3.1-8b-instant)   │
-                      └─────────────┬─────────────┘
-                                    │ Composes attendee notices & updates calendar feeds
-                                    ▼
-                      [Self-Healing Resolution Dispatched]
-```
-
-### Self-Healing Swarm Output Example
-- **Initial State**: Topic "Quantum Computing Frontiers" scheduled in *Turing Auditorium* (Capacity: 150).
-- **Physical Ingress**: IoT Door sensor reaches 151 attendees.
-- **Swarm Resolution**:
-  - Reallocates "Quantum Computing Frontiers" to *Lovelace Suite* (Capacity: 250).
-  - Shifts low-density talk "Intro to WebAssembly" (Occupancy: 42) into *Turing Auditorium*.
-  - Generates updated `.ics` calendar invite with revised room metadata.
-  - Sends automated WhatsApp notification to stage coordinators.
-  - Triggers the Nico Robin PA voice announcement.
+- **Liaison Agent** (`llama-3.1-8b-instant`): Assesses urgency & synthesizes incident telemetry.
+- **Scheduler Agent** (`llama-3.3-70b-versatile`): Evaluates hall capacities & speaker dependencies.
+- **Logistics Agent** (`llama-3.3-70b-versatile`): Selects optimal hall & routes volunteers.
+- **Marketing Agent** (`llama-3.1-8b-instant`): Composes attendee notices & updates calendar feeds.
 
 ---
 
-## 10. Communications Fabric & 2-Way Volunteer WhatsApp Webhook
+## 11. Communications Fabric & 2-Way Volunteer WhatsApp Webhook
 
 ### Real-Time WhatsApp Integration (`twilioDispatcher.js`)
 - Supports **Twilio Programmable Messaging API** for automated alerts.
-- If live credentials are in sandbox mode, gracefully provides one-click `https://wa.me/` direct chat intents.
-- Direct recipient routing for key leads:
-  - **Aryan Pandey** (Lead Coordinator): `+91 91542 76178`
-  - **Suryansh** (Crowd & Safety Lead): `+91 83030 09159`
-  - **Shahid** (Stage & Ops Lead): `+91 63035 70916`
+- Fallback click-to-chat web intents (`https://wa.me/`) for simulated mode.
+- Recipient routing: Aryan Pandey (`+91 91542 76178`), Suryansh (`+91 83030 09159`), Shahid (`+91 63035 70916`).
 
 ### 2-Way Volunteer Control Webhook (`/api/whatsapp/incoming`)
-Volunteers on the floor can text commands straight to the DELTA Engine WhatsApp number to control the system without opening a browser:
+Volunteers on the floor can text commands straight to the DELTA Engine WhatsApp number:
 - **`GATE CLEAR`**: Clears chokepoint alerts, resetting hall alert status to `NOMINAL`.
 - **`OVERFLOW OPEN`**: Activates overflow lounge and adjusts hall capacity limits.
 - **`AUTOPILOT ON` / `AUTOPILOT OFF`**: Toggles Tesla-style autonomous self-healing mode.
@@ -400,55 +360,42 @@ Volunteers on the floor can text commands straight to the DELTA Engine WhatsApp 
 
 ---
 
-## 11. Frontend Portals, Neomorphic UI & Precision Custom Cursor
+## 12. Frontend Portals, Neomorphic UI & Precision Custom Cursor
 
 ### Electric Blue Hardware-Locked Cursor & Comet Tail Canvas
 Located in [`frontend/components/customCursor.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/customCursor.js):
-- **Precision Apex Anchor**: SVG pointer position is offset by `(-2px, -2px)` so the click target perfectly aligns with the tip of the arrow.
-- **Suppression of Duplicate Pointers**: Sets `pointer-events: none` and handles all hoverables without showing default browser fingers beside the custom cursor.
-- **Interactive Micro-Interactions**: Scales smoothly (`scale(1.25)`) and enhances glow with `box-shadow` when hovering over buttons, cards, and links.
-- **Comet Tail Canvas with Kinetic Idle Sleep**: A high-speed canvas draws fading meteor comet particles behind the cursor. When the mouse stops moving for 80ms, the particles decay and the loop **shuts down completely** (0% CPU/GPU idle usage), waking instantly on `mousemove`.
+- Precision Apex Anchor: SVG pointer offset by `(-2px, -2px)` so click target aligns with arrow tip.
+- Suppression of duplicate browser fingers on card hovers (`pointer-events: none`).
+- Particle comet tail canvas with kinetic idle sleep (0% CPU/GPU when mouse stops).
 
 ### Interactive Portals
-1. **Coordinator Command Center (`index.html`)**: Live schedule grid, dynamic hall occupancy bars, drag-and-drop talk rearrangement (`dragdrop.js`), force-directed graph visualizer, and live multi-agent chat stream.
-2. **Super Admin Dashboard (`admin.html`)**: Token usage counters, AI circuit breakers, database freeze toggles, 500-scenario concurrency stress tester (`stressTester.js`), and live dispatch telemetry.
-3. **Digital Signage TV Screen (`signage.html`)**: Full-screen kiosk layout with ambient video backdrop (`SIGNAGE_TV.mp4`), real-time session timetables, and emergency banner overrides.
-4. **Presentation Deck (`presentation.html`)**: Pitch deck engineered directly in HTML/CSS for hackathon judging.
+1. **Coordinator Command Center (`index.html`)**: Live schedule grid, dynamic occupancy bars, drag-drop scheduler, force-directed graph visualizer, 3D room digital twin, and live multi-agent chat.
+2. **Super Admin Dashboard (`admin.html`)**: Token usage counters, AI circuit breakers, database freeze toggles, 500-scenario concurrency stress tester.
+3. **Digital Signage TV Screen (`signage.html`)**: Full-screen kiosk layout with ambient video backdrop, real-time timetable, and emergency banner overrides.
+4. **Presentation Deck (`presentation.html`)**: Pitch deck engineered in HTML/CSS.
 
 ---
 
-## 12. Zero-Lag Hardening & Performance Engineering (October 2026)
+## 13. Zero-Lag Hardening & Performance Engineering
 
-To guarantee that DELTA ENGINE maintains a solid 60 FPS and zero mouse stutter under high load:
-
-### Graph Visualizer Kinetic Energy Sleep
-- **Previous Bottleneck**: `physicsTick()` in `graphVisualizer.js` ran an infinite 60 FPS animation loop, recalculating repulsion and attraction physics indefinitely.
-- **Optimization**: Implemented kinetic energy monitoring:
-  ```javascript
-  const totalMotion = nodes.reduce((sum, n) => sum + Math.abs(n.vx) + Math.abs(n.vy), 0);
-  if (totalMotion < 0.12) {
-    isPhysicsRunning = false;
-    physicsAnimFrameId = null;
-    return; // Sleep!
-  }
-  ```
-  The simulation automatically sleeps when nodes settle into equilibrium (0% CPU). It wakes up only when a node is dragged or the graph structure updates (`wakePhysicsSimulation()`).
-
-### Persistent SVG Element In-Place Caching
-- **Previous Bottleneck**: `drawGraphSVG()` executed `svg.innerHTML = ''` every 16ms, creating and destroying ~4,800 DOM nodes per second. This triggered massive V8 Garbage Collector stop-the-world pauses (100–300ms freeze spikes).
-- **Optimization**: Built persistent element caches (`domLinkMap`, `domNodeMap`). Nodes and lines are updated in-place via `setAttribute('x1', ...)`, `setAttribute('transform', ...)`. Stale nodes are culled only when removed from data. Result: **0 DOM allocations per second during rendering**.
-
-### WebSocket Event Render Debouncing
-- **Previous Bottleneck**: Rapid back-to-back WebSocket events (IoT door crossing + CCTV update + self-healing trigger) triggered multiple full UI re-renders within milliseconds.
-- **Optimization**: Debounced `safeSyncUI()` using `requestAnimationFrame`, coalescing burst updates into a single render tick.
+1. **Graph Visualizer Kinetic Energy Sleep**: Physics simulation sleeps at `totalMotion < 0.12` (0% CPU), waking only on drag or data updates.
+2. **Persistent SVG Element In-Place Caching**: Replaced destructive `svg.innerHTML = ''` with persistent element maps (`domLinkMap`, `domNodeMap`), eliminating ~4,800 DOM allocations per second and preventing V8 Garbage Collector freeze spikes.
+3. **Decoupled Vision Throttling**: 60 FPS video draw separated from 75ms throttled computer vision calculations.
+4. **WebSocket Render Debouncing**: Wrapped `safeSyncUI()` in `requestAnimationFrame` debouncing to coalesce multi-message sensor bursts into a single render tick.
+5. **Idle Cursor Comet Tail Sleep**: Particle canvas sleeps when mouse stops moving.
 
 ---
 
-## 13. Complete Backend REST & WebSocket API Catalog
+## 14. Complete Backend REST & WebSocket API Catalog
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/state` | Returns full event state (graph, schedule, volunteers, limits, uptime) |
+| `POST` | `/api/upload-slides` | Multi-branch ingestion: processes presentation slides or 3D room blueprints |
+| `POST` | `/api/upload-room-plan` | Dedicated alias endpoint for 3D room plan blueprint uploads |
+| `GET` | `/api/spatial/room-models` | Returns 3D spatial models and dimensions for all venue halls |
+| `GET` | `/api/spatial/room-model/:hallId` | Returns active 3D spatial model and capacity metrics for specific hall |
+| `GET` | `/api/spatial/plan-preview/:planId` | Returns cached ephemeral room plan blueprint preview |
 | `POST` | `/api/sensors/door` | Primary IoT door crossing ingress (VL53L0X ToF laser telemetry) |
 | `GET` | `/api/sensors/doors/mesh` | Returns status of all sensor tripwires across venue doorways |
 | `POST` | `/api/sensors/camera` | Ingress for external Python OpenCV camera telemetry |
@@ -469,7 +416,6 @@ To guarantee that DELTA ENGINE maintains a solid 60 FPS and zero mouse stutter u
 | `POST` | `/api/simulate/capacity` | Simulates a sudden capacity surge in a designated hall |
 | `POST` | `/api/sim/mass-disruption` | Simulates simultaneous cascading failures across all 3 halls |
 | `POST` | `/api/simulate/sentiment` | Simulates attendee sentiment fluctuations |
-| `POST` | `/api/upload-slides` | Multi-part upload for speaker PPTX/PDF presentation slides |
 | `GET` | `/api/calendar/feed.ics` | Dynamically generated iCalendar `.ics` live subscription feed |
 | `GET` | `/api/groq/status` | Checks Groq LLM API connectivity and latency |
 | `POST` | `/api/groq/set-key` | Dynamically updates Groq API key at runtime |
@@ -480,7 +426,24 @@ To guarantee that DELTA ENGINE maintains a solid 60 FPS and zero mouse stutter u
 
 ---
 
-## 14. Complete Codebase File Tree
+## 15. Hardware & Architectural Roadmap (Engineering Notebook Plans)
+
+Derived directly from the core engineering notebook:
+1. **Plan 1: Multimodal 3D Room Plan / Blueprint Ingestion (Status: Delivered in v3.5)**:
+   - Reads images and PDFs of room plans or pics.
+   - Builds interactive 3D spatial models and calculates safe people capacity.
+   - Includes 2-hour ephemeral storage auto-cleanup for privacy.
+   - Future expansion: Automatic floor detection directly from real-time CCTV perception camera feeds.
+2. **Plan 2: Clutter Reduction & UI Refinement (Status: Ongoing / Polished in v3.5)**:
+   - Unified review modals, clear status badges, cleaner card hierarchies, and streamlined controls.
+3. **Plan 3: Wireless / Long-Range Sensor Decoupling (Status: Planned Next)**:
+   - Configure ESP32 for standalone Wi-Fi/ESP-NOW HTTP telemetry, decoupling the sensor from wired laptop USB cables.
+4. **Plan 4: Offline Local-First Independence (Status: Planned Next)**:
+   - Local fallback modes, offline heuristic solver execution, and cached voice files ensure full operation when internet/Wi-Fi is disconnected.
+
+---
+
+## 16. Complete Codebase File Tree
 
 ```
 DELTAengine-main/
@@ -494,7 +457,7 @@ DELTAengine-main/
 ├── PROJECT_CHANGELOG.md                # Exhaustive changelog of every addition and modification
 ├── generate_deck.py                    # Script generating presentation assets
 ├── backend/
-│   ├── server.js                       # Express app, WebSocket server, IoT door & REST routes
+│   ├── server.js                       # Express app, WebSocket server, 3D spatial routes & REST API
 │   └── components/
 │       ├── agentSwarm.js               # Groq LLM Swarm (Liaison, Scheduler, Logistics, Marketing)
 │       ├── selfHealing.js              # Deterministic conflict solver & swarm orchestrator
@@ -502,11 +465,11 @@ DELTAengine-main/
 │       ├── voiceAnnouncer.js           # Nico Robin PA voice announcer (ElevenLabs + Web Speech)
 │       ├── geminiAuditor.js            # Google Gemini 3.8 Flash venue reasoning auditor
 │       ├── twilioDispatcher.js         # Twilio WhatsApp & SMS dispatcher
-│       ├── security.js                 # Rate limiter, HTML escaping, file validation
+│       ├── security.js                 # Rate limiter, HTML escaping, file validation (PDF/Images)
 │       ├── supabaseDb.js               # Supabase persistence loader
 │       └── supabaseEmailIntegrator.js  # Transactional email dispatcher with anti-spam
 ├── frontend/
-│   ├── index.html                      # Coordinator Dashboard (Schedule, Matrix, Graph, Chat)
+│   ├── index.html                      # Coordinator Dashboard (Schedule, Matrix, 3D Twin, Swarm Chat)
 │   ├── admin.html                      # Super Admin Command Center (Circuit breakers, Stress test)
 │   ├── login.html                      # Auth Landing Page with 1-Click fast-track bypass
 │   ├── signage.html                    # Fullscreen digital signage TV kiosk portal
@@ -520,10 +483,11 @@ DELTAengine-main/
 │       ├── cctvPerception.js           # Decoupled 60 FPS vision engine & crowd HUD
 │       ├── customCursor.js             # Electric Blue hardware-locked cursor & comet tail canvas
 │       ├── graphVisualizer.js          # Kinetic-sleeping force-directed SVG graph visualizer
+│       ├── roomSpatialModel.js         # Interactive 3D/Isometric spatial room twin engine
+│       ├── contentPipeline.js          # Ingestion review/edit modal & 3D room plan calibrator
 │       ├── dragdrop.js                 # HTML5 schedule drag-and-drop controller
 │       ├── tourGuide.js                # Interactive docked sidebar walkthrough
 │       ├── websockets.js               # Real-time WebSocket pub/sub client with debounce
-│       ├── contentPipeline.js          # Presentation slide upload & metadata parser
 │       ├── stressTester.js             # 500-scenario micro-benchmark concurrency runner
 │       ├── pico.js                     # WebAssembly frontal face detection cascade
 │       └── facefinder.js               # Face cascade runtime weights
@@ -539,7 +503,7 @@ DELTAengine-main/
 
 ---
 
-## 15. End-to-End Live Demo Execution Guide
+## 17. End-to-End Live Demo Execution Guide
 
 ### Step 1: Start the Backend Server
 ```powershell
@@ -547,53 +511,19 @@ npm start
 ```
 *Expected Output*: `[DELTA ENGINE] Running on http://localhost:3000`
 
-### Step 2: Open the Dashboard
-Navigate to `http://localhost:3000/index.html` in your browser.
-- Verify the Electric Blue cursor glides smoothly with a glowing comet tail.
-- Notice *Turing Auditorium* shows `Occupancy: 0 / 150`.
-
-### Step 3: Trigger Autonomous Self-Healing Demo
-Simulate 152 people entering Turing Hall (capacity 150):
-```powershell
-curl -X POST http://localhost:3000/api/sensors/door `
-  -H "Content-Type: application/json" `
-  -d '{\"event\":\"ENTRY\",\"hallId\":\"hall-1\",\"netOccupancy\":152,\"entries\":155,\"exits\":3}'
-```
-**Instant Results**:
-1. Central modal pops with audible alert tone.
-2. Nico Robin PA voice announces: *"Attention attendees. A gentle room reallocation is now in progress..."*
-3. Groq Swarm executes in $<2.5$ seconds, moving the talk to *Lovelace Suite*.
-4. WhatsApp notice dispatches to Aryan, Suryansh, and Shahid.
-5. The graph visualizer updates and automatically goes to sleep once nodes settle.
+### Step 2: Ingest a 3D Room Plan Blueprint
+1. Open `http://localhost:3000/index.html`.
+2. Drag and drop any venue photo or blueprint image into the uploader zone.
+3. The **Ingestion Review & Calibration Modal** opens instantly.
+4. Observe the interactive 3D spatial room model rotating in the preview canvas.
+5. Edit width (e.g. $20\text{m}$) and length ($30\text{m}$); observe the people capacity dynamically calculate to $330\text{ pax}$.
+6. Click **`🚀 Confirm & Ingest into DELTA Engine`**.
+7. The live 3D room digital twin activates immediately on the dashboard, with hall capacity calibrated across the operating system!
 
 ---
 
-## 16. Master Changelog & Engineering History
-
-### Version 3.4 (October 2026) — Zero-Lag Hardening & Perception Optimization
-- **Added**: Kinetic energy sleep check (`totalMotion < 0.12`) in [`graphVisualizer.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/graphVisualizer.js). Graph physics simulation sleeps at 0% CPU once nodes stabilize.
-- **Added**: In-place SVG element caching (`domLinkMap`, `domNodeMap`) replacing destructive `svg.innerHTML = ''`, completely eliminating V8 Garbage Collection lag freezes.
-- **Added**: Decoupled computer vision tick in [`cctvPerception.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/cctvPerception.js). Heavy `getImageData()`, Pico cascades, and Eulerian crowd calculations now run on a 75ms throttled tick while video canvas renders at 60 FPS.
-- **Added**: WebSocket render debouncing in [`websockets.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/websockets.js) using `requestAnimationFrame`.
-- **Added**: Idle sleep state in [`customCursor.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/customCursor.js) for the comet tail canvas when the mouse is stationary.
-- **Fixed**: Eliminated browser double-pointer displaying default hand cursor alongside custom pointer on card hovers.
-- **Fixed**: Aligned custom cursor click anchor to top apex (`top: -2px, left: -2px`).
-
-### Version 3.3 (October 2026) — Multi-Modal Audio & AI Auditor
-- **Added**: [`voiceAnnouncer.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/voiceAnnouncer.js) with ElevenLabs Flash v2.5 synthesis, "Nico Robin" (One Piece) character persona, local MD5 caching, and browser Web Speech fallback.
-- **Added**: [`geminiAuditor.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/geminiAuditor.js) with Google Gemini 3.8 Flash real-time venue crowd reasoning and automated PA script composition.
-- **Added**: [`twilioDispatcher.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/twilioDispatcher.js) and 2-way volunteer command webhook at `/api/whatsapp/incoming` (`GATE CLEAR`, `OVERFLOW OPEN`, `AUTOPILOT ON/OFF`).
-- **Added**: Digital Signage TV portal at [`frontend/signage.html`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/signage.html).
-
-### Version 3.2 (September 2026) — Zebronics 480p CCTV Perception & Crowd Physics
-- **Added**: Barricade pressure PSI sensor model with automated emergency gate release pulse.
-- **Added**: Eulerian crowd motion vector matrix and counter-flow collision detection.
-- **Added**: Mega-crowd stampede risk index ($0–100\%$).
-
-### Version 3.1 (September 2026) — Physical IoT Hardware & Dual I2C
-- **Added**: Dual VL53L0X ToF laser doorway counter on ESP32 (`Wire` on D21/D22, `Wire1` on RX2/TX2).
-- **Added**: Single-sensor fallback mode and auto-pin scanner matrix.
-- **Added**: Python serial-to-REST bridge (`door_serial_bridge.py`).
+## 18. Master Changelog & Engineering History
+Detailed release notes, component ledgers, and deprecation archives are maintained in [`PROJECT_CHANGELOG.md`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/PROJECT_CHANGELOG.md).
 
 ---
 *Authored & Maintained by Antigravity for Team DELTA • HackIndia Spark 2026*
