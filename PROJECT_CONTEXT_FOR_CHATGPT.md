@@ -19,20 +19,23 @@
 DELTA Engine is an **autonomous, physical-first operating system for live venues** (convention halls, arenas, college fests, trade expos, and auditoriums). 
 Think of it as **"Kubernetes for physical event venues"**:
 1. It ingests physical headcount telemetry from **$10 ESP32 Time-of-Flight laser doorway sensors** and **in-browser edge computer vision**.
-2. It tracks room capacities in an **in-memory spatial graph database**.
+2. It tracks room capacities in an **in-memory spatial topological graph database**.
 3. When a hall experiences an overcrowding breach (>100% capacity) or an unexpected speaker delay, a **multi-agent Groq LLaMA-3 AI Swarm autonomously self-heals the schedule** — swapping halls, recalculating room allocations, updating attendee calendars, and dispatching instant WhatsApp and Email alerts to volunteers and speakers without human panic.
+4. An **autonomous voice announcer** (modeled after *Nico Robin* from One Piece) synthesizes serene, intellectual PA voice broadcasts over venue speakers to maintain composure during crowd redistributions.
+5. **2-Way Volunteer WhatsApp Webhook** allows field coordinators to text commands (`GATE CLEAR`, `OVERFLOW OPEN`, `AUTOPILOT ON/OFF`) straight from WhatsApp to orchestrate venue operations.
 
 ---
 
 ## ⚠️ 2. CORE PROBLEMS SOLVED
 
 1. **Unannounced Crowd Crushes & Safety Breaches**:
-   - In venues across India and globally, popular keynote sessions routinely exceed fire code capacity (e.g. 280 people packing into a 150-seat room).
+   - In venues across India and globally, popular keynote sessions routinely exceed fire code capacity (e.g. 240+ people packing into a 150-seat room).
    - Organizers only notice when doors get blocked, leading to stampede risks and fire marshal shutdowns.
 2. **Cascading Event Schedule Delays**:
    - When a speaker is late or a room overflows, organizers scramble on walkie-talkies or WhatsApp groups. Rescheduling one talk manually takes 20–40 minutes and creates cascading room conflicts.
 3. **Bandwidth & Privacy Bottlenecks of Traditional Video Systems**:
    - Traditional crowd systems stream high-res RTSP video feeds to cloud GPUs. This requires massive local Wi-Fi bandwidth, incurs exorbitant GPU cloud bills, and violates attendee facial privacy (GDPR / Indian DPDP Act).
+   - DELTA Engine runs computer vision 100% locally in the browser via WebAssembly (`pico.js`), transmitting only lightweight numerical telemetry.
 4. **Communication Friction**:
    - In live events, attendees and stage coordinators do not read emails in real time. Static schedules printed on banners or hosted as static PDFs become obsolete the moment a delay occurs.
 
@@ -47,7 +50,7 @@ DELTA Engine operates on a **3-tier decoupled intelligence fabric**:
 │ TIER 1: ULTRA-LOW LATENCY EDGE SENSING (<10ms, $0 Cloud Cost, 100% Private) │
 ├──────────────────────────────────────┬──────────────────────────────────────┤
 │ Dual Laser Time-of-Flight (VL53L0X)  │ In-Browser Edge Vision (pico.js)    │
-│ ESP32 Microcontroller (Dual I2C)    │ WebAssembly Frontal Face Cascade     │
+│ ESP32 Microcontroller (Dual I2C)    │ Eulerian Flow & Stampede Risk HUD    │
 │ 50-byte JSON telemetry @ 115200 baud │ Zero video upload; 100% local frames │
 └──────────────────────────────────┬───┴──────────────────────────────────────┘
                                    │ HTTP POST / WebSockets
@@ -56,10 +59,12 @@ DELTA Engine operates on a **3-tier decoupled intelligence fabric**:
 │ TIER 2: REAL-TIME EVENT FABRIC & SPATIAL GRAPH ENGINE (Node.js / Express)   │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ • In-Memory Spatial Dependency Graph (graphDb.js)                           │
-│ • Real-Time WebSocket Pub/Sub Server (ws)                                   │
-│ • Live Dynamic Ticking Clock & Dynamic Slot Highlighter                     │
-│ • Neubrutalist Public & Admin Portals (index.html / admin.html)             │
-│ • Anti-Spam Coordinator & Speaker Email Dispatcher (Node/Supabase)          │
+│ • Real-Time WebSocket Pub/Sub Server with requestAnimationFrame Debounce    │
+│ • Kinetic-Sleeping Force-Directed Graph Visualizer (0% idle CPU)            │
+│ • Nico Robin Autonomous PA Voice Announcer (ElevenLabs Flash v2.5 / Cache)  │
+│ • Google Gemini 3.8 Flash Crowd Reasoning & Safety Auditor                  │
+│ • 2-Way Volunteer WhatsApp Webhook & Twilio Cloud Dispatcher                │
+│ • Neubrutalist Portals: Coordinator, Super Admin, Signage TV, Presentation  │
 └──────────────────────────────────┬──────────────────────────────────────────┘
                                    │ Anomaly Trigger (Occupancy > 100%)
                                    ▼
@@ -96,183 +101,113 @@ Both VL53L0X breakout boards ship with the **same fixed default I2C address (`0x
 - When a person exits: Sensor 2 triggers first ($<150\text{mm}$), followed by Sensor 1 $\rightarrow$ Emits `EXIT` (`netOccupancy - 1`).
 - Laser Radar noise filter ignores objects closer than 35mm (eliminates self-reflection from door frames).
 
-### Hardware Wiring Matrix
-| Sensor Board Pin | Sensor 1 (Entry) ESP32 Pin | Sensor 2 (Exit) ESP32 Pin |
-| :--- | :--- | :--- |
-| **VCC** | 3.3V (or 5V if board has LDO) | 3.3V (or 5V) |
-| **GND** | GND (Common ground) | GND (Common ground) |
-| **SDA** | **GPIO 21** | **GPIO 16 (RX2)** |
-| **SCL** | **GPIO 22** | **GPIO 17 (TX2)** |
+---
 
-### Firmware Source File
-- Location: `hardware/DELTA_Door_Counter/DELTA_Door_Counter.ino`
-- Serial Baud Rate: `115200`
-- Flashing Speed: `921600` via Arduino IDE on port `COM7`.
+## 📹 5. COMPUTER VISION & CROWD DYNAMICS ENGINE
+
+Located in `frontend/components/cctvPerception.js`:
+1. **Edge Facial & Crowd Tracking**: Powered by WebAssembly `pico.js` and `facefinder.js` for on-device processing.
+2. **Eulerian Optical Flow & Crowd Vectors**: Divides video into a 16x12 grid to measure crowd directional velocity, identifying corridor bottlenecks and opposing flow collision hazards.
+3. **Stampede & Crush Risk Index ($0–100\%$)**: Mathematical risk model evaluating density, turbulence, mean speed, and chokepoints.
+4. **Barricade Pressure PSI**: Simulated physical pressure metric. If pressure $\ge 8.5\text{ PSI}$, fires automated gate release pulse to `/api/sensors/door` disengaging mag-locks on Gates A & B.
+5. **Decoupled Zero-Lag Pipeline**: Video canvas renders at a silky 60 FPS, while heavy vision analysis (`getImageData()`, cascades, vector math) runs on a 75ms throttled tick with cached bounding boxes.
 
 ---
 
-## 📹 5. EDGE CCTV & COMPUTER VISION SUBSYSTEM
+## 🎙️ 6. VOICE ANNOUNCER & GEMINI 3.8 FLASH AUDITOR
 
-- **Frontend Component**: `frontend/components/cctvPerception.js`
-- **Vision Engine**: **pico.js** (Ultra-fast face detection cascade running via client-side JavaScript / WebAssembly).
-- **Zero Cloud Streaming**: 
-  - Video from the webcam or room camera is ingested via `navigator.mediaDevices.getUserMedia()`.
-  - Frames are drawn to an off-screen HTML5 `<canvas>`.
-  - Grayscale pixel transforms and frontal cascade evaluations occur **locally at 30 FPS**.
-  - No video stream ever leaves the browser! Only the computed integer head count (`peopleDetected`) is transmitted over `/api/sensors/camera`.
-- **Queue & Density Analytics**:
-  - Calculates real-time room occupancy percentage against configured hall capacity.
-  - Classifies density status:
-    - `< 60%`: `NORMAL` (Green)
-    - `60% - 79%`: `MODERATE` (Blue)
-    - `80% - 94%`: `HIGH DENSITY` (Orange - triggers warning)
-    - `≥ 95%`: `CRITICAL OVERCROWDING` (Red - triggers emergency self-healing)
-- **Camera Device Switching**: Full dynamic enumeration of connected USB/webcam inputs with instant hot-swapping.
-- **On-Screen Security HUD**: Renders real-time bounding boxes around detected heads, live FPS, active timecode, and density gauges.
+### Voice Announcer (`backend/components/voiceAnnouncer.js`)
+- Persona: **Nico Robin** from One Piece (calm, intellectual, composed female voice).
+- Powered by **ElevenLabs Flash v2.5** (`voice_id: EXAVITQu4vr4xnSDxMaL` - Sarah).
+- MD5 caching serves repetitive announcements in $<1\text{ms}$.
+- Multi-tier fallbacks: Local audio file (`announcement_test.mp3`) $\rightarrow$ Browser Web Speech API.
+
+### Google Gemini 3.8 Flash Auditor (`backend/components/geminiAuditor.js`)
+- Models: `gemini-3.8-flash`, `gemini-3.5-flash`.
+- Evaluates real-time hall telemetry and returns structured safety ratings (`A+`, `A`, `B`, `C`, `CRITICAL`), risk levels, executive summaries, operational recommendations, and auto-generated PA announcement scripts.
+- Visual Scene Auditing: Inspects base64 camera frames for visual verification of hall congestion.
 
 ---
 
-## 🧠 6. AUTONOMOUS AGENTIC SWARM & SELF-HEALING ENGINE
+## ⚡ 7. PERFORMANCE ENGINEERING & ZERO-LAG ARCHITECTURE
 
-- **Backend Component**: `backend/components/engine.js`
-- **LLM Provider**: **Groq Cloud** (Ultra-fast LPU inference: ~500 tokens/sec).
-- **Models Used**:
-  - `llama-3.3-70b-versatile` (Deep spatial reasoning, conflict resolution, schedule graph recalculation)
-  - `llama-3.1-8b-instant` (Fast telemetry parsing, broadcast message drafting, coordinator task assignment)
-
-### The Swarm Trigger & Execution Flow
-1. Anomaly Event occurs: Room headcount hits $\ge 100\%$ capacity (e.g. Turing Hall holds 150, current count reaches 152).
-2. `server.js` triggers `runSelfHealingAgent(eventDetails)`.
-3. **Liaison Agent**: Confirms breach severity, current occupancy, and affected topic.
-4. **Scheduler Agent**: Queries the spatial graph in `graphDb.js`, identifies larger available halls (e.g., *Lovelace Suite*, capacity 250), verifies AV/tech constraints, and swaps the scheduled slot.
-5. **Logistics Agent**: Assigns action items to the nearest on-duty coordinators:
-   - *Suryansh*: Secure entrance & restrict further entry into Turing Hall.
-   - *Shahid*: Guide overflow attendees along Corridor B to Lovelace Suite.
-   - *Aryan Pandey*: Verify central AV broadcast and monitor stage transitions.
-6. **Marketing/Broadcaster Agent**: Automatically constructs the public reschedule alert and broadcasts it to the attendee timetable, admin HUD, and WhatsApp channels.
+Implemented in October 2026 to ensure the interface never drops frames or stutters:
+1. **Graph Physics Simulation Auto-Sleep**: In `graphVisualizer.js`, kinetic energy is monitored (`totalMotion < 0.12`). As soon as nodes settle into place, the 60 FPS simulation loop **completely sleeps** (0% CPU). Wakes only on node drag or graph updates.
+2. **Persistent SVG Element In-Place Caching**: Replaced destructive `svg.innerHTML = ''` with persistent element maps (`domLinkMap`, `domNodeMap`). Nodes and lines update in-place, eliminating ~4,800 DOM allocations per second and preventing V8 Garbage Collector 100–300ms freeze spikes.
+3. **Decoupled Vision Throttling**: 60 FPS video draw separated from 75ms throttled computer vision calculations.
+4. **WebSocket Render Debouncing**: Wrapped `safeSyncUI()` in `requestAnimationFrame` debouncing to coalesce multi-message sensor bursts into a single render tick.
+5. **Custom Cursor Comet Tail Sleep**: In `customCursor.js`, the particle canvas loop automatically puts itself to sleep when the mouse stops moving.
+6. **Precision Cursor Hotspot**: Click hotspot anchored at top-left apex (`top: -2px; left: -2px`) with suppression of native double-finger pointers on cards.
 
 ---
 
-## 💬 7. MULTI-CHANNEL DISPATCH & NOTIFICATIONS
-
-### WhatsApp Coordination Directory
-- Built into both `frontend/index.html` and `frontend/admin.html`.
-- Allows 1-click individual dispatch or a universal **"SEND TO ALL COORDINATORS"** broadcast.
-- Auto-compiles an emergency/logistics brief containing:
-  - Incident type & affected venue
-  - Real-time headcount vs capacity
-  - Swapped hall destination
-  - Custom assigned role instructions
-- Direct WhatsApp API link generation: `https://wa.me/<phone>?text=<encoded_message>`.
-
-### Anti-Spam Email Logistics System
-- Backend file: `backend/components/supabaseEmailIntegrator.js`.
-- Sender Identity: `aryan.pandey777hyd@gmail.com`.
-- Formatted as clean, high-deliverability transactional logistics updates (anti-spam headers, plain text + clean CSS container, no spam trigger keywords) sent to speakers and lead coordinators.
-
-### Live Dynamic Neubrutalist Clock & Slot Sync
-- Top navigation features a real-time ticking clock pill (`#live-clock-pill`): `Day, DD Mon YYYY • HH:MM:SS AM/PM`.
-- `graphDb.js` dynamically anchors schedules to today's date (`new Date().toISOString().split('T')[0]`).
-- The schedule timetable automatically detects the current time and stamps the active time slot with an animated **`🔴 LIVE`** pulse indicator.
-
----
-
-## 🎨 8. DESIGN SYSTEM & USER INTERFACE
-
-- **Aesthetic**: **Neubrutalism** (High contrast, bold 2px–3px black borders `#000`, hard black drop-shadows `4px 4px 0px #000`, vibrant accent colors: Cyber Yellow `#fbbf24`, Signal Red `#ef4444`, Neon Green `#22c55e`, Royal Blue `#2563eb`).
-- **Pages**:
-  - `frontend/index.html`: Public attendee schedule, live capacity gauge, dynamic timetable, CCTV HUD, and coordinator contact drawer.
-  - `frontend/admin.html`: Super Admin Command Portal with real-time hardware telemetry charts, manual override controls, AI self-healing simulation trigger, volunteer deployment panel, and WhatsApp broadcast center.
-  - `frontend/login.html`: Role-based authentication portal (Admin vs Attendee vs Coordinator).
-  - `frontend/presentation.html`: Hackathon & investor pitch deck slide viewer.
-- **Audio Feedback**: Built-in synthesized sound effects (Web Audio API) for button clicks, alert sirens, and resolution chimes (toggleable via `🔊 SFX: ON/OFF`).
-
----
-
-## 📈 9. SCALABILITY & ECONOMIC VIABILITY
-
-### Technical Scalability
-- **Decoupled Edge Compute**: ESP32 sensors emit ~50-byte event packets. 1,000 doors across a mega-convention center consume **$<100\text{ KB/sec}$** aggregate network bandwidth.
-- **Event-Driven AI Ingestion**: Normal occupancy runs at **$0.00 cloud cost**. Groq LLM inference only fires during anomaly breaches, keeping operational costs negligible.
-- **Privacy & Compliance**: 100% GDPR and Indian DPDP Act compliant because video frames are processed client-side and never saved or streamed to the cloud.
-
-### Commercial Monetization (Tailored for India & Global Markets)
-1. **B2B Event SaaS (Per-Event)**:
-   - College Tech Fests & Hackathons (4,000+ colleges in India): **₹15,000 – ₹35,000** per event.
-   - B2B Trade Shows & Summits (HITEX, Jio World, Bharat Mandapam, Yashobhoomi): **₹1.5 Lakh – ₹5 Lakh** per 3-day expo.
-2. **Hardware-as-a-Service (HaaS) Rental Kits**:
-   - Turnkey "DELTA Box" with 10 magnetic door sensor clips rented to event managers for **₹2,000 – ₹5,000/day**.
-   - Hardware BOM is only **~₹800 ($9.50) per unit** $\rightarrow$ 85%+ gross profit margin.
-3. **Sponsor Footfall & Dwell-Time Heatmaps**:
-   - Verified footfall analytics reports sold to corporate booth sponsors (e.g. *"Booth B had 2,100 visitors with an avg dwell time of 7.2 mins"*) for **₹15,000 – ₹25,000** per sponsor.
-4. **Permanent Venue Safety Subscriptions**:
-   - Convention centers and coworking spaces (WeWork, Awfis) pay **₹25,000 – ₹50,000/month** for automated fire code compliance and HVAC energy optimization.
-5. **Non-Dilutive Indian Grants**:
-   - Qualifies for **NIDHI-PRAYAS** (₹10 Lakh prototype grant), **MeitY TIDE 2.0** (₹4–₹7 Lakh), and **Startup India Seed Fund Scheme (SISFS)** (up to ₹20 Lakhs grant).
-
----
-
-## 📂 10. REPOSITORY FILE STRUCTURE
+## 📂 8. REPOSITORY FILE STRUCTURE
 
 ```
 DELTAengine-main/
 ├── backend/
 │   ├── components/
-│   │   ├── engine.js                      # Groq LLaMA-3 multi-agent self-healing swarm
+│   │   ├── agentSwarm.js                  # Groq LLaMA-3 multi-agent self-healing swarm
+│   │   ├── selfHealing.js                  # Deterministic conflict solver & swarm orchestrator
 │   │   ├── graphDb.js                     # In-memory spatial dependency graph & schedule matrix
+│   │   ├── voiceAnnouncer.js              # Nico Robin PA voice announcer (ElevenLabs + Web Speech)
+│   │   ├── geminiAuditor.js               # Google Gemini 3.8 Flash crowd reasoning auditor
+│   │   ├── twilioDispatcher.js            # Twilio WhatsApp & SMS dispatcher
 │   │   ├── security.js                    # Rate limiter, CORS, and sanitization middleware
-│   │   ├── supabaseClient.js              # Supabase DB & auth client initialization
+│   │   ├── supabaseDb.js                  # Supabase database integration
 │   │   └── supabaseEmailIntegrator.js     # Transactional anti-spam coordinator email dispatcher
-│   ├── package.json                       # Backend dependencies (express, ws, @groq/groq-sdk)
+│   ├── package.json                       # Backend dependencies
 │   └── server.js                          # Express app, WebSocket server, sensor ingest endpoints
 ├── frontend/
 │   ├── components/
+│   │   ├── app.js                         # Core UI event orchestrator
 │   │   ├── auth.js                        # Client-side session and role management
-│   │   └── cctvPerception.js              # pico.js edge computer vision, camera switching & HUD
-│   ├── css/
-│   │   └── style.css                      # Neubrutalist design system stylesheet
+│   │   ├── cctvPerception.js              # Edge computer vision, camera switching & HUD (decoupled)
+│   │   ├── customCursor.js                # Electric Blue hardware-locked cursor & comet tail canvas
+│   │   ├── graphVisualizer.js             # Kinetic-sleeping force-directed SVG graph visualizer
+│   │   ├── dragdrop.js                    # HTML5 schedule drag-and-drop controller
+│   │   ├── websockets.js                  # Real-time WebSocket pub/sub client with debounce
+│   │   ├── contentPipeline.js             # Presentation slide upload & metadata parser
+│   │   ├── stressTester.js                # 500-scenario micro-benchmark concurrency runner
+│   │   ├── tourGuide.js                   # Interactive docked sidebar walkthrough
+│   │   ├── pico.js                        # WebAssembly frontal face detection cascade
+│   │   └── facefinder.js                  # Face cascade runtime weights
+│   ├── app.css                            # Neomorphic / Neubrutalist design system stylesheet
 │   ├── admin.html                         # Super Admin Command Center
-│   ├── index.html                         # Public live schedule & crowd intelligence portal
-│   ├── login.html                         # Authentication switchboard
+│   ├── index.html                         # Coordinator live schedule & crowd intelligence portal
+│   ├── login.html                         # Authentication switchboard with 1-click bypass
+│   ├── signage.html                       # Fullscreen digital signage TV kiosk portal
 │   ├── presentation.html                  # Slide presentation viewer
-│   └── pico.js                            # WebAssembly frontal face detection cascade
+│   ├── announcement_test.mp3              # Local fallback audio for PA announcements
+│   └── audio_announcements/               # Cached Nico Robin voice MP3 files
 ├── hardware/
 │   ├── DELTA_Door_Counter/
 │   │   └── DELTA_Door_Counter.ino         # ESP32 dual I2C firmware (VL53L0X ToF lasers)
 │   ├── drivers/                           # Silicon Labs CP210x USB-UART drivers
-│   ├── door_serial_bridge.py              # Optional Python USB Serial COM -> REST bridge
-│   └── cctv_occupancy_vision.py           # Optional Python OpenCV camera detection script
-├── PROJECT_CONTEXT.md                     # Technical architecture dossier
+│   ├── door_serial_bridge.py              # Python USB Serial COM -> REST bridge
+│   └── cctv_occupancy_vision.py           # Python OpenCV camera detection script
+├── PROJECT_CONTEXT.md                     # Comprehensive technical architecture dossier
 ├── PROJECT_CONTEXT_FOR_CHATGPT.md         # THIS FILE (Comprehensive prompt context)
-├── README.md                              # GitHub repository overview
+├── PROJECT_CHANGELOG.md                   # Exhaustive ledger of all additions, updates & removals
+├── README.md                              # Primary GitHub repository overview
 └── package.json                           # Root scripts and workspace config
 ```
 
 ---
 
-## 🚀 11. QUICKSTART & VERIFICATION RUNBOOK
+## 🚀 9. QUICKSTART & VERIFICATION RUNBOOK
 
-### Run Backend & Frontend Locally
+### Start the Engine
 ```powershell
-# 1. Install dependencies
-npm install
-
-# 2. Start the local server
-npm run dev
+npm start
 # Server boots at: http://localhost:3000
 ```
 
 ### Access Portals
-- **Public Schedule & CCTV HUD**: `http://localhost:3000/index.html`
+- **Coordinator Dashboard & CCTV HUD**: `http://localhost:3000/index.html`
 - **Super Admin Command Center**: `http://localhost:3000/admin.html`
+- **Digital Signage TV Kiosk**: `http://localhost:3000/signage.html`
 - **Presentation Deck**: `http://localhost:3000/presentation.html`
-
-### Flash ESP32 Hardware
-1. Connect ESP32 via USB (CP2102 driver).
-2. Ensure no background script is using the COM port (`COM7`).
-3. Open `hardware/DELTA_Door_Counter/DELTA_Door_Counter.ino` in Arduino IDE.
-4. Select Board: `ESP32 Dev Module`, Port: `COM7`.
-5. Upload at baud `921600`. Open Serial Monitor at `115200`.
 
 ### Simulate a Room Overflow Breach (Triggering AI Swarm)
 Run this curl command in any terminal to simulate 152 people entering Turing Hall (capacity 150):
@@ -282,7 +217,8 @@ curl -X POST http://localhost:3000/api/sensors/door `
   -d '{"event":"ENTRY","hallId":"hall-1","netOccupancy":152,"entries":155,"exits":3}'
 ```
 **Result**:
-- Warning siren sounds on all open dashboards.
+- Warning siren and Nico Robin voice announcement trigger.
 - Groq Swarm executes reallocation in $<2.5$ seconds.
 - Turing Hall talk moves to Lovelace Suite on the live timetable.
 - WhatsApp & Email logs dispatch to Aryan, Suryansh, and Shahid.
+- Graph visualizer updates and enters kinetic sleep.
