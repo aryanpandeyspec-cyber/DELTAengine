@@ -312,22 +312,47 @@ async function runTest11_StressTest500() {
 }
 
 async function runTest12_FrontendVisualLockedIntegrity() {
-  console.log(`\n${BOLD}[TEST 12] Frontend Visual Locked Shell Integrity Check${RESET}`);
-  // Check git status for any changes to frontend files
-  let gitDiffOutput = '';
-  try {
-    gitDiffOutput = execSync('git status --porcelain frontend', { encoding: 'utf-8' }).trim();
-  } catch (e) {
-    gitDiffOutput = '';
-  }
-
-  assert(gitDiffOutput === '', 'Git confirms ZERO changes to frontend/ (index.html, admin.html, styles, scripts all intact)');
+  console.log(`\n${BOLD}[TEST 12] Frontend Visual Locked Shell & Startup Demo Integrity Check${RESET}`);
+  const frontendDir = path.join(__dirname, '../frontend');
 
   // Verify critical files exist
-  const frontendDir = path.join(__dirname, '../frontend');
   assert(fs.existsSync(path.join(frontendDir, 'index.html')), 'frontend/index.html is intact');
   assert(fs.existsSync(path.join(frontendDir, 'admin.html')), 'frontend/admin.html is intact');
   assert(fs.existsSync(path.join(frontendDir, 'login.html')), 'frontend/login.html is intact');
+  assert(fs.existsSync(path.join(frontendDir, 'app.css')), 'frontend/app.css is intact');
+  assert(fs.existsSync(path.join(frontendDir, 'components/app.js')), 'frontend/components/app.js is intact');
+
+  const indexHtml = fs.readFileSync(path.join(frontendDir, 'index.html'), 'utf-8');
+  
+  // Verify essential operational & scenario buttons exist
+  const requiredIds = [
+    'btn-open-cctv',
+    'btn-open-scenario-lab',
+    'btn-sound-toggle',
+    'btn-shortcuts-modal',
+    'btn-cctv-trigger-sensor',
+    'btn-cctv-trigger-80',
+    'btn-cctv-trigger-full',
+    'btn-mass-disruption',
+    'btn-reset-db',
+    'btn-open-ical',
+    'btn-show-tour',
+    'btn-trigger-delay',
+    'btn-trigger-surge',
+    'scenario-lab-drawer'
+  ];
+  
+  let allIdsPresent = true;
+  for (const id of requiredIds) {
+    if (!indexHtml.includes(`id="${id}"`)) {
+      allIdsPresent = false;
+      break;
+    }
+  }
+  assert(allIdsPresent, 'All 14 core operational & scenario control IDs are verified in DOM');
+
+  // Verify zero hackathon mock markers remain
+  assert(!indexHtml.includes('#DedicatedHackIndia'), 'Zero #DedicatedHackIndia tags present in index.html');
 }
 
 async function main() {

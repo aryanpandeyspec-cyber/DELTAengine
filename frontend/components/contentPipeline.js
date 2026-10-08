@@ -232,7 +232,7 @@ function initVisualCustomizer() {
 
     ctx.font = 'bold 14px "Space Grotesk", Courier';
     ctx.fillStyle = (activeTheme === 'green' || activeTheme === 'red') ? '#ffffff' : '#4285f4';
-    ctx.fillText('#DedicatedHackIndia', 20, 260);
+    ctx.fillText('#DeltaEngineOS', 20, 260);
 
     const imgUrl = canvas.toDataURL("image/png");
     const dlLink = document.createElement('a');

@@ -455,7 +455,7 @@
         syncCrowdModeUI();
         if (typeof createToast === 'function') {
           const names = {
-            'auto': `👥 Crowd Mode: Auto (${currentCapacity >= 1000 ? 'Mega-Crowd Grid for 1,000+ gatherings' : 'Standard Precision Detector for Hackathons & Rooms'})`,
+            'auto': `👥 Crowd Mode: Auto (${currentCapacity >= 1000 ? 'Mega-Crowd Grid for 1,000+ gatherings' : 'Standard Precision Detector for Venues & Conference Halls'})`,
             'mega-crowd': '🌊 Crowd Mode: Forced Eulerian Mega-Crowd Grid (Kumbh Mela / Rally mode)',
             'room': '👤 Crowd Mode: Forced Standard Person Bounding Boxes'
           };

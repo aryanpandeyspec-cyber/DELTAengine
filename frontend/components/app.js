@@ -88,6 +88,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initKeyboardShortcuts(); // Neubrutalist keyboard shortcuts & modal
   initMatrixSearch(); // Real-time matrix talk search & filter
   initSwarmCopy(); // Swarm negotiation transcript copy to clipboard
+  initScenarioLabDrawer(); // Unified Scenario & Stress Lab drawer controller
 
   // Custom Node Graph animation loop
   requestAnimationFrame(physicsTick);
@@ -909,6 +910,46 @@ function initKeyboardShortcuts() {
           createToast('📋 Live iCal feed URL copied to clipboard!', 'success');
         })
         .catch(() => createToast(`Live feed: ${iCalUrl}`, 'info'));
+    }
+  });
+}
+
+// --- UNIFIED SCENARIO & STRESS LAB DRAWER CONTROLLER ---
+function initScenarioLabDrawer() {
+  const drawer = document.getElementById('scenario-lab-drawer');
+  const btnClose = document.getElementById('btn-close-scenario-lab');
+  const triggerBtns = [
+    document.getElementById('btn-open-scenario-lab'),
+    document.getElementById('btn-open-scenario-hub'),
+    document.getElementById('btn-open-lab-console')
+  ];
+
+  if (!drawer) return;
+
+  const openDrawer = () => {
+    drawer.classList.remove('hidden');
+    playTickSfx();
+  };
+
+  const closeDrawer = () => {
+    drawer.classList.add('hidden');
+  };
+
+  triggerBtns.forEach(btn => {
+    if (btn) btn.addEventListener('click', openDrawer);
+  });
+
+  if (btnClose) {
+    btnClose.addEventListener('click', closeDrawer);
+  }
+
+  drawer.addEventListener('click', (e) => {
+    if (e.target === drawer) closeDrawer();
+  });
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !drawer.classList.contains('hidden')) {
+      closeDrawer();
     }
   });
 }

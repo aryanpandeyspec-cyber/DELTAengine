@@ -4102,5 +4102,228 @@ input:checked + .slider:before {
   color: #166534;
 }
 
+/* ==========================================================
+   STARTUP DEMO: SCENARIO & STRESS LAB DRAWER & DE-CONGESTION
+   ========================================================== */
+
+.btn-purple {
+  background-color: #8b5cf6 !important;
+  color: #ffffff !important;
+}
+.btn-purple:hover {
+  background-color: #7c3aed !important;
+}
+
+.scenario-lab-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(2px);
+  z-index: 100050;
+  display: flex;
+  justify-content: flex-end;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+.scenario-lab-backdrop.hidden {
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scenario-lab-panel {
+  background: #ffffff;
+  width: 540px;
+  max-width: 95vw;
+  height: 100vh;
+  overflow-y: auto;
+  border-left: 3px solid #000000;
+  box-shadow: -8px 0px 0px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  animation: slideDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideDrawer {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.lab-header {
+  background: #fef08a;
+  padding: 16px 20px;
+  border-bottom: 3px solid #000000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.lab-title-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lab-header h3 {
+  margin: 0;
+  font-family: var(--font-mono, monospace);
+  font-weight: 900;
+  font-size: 1.05rem;
+  color: #000000;
+}
+
+.lab-close-btn {
+  background: #ffffff;
+  border: 2px solid #000000;
+  font-size: 1.3rem;
+  font-weight: 800;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 2px 2px 0px #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: transform 0.1s ease;
+}
+
+.lab-close-btn:hover {
+  background: #fee2e2;
+  color: #dc2626;
+  transform: translate(-1px, -1px);
+}
+
+.lab-close-btn:active {
+  transform: translate(1px, 1px);
+}
+
+.lab-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.lab-section {
+  background: #f8fafc;
+  border: 2px solid #000000;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.lab-section-title {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.8rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: #1e293b;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Stepper Controls in CCTV Hub */
+.segmented-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 2px 2px 0px #000000;
+  overflow: hidden;
+}
+
+.segmented-stepper .stepper-btn {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  font-size: 0.95rem;
+  font-weight: 900;
+  padding: 4px 10px;
+  cursor: pointer;
+  background: #f1f5f9;
+  transition: background 0.15s ease;
+}
+
+.segmented-stepper .stepper-btn:hover {
+  background: #fef08a;
+}
+
+.segmented-stepper .stepper-display {
+  display: flex;
+  align-items: center;
+  padding: 2px 8px;
+  font-family: var(--font-mono, monospace);
+  font-weight: 800;
+  font-size: 0.82rem;
+  border-left: 2px solid #000000;
+  border-right: 2px solid #000000;
+  background: #ffffff;
+}
+
+.segmented-stepper .cctv-manual-pax-input {
+  border: none !important;
+  box-shadow: none !important;
+  width: 44px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.85rem;
+  padding: 0;
+  margin-right: 2px;
+}
+
+/* Operational Metrics Cards Refinements */
+.widget-safety-index {
+  background: #ffffff;
+}
+
+.safety-rating-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.safety-badge-large {
+  background: #dcfce7;
+  color: #15803d;
+  border: 2px solid #000000;
+  font-family: var(--font-mono, monospace);
+  font-weight: 900;
+  font-size: 1.3rem;
+  padding: 4px 10px;
+  border-radius: 8px;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.safety-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.safety-title {
+  font-weight: 800;
+  font-size: 0.9rem;
+  color: #1e293b;
+}
+
+.safety-sub {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+
 
 

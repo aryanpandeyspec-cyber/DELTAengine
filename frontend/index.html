@@ -66,19 +66,17 @@
         <div class="auth-nav-buttons">
           <button id="btn-open-cctv" class="btn btn-sm btn-yellow"
             style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
-            title="Open CCTV Room Density Perception HUD">📹 CCTV Density HUD <span
+            title="Open CCTV Room Density Perception HUD">📹 CCTV HUD <span
               class="cctv-live-dot"></span></button>
-          <button id="btn-trigger-pa-test" class="btn btn-sm btn-yellow"
-            style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
-            title="Test ElevenLabs Voice PA Broadcast">🎙️ Test PA Voice</button>
+          <button id="btn-open-scenario-lab" class="btn btn-sm btn-purple"
+            style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000; display:inline-flex; align-items:center; gap:5px;"
+            title="Open Scenario & Stress Simulation Lab">⚡ Scenario Lab <span class="pulse-indicator-red" style="width:7px; height:7px; display:inline-block; border-radius:50%; background:#ef4444;"></span></button>
           <button id="btn-sound-toggle" class="btn btn-sm btn-white" style="font-weight:700;"
             title="Toggle Synthesized Audio Feedback">🔊 SFX: ON</button>
           <button id="btn-shortcuts-modal" class="btn btn-sm btn-white" style="font-weight:700;"
             title="Keyboard Hotkeys [?]">⌨️ Hotkeys</button>
-          <a href="admin.html" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;">👑 Admin
-            Portal</a>
-          <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Switch
-            Role / Logout</a>
+          <a href="admin.html" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;">👑 Admin</a>
+          <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Logout</a>
         </div>
       </div>
 
@@ -91,7 +89,7 @@
 
       <div class="header-text">
         <h1 id="main-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
-        <p class="subtitle">The Self-Healing & Agentic Conference Coordinator</p>
+        <p class="subtitle">Autonomous Real-World Crowd & Event Operations Engine</p>
       </div>
     </header>
 
@@ -266,33 +264,42 @@
             </div>
           </div>
 
-          <!-- Attendance & Pitch Controls (Camera + Manual Fusion) -->
+          <!-- Attendance & Threshold Calibration (Camera + Sensor Fusion) -->
           <div class="cctv-sim-controls mb-3">
             <div
-              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
-              <span class="sim-label">⚡ Attendance Controls (Camera + Sensor Fusion):</span>
-              <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
-                <span>Manual Count:</span>
-                <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
-                  value="0"
-                  style="width:68px; padding:2px 6px; border:2px solid #000; border-radius:6px; font-weight:800; text-align:center; box-shadow:2px 2px 0px #000;"
-                  title="Directly set attendee headcount manually">
+              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+              <span class="sim-label">⚡ Attendance Calibration:</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="segmented-stepper">
+                  <button id="btn-cctv-sub-pax" class="stepper-btn" title="Decrease Headcount (-1)">－</button>
+                  <div class="stepper-display">
+                    <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
+                      value="0" title="Directly set attendee headcount manually">
+                    <span style="font-size:0.75rem; color:#555;">Pax</span>
+                  </div>
+                  <button id="btn-cctv-add-pax" class="stepper-btn" title="Increase Headcount (+1)">＋</button>
+                </div>
+                <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;"
+                  title="Simulate hardware tripwire pulse (+1 Entry)">⚡ Tripwire (+1)</button>
               </div>
             </div>
-            <div class="sim-btn-row">
-              <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Door Sensor (+1
-                Entry)</button>
-              <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
-              <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
-              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80%
-                Full</button>
-              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100%
-                Full</button>
-              <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
-              <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <span style="font-size:0.75rem; font-weight:700; color:#555;">Direct Thresholds:</span>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
+                  title="Trigger 80% Occupancy Warning">⚠️ 80% Warning</button>
+                <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
+                  title="Trigger 100% Critical Capacity Breach">🚨 100% Breach</button>
+                <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white"
+                  style="font-weight:700; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
+                  title="Reset to 0% Empty">⚪ 0% Empty</button>
+                <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white"
+                  style="font-weight:700; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
+                  title="Reset Manual Counter">🧹 Reset</button>
+              </div>
             </div>
           </div>
 
@@ -424,44 +431,47 @@
           </div>
         </div>
 
-        <!-- Quick Control Action -->
-        <div class="metric-card widget-controls">
+        <!-- Venue Flow & Safety Index (Data Abstraction) -->
+        <div class="metric-card widget-safety-index">
           <div class="widget-header">
-            <span class="widget-title">OS Sync Utilities</span>
+            <span class="dot green"></span>
+            <span class="widget-title">Venue Flow & Safety Index</span>
           </div>
-          <div class="widget-body" style="display:flex; flex-direction:column; gap:6px;">
-            <button id="btn-mass-disruption" class="btn w-full btn-sm"
-              style="background-color: #ea4335; color: #ffffff; font-weight: 800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
-              🔥 SIMULATE MASS DISRUPTION
-            </button>
-            <button id="btn-reset-db" class="btn w-full btn-sm"
-              style="background-color: #34a853; color: #ffffff; font-weight: 800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
-              🔄 RESET TO NORMAL STATUS
-            </button>
-            <button id="btn-open-ical" class="btn btn-blue w-full btn-sm">
-              📅 iCal Calendar Sync
-            </button>
-            <button id="btn-show-tour" class="btn btn-yellow w-full btn-sm">
-              ⚡ Tour Guide
-            </button>
+          <div class="widget-body">
+            <div class="safety-rating-box">
+              <div class="safety-badge-large">A+</div>
+              <div class="safety-details">
+                <span class="safety-title">NOMINAL FLOW (98.4%)</span>
+                <span class="safety-sub">All Emergency Egress Portals Clear</span>
+                <span style="font-size:0.72rem; font-family:var(--font-mono); color:#2563eb; font-weight:700;">Rate: 0 Pax/min Ingress Flux</span>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Capacity Stress Tester (Heatmaps Slider) -->
-        <div class="metric-card widget-stress">
+        <!-- Executive Command & Scenario Hub -->
+        <div class="metric-card widget-controls">
           <div class="widget-header">
-            <span class="widget-title">Registration Stress Tester</span>
+            <span class="widget-title">Command & Scenario Hub</span>
           </div>
-          <div class="widget-body">
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:700;">
-                <span>Attendee Load Factor:</span>
-                <span id="stress-factor-label" style="color:var(--google-blue);">1.0x (Normal)</span>
-              </div>
-              <input type="range" id="stress-slider" min="0.5" max="3.0" step="0.1" value="1.0"
-                class="stress-slider-input" style="width:100%; cursor:pointer;">
-              <div style="font-size:0.72rem; color:#666; font-weight:600; line-height:1.2;">Surges registrations to
-                highlight venue congestion heatmaps.</div>
+          <div class="widget-body" style="display:flex; flex-direction:column; gap:6px;">
+            <button id="btn-open-scenario-hub" class="btn w-full btn-sm btn-purple"
+              style="font-weight:900; border:2px solid #000; box-shadow:2px 2px 0px #000;"
+              title="Open full scenario & stress testing suite">
+              ⚡ Open Scenario Lab
+            </button>
+            <button id="btn-reset-db" class="btn w-full btn-sm btn-green"
+              style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; background-color:#16a34a; color:#fff;"
+              title="Reset schedule and database to normal baseline">
+              🔄 Reset Baseline State
+            </button>
+            <div style="display:flex; gap:6px;">
+              <button id="btn-open-ical" class="btn btn-blue btn-sm" style="flex:1; font-weight:700;" title="Live iCal Subscription">
+                📅 iCal
+              </button>
+              <button id="btn-show-tour" class="btn btn-yellow btn-sm" style="flex:1; font-weight:700;" title="Interactive Sandbox Walkthrough">
+                ⚡ Tour
+              </button>
             </div>
           </div>
         </div>
@@ -522,39 +532,15 @@
               </div>
             </div>
             <div class="card-body">
-              <div class="agent-simulation-controls mb-4">
-                <h3>Simulate Disruptive Incidents:</h3>
-                <div class="sim-grid">
-                  <div class="sim-row">
-                    <label for="select-speaker">Delay Speaker:</label>
-                    <select id="select-speaker" class="input-select">
-                      <!-- Loaded dynamically -->
-                    </select>
-                    <select id="select-delay" class="input-select select-short">
-                      <option value="60">60 mins</option>
-                      <option value="90">90 mins</option>
-                      <option value="120">120 mins</option>
-                    </select>
-                    <button id="btn-trigger-delay" class="btn btn-yellow">Trigger delay</button>
-                  </div>
-                  <div class="sim-row">
-                    <label for="select-topic">Surge Interest:</label>
-                    <select id="select-topic" class="input-select">
-                      <!-- Loaded dynamically -->
-                    </select>
-                    <input type="number" id="input-surge-count" class="input-text text-short" value="260" min="50"
-                      max="400">
-                    <button id="btn-trigger-surge" class="btn btn-blue">Trigger surge</button>
-                  </div>
-                  <div class="sim-row">
-                    <label for="select-sentiment">Simulate Feedback:</label>
-                    <select id="select-sentiment" class="input-select">
-                      <option value="hvac">"Lovelace Suite is freezing!" (HVAC Temp)</option>
-                      <option value="av">"Crackling speaker microphone in Lovelace Suite!" (A/V Setup)</option>
-                    </select>
-                    <button id="btn-trigger-sentiment" class="btn btn-red">Inject Feedback</button>
-                  </div>
-                </div>
+              <div class="console-incident-bar mb-3"
+                style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:2px solid #000; border-radius:8px; padding:6px 12px; box-shadow:2px 2px 0px #000;">
+                <span style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono); color:#1e293b;">⚡ MULTI-AGENT HEALING ENGINE</span>
+                <button id="btn-open-lab-console" class="btn btn-sm btn-purple"
+                  style="font-size:0.72rem; font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:3px 8px;"
+                  title="Open Unified Scenario & Stress Lab">
+                  ⚡ Open Scenario & Stress Lab ↗
+                </button>
+              </div>
 
                 <div class="sentiment-ticker mt-4">
                   <h4
@@ -699,7 +685,7 @@
                         <p id="canvas-speaker-name">Dr. Evelyn Wright</p>
                       </div>
                       <div class="card-canvas-footer">
-                        <span class="tag-brand">#DedicatedHackIndia</span>
+                        <span class="tag-brand">#DeltaEngineOS</span>
                         <!-- Semicolon SVG visual decorator -->
                         <svg class="canvas-decor-semicolon" viewBox="0 0 50 100" width="15" height="30">
                           <circle cx="25" cy="25" r="10" fill="#f9ab00" stroke="#000" stroke-width="2" />
@@ -866,15 +852,15 @@
           </button>
 
           <div class="auth-demo-divider">
-            <span>⚡ QUICK ONE-CLICK DEMO ACCESS</span>
+            <span>⚡ INSTANT ROLE ACCESS</span>
           </div>
 
           <div class="auth-quick-buttons">
             <button type="button" id="btn-quick-login-coord" class="btn btn-yellow btn-sm w-full">
-              👤 Quick Login as Coordinator
+              👤 Direct Access as Event Coordinator
             </button>
             <button type="button" id="btn-quick-login-admin" class="btn btn-red btn-sm w-full">
-              👑 Quick Login as Super Admin
+              👑 Direct Access as Operations Super Admin
             </button>
           </div>
         </form>
@@ -952,6 +938,122 @@
           ⚡ Swarm consensus locked • Press <kbd
             style="background:#eee; padding:1px 5px; border-radius:3px; border:1px solid #ccc; font-size:0.7rem;">Space</kbd>
           to skip
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIFIED SCENARIO & STRESS LAB DRAWER -->
+    <div id="scenario-lab-drawer" class="scenario-lab-backdrop hidden">
+      <div class="scenario-lab-panel">
+        <div class="lab-header">
+          <div class="lab-title-group">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <h3>⚡ SCENARIO & STRESS LAB</h3>
+          </div>
+          <button id="btn-close-scenario-lab" class="lab-close-btn" title="Close Scenario Lab">&times;</button>
+        </div>
+
+        <div class="lab-body">
+          <div style="background:#e0e7ff; border:2px solid #4338ca; border-radius:8px; padding:10px 14px; font-size:0.8rem; color:#312e81; font-weight:600;">
+            ⚡ <strong>Executive Pitch & Stress Control:</strong> Simulate multi-room crowd spikes, speaker travel delays, emergency cascades, and registration heatmaps without cluttering the primary operational HUD.
+          </div>
+
+          <!-- Section 1: Emergency & Cascade Trigger -->
+          <div class="lab-section">
+            <div class="lab-section-title">
+              <span>🔥 1. Multi-Hall Emergency Cascades</span>
+              <span class="badge badge-red" style="font-size:0.65rem;">CRITICAL</span>
+            </div>
+            <button id="btn-mass-disruption" class="btn w-full btn-md btn-red"
+              style="background-color: #ea4335; color: #ffffff; font-weight: 900; border: 2px solid #000; box-shadow: 3px 3px 0px #000; margin-bottom:8px; font-size:0.88rem;">
+              🔥 SIMULATE MASS DISRUPTION SCENARIO
+            </button>
+            <div style="font-size:0.75rem; color:#555; line-height:1.3;">
+              Simultaneously delays key speakers and floods room limits to demonstrate multi-agent negotiation, crowd rerouting, and real-time self-healing.
+            </div>
+          </div>
+
+          <!-- Section 2: Registration Load Stress Tester -->
+          <div class="lab-section">
+            <div class="lab-section-title">
+              <span>📊 2. Registration Congestion Stress</span>
+              <span id="stress-factor-label" style="color:var(--google-blue); font-weight:800;">1.0x (Normal)</span>
+            </div>
+            <input type="range" id="stress-slider" min="0.5" max="3.0" step="0.1" value="1.0"
+              class="stress-slider-input" style="width:100%; cursor:pointer; margin-bottom:6px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:#666; font-weight:700;">
+              <span>0.5x Low Load</span>
+              <span>1.0x Nominal</span>
+              <span style="color:#d97706;">2.0x High Surge</span>
+              <span style="color:#dc2626;">3.0x Max Critical</span>
+            </div>
+          </div>
+
+          <!-- Section 3: Targeted Incident Injectors -->
+          <div class="lab-section">
+            <div class="lab-section-title">
+              <span>🎯 3. Targeted Incident Injectors</span>
+              <span class="badge badge-yellow" style="font-size:0.65rem;">REAL-TIME</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <!-- Speaker Delay -->
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono);">SPEAKER FLIGHT DELAY:</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="select-speaker" class="input-select" style="flex:2; font-size:0.8rem;"></select>
+                  <select id="select-delay" class="input-select select-short" style="flex:1; font-size:0.8rem;">
+                    <option value="60">60 mins</option>
+                    <option value="90">90 mins</option>
+                    <option value="120">120 mins</option>
+                  </select>
+                  <button id="btn-trigger-delay" class="btn btn-yellow btn-sm" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                    Inject Delay
+                  </button>
+                </div>
+              </div>
+
+              <!-- Topic Surge -->
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono);">AUDIENCE DEMAND SURGE:</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="select-topic" class="input-select" style="flex:2; font-size:0.8rem;"></select>
+                  <input type="number" id="input-surge-count" class="input-text text-short" value="260" min="50" max="400"
+                    style="width:70px; font-weight:800; text-align:center;">
+                  <button id="btn-trigger-surge" class="btn btn-blue btn-sm" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                    Trigger Surge
+                  </button>
+                </div>
+              </div>
+
+              <!-- Sentiment Feedback -->
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono);">ATTENDEE LIVE FEEDBACK:</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="select-sentiment" class="input-select" style="flex:1; font-size:0.8rem;">
+                    <option value="hvac">"Lovelace Suite is freezing!" (HVAC Temp)</option>
+                    <option value="av">"Crackling speaker microphone in Lovelace Suite!" (A/V Setup)</option>
+                  </select>
+                  <button id="btn-trigger-sentiment" class="btn btn-red btn-sm" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                    Inject Reaction
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Public Address & Voice Diagnostics -->
+          <div class="lab-section">
+            <div class="lab-section-title">
+              <span>🎙️ 4. Autonomous Audio PA Broadcast</span>
+              <span class="badge badge-green" style="font-size:0.65rem;">ELEVENLABS</span>
+            </div>
+            <button id="btn-trigger-pa-test" class="btn btn-yellow w-full btn-sm"
+              style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+              🎙️ Test Autonomous Venue PA Broadcast
+            </button>
+          </div>
         </div>
       </div>
     </div>
