@@ -188,13 +188,446 @@ body {
   pointer-events: none;
 }
 
-/* Core Container */
+/* Core Container (Fallback & Legacy Support) */
 .container {
-  max-width: 1320px !important;
-  width: 95% !important;
+  max-width: 1440px !important;
+  width: 96% !important;
   margin: 0 auto !important;
-  padding: 24px 16px !important;
+  padding: 16px 12px !important;
   box-sizing: border-box !important;
+}
+
+/* ==========================================================================
+   EXECUTIVE 2-COLUMN APP LAYOUT & SIDEBAR NAVIGATION LIST
+   ========================================================================== */
+
+.app-layout {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: 16px !important;
+  max-width: 1680px !important;
+  width: 98% !important;
+  margin: 12px auto 28px auto !important;
+  padding: 0 10px !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* Sticky Executive Sidebar */
+.app-sidebar {
+  width: 285px !important;
+  min-width: 285px !important;
+  max-width: 285px !important;
+  position: sticky !important;
+  top: 12px !important;
+  max-height: calc(100vh - 24px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  background: #ffffff !important;
+  border: 3px solid #000000 !important;
+  border-radius: 18px !important;
+  box-shadow: 6px 6px 0px #000000 !important;
+  padding: 16px 14px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  box-sizing: border-box !important;
+  z-index: 900 !important;
+}
+
+/* Thin Custom Scrollbar for Sidebar */
+.app-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+.app-sidebar::-webkit-scrollbar-track {
+  background: #f8fafc;
+  border-radius: 4px;
+}
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+.app-sidebar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Sidebar Brand Card */
+.sidebar-brand-card {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding-bottom: 10px !important;
+  border-bottom: 2px dashed #e2e8f0 !important;
+}
+
+.sidebar-logo {
+  width: 38px !important;
+  height: 38px !important;
+  object-fit: cover !important;
+  border: 2px solid #000000 !important;
+  border-radius: 8px !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+  background: #ffffff !important;
+}
+
+.sidebar-brand-info {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important;
+}
+
+.sidebar-title,
+.app-sidebar #main-title {
+  font-family: 'Josefin Sans', sans-serif !important;
+  font-size: 1.22rem !important;
+  font-weight: 800 !important;
+  line-height: 1.1 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  letter-spacing: -0.3px !important;
+  white-space: nowrap !important;
+}
+
+.sidebar-tagline {
+  font-family: var(--font-mono) !important;
+  font-size: 0.65rem !important;
+  color: #64748b !important;
+  font-weight: 700 !important;
+  margin-top: 3px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* Sidebar Operator & Live Clock */
+.sidebar-user-block {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 6px !important;
+  background: #f8fafc !important;
+  border: 2px solid #000000 !important;
+  border-radius: 12px !important;
+  padding: 8px 10px !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+.sidebar-user-block .user-status-pill {
+  width: 100% !important;
+  justify-content: space-between !important;
+  background: #ffffff !important;
+  padding: 4px 8px !important;
+  box-shadow: none !important;
+  border: 1.5px solid #000000 !important;
+  box-sizing: border-box !important;
+}
+
+.sidebar-clock {
+  width: 100% !important;
+  justify-content: center !important;
+  font-size: 0.72rem !important;
+  padding: 3px 6px !important;
+  box-sizing: border-box !important;
+}
+
+/* Sidebar Autopilot Pill Wrapper */
+.sidebar-autopilot-wrap {
+  width: 100% !important;
+}
+
+.sidebar-autopilot-wrap .autopilot-pill {
+  width: 100% !important;
+  justify-content: center !important;
+  padding: 7px 10px !important;
+  font-size: 0.78rem !important;
+  box-sizing: border-box !important;
+  cursor: pointer !important;
+}
+
+/* Sidebar Navigation Groups & Lists */
+.sidebar-nav-group {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.sidebar-group-title {
+  font-family: var(--font-mono) !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  color: #64748b !important;
+  letter-spacing: 0.8px !important;
+  text-transform: uppercase !important;
+  padding-left: 2px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+
+.sidebar-nav-list {
+  list-style: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 5px !important;
+}
+
+.sidebar-nav-list li {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* List Button & Link Styling */
+.sidebar-nav-btn,
+.sidebar-nav-link {
+  width: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 7px 10px !important;
+  border: 2px solid #000000 !important;
+  border-radius: 10px !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.8rem !important;
+  font-weight: 800 !important;
+  text-align: left !important;
+  text-decoration: none !important;
+  cursor: pointer !important;
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.15s cubic-bezier(0.2, 0, 0, 1), background-color 0.15s ease !important;
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  box-sizing: border-box !important;
+}
+
+.sidebar-nav-btn:hover,
+.sidebar-nav-link:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: 4px 4px 0px #000000 !important;
+}
+
+.sidebar-nav-btn:active,
+.sidebar-nav-link:active {
+  transform: translate(1px, 1px) !important;
+  box-shadow: 1px 1px 0px #000000 !important;
+}
+
+/* Palette Variations for Sidebar List Items */
+.btn-nav-purple {
+  background-color: #f5f3ff !important;
+  color: #5b21b6 !important;
+}
+.btn-nav-purple:hover {
+  background-color: #ede9fe !important;
+}
+
+.btn-nav-yellow {
+  background-color: #fffbeb !important;
+  color: #92400e !important;
+}
+.btn-nav-yellow:hover {
+  background-color: #fef3c7 !important;
+}
+
+.btn-nav-green {
+  background-color: #f0fdf4 !important;
+  color: #166534 !important;
+}
+.btn-nav-green:hover {
+  background-color: #dcfce7 !important;
+}
+
+.btn-nav-blue {
+  background-color: #eff6ff !important;
+  color: #1e40af !important;
+}
+.btn-nav-blue:hover {
+  background-color: #dbeafe !important;
+}
+
+.btn-nav-white {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+}
+.btn-nav-white:hover {
+  background-color: #f8fafc !important;
+}
+
+.link-yellow {
+  background-color: #fffbeb !important;
+  color: #92400e !important;
+}
+.link-yellow:hover {
+  background-color: #fef3c7 !important;
+}
+
+.link-white {
+  background-color: #ffffff !important;
+  color: #334155 !important;
+}
+.link-white:hover {
+  background-color: #f8fafc !important;
+}
+
+/* Inner elements in Sidebar Nav Buttons */
+.nav-icon {
+  font-size: 0.95rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 18px !important;
+  flex-shrink: 0 !important;
+}
+
+.nav-label {
+  flex: 1 !important;
+  font-family: var(--font-mono) !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+.nav-badge {
+  font-size: 0.65rem !important;
+  font-weight: 800 !important;
+  padding: 1px 5px !important;
+  border-radius: 6px !important;
+  border: 1.5px solid #000000 !important;
+  text-transform: uppercase !important;
+}
+
+.pulse-badge {
+  background: #fef2f2 !important;
+  color: #dc2626 !important;
+  border-color: #dc2626 !important;
+}
+
+.nav-external {
+  font-size: 0.82rem !important;
+  font-weight: 900 !important;
+  color: #94a3b8 !important;
+}
+
+.sidebar-kbd {
+  background: #f1f5f9 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 4px !important;
+  padding: 1px 4px !important;
+  font-size: 0.68rem !important;
+  font-weight: 800 !important;
+  color: #475569 !important;
+}
+
+/* Sidebar Footer Telemetry */
+.sidebar-telemetry-badge {
+  margin-top: auto !important;
+  background: #f8fafc !important;
+  border: 2px solid #000000 !important;
+  border-radius: 10px !important;
+  padding: 8px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 0.72rem !important;
+  font-family: var(--font-mono) !important;
+  box-shadow: 2px 2px 0px #000000 !important;
+}
+
+.telemetry-dot {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+  flex-shrink: 0 !important;
+}
+
+.telemetry-dot.online {
+  background: #16a34a !important;
+  box-shadow: 0 0 6px rgba(22, 163, 74, 0.6) !important;
+}
+
+.telemetry-info {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1px !important;
+  line-height: 1.2 !important;
+  color: #475569 !important;
+}
+
+.telemetry-info strong {
+  color: #0f172a !important;
+}
+
+/* ==========================================================================
+   COMPACT OPERATIONS WORKSPACE STYLING
+   ========================================================================== */
+
+.app-workspace {
+  flex: 1 !important;
+  min-width: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  box-sizing: border-box !important;
+}
+
+.app-workspace .metrics-row {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+  margin-bottom: 12px !important;
+  gap: 12px !important;
+}
+
+@media (max-width: 1220px) {
+  .app-workspace .metrics-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .app-workspace .metrics-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+.app-workspace .cctv-top-hub {
+  margin-bottom: 12px !important;
+}
+
+.app-workspace .dashboard-grid {
+  margin-bottom: 12px !important;
+  gap: 14px !important;
+}
+
+.app-workspace .dash-card {
+  margin-bottom: 12px !important;
+}
+
+.app-workspace .dash-card:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1100px) {
+  .app-layout {
+    flex-direction: column !important;
+    width: 96% !important;
+  }
+  .app-sidebar {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    max-height: none !important;
+  }
+  .sidebar-nav-list {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) !important;
+    gap: 6px !important;
+  }
 }
 
 /* Logo without Beige Background or Shadows */
@@ -405,7 +838,7 @@ body {
 }
 
 /* Header Text & Multi-Colored ENGINE Title Styling */
-.header-text h1, #main-title {
+.header-text h1, .header-card #main-title {
   font-family: 'Josefin Sans', sans-serif !important;
   font-weight: 600 !important;
   font-size: 3rem !important;
@@ -439,16 +872,16 @@ body {
   margin-top: 5px;
 }
 
-/* Metric Cards Widgets */
+/* Metric Cards Widgets (High Density Compact Strip) */
 .metrics-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)) !important;
+  gap: 12px !important;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1200px) {
   .metrics-row {
-    grid-template-columns: 215px 1.1fr 1.35fr 1.2fr;
+    grid-template-columns: 195px 1.05fr 1.15fr 1.35fr !important;
   }
 }
 
@@ -579,10 +1012,11 @@ body {
 }
 
 /* Dashboard Workspace Grid */
+/* Dashboard Workspace Grid (Compact Density) */
 .dashboard-grid {
   display: grid !important;
   grid-template-columns: 1.15fr 0.85fr !important;
-  gap: 20px !important;
+  gap: 14px !important;
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
@@ -593,9 +1027,12 @@ body {
   max-width: 100% !important;
   min-width: 0 !important;
   box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 860px) {
   .dashboard-grid {
     grid-template-columns: 1fr !important;
   }
@@ -605,7 +1042,7 @@ body {
   background-color: var(--bg-card);
   border: var(--border-width) solid var(--border-color);
   border-radius: var(--card-radius);
-  box-shadow: var(--shadow-offset) var(--shadow-offset) 0px var(--border-color);
+  box-shadow: 4px 4px 0px var(--border-color);
   overflow: hidden;
   width: 100% !important;
   max-width: 100% !important;
@@ -615,23 +1052,23 @@ body {
 
 .card-header {
   border-bottom: var(--border-width) solid var(--border-color);
-  padding: 16px 20px;
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
 .card-header h2 {
-  font-size: 1.3rem;
+  font-size: 1.15rem;
   font-weight: 800;
   font-family: var(--font-mono);
 }
 
 .badge {
   display: inline-block;
-  padding: 4px 10px;
+  padding: 3px 8px;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   border: 2px solid #000;
   border-radius: 30px;
@@ -645,7 +1082,7 @@ body {
 .badge-success { background-color: var(--google-green-light); color: var(--google-green); }
 
 .card-body {
-  padding: 20px;
+  padding: 14px 16px;
 }
 
 .card-body.relative-body {
@@ -1186,11 +1623,12 @@ td {
   display: block;
 }
 
-/* Toast System Alerts */
+/* Toast System Alerts (Docked to Bottom-Right) */
 .toast-container {
   position: fixed;
   bottom: 24px;
-  left: 24px;
+  right: 24px;
+  left: auto;
   z-index: 10000;
   display: flex;
   flex-direction: column;
@@ -1794,11 +2232,11 @@ td.drag-over {
   transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
-/* --- Utility Spacing (Refinements) --- */
-.mb-8 { margin-bottom: 24px !important; }
-.mt-8 { margin-top: 24px !important; }
-.mb-4 { margin-bottom: 16px !important; }
-.mt-4 { margin-top: 16px !important; }
+/* --- Utility Spacing (Refinements - Compact Layout) --- */
+.mb-8 { margin-bottom: 14px !important; }
+.mt-8 { margin-top: 14px !important; }
+.mb-4 { margin-bottom: 10px !important; }
+.mt-4 { margin-top: 10px !important; }
 
 /* --- REFINED UI FIXES (BADGES, BUTTONS, SWARM CHANNEL, POPUP ARROW) --- */
 
@@ -3570,7 +4008,7 @@ input:checked + .slider:before {
     box-sizing: border-box !important;
   }
 
-  .header-text h1, #main-title {
+  .header-text h1, .header-card #main-title {
     font-size: clamp(1.45rem, 6.8vw, 2rem) !important;
     gap: 6px !important;
     flex-wrap: wrap !important;
@@ -3915,7 +4353,7 @@ input:checked + .slider:before {
 
 /* 3. EXTRA SMALL PHONES (<480px, e.g. iPhone SE, 360px Androids) */
 @media (max-width: 480px) {
-  .header-text h1, #main-title {
+  .header-text h1, .header-card #main-title {
     font-size: 1.5rem !important;
   }
 

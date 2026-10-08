@@ -47,56 +47,140 @@
     <img src="doodles/9566941.png" class="doodle-img doodle-956" alt="Doodle 9566941">
   </div>
 
-  <div class="container">
-    <!-- HEADER SECTION -->
-    <header class="main-header mb-8">
-      <!-- User Auth Role Navigation Bar -->
-      <div class="auth-user-bar">
+  <div class="app-layout">
+    <!-- EXECUTIVE LEFT SIDEBAR LIST -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <!-- 1. Brand Identity -->
+      <div class="sidebar-brand-card">
+        <div class="sidebar-logo-wrap">
+          <img src="logo.jpeg" class="sidebar-logo" alt="DELTA ENGINE Logo">
+        </div>
+        <div class="sidebar-brand-info">
+          <h1 id="main-title" class="sidebar-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
+          <div class="sidebar-tagline">Autonomous Event OS</div>
+        </div>
+      </div>
+
+      <!-- 2. Active Operator & Dynamic Clock -->
+      <div class="sidebar-user-block">
         <div class="user-status-pill" id="user-status-pill">
           <span class="user-role-badge coordinator" id="user-role-badge">👤 Coordinator</span>
           <span class="user-name-text" id="user-name-text">Suryansh</span>
         </div>
-        <!-- Live Dynamic Date & Time Clock Widget -->
-        <div class="live-clock-pill" id="live-clock-pill" title="Live System Date & Universal Local Time">
+        <div class="live-clock-pill sidebar-clock" id="live-clock-pill" title="Live System Date & Universal Local Time">
           <span class="live-clock-pulse"></span>
           <span id="live-dynamic-date" class="live-dynamic-date">Wed, 23 Sep 2026</span>
           <span style="color:#9ca3af;">•</span>
           <span id="live-dynamic-time" class="live-dynamic-time" style="color:#2563eb;">--:--:--</span>
         </div>
-        <div class="auth-nav-buttons">
-          <button id="btn-open-cctv" class="btn btn-sm btn-yellow"
-            style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
-            title="Open CCTV Room Density Perception HUD">📹 CCTV HUD <span
-              class="cctv-live-dot"></span></button>
-          <button id="btn-open-scenario-lab" class="btn btn-sm btn-purple"
-            style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000; display:inline-flex; align-items:center; gap:5px;"
-            title="Open Scenario & Stress Simulation Lab">⚡ Scenario Lab <span class="pulse-indicator-red" style="width:7px; height:7px; display:inline-block; border-radius:50%; background:#ef4444;"></span></button>
-          <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Click to toggle between Tesla Autopilot (Zero-Touch Autonomous Mitigation) and Manual Co-Pilot">
-            <span class="autopilot-indicator-dot pulse"></span>
-            <span>⚡ AUTOPILOT: <strong class="autopilot-status-text">ENGAGED</strong></span>
-          </div>
-          <button id="btn-sound-toggle" class="btn btn-sm btn-white" style="font-weight:700;"
-            title="Toggle Synthesized Audio Feedback">🔊 SFX: ON</button>
-          <button id="btn-shortcuts-modal" class="btn btn-sm btn-white" style="font-weight:700;"
-            title="Keyboard Hotkeys [?]">⌨️ Hotkeys</button>
-          <a href="signage.html" target="_blank" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;" title="Open Dynamic Hallway TV Signage Display Portal">📺 Signage TV</a>
-          <a href="admin.html" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;">👑 Admin</a>
-          <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Logout</a>
+      </div>
+
+      <!-- 3. Autopilot Master Switch -->
+      <div class="sidebar-autopilot-wrap">
+        <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Click to toggle between Tesla Autopilot (Zero-Touch Autonomous Mitigation) and Manual Co-Pilot">
+          <span class="autopilot-indicator-dot pulse"></span>
+          <span>⚡ AUTOPILOT: <strong class="autopilot-status-text">ENGAGED</strong></span>
         </div>
       </div>
 
-      <div class="header-logo-group">
-        <!-- Main Logo: Clean Polymorphic Logo without any braces or outlines -->
-        <div class="logo-polymorphic-wrapper">
-          <img src="logo.jpeg" class="delta-polymorphic-logo" alt="DELTA ENGINE Logo">
-        </div>
+      <!-- 4. Operations & Scenarios List -->
+      <div class="sidebar-nav-group">
+        <div class="sidebar-group-title">⚡ OPERATIONS & SCENARIOS</div>
+        <ul class="sidebar-nav-list">
+          <li>
+            <button id="btn-open-scenario-lab" class="sidebar-nav-btn btn-nav-purple" title="Open Scenario & Stress Simulation Lab">
+              <span class="nav-icon">⚡</span>
+              <span class="nav-label">Scenario & Stress Lab</span>
+              <span class="pulse-indicator-red" style="width:7px; height:7px; display:inline-block; border-radius:50%; background:#ef4444; flex-shrink:0;"></span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-open-cctv" class="sidebar-nav-btn btn-nav-yellow" title="Open CCTV Room Density Perception HUD">
+              <span class="nav-icon">📹</span>
+              <span class="nav-label">CCTV Perception HUD</span>
+              <span class="cctv-live-dot" style="flex-shrink:0;"></span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-reset-db" class="sidebar-nav-btn btn-nav-green" title="Reset schedule and database to normal baseline">
+              <span class="nav-icon">🔄</span>
+              <span class="nav-label">Reset Baseline State</span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-open-ical" class="sidebar-nav-btn btn-nav-blue" title="Live iCal Subscription">
+              <span class="nav-icon">📅</span>
+              <span class="nav-label">Live iCal Sync</span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-show-tour" class="sidebar-nav-btn btn-nav-white" title="Interactive Sandbox Walkthrough">
+              <span class="nav-icon">🎯</span>
+              <span class="nav-label">Interactive Tour</span>
+            </button>
+          </li>
+        </ul>
       </div>
 
-      <div class="header-text">
-        <h1 id="main-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
-        <p class="subtitle">Autonomous Real-World Crowd & Event Operations Engine</p>
+      <!-- 5. Portals & Access List -->
+      <div class="sidebar-nav-group">
+        <div class="sidebar-group-title">📺 PORTALS & ACCESS</div>
+        <ul class="sidebar-nav-list">
+          <li>
+            <a href="signage.html" target="_blank" class="sidebar-nav-link link-yellow" title="Open Dynamic Hallway TV Signage Display Portal">
+              <span class="nav-icon">📺</span>
+              <span class="nav-label">Signage TV Portal</span>
+              <span class="nav-external">↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="admin.html" class="sidebar-nav-link link-yellow" title="Super Admin Command Center">
+              <span class="nav-icon">👑</span>
+              <span class="nav-label">Super Admin</span>
+              <span class="nav-external">↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="login.html" class="sidebar-nav-link link-white" title="Sign out or switch role">
+              <span class="nav-icon">🚪</span>
+              <span class="nav-label">Switch Role / Logout</span>
+            </a>
+          </li>
+        </ul>
       </div>
-    </header>
+
+      <!-- 6. System Preferences List -->
+      <div class="sidebar-nav-group">
+        <div class="sidebar-group-title">⚙️ PREFERENCES</div>
+        <ul class="sidebar-nav-list">
+          <li>
+            <button id="btn-sound-toggle" class="sidebar-nav-btn btn-nav-white" title="Toggle Synthesized Audio Feedback">
+              <span class="nav-icon">🔊</span>
+              <span class="nav-label">Audio SFX: ON</span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-shortcuts-modal" class="sidebar-nav-btn btn-nav-white" title="Keyboard Hotkeys [?]">
+              <span class="nav-icon">⌨️</span>
+              <span class="nav-label">Keyboard Hotkeys</span>
+              <kbd class="sidebar-kbd">?</kbd>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 7. Bottom Telemetry Indicator -->
+      <div class="sidebar-telemetry-badge">
+        <div class="telemetry-dot online"></div>
+        <div class="telemetry-info">
+          <span>LATENCY: <strong>&lt; 0.5ms</strong></span>
+          <span>ENGINE: <strong>SELF-HEALING</strong></span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- COMPACT OPERATIONS WORKSPACE -->
+    <main class="app-workspace" id="app-workspace">
 
     <!-- AUTONOMOUS VENUE PA VOICE BROADCASTER BANNER -->
     <div id="venue-pa-live-banner" class="venue-pa-live-banner" style="display:none;">
@@ -179,12 +263,12 @@
           <button id="btn-cctv-tint-fix" class="btn btn-sm btn-white btn-cctv-tint-fix" style="font-weight:800;"
             title="Toggle Camera Color Correction / IR Pink Fix">🎨 Tint: Auto-Fix</button>
           <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;"
-            title="Toggle between Full Camera HUD and Compact Bar">🔼 Minimize View</button>
+            title="Toggle between Full Camera HUD and Compact Bar">🔽 Expand View</button>
         </div>
       </div>
 
       <!-- Main Hub Body: Left Live Feed, Right Gauges & Controls -->
-      <div id="cctv-hub-body" class="cctv-hub-body">
+      <div id="cctv-hub-body" class="cctv-hub-body collapsed">
         <!-- Left: Canvas & Video Display -->
         <div class="cctv-hub-video-col">
           <div class="cctv-canvas-frame">
@@ -454,30 +538,46 @@
           </div>
         </div>
 
-        <!-- Executive Command & Scenario Hub -->
-        <div class="metric-card widget-controls">
+        <!-- Real-Time Ingress & Sensor Tripwire (High-Utility Actionable KPI) -->
+        <div class="metric-card widget-ingress-kpi">
           <div class="widget-header">
-            <span class="widget-title">Command & Scenario Hub</span>
+            <span class="dot yellow"></span>
+            <span class="widget-title">Live Ingress & Sensor Pulse</span>
           </div>
-          <div class="widget-body" style="display:flex; flex-direction:column; gap:6px;">
-            <button id="btn-open-scenario-hub" class="btn w-full btn-sm btn-purple"
-              style="font-weight:900; border:2px solid #000; box-shadow:2px 2px 0px #000;"
-              title="Open full scenario & stress testing suite">
-              ⚡ Open Scenario Lab
-            </button>
-            <button id="btn-reset-db" class="btn w-full btn-sm btn-green"
-              style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; background-color:#16a34a; color:#fff;"
-              title="Reset schedule and database to normal baseline">
-              🔄 Reset Baseline State
-            </button>
-            <div style="display:flex; gap:6px;">
-              <button id="btn-open-ical" class="btn btn-blue btn-sm" style="flex:1; font-weight:700;" title="Live iCal Subscription">
-                📅 iCal
-              </button>
-              <button id="btn-show-tour" class="btn btn-yellow btn-sm" style="flex:1; font-weight:700;" title="Interactive Sandbox Walkthrough">
-                ⚡ Tour
-              </button>
+          <div class="widget-body" style="padding: 10px 14px; display:flex; flex-direction:column; justify-content:space-between; gap:6px;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <span style="font-size:0.72rem; font-weight:700; color:#555;">OPTICAL SENSOR COUNT:</span>
+                <div style="font-size:1.05rem; font-weight:900; font-family:var(--font-mono); color:#1e293b;">
+                  <strong id="cctv-metric-headcount">0 / 25 Pax</strong> <span style="font-size:0.7rem; color:#16a34a; font-weight:800;">(NOMINAL)</span>
+                </div>
+              </div>
+              <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
+                style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:4px 8px;"
+                title="Simulate hardware tripwire pulse (+1 Entry)">⚡ Tripwire (+1)</button>
             </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; background:#f8fafc; border:1.5px solid #000; border-radius:6px; padding:3px 8px;">
+              <span style="font-size:0.7rem; font-weight:800; font-family:var(--font-mono); color:#475569;">MANUAL COUNT:</span>
+              <div class="segmented-stepper" style="transform:scale(0.85); transform-origin:right center;">
+                <button id="btn-cctv-sub-pax" class="stepper-btn" title="Decrease Headcount (-1)">－</button>
+                <div class="stepper-display">
+                  <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
+                    value="0" title="Directly set attendee headcount manually">
+                  <span style="font-size:0.7rem; color:#555;">Pax</span>
+                </div>
+                <button id="btn-cctv-add-pax" class="stepper-btn" title="Increase Headcount (+1)">＋</button>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:space-between; gap:4px;">
+              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
+                style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:2px 4px;"
+                title="Trigger 80% Occupancy Warning">⚠️ 80% Alert</button>
+              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
+                style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:2px 4px;"
+                title="Trigger 100% Critical Capacity Breach">🚨 100% Alert</button>
+              <button id="btn-open-scenario-hub" class="btn btn-sm btn-purple"
+                style="font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:2px 6px;"
+                title="Open Scenario & Stress Lab">⚡ Lab ↗</button>
             </div>
           </div>
         </div>
@@ -558,7 +658,6 @@
                     <div class="ticker-item">"The swarms keynote was absolute fire!" - @agentic_geek</div>
                   </div>
                 </div>
-              </div>
 
               <!-- Terminal-style Log Output -->
               <div class="terminal-container">
@@ -766,10 +865,38 @@
           </div>
         </section>
 
-      </main>
+        <!-- EVENT COORDINATORS & STAKEHOLDERS DIRECTORY -->
+        <section class="dash-card card-contacts mt-4" style="grid-column: 1 / -1; width: 100%;">
+          <div class="card-header">
+            <h2><img src="ioncs/DB.png" class="header-icon-img" alt="Contacts"> 📱 Event Coordinators & Stakeholders Contact Directory</h2>
+            <span class="badge badge-yellow">WhatsApp Dispatches Active</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>CONTACT NAME</th>
+                    <th>ROLE & RESPONSIBILITY</th>
+                    <th>PHONE NUMBER (WHATSAPP)</th>
+                    <th>EMAIL ADDRESS</th>
+                    <th>ASSIGNED VENUE HALLS</th>
+                    <th>ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-contacts-table-body">
+                  <!-- Dynamically populated by auth.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
 
+      </main> <!-- END .dashboard-grid -->
 
-    </div>
+    </div> <!-- END #coordinator-dashboard-view -->
+  </main> <!-- END .app-workspace -->
+</div> <!-- END .app-layout -->
 
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div class="toast-container" id="toast-container">
@@ -852,8 +979,8 @@
               Link</button>
           </div>
         </div>
-      </div> <!-- END #coordinator-dashboard-view -->
-    </div> <!-- END .container -->
+      </div>
+    </div> <!-- END #ical-modal -->
 
     <!-- ROLE-BASED AUTH LOGIN MODAL -->
     <div id="auth-login-modal" class="auth-modal-backdrop hidden">
@@ -903,33 +1030,6 @@
       </div>
     </div>
 
-    <!-- EVENT COORDINATORS & STAKEHOLDERS DIRECTORY SECTION FOR COORDINATORS -->
-    <section class="container mb-8 mt-8">
-      <div class="dash-card card-contacts">
-        <div class="card-header">
-          <h2><img src="ioncs/DB.png" class="header-icon-img" alt="Contacts"> 📱 Event Coordinators & Stakeholders
-            Contact Directory</h2>
-          <span class="badge badge-yellow">WhatsApp Dispatches Active</span>
-        </div>
-        <div class="card-body">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>CONTACT NAME</th>
-                <th>ROLE & RESPONSIBILITY</th>
-                <th>PHONE NUMBER (WHATSAPP)</th>
-                <th>EMAIL ADDRESS</th>
-                <th>ASSIGNED VENUE HALLS</th>
-                <th>ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="admin-contacts-table-body">
-              <!-- Dynamically populated by auth.js -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
 
     <!-- SELF-HEALING REALLOCATION COUNTDOWN OVERLAY CONTAINER (DIRECT BODY CHILD) -->
     <div id="reallocation-countdown-modal" class="reallocation-modal-backdrop hidden">
