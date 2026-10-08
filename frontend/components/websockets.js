@@ -1,12 +1,25 @@
+let syncUiPending = false;
+let pendingSelectedId = null;
+
 function safeSyncUI(selectedId) {
-  if (typeof populateForms === 'function') populateForms();
-  if (typeof renderScheduleGrid === 'function') renderScheduleGrid();
-  if (typeof rebuildGraphData === 'function') rebuildGraphData();
-  if (typeof updateCounters === 'function') updateCounters();
-  if (selectedId && typeof selectGraphNode === 'function') selectGraphNode(selectedId);
-  if (typeof window.syncAdminDashboard === 'function') {
-    window.syncAdminDashboard({ schedule: scheduleState, graph: graphState });
-  }
+  if (selectedId) pendingSelectedId = selectedId;
+  if (syncUiPending) return;
+  syncUiPending = true;
+
+  requestAnimationFrame(() => {
+    syncUiPending = false;
+    const targetId = pendingSelectedId || selectedNodeId;
+    pendingSelectedId = null;
+
+    if (typeof populateForms === 'function') populateForms();
+    if (typeof renderScheduleGrid === 'function') renderScheduleGrid();
+    if (typeof rebuildGraphData === 'function') rebuildGraphData();
+    if (typeof updateCounters === 'function') updateCounters();
+    if (targetId && typeof selectGraphNode === 'function') selectGraphNode(targetId);
+    if (typeof window.syncAdminDashboard === 'function') {
+      window.syncAdminDashboard({ schedule: scheduleState, graph: graphState });
+    }
+  });
 }
 
 function updateAgentHealthIndicator(status) {

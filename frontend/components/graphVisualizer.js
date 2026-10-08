@@ -64,11 +64,24 @@ function rebuildGraphData() {
       label: edge.type
     });
   });
+
+  // Wake simulation whenever new graph data is rebuilt
+  wakePhysicsSimulation();
+}
+
+let isPhysicsRunning = false;
+let physicsAnimFrameId = null;
+
+function wakePhysicsSimulation() {
+  if (isPhysicsRunning) return;
+  isPhysicsRunning = true;
+  physicsAnimFrameId = requestAnimationFrame(physicsTick);
 }
 
 function physicsTick() {
   if (nodes.length === 0) {
-    requestAnimationFrame(physicsTick);
+    isPhysicsRunning = false;
+    physicsAnimFrameId = null;
     return;
   }
 
@@ -129,6 +142,7 @@ function physicsTick() {
   });
 
   // C. Apply Center Gravity pull, Speed damping, boundary limit check
+  let totalMotion = 0;
   nodes.forEach(n => {
     if (n === draggedNode) return;
     
@@ -143,73 +157,135 @@ function physicsTick() {
 
     n.x = Math.max(n.radius, Math.min(width - n.radius, n.x));
     n.y = Math.max(n.radius, Math.min(height - n.radius, n.y));
+
+    totalMotion += Math.abs(n.vx) + Math.abs(n.vy);
   });
 
-  // D. Redraw graph elements
+  // D. Update graph elements in-place without destroying DOM
   drawGraphSVG();
 
-  requestAnimationFrame(physicsTick);
+  // If system has reached equilibrium and no user drag, SLEEP! Zero idle CPU usage.
+  if (totalMotion < 0.12 && !draggedNode) {
+    isPhysicsRunning = false;
+    physicsAnimFrameId = null;
+    return;
+  }
+
+  physicsAnimFrameId = requestAnimationFrame(physicsTick);
 }
+
+// Persistent SVG element cache for zero DOM allocations (eliminates GC pauses)
+const domLinkMap = new Map();
+const domNodeMap = new Map();
 
 // Render dynamic graph nodes directly into SVG elements
 function drawGraphSVG() {
   const svg = document.getElementById('graph-svg');
   if (!svg) return;
-  
-  const fragment = document.createDocumentFragment();
+
   const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
-  // Draw links
+  // Ensure persistent layer groups exist
+  let linksGroup = svg.querySelector('#graph-links-group');
+  if (!linksGroup) {
+    svg.innerHTML = '';
+    linksGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    linksGroup.id = 'graph-links-group';
+    svg.appendChild(linksGroup);
+    domLinkMap.clear();
+    domNodeMap.clear();
+  }
+
+  let nodesGroup = svg.querySelector('#graph-nodes-group');
+  if (!nodesGroup) {
+    nodesGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    nodesGroup.id = 'graph-nodes-group';
+    svg.appendChild(nodesGroup);
+    domNodeMap.clear();
+  }
+
+  // 1. Update / Create Links in-place
+  const activeLinkKeys = new Set();
   links.forEach(l => {
     const s = nodeMap.get(l.source);
     const t = nodeMap.get(l.target);
     if (!s || !t) return;
 
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', s.x);
-    line.setAttribute('y1', s.y);
-    line.setAttribute('x2', t.x);
-    line.setAttribute('y2', t.y);
-    line.setAttribute('class', 'graph-link');
-    fragment.appendChild(line);
+    const linkKey = `${l.source}--${l.target}`;
+    activeLinkKeys.add(linkKey);
+
+    let line = domLinkMap.get(linkKey);
+    if (!line || !line.parentNode) {
+      line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('class', 'graph-link');
+      line.setAttribute('data-link-key', linkKey);
+      linksGroup.appendChild(line);
+      domLinkMap.set(linkKey, line);
+    }
+    line.setAttribute('x1', Math.round(s.x));
+    line.setAttribute('y1', Math.round(s.y));
+    line.setAttribute('x2', Math.round(t.x));
+    line.setAttribute('y2', Math.round(t.y));
   });
 
-  // Draw nodes
-  nodes.forEach(n => {
-    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
-    g.setAttribute('data-node-id', n.id);
+  // Remove stale links if any
+  domLinkMap.forEach((line, key) => {
+    if (!activeLinkKeys.has(key)) {
+      if (line.parentNode) line.parentNode.removeChild(line);
+      domLinkMap.delete(key);
+    }
+  });
 
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('r', n.radius);
-    
-    let isSelectedClass = (selectedNodeId === n.id) ? ' selected-node' : '';
-    circle.setAttribute('class', `graph-node ${n.type}${isSelectedClass}`);
-    if (selectedNodeId === n.id) {
-      circle.style.strokeWidth = '4px';
+  // 2. Update / Create Nodes in-place
+  const activeNodeIds = new Set();
+  nodes.forEach(n => {
+    activeNodeIds.add(n.id);
+    let g = domNodeMap.get(n.id);
+    if (!g || !g.parentNode) {
+      g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      g.setAttribute('data-node-id', n.id);
+
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('r', n.radius);
+      circle.setAttribute('class', `graph-node ${n.type}`);
+      g.appendChild(circle);
+
+      const textEmoji = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      textEmoji.setAttribute('text-anchor', 'middle');
+      textEmoji.setAttribute('dy', '4');
+      textEmoji.setAttribute('font-size', '14');
+      textEmoji.textContent = n.avatar || (n.type === 'topic' ? '📄' : '🏛️');
+      g.appendChild(textEmoji);
+
+      const textLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      textLabel.setAttribute('y', n.radius + 12);
+      textLabel.setAttribute('class', 'graph-label');
+      textLabel.setAttribute('text-anchor', 'middle');
+      textLabel.textContent = n.label.length > 15 ? n.label.substring(0, 12) + '...' : n.label;
+      g.appendChild(textLabel);
+
+      nodesGroup.appendChild(g);
+      domNodeMap.set(n.id, g);
+    }
+
+    g.setAttribute('transform', `translate(${Math.round(n.x)}, ${Math.round(n.y)})`);
+
+    const circle = g.querySelector('circle');
+    if (circle) {
+      const isSelected = selectedNodeId === n.id;
+      circle.setAttribute('class', `graph-node ${n.type}${isSelected ? ' selected-node' : ''}`);
+      circle.style.strokeWidth = isSelected ? '4px' : '2px';
       circle.style.stroke = '#000';
     }
-    g.appendChild(circle);
-
-    const textEmoji = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    textEmoji.setAttribute('text-anchor', 'middle');
-    textEmoji.setAttribute('dy', '4');
-    textEmoji.setAttribute('font-size', '14');
-    textEmoji.textContent = n.avatar || (n.type === 'topic' ? '📄' : '🏛️');
-    g.appendChild(textEmoji);
-
-    const textLabel = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    textLabel.setAttribute('y', n.radius + 12);
-    textLabel.setAttribute('class', 'graph-label');
-    textLabel.setAttribute('text-anchor', 'middle');
-    textLabel.textContent = n.label.length > 15 ? n.label.substring(0, 12) + '...' : n.label;
-    g.appendChild(textLabel);
-
-    fragment.appendChild(g);
   });
 
-  svg.innerHTML = '';
-  svg.appendChild(fragment);
+  // Remove stale nodes if any
+  domNodeMap.forEach((g, id) => {
+    if (!activeNodeIds.has(id)) {
+      if (g.parentNode) g.parentNode.removeChild(g);
+      domNodeMap.delete(id);
+    }
+  });
 }
 
 // Mouse dragging in graph network
@@ -234,6 +310,7 @@ function initSvgMouseHandlers() {
         isMouseDragging = false;
         dragStartX = mx;
         dragStartY = my;
+        wakePhysicsSimulation();
         break;
       }
     }
@@ -253,6 +330,7 @@ function initSvgMouseHandlers() {
       draggedNode.y = my;
       draggedNode.vx = 0;
       draggedNode.vy = 0;
+      wakePhysicsSimulation();
       return;
     }
 
@@ -279,6 +357,7 @@ function initSvgMouseHandlers() {
         selectGraphNode(draggedNode.id);
       }
       draggedNode = null;
+      wakePhysicsSimulation();
     }
   });
 }

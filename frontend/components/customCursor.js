@@ -126,6 +126,7 @@
       // Append point to meteor tail buffer
       points.push({ x: mouseX, y: mouseY });
       if (points.length > MAX_POINTS) points.shift();
+      wakeCometTail();
     }, { passive: true });
 
     window.addEventListener('mousedown', () => {
@@ -147,6 +148,7 @@
       cursor.style.display = 'none';
       points.length = 0;
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      isCometLoopActive = false;
     });
 
     document.addEventListener('mouseenter', (e) => {
@@ -155,9 +157,18 @@
       mouseX = e.clientX;
       mouseY = e.clientY;
       updateCursorPosition(1.0);
+      wakeCometTail();
     });
 
-    // High-performance render loop for the comet tail
+    let isCometLoopActive = false;
+
+    function wakeCometTail() {
+      if (isCometLoopActive) return;
+      isCometLoopActive = true;
+      requestAnimationFrame(renderCometTail);
+    }
+
+    // High-performance sleepable render loop for the comet tail
     function renderCometTail() {
       // If mouse stopped moving for 80ms, decay trail points so it cleanly disappears
       if (Date.now() - lastMoveTime > 80 && points.length > 0) {
@@ -186,10 +197,14 @@
         }
       }
 
+      // If trail has vanished, sleep loop completely (0% CPU/GPU idle usage)
+      if (points.length === 0) {
+        isCometLoopActive = false;
+        return;
+      }
+
       requestAnimationFrame(renderCometTail);
     }
-
-    requestAnimationFrame(renderCometTail);
   }
 
   if (document.readyState === 'loading') {

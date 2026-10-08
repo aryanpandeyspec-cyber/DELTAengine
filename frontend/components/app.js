@@ -90,8 +90,12 @@ window.addEventListener('DOMContentLoaded', () => {
   initSwarmCopy(); // Swarm negotiation transcript copy to clipboard
   initAutopilotController(); // Tesla Autopilot autonomous mode controller
 
-  // Custom Node Graph animation loop
-  requestAnimationFrame(physicsTick);
+  // Custom Node Graph animation loop (sleeps when settled)
+  if (typeof wakePhysicsSimulation === 'function') {
+    wakePhysicsSimulation();
+  } else {
+    requestAnimationFrame(physicsTick);
+  }
 });
 
 // --- TESLA AUTOPILOT AUTONOMOUS MODE CONTROLLER ---
