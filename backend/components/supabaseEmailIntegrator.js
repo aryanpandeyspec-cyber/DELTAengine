@@ -5,7 +5,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://frlrazzskbzmtlqrswjl.supabase.co';
-const SUPABASE_KEY = process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || '';
+const SUPABASE_KEY = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 const supabase = (SUPABASE_URL && SUPABASE_KEY) ? createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
@@ -146,23 +146,25 @@ async function autoDispatchSelfHealingEmail(eventDetails, db, broadcast) {
 
   // Record dispatch in Supabase DB
   try {
-    const { data, error } = await supabase
-      .from('event_email_dispatches')
-      .insert([
-        {
-          dispatch_id: dispatchId,
-          topic_title: fullDetails.topicTitle,
-          speaker_name: fullDetails.speakerName,
-          old_venue: fullDetails.oldVenue,
-          new_venue: fullDetails.newVenue,
-          reason: fullDetails.reason,
-          recipient_count: recipients.length,
-          status: resendResult.success ? 'DELIVERED_RESEND' : 'DISPATCHED',
-          created_at: new Date().toISOString()
-        }
-      ]);
-    if (error) {
-      console.log('[Supabase Mailer DB Notice] Supabase table synced in fallback mode:', error.message);
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('event_email_dispatches')
+        .insert([
+          {
+            dispatch_id: dispatchId,
+            topic_title: fullDetails.topicTitle,
+            speaker_name: fullDetails.speakerName,
+            old_venue: fullDetails.oldVenue,
+            new_venue: fullDetails.newVenue,
+            reason: fullDetails.reason,
+            recipient_count: recipients.length,
+            status: resendResult.success ? 'DELIVERED_RESEND' : 'DISPATCHED',
+            created_at: new Date().toISOString()
+          }
+        ]);
+      if (error) {
+        console.log('[Supabase Mailer DB Notice] Supabase table synced in fallback mode:', error.message);
+      }
     }
   } catch (e) {
     console.log('[Supabase Mailer Notice] Operating in resilient local-cache mode.');

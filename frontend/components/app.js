@@ -88,10 +88,100 @@ window.addEventListener('DOMContentLoaded', () => {
   initKeyboardShortcuts(); // Neubrutalist keyboard shortcuts & modal
   initMatrixSearch(); // Real-time matrix talk search & filter
   initSwarmCopy(); // Swarm negotiation transcript copy to clipboard
+  initAutopilotController(); // Tesla Autopilot autonomous mode controller
 
   // Custom Node Graph animation loop
   requestAnimationFrame(physicsTick);
 });
+
+// --- TESLA AUTOPILOT AUTONOMOUS MODE CONTROLLER ---
+let autopilotModeActive = localStorage.getItem('delta_autopilot_mode') !== 'false'; // Defaults to TRUE!
+
+window.isAutopilotEnabled = function() {
+  return autopilotModeActive;
+};
+
+window.setAutopilotMode = function(enabled) {
+  autopilotModeActive = !!enabled;
+  localStorage.setItem('delta_autopilot_mode', autopilotModeActive ? 'true' : 'false');
+  updateAutopilotUI();
+};
+
+function updateAutopilotUI() {
+  const pills = document.querySelectorAll('.autopilot-pill, #autopilot-toggle-pill');
+  const statusTxts = document.querySelectorAll('.autopilot-status-text, #autopilot-status-text');
+  const dots = document.querySelectorAll('.autopilot-indicator-dot, #autopilot-indicator-dot');
+  
+  pills.forEach(pill => {
+    if (autopilotModeActive) {
+      pill.classList.add('active');
+      pill.classList.remove('manual');
+    } else {
+      pill.classList.remove('active');
+      pill.classList.add('manual');
+    }
+  });
+
+  statusTxts.forEach(txt => {
+    txt.textContent = autopilotModeActive ? 'ENGAGED' : 'CO-PILOT';
+  });
+
+  dots.forEach(dot => {
+    dot.className = autopilotModeActive ? 'autopilot-indicator-dot pulse' : 'autopilot-indicator-dot paused';
+  });
+}
+
+function initAutopilotController() {
+  const pills = document.querySelectorAll('.autopilot-pill, #autopilot-toggle-pill');
+  pills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      const nextState = !autopilotModeActive;
+      window.setAutopilotMode(nextState);
+      fetch('/api/admin/toggle-autopilot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: nextState })
+      }).catch(() => {});
+
+      if (nextState) {
+        if (typeof playSuccessSfx === 'function') playSuccessSfx();
+        if (typeof createToast === 'function') createToast('⚡ TESLA AUTOPILOT ENGAGED: Zero-Touch Autonomous Operations Active.', 'success');
+      } else {
+        if (typeof createToast === 'function') createToast('🕹️ MANUAL CO-PILOT: Human Confirmation Required for Reallocations.', 'info');
+      }
+    });
+  });
+
+  updateAutopilotUI();
+}
+
+window.showAutopilotResolutionHUD = function(conflictText, destText) {
+  let hud = document.getElementById('tesla-autopilot-hud');
+  if (!hud) {
+    hud = document.createElement('div');
+    hud.id = 'tesla-autopilot-hud';
+    hud.className = 'tesla-autopilot-hud';
+    document.body.appendChild(hud);
+  }
+
+  hud.innerHTML = `
+    <div class="hud-badge">⚡ TESLA AUTOPILOT • ZERO-TOUCH MITIGATION</div>
+    <div class="hud-conflict">${typeof escapeHtml === 'function' ? escapeHtml(conflictText) : conflictText}</div>
+    <div class="hud-arrow">➔</div>
+    <div class="hud-dest">${typeof escapeHtml === 'function' ? escapeHtml(destText) : destText}</div>
+    <div class="hud-time">Autonomous execution: <span class="latency">12ms</span> • Venue PA & Volunteers Dispatched</div>
+  `;
+
+  hud.classList.remove('active');
+  void hud.offsetWidth; // Force Reflow
+  hud.classList.add('active');
+
+  if (typeof playSuccessSfx === 'function') playSuccessSfx();
+
+  setTimeout(() => {
+    if (hud) hud.classList.remove('active');
+  }, 4800);
+};
 
 function initDatePicker() {
   const datePicker = document.getElementById('schedule-date-picker');
@@ -577,7 +667,7 @@ function createToast(message, type = 'info') {
   toast.innerHTML = `
     <span style="font-size:1.1rem; line-height:1;">${icon}</span>
     <span style="font-family:var(--font-mono, monospace); font-size:0.78rem; font-weight:700; flex-grow:1; word-break:break-word;">${message}</span>
-    <span style="cursor:pointer; font-weight:800; font-size:1rem; opacity:0.6; padding-left:6px;" onclick="this.parentElement.remove()">&times;</span>
+    <span style="font-weight:800; font-size:1rem; opacity:0.6; padding-left:6px;" onclick="this.parentElement.remove()">&times;</span>
   `;
 
   container.appendChild(toast);

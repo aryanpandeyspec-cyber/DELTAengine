@@ -27,6 +27,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
 app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 app.use(rateLimiter); // Apply Rate Limiter to prevent DoS attacks
 
 // Prevent browser from caching perception engine & client scripts
@@ -58,6 +59,10 @@ app.get('/dashboard', (req, res) => {
 
 app.get('/presentation', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/presentation.html'));
+});
+
+app.get('/signage', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/signage.html'));
 });
 
 app.get('/download-deck', (req, res) => {
@@ -106,7 +111,7 @@ async function sendWhatsAppNotification(recipientName, phoneNumber, messageText)
 }
 
 wss.on('connection', ws => {
-  console.log('[WS] Client connected');
+  if (process.env.DEBUG_WS) console.log('[WS] Client connected');
   db.tokensUsed = db.tokensUsed || 28450;
   ws.send(JSON.stringify({
     type: 'INIT_STATE',
@@ -119,11 +124,14 @@ wss.on('connection', ws => {
       whatsappLogs: db.whatsappLogs,
       limiters: db.limiters,
       cctvState: db.cctvState,
+      autopilotEnabled: db.autopilotEnabled !== false,
       uptimeSeconds: Math.floor(process.uptime()),
       tokensUsed: db.tokensUsed
     }
   }));
-  ws.on('close', () => console.log('[WS] Client disconnected'));
+  ws.on('close', () => {
+    if (process.env.DEBUG_WS) console.log('[WS] Client disconnected');
+  });
 });
 
 app.get('/api/state', (req, res) => {
@@ -137,6 +145,7 @@ app.get('/api/state', (req, res) => {
     whatsappLogs: db.whatsappLogs,
     limiters: db.limiters,
     cctvState: db.cctvState,
+    autopilotEnabled: db.autopilotEnabled !== false,
     uptimeSeconds: Math.floor(process.uptime()),
     tokensUsed: db.tokensUsed
   });
@@ -177,10 +186,124 @@ app.post('/api/notify/whatsapp-all', async (req, res) => {
   res.json({ success: true, count: results.length, notifications: results });
 });
 
+// 2-WAY VOLUNTEER WHATSAPP WEBHOOK (Twilio Cloud & Direct Rest)
+// Enables volunteers (Suryansh, Shahid, Aryan) to text:
+// "GATE CLEAR", "OVERFLOW OPEN", "STATUS", "AUTOPILOT ON/OFF" directly from WhatsApp!
+app.post('/api/whatsapp/incoming', async (req, res) => {
+  const rawBody = (req.body.Body || req.body.body || req.body.message || req.body.text || '').trim();
+  const rawFrom = (req.body.From || req.body.from || '').trim();
+  const senderNumber = rawFrom.replace(/whatsapp:/i, '').trim();
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Resolve volunteer name from contacts / volunteers directory
+  let volunteer = db.volunteers ? db.volunteers.find(v => v.phone.replace(/[^0-9]/g, '') === senderNumber.replace(/[^0-9]/g, '')) : null;
+  if (!volunteer && db.contacts) {
+    const contact = db.contacts.find(c => c.phone.replace(/[^0-9]/g, '') === senderNumber.replace(/[^0-9]/g, ''));
+    if (contact) volunteer = { name: contact.name, role: contact.role };
+  }
+  const volunteerName = volunteer ? volunteer.name : (senderNumber ? `Coordinator (${senderNumber})` : 'Authorized Volunteer');
+
+  console.log(`[WhatsApp Webhook 2-Way] 📩 Message from ${volunteerName} (${rawFrom}): "${rawBody}"`);
+
+  const cmd = rawBody.toUpperCase();
+  let replyText = '';
+  let actionTaken = 'NONE';
+
+  if (cmd.includes('CLEAR') || cmd.includes('GATE CLEAR')) {
+    actionTaken = 'GATE_CLEARED';
+    lastCctvAlertState = 'OPTIMAL';
+    broadcast({
+      type: 'VOLUNTEER_ALERT_ACK',
+      data: {
+        volunteer: volunteerName,
+        status: 'NOMINAL',
+        message: `Door chokepoint cleared by ${volunteerName}.`,
+        timestamp: timeStr
+      }
+    });
+    replyText = `✅ Confirmed, ${volunteerName}. Door chokepoint alert cleared across DELTA Engine central command. Hall status returned to NOMINAL.`;
+  } else if (cmd.includes('OVERFLOW') || cmd.includes('OPEN OVERFLOW')) {
+    actionTaken = 'OVERFLOW_OPENED';
+    db.overflowActive = true;
+    broadcast({
+      type: 'VOLUNTEER_OVERFLOW_OPEN',
+      data: {
+        volunteer: volunteerName,
+        note: 'Overflow lounge active',
+        timestamp: timeStr
+      }
+    });
+    replyText = `🏛️ Copy that, ${volunteerName}. Overflow Hall and 4K digital broadcast channels are now active. Capacity limits adjusted.`;
+  } else if (cmd.includes('AUTOPILOT ON') || (cmd.includes('AUTOPILOT') && cmd.includes('ON'))) {
+    db.autopilotEnabled = true;
+    actionTaken = 'AUTOPILOT_ENGAGED';
+    broadcast({
+      type: 'AUTOPILOT_STATUS_UPDATE',
+      data: { autopilotEnabled: true, timestamp: timeStr }
+    });
+    replyText = `⚡ Tesla Autopilot has been ENGAGED by ${volunteerName}. Zero-Touch Autonomous self-healing is active.`;
+  } else if (cmd.includes('AUTOPILOT OFF') || (cmd.includes('AUTOPILOT') && cmd.includes('OFF'))) {
+    db.autopilotEnabled = false;
+    actionTaken = 'AUTOPILOT_PAUSED';
+    broadcast({
+      type: 'AUTOPILOT_STATUS_UPDATE',
+      data: { autopilotEnabled: false, timestamp: timeStr }
+    });
+    replyText = `🕹️ Tesla Autopilot PAUSED by ${volunteerName}. System switched to Manual Co-Pilot mode.`;
+  } else if (cmd.includes('STATUS')) {
+    actionTaken = 'STATUS_QUERY';
+    const occTuring = db.cctvState && db.cctvState['hall-1'] ? db.cctvState['hall-1'].peopleDetected : (doorSensorNetOccupancy || 0);
+    const capTuring = db.graph.halls['hall-1'] ? db.graph.halls['hall-1'].capacity : 250;
+    const pct = Math.round((occTuring / capTuring) * 100);
+    replyText = `📊 DELTA Engine Live Telemetry:\n• Turing Hall: ${occTuring}/${capTuring} pax (${pct}%)\n• Autopilot: ${db.autopilotEnabled ? 'ENGAGED ⚡' : 'MANUAL 🕹️'}\n• Gates Mesh: Active (Gate A / B / C)\n• System Uptime: ${Math.floor(process.uptime())}s`;
+  } else {
+    actionTaken = 'HELP_PROMPT';
+    replyText = `DELTA Engine Coordinator Bot. Available Commands:\n• GATE CLEAR - Reset door chokepoint alert\n• OVERFLOW OPEN - Unlock overflow lounge\n• STATUS - Live headcount & capacity\n• AUTOPILOT ON/OFF - Toggle zero-touch healing`;
+  }
+
+  // Record into live whatsappLogs feed
+  const logEntry = {
+    id: 'wa_in_' + Date.now(),
+    timestamp: timeStr,
+    recipientName: 'DELTA Central Command',
+    phoneNumber: senderNumber || '+91 Coordinator',
+    messageText: `[2-WAY INCOMING from ${volunteerName}]: "${rawBody}" ➔ REPLY: "${replyText.substring(0, 75)}..."`,
+    status: 'RECEIVED & EXECUTED',
+    agent: `📱 ${volunteerName} (Two-Way SMS/WA Action)`
+  };
+  if (!db.whatsappLogs) db.whatsappLogs = [];
+  db.whatsappLogs.unshift(logEntry);
+  if (db.whatsappLogs.length > 50) db.whatsappLogs.pop();
+
+  broadcast({
+    type: 'WHATSAPP_DISPATCH',
+    data: logEntry
+  });
+
+  // TwiML XML formatting if request originates from Twilio webhook
+  const isTwilio = req.headers['content-type']?.includes('urlencoded') || req.body.AccountSid || req.body.From;
+  if (isTwilio && !req.headers.accept?.includes('application/json')) {
+    res.setHeader('Content-Type', 'text/xml');
+    return res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${replyText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</Message>
+</Response>`);
+  }
+
+  res.json({
+    success: true,
+    action: actionTaken,
+    sender: volunteerName,
+    messageReceived: rawBody,
+    reply: replyText
+  });
+});
+
+
 // Autonomous ElevenLabs Venue PA Voice Announcement Route
 app.post('/api/voice/announce', async (req, res) => {
   const { text, voiceId } = req.body || {};
-  const result = await generateVenueVoiceAnnouncement(text, voiceId);
+  const result = await generateVenueVoiceAnnouncement(text, voiceId || 'EXAVITQu4vr4xnSDxMaL');
   if (result.success) {
     broadcast({
       type: 'VOICE_ANNOUNCEMENT',
@@ -269,6 +392,11 @@ app.post('/api/cctv/gemini-scene-audit', async (req, res) => {
 // Cloud Integrations Diagnostic & Connection Status
 app.get('/api/system/integrations', (req, res) => {
   res.json({
+    supabase: {
+      connected: !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY)),
+      provider: 'Supabase PostgreSQL & Cloud Persistence',
+      projectUrl: process.env.SUPABASE_URL || 'https://frlrazzskbzmtlqrswjl.supabase.co'
+    },
     resend: {
       connected: !!process.env.RESEND_API_KEY,
       provider: 'Resend Cloud Mailer (DKIM/SPF)',
@@ -279,7 +407,7 @@ app.get('/api/system/integrations', (req, res) => {
       connected: !!process.env.ELEVENLABS_API_KEY,
       provider: 'ElevenLabs Studio Voice API',
       model: 'eleven_flash_v2_5',
-      voice: 'Daniel (Steady Broadcaster)'
+      voice: 'Nico Robin (Calm & Elegant)'
     },
     gemini: {
       connected: !!process.env.GEMINI_API_KEY,
@@ -368,6 +496,15 @@ app.post('/api/admin/action', (req, res) => {
     });
   } else if (action === 'clear_locks') {
     message = '[LOCK TABLE] Purged active transaction locks. Restored concurrency channels.';
+  } else if (action === 'toggle_autopilot') {
+    db.autopilotEnabled = !db.autopilotEnabled;
+    message = db.autopilotEnabled
+      ? '⚡ [TESLA AUTOPILOT] Autonomous Zero-Touch Self-Healing ENGAGED.'
+      : '🕹️ [MANUAL CO-PILOT] Autonomous Zero-Touch Paused. Human coordinator approval required.';
+    broadcast({
+      type: 'AUTOPILOT_STATUS_UPDATE',
+      data: { autopilotEnabled: db.autopilotEnabled, timestamp: time }
+    });
   }
 
   broadcast({
@@ -375,7 +512,22 @@ app.post('/api/admin/action', (req, res) => {
     data: { message, time, action }
   });
 
-  res.json({ success: true, message });
+  res.json({ success: true, message, autopilotEnabled: db.autopilotEnabled });
+});
+
+app.post('/api/admin/toggle-autopilot', (req, res) => {
+  const { enabled } = req.body || {};
+  db.autopilotEnabled = (enabled !== undefined) ? !!enabled : !db.autopilotEnabled;
+  const time = new Date().toLocaleTimeString();
+  broadcast({
+    type: 'AUTOPILOT_STATUS_UPDATE',
+    data: {
+      autopilotEnabled: db.autopilotEnabled,
+      timestamp: time
+    }
+  });
+  console.log(`[Tesla Autopilot] Mode toggled: ${db.autopilotEnabled ? 'ENGAGED (Zero-Touch Autonomous)' : 'MANUAL CO-PILOT'}`);
+  res.json({ success: true, autopilotEnabled: db.autopilotEnabled });
 });
 
 app.post('/api/admin/stress-test-500', async (req, res) => {
@@ -461,29 +613,29 @@ app.post('/api/schedule/set-date', (req, res) => {
 });
 
 app.post('/api/reset', (req, res) => {
-  for (const key in db.graph.speakers) {
-    db.graph.speakers[key].delay = 0;
-  }
-  db.schedule = {
-    'slot-1': { 'hall-1': 'topic-1', 'hall-2': 'topic-4', 'hall-3': 'topic-3' },
-    'slot-2': { 'hall-1': 'topic-2', 'hall-2': 'topic-5', 'hall-3': 'topic-6' },
-    'slot-3': { 'hall-1': 'topic-8', 'hall-2': null, 'hall-3': null },
-    'slot-4': { 'hall-1': 'topic-7', 'hall-2': null, 'hall-3': null }
-  };
+  db.reset();
 
-  db.syncScheduleEdges();
-
-  broadcast({
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const resetPayload = {
     type: 'STATE_RESET',
     data: {
       graph: db.graph,
       schedule: db.schedule,
-      logs: ['[Agent OS] System state reset to default configurations.'],
-      notifications: []
+      activeDate: db.activeDate,
+      logs: ['[Agent OS] Operational Reset: Conference layout restored to default 3-talk baseline.'],
+      notifications: [{ topicId: null, message: '✨ Layout reset to normal status!', type: 'success' }],
+      swarmChat: [
+        { sender: 'Liaison Agent', avatar: '🗣️', text: 'System reset complete. Conference schedule restored to default baseline.', time: timeStr },
+        { sender: 'Scheduler Agent', avatar: '⏱️', text: 'All tracks aligned to initial timeline with zero conflicts.', time: timeStr },
+        { sender: 'Logistics Agent', avatar: '🏛️', text: 'Stage facilities and hall occupancy re-calibrated.', time: timeStr },
+        { sender: 'Marketing Agent', avatar: '📢', text: 'iCal sync feed synchronized with default conference timetable.', time: timeStr }
+      ]
     }
-  });
+  };
 
-  res.json({ success: true, graph: db.graph, schedule: db.schedule });
+  broadcast(resetPayload);
+
+  res.json({ success: true, graph: db.graph, schedule: db.schedule, activeDate: db.activeDate });
 });
 
 app.post('/api/simulate/delay', async (req, res) => {
@@ -521,22 +673,77 @@ app.post('/api/simulate/capacity', async (req, res) => {
   });
 });
 
-// Track running door passage counters
+// Track running door passage counters & Multi-Gate Mesh Fusion ledger
 let doorSensorTotalEntries = 0;
 let doorSensorTotalExits = 0;
 let doorSensorNetOccupancy = 0;
 
+if (!db.gatesMesh) {
+  db.gatesMesh = {
+    'gate-a': { id: 'gate-a', name: 'Gate A (Main Entrance)', entries: 0, exits: 0, net: 0, hallId: 'hall-1', lastUpdated: 'Online' },
+    'gate-b': { id: 'gate-b', name: 'Gate B (Emergency Egress)', entries: 0, exits: 0, net: 0, hallId: 'hall-1', lastUpdated: 'Online' },
+    'gate-c': { id: 'gate-c', name: 'Gate C (VIP / Speaker)', entries: 0, exits: 0, net: 0, hallId: 'hall-1', lastUpdated: 'Online' }
+  };
+}
+
+app.get('/api/sensors/doors/mesh', (req, res) => {
+  res.json({ success: true, gates: db.gatesMesh, netOccupancy: doorSensorNetOccupancy });
+});
+
 app.post('/api/sensors/door', async (req, res) => {
-  const { event, hallId, netOccupancy, entries, exits, dist1, dist2 } = req.body;
+  const { event, hallId, netOccupancy, entries, exits, dist1, dist2, gateId, gateName } = req.body;
   const targetHallId = hallId || 'hall-1';
-  const hall = db.graph.halls[targetHallId] || { name: 'Turing Auditorium', capacity: 150 };
+  const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
   const timeStr = new Date().toLocaleTimeString();
+
+  // Multi-Gate Mesh Tracking
+  const targetGateId = gateId || 'gate-a';
+  const targetGateName = gateName || (targetGateId === 'gate-b' ? 'Gate B (Emergency Egress)' : targetGateId === 'gate-c' ? 'Gate C (VIP Passage)' : 'Gate A (Main Entrance)');
+  if (!db.gatesMesh[targetGateId]) {
+    db.gatesMesh[targetGateId] = { id: targetGateId, name: targetGateName, entries: 0, exits: 0, net: 0, hallId: targetHallId, lastUpdated: timeStr };
+  }
+  const currentGate = db.gatesMesh[targetGateId];
+
+  // Emergency Barricade Pressure Release Pulse (Automated stampede prevention)
+  if (event === 'EMERGENCY_RELEASE' || req.body.action === 'EMERGENCY_RELEASE') {
+    const pressurePsi = parseFloat(req.body.pressurePsi) || 8.5;
+    currentGate.status = 'AUTOMATED_RELEASE_ACTIVE';
+    currentGate.pressurePsi = pressurePsi;
+    currentGate.lastUpdated = timeStr;
+
+    console.log(`[IoT Door Sensor] 🚨 AUTOMATED GATE RELEASE TRIGGERED at ${targetGateName} (${pressurePsi} PSI). Barricade latch released!`);
+
+    broadcast({
+      type: 'GATE_RELEASE_PULSE',
+      data: {
+        hallId: targetHallId,
+        hallName: hall.name,
+        gateId: targetGateId,
+        gateName: targetGateName,
+        pressurePsi,
+        reason: req.body.reason || 'Critical Barricade Pressure Overload (>8.5 PSI)',
+        timestamp: timeStr
+      }
+    });
+
+    return res.json({
+      success: true,
+      gateId: targetGateId,
+      status: 'EMERGENCY_RELEASE_ACTIVATED',
+      pressurePsi,
+      gatesMesh: db.gatesMesh
+    });
+  }
 
   // Every time the sensor glows / triggers, directly register an entry (decoupled from camera)
   if (event === 'DOOR_TRIGGER') {
     doorSensorTotalEntries++;
     doorSensorNetOccupancy++;
-    console.log(`[IoT Door Sensor] 💡 [SENSOR GLOW] Passage Registered (+1 Entry) -> Total Entries: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax (Dist: ${dist2 || dist1}mm)`);
+    currentGate.entries++;
+    currentGate.net++;
+    currentGate.lastUpdated = timeStr;
+
+    console.log(`[IoT Door Sensor] 💡 [${targetGateName}] Glow Passage Registered (+1 In) -> Total In: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax`);
 
     // Update db.cctvState
     if (db.cctvState && db.cctvState[targetHallId]) {
@@ -551,10 +758,24 @@ app.post('/api/sensors/door', async (req, res) => {
       data: {
         hallId: targetHallId,
         hallName: hall.name,
+        gateId: targetGateId,
+        gateName: targetGateName,
         dist1: dist1 || 0,
         dist2: dist2 || 0,
         entries: doorSensorTotalEntries,
         occupancy: doorSensorNetOccupancy,
+        timestamp: timeStr
+      }
+    });
+
+    broadcast({
+      type: 'GATE_MESH_UPDATE',
+      data: {
+        hallId: targetHallId,
+        gateId: targetGateId,
+        gateName: targetGateName,
+        gates: db.gatesMesh,
+        netOccupancy: doorSensorNetOccupancy,
         timestamp: timeStr
       }
     });
@@ -573,20 +794,25 @@ app.post('/api/sensors/door', async (req, res) => {
       }
     });
 
-    return res.json({ success: true, entries: doorSensorTotalEntries, occupancy: doorSensorNetOccupancy });
+    return res.json({ success: true, gateId: targetGateId, entries: doorSensorTotalEntries, occupancy: doorSensorNetOccupancy, gatesMesh: db.gatesMesh });
   }
 
   if (event === 'ENTRY') {
     doorSensorTotalEntries = (entries !== undefined && entries > 0) ? entries : (doorSensorTotalEntries + 1);
     doorSensorNetOccupancy = (netOccupancy !== undefined && netOccupancy > 0) ? netOccupancy : (doorSensorNetOccupancy + 1);
+    currentGate.entries++;
+    currentGate.net++;
   } else if (event === 'EXIT') {
     doorSensorTotalExits = (exits !== undefined && exits > 0) ? exits : (doorSensorTotalExits + 1);
     if (doorSensorNetOccupancy > 0) doorSensorNetOccupancy--;
+    currentGate.exits++;
+    if (currentGate.net > 0) currentGate.net--;
   }
+  currentGate.lastUpdated = timeStr;
 
   const occupancy = parseInt(netOccupancy, 10) || doorSensorNetOccupancy;
 
-  console.log(`[IoT Door Sensor] ${event}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries || doorSensorTotalEntries}, Out: ${exits || doorSensorTotalExits})`);
+  console.log(`[IoT Door Sensor] ${event} at ${targetGateName}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries || doorSensorTotalEntries}, Out: ${exits || doorSensorTotalExits})`);
 
   // Update db.cctvState
   if (db.cctvState && db.cctvState[targetHallId]) {
@@ -611,6 +837,18 @@ app.post('/api/sensors/door', async (req, res) => {
     }
   });
 
+  broadcast({
+    type: 'GATE_MESH_UPDATE',
+    data: {
+      hallId: targetHallId,
+      gateId: targetGateId,
+      gateName: targetGateName,
+      gates: db.gatesMesh,
+      netOccupancy: occupancy,
+      timestamp: timeStr
+    }
+  });
+
   // Check for capacity overshoot
   let healingReport = null;
   let surgeTriggered = false;
@@ -618,7 +856,7 @@ app.post('/api/sensors/door', async (req, res) => {
   if (occupancy > hall.capacity) {
     let activeTopicId = null;
     for (const slotId in db.schedule) {
-      if (db.schedule[slotId][targetHallId]) {
+      if (db.schedule[slotId] && db.schedule[slotId][targetHallId]) {
         activeTopicId = db.schedule[slotId][targetHallId];
         break;
       }
@@ -628,7 +866,7 @@ app.post('/api/sensors/door', async (req, res) => {
       surgeTriggered = true;
       const topic = db.graph.topics[activeTopicId];
       topic.interest = occupancy;
-      const eventDesc = `⚡ IoT Door Sensor: "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
+      const eventDesc = `⚡ IoT Door Sensor (${targetGateName}): "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
       healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
     }
   }
@@ -636,10 +874,12 @@ app.post('/api/sensors/door', async (req, res) => {
   res.json({
     success: true,
     hallId: targetHallId,
+    gateId: targetGateId,
     occupancy,
     capacity: hall.capacity,
     surgeTriggered,
-    healingReport
+    healingReport,
+    gatesMesh: db.gatesMesh
   });
 });
 
@@ -696,7 +936,13 @@ app.post('/api/sensors/face-passage', async (req, res) => {
 
   // Evaluate self-healing capacity breach
   if (occupancy > hall.capacity) {
-    const activeTopicId = db.schedule['slot-1'] ? db.schedule['slot-1'][targetHallId] : null;
+    let activeTopicId = null;
+    for (const slotId in db.schedule) {
+      if (db.schedule[slotId] && db.schedule[slotId][targetHallId]) {
+        activeTopicId = db.schedule[slotId][targetHallId];
+        break;
+      }
+    }
     if (activeTopicId && db.graph.topics[activeTopicId]) {
       const topic = db.graph.topics[activeTopicId];
       topic.interest = occupancy;
@@ -824,7 +1070,11 @@ app.post('/api/schedule/move', async (req, res) => {
     db.schedule[sourceSlotId][sourceHallId] = null;
   }
 
-  const occupiedTopicId = db.schedule[targetSlotId][targetHallId];
+  if (!db.schedule[targetSlotId]) {
+    db.schedule[targetSlotId] = {};
+  }
+
+  const occupiedTopicId = db.schedule[targetSlotId][targetHallId] || null;
   if (occupiedTopicId && sourceSlotId && sourceHallId) {
     db.schedule[sourceSlotId][sourceHallId] = occupiedTopicId;
   }
@@ -985,21 +1235,6 @@ app.post('/api/simulate/sentiment', (req, res) => {
   res.json({ success: true, logs, notifications, swarmChat });
 });
 
-app.post('/api/reset', (req, res) => {
-  db.reset();
-  const updatePayload = {
-    type: 'SCHEDULE_HEALED',
-    data: {
-      graph: db.graph,
-      schedule: db.schedule,
-      logs: ['[SYSTEM] Operational Reset: Conference layout restored to default 3-talk schedule.'],
-      notifications: [{ topicId: null, message: '✨ Layout reset to normal status!', type: 'success' }],
-      swarmChat: [{ sender: 'Liaison Agent', avatar: '🗣️', text: 'System reset complete. Conference schedule restored to default baseline.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]
-    }
-  };
-  broadcast(updatePayload);
-  res.json({ success: true, schedule: db.schedule, graph: db.graph });
-});
 
 app.post('/api/sim/mass-disruption', async (req, res) => {
   const currentSched = db.schedule;

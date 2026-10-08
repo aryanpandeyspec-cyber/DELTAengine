@@ -110,17 +110,23 @@
   const CROWD_GRID_ROWS = 12;
   let prevCellLuma = null;
   let lastStampedeToneTime = 0;
+  let lastCounterFlowToneTime = 0;
+  let lastGateReleasePulseTime = 0;
   let megaCrowdState = {
     active: false,
     estimatedHeadcount: 0,
     densityIndexPerM2: '0.0',
     stampedeRisk: 0, // 0 - 100%
-    stampedeStatus: 'NOMINAL', // 'NOMINAL' | 'ELEVATED' | 'CRITICAL_SURGE' | 'COUNTER_FLOW'
+    stampedeStatus: 'NOMINAL', // 'NOMINAL' | 'ELEVATED' | 'CRITICAL_SURGE' | 'COUNTER_FLOW_COLLISION' | 'BARRICADE_OVERPRESSURE'
     averageVelocity: '0.00',
     coherence: 0,
     hotspotCount: 0,
     headCentroids: [], // [{x, y, r}]
-    gridCells: []      // [{ col, row, x, y, w, h, density, vx, vy, isHotspot }]
+    gridCells: [],     // [{ col, row, x, y, w, h, density, vx, vy, isHotspot, flowType, vectorColor }]
+    counterFlowDetected: false,
+    counterFlowCollisions: [],
+    gatePressurePsi: '0.0',
+    gateReleaseTriggered: false
   };
 
   // --- REAL-TIME WEBGL COCO-SSD PERSON & OCCLUSION DETECTOR ---
@@ -1380,6 +1386,23 @@ Email: ${fromEmail}`;
         const isHotspot = cellDensity >= 3.8;
         if (isHotspot) hotspotCount++;
 
+        // Categorize velocity vector state:
+        // 1. Red = Stationary Compression (high crowd density cluster packed tight with minimal velocity)
+        // 2. Yellow = Slowing (deceleration or moderate flow speed)
+        // 3. Green = Smooth Flow (steady forward movement)
+        let flowType = 'none';
+        let vectorColor = '#10b981';
+        if (cellDensity >= 2.2 && velMag < 0.6) {
+          flowType = 'compression';
+          vectorColor = '#ef4444'; // Red: stationary compression chokepoint
+        } else if ((velMag >= 0.35 && velMag < 1.25) || (cellDensity >= 1.4 && velMag < 1.1)) {
+          flowType = 'slowing';
+          vectorColor = '#f59e0b'; // Yellow: slowing crowd
+        } else if (velMag >= 1.25) {
+          flowType = 'smooth';
+          vectorColor = '#10b981'; // Green: smooth flow
+        }
+
         cells.push({
           col: c,
           row: r,
@@ -1391,24 +1414,96 @@ Email: ${fromEmail}`;
           vx: vx,
           vy: vy,
           velMag: velMag,
-          isHotspot: isHotspot
+          isHotspot: isHotspot,
+          flowType: flowType,
+          vectorColor: vectorColor
         });
       }
     }
 
     prevCellLuma = curCellLuma;
 
-    // Detect counter-flow collision
-    for (let i = 0; i < cells.length; i++) {
-      const cellA = cells[i];
-      if (cellA.velMag > 0.8 && cellA.col < CROWD_GRID_COLS - 1) {
-        const cellRight = cells[i + 1];
-        if (cellRight && cellRight.velMag > 0.8) {
-          const dot = (cellA.vx * cellRight.vx + cellA.vy * cellRight.vy);
-          if (dot < -0.7) counterFlowScore += 1;
+    // --- COUNTER-FLOW COLLISION DETECTION ---
+    // Flags when two dense groups walk in opposite directions in the same corridor (the #1 cause of crowd crushes)
+    const counterFlowCollisions = [];
+    for (let r = 0; r < CROWD_GRID_ROWS; r++) {
+      for (let c = 0; c < CROWD_GRID_COLS; c++) {
+        const idxA = r * CROWD_GRID_COLS + c;
+        const cellA = cells[idxA];
+        if (!cellA || cellA.velMag < 0.5 || cellA.density < 0.8) continue;
+
+        // 1. Horizontal corridor opposing flow check (c and c+1)
+        if (c < CROWD_GRID_COLS - 1) {
+          const cellRight = cells[r * CROWD_GRID_COLS + (c + 1)];
+          if (cellRight && cellRight.velMag >= 0.5 && cellRight.density >= 0.8) {
+            const magProd = cellA.velMag * cellRight.velMag;
+            const cosTheta = (cellA.vx * cellRight.vx + cellA.vy * cellRight.vy) / (magProd + 0.0001);
+            if (cosTheta < -0.55) {
+              counterFlowScore += 1;
+              counterFlowCollisions.push({
+                x: (cellA.x + cellRight.x + cellA.w) / 2,
+                y: (cellA.y + cellRight.y + cellA.h) / 2,
+                colA: c, rowA: r,
+                colB: c + 1, rowB: r,
+                cosTheta: cosTheta.toFixed(2),
+                severity: Math.min(100, Math.round((cellA.density + cellRight.density) * 12))
+              });
+            }
+          }
+        }
+
+        // 2. Vertical corridor opposing flow check (r and r+1)
+        if (r < CROWD_GRID_ROWS - 1) {
+          const cellDown = cells[(r + 1) * CROWD_GRID_COLS + c];
+          if (cellDown && cellDown.velMag >= 0.5 && cellDown.density >= 0.8) {
+            const magProd = cellA.velMag * cellDown.velMag;
+            const cosTheta = (cellA.vx * cellDown.vx + cellA.vy * cellDown.vy) / (magProd + 0.0001);
+            if (cosTheta < -0.55) {
+              counterFlowScore += 1;
+              counterFlowCollisions.push({
+                x: (cellA.x + cellDown.x + cellA.w) / 2,
+                y: (cellA.y + cellDown.y + cellA.h) / 2,
+                colA: c, rowA: r,
+                colB: c, rowB: r + 1,
+                cosTheta: cosTheta.toFixed(2),
+                severity: Math.min(100, Math.round((cellA.density + cellDown.density) * 12))
+              });
+            }
+          }
         }
       }
     }
+
+    // --- GATE PRESSURE GAUGE (PSI) ESTIMATION ---
+    // Estimates physical density and kinetic momentum against barricades
+    // Critical safety threshold: >= 8.5 PSI triggers automated gate release signals
+    let maxGatePressurePsi = 0.0;
+    for (let r = CROWD_GRID_ROWS - 3; r < CROWD_GRID_ROWS; r++) {
+      for (let c = 0; c < CROWD_GRID_COLS; c++) {
+        const cell = cells[r * CROWD_GRID_COLS + c];
+        if (!cell) continue;
+
+        // Base static compression from crowd density: 1.35 PSI per pax/m²
+        const basePsi = cell.density * 1.35;
+        // Directional momentum thrust towards exit barricade (+vy):
+        const kineticThrustPsi = Math.max(0, cell.vy) * cell.density * 0.85;
+        const cellPsi = Math.min(15.0, basePsi + kineticThrustPsi);
+
+        if (cellPsi > maxGatePressurePsi) {
+          maxGatePressurePsi = cellPsi;
+        }
+      }
+    }
+
+    // Also factor room-wide hotspot peak in case chokepoint forms mid-hall
+    let peakHotspotPsi = 0.0;
+    cells.forEach(cell => {
+      const p = cell.density * 1.35 + Math.max(0, cell.vy) * cell.density * 0.85;
+      if (p > peakHotspotPsi) peakHotspotPsi = Math.min(15.0, p);
+    });
+
+    const effectiveGatePressurePsi = Math.max(maxGatePressurePsi, peakHotspotPsi * 0.85);
+    const gateReleaseTriggered = (effectiveGatePressurePsi >= 8.5);
 
     const numCells = CROWD_GRID_COLS * CROWD_GRID_ROWS;
     const avgVel = totalVelMag / numCells;
@@ -1420,15 +1515,21 @@ Email: ${fromEmail}`;
       risk = Math.min(100, Math.round(coherence * 90 + avgVel * 10));
     } else if (hotspotCount > 24) {
       risk = Math.min(100, Math.round(50 + hotspotCount * 1.5));
-    } else if (counterFlowScore > 3) {
-      risk = Math.min(100, Math.round(60 + counterFlowScore * 8));
+    } else if (counterFlowScore > 2) {
+      risk = Math.min(100, Math.round(65 + counterFlowScore * 8));
+    } else if (gateReleaseTriggered) {
+      risk = Math.min(100, Math.round(80 + (effectiveGatePressurePsi - 8.5) * 3));
     } else {
       risk = Math.min(45, Math.round(avgVel * 15 + (hotspotCount / numCells) * 30));
     }
 
     let stampedeStatus = 'NOMINAL';
-    if (risk >= 75) {
-      stampedeStatus = counterFlowScore > 4 ? 'COUNTER_FLOW' : 'CRITICAL_SURGE';
+    if (counterFlowCollisions.length >= 2) {
+      stampedeStatus = 'COUNTER_FLOW_COLLISION';
+    } else if (gateReleaseTriggered) {
+      stampedeStatus = 'BARRICADE_OVERPRESSURE';
+    } else if (risk >= 75) {
+      stampedeStatus = 'CRITICAL_SURGE';
     } else if (risk >= 50) {
       stampedeStatus = 'ELEVATED';
     }
@@ -1452,7 +1553,11 @@ Email: ${fromEmail}`;
       coherence: Math.round(coherence * 100),
       hotspotCount,
       headCentroids: headCentroids.slice(0, 500),
-      gridCells: cells
+      gridCells: cells,
+      counterFlowDetected: counterFlowCollisions.length > 0,
+      counterFlowCollisions: counterFlowCollisions.slice(0, 10),
+      gatePressurePsi: effectiveGatePressurePsi.toFixed(1),
+      gateReleaseTriggered: gateReleaseTriggered
     };
 
     return megaCrowdState;
@@ -1854,6 +1959,43 @@ Email: ${fromEmail}`;
           }
         }
       }
+
+      // Counter-Flow Collision Alert Guard (Corridor opposing streams)
+      if (eulerianData.counterFlowDetected && eulerianData.counterFlowCollisions.length > 0) {
+        const now = Date.now();
+        if (now - lastCounterFlowToneTime > 10000) {
+          lastCounterFlowToneTime = now;
+          playCctvAlertTone('COUNTER_FLOW');
+          if (typeof createToast === 'function') {
+            createToast(`⚠️ [COUNTER-FLOW COLLISION] Opposing crowd streams detected in corridor (${eulerianData.counterFlowCollisions.length} chokepoints)! Pre-crush hazard active.`, 'warning');
+          }
+        }
+      }
+
+      // Automated Gate Release Pulse Guard (Triggered if Gate Barricade Pressure >= 8.5 PSI)
+      if (eulerianData.gateReleaseTriggered) {
+        const now = Date.now();
+        if (now - lastGateReleasePulseTime > 10000) {
+          lastGateReleasePulseTime = now;
+          playCctvAlertTone('GATE_RELEASE');
+          fetch('/api/sensors/door', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              event: 'EMERGENCY_RELEASE',
+              action: 'EMERGENCY_RELEASE',
+              hallId: currentVenueId,
+              gateId: 'gate-a',
+              pressurePsi: parseFloat(eulerianData.gatePressurePsi),
+              reason: 'CRITICAL_BARRICADE_PRESSURE_BREACH'
+            })
+          }).catch(e => console.warn('[CCTV] Automated gate release pulse dispatch notice:', e));
+
+          if (typeof createToast === 'function') {
+            createToast(`🚨 [AUTOMATED GATE RELEASE] Barricade Pressure Critical (${eulerianData.gatePressurePsi} PSI >= 8.5 limit)! Gates A & B Mag-Locks Released!`, 'conflict');
+          }
+        }
+      }
     } else {
       // Clean synthetic graphic (NO false attendee shapes)
       ctx.fillStyle = '#111827';
@@ -1946,25 +2088,83 @@ Email: ${fromEmail}`;
           c.strokeRect(cell.x, cell.y, cell.w, cell.h);
         }
 
-        // 2. Draw Motion Velocity Flux Vector Arrows (only for significant motion)
-        if (cell.velMag > 1.0) {
-          const cx = cell.x + cell.w / 2;
-          const cy = cell.y + cell.h / 2;
-          const arrowLen = Math.min(18, cell.velMag * 4);
+        // 2. Vector Flow Field Arrows (Color-coded: Green = Smooth Flow, Yellow = Slowing, Red = Stationary Compression)
+        const cx = cell.x + cell.w / 2;
+        const cy = cell.y + cell.h / 2;
+
+        if (cell.flowType === 'compression') {
+          // Stationary compression: crowd is tightly packed with near-zero flow (Pre-crush danger)
+          c.strokeStyle = '#ef4444';
+          c.fillStyle = 'rgba(239, 68, 68, 0.35)';
+          c.lineWidth = 1.5;
+          c.beginPath();
+          c.arc(cx, cy, 7, 0, Math.PI * 2);
+          c.fill();
+          c.stroke();
+          // Cross-hairs inside compression cell
+          c.beginPath();
+          c.moveTo(cx - 4, cy); c.lineTo(cx + 4, cy);
+          c.moveTo(cx, cy - 4); c.lineTo(cx, cy + 4);
+          c.stroke();
+        } else if (cell.velMag > 0.35) {
+          const arrowLen = Math.max(7, Math.min(22, cell.velMag * 5.2));
           const angle = Math.atan2(cell.vy, cell.vx);
           const ex = cx + Math.cos(angle) * arrowLen;
           const ey = cy + Math.sin(angle) * arrowLen;
 
-          c.strokeStyle = cell.isHotspot ? '#f87171' : '#38bdf8';
+          const arrowColor = cell.vectorColor || (cell.velMag >= 1.25 ? '#10b981' : '#f59e0b');
+          c.strokeStyle = arrowColor;
+          c.fillStyle = arrowColor;
           c.lineWidth = 2;
+
+          // Vector shaft
           c.beginPath();
           c.moveTo(cx, cy);
           c.lineTo(ex, ey);
           c.stroke();
+
+          // Vector arrowhead (triangle)
+          const headLen = 5;
+          const a1 = angle - Math.PI * 0.82;
+          const a2 = angle + Math.PI * 0.82;
+          c.beginPath();
+          c.moveTo(ex, ey);
+          c.lineTo(ex + Math.cos(a1) * headLen, ey + Math.sin(a1) * headLen);
+          c.lineTo(ex + Math.cos(a2) * headLen, ey + Math.sin(a2) * headLen);
+          c.closePath();
+          c.fill();
         }
       });
 
-      // 3. Draw Head Crown Centroid Reticles
+      // 3. Counter-Flow Collision Chokepoint Markers (Flags opposing crowd vectors)
+      if (megaCrowdState.counterFlowCollisions && megaCrowdState.counterFlowCollisions.length > 0) {
+        megaCrowdState.counterFlowCollisions.forEach(col => {
+          c.save();
+          // Flashing warning boundary
+          c.strokeStyle = '#ef4444';
+          c.lineWidth = 2.5;
+          c.setLineDash([4, 4]);
+          c.beginPath();
+          c.arc(col.x, col.y, 18, 0, Math.PI * 2);
+          c.stroke();
+          c.setLineDash([]);
+
+          // High-contrast warning pill badge
+          c.fillStyle = 'rgba(239, 68, 68, 0.92)';
+          c.fillRect(col.x - 48, col.y - 12, 96, 18);
+          c.strokeStyle = '#facc15';
+          c.lineWidth = 1.5;
+          c.strokeRect(col.x - 48, col.y - 12, 96, 18);
+
+          c.fillStyle = '#ffffff';
+          c.font = 'bold 9px "Space Grotesk", sans-serif';
+          c.textAlign = 'center';
+          c.fillText('⚠️ COUNTER-FLOW', col.x, col.y + 1);
+          c.restore();
+        });
+      }
+
+      // 4. Head Crown Centroid Reticles
       megaCrowdState.headCentroids.forEach(head => {
         c.fillStyle = '#22d3ee';
         c.beginPath();
@@ -1974,6 +2174,74 @@ Email: ${fromEmail}`;
         c.lineWidth = 1;
         c.stroke();
       });
+
+      // 5. Gate Barricade Pressure Gauge (PSI) HUD Card (Bottom Right of Video Feed)
+      const psiVal = parseFloat(megaCrowdState.gatePressurePsi) || 0.0;
+      const isCriticalPsi = psiVal >= 8.5;
+      const isWarnPsi = psiVal >= 4.0;
+      const psiColor = isCriticalPsi ? '#ef4444' : (isWarnPsi ? '#f59e0b' : '#10b981');
+
+      const gaugeW = 224;
+      const gaugeH = 76;
+      const gaugeX = w - gaugeW - 12;
+      const gaugeY = h - gaugeH - 12;
+
+      c.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      c.fillRect(gaugeX, gaugeY, gaugeW, gaugeH);
+      c.strokeStyle = isCriticalPsi ? '#ef4444' : '#334155';
+      c.lineWidth = isCriticalPsi ? 2.5 : 1.5;
+      c.strokeRect(gaugeX, gaugeY, gaugeW, gaugeH);
+
+      // Gauge Title
+      c.fillStyle = '#94a3b8';
+      c.font = 'bold 9px "Space Grotesk", monospace';
+      c.textAlign = 'left';
+      c.fillText('🛡️ GATE BARRICADE PRESSURE', gaugeX + 10, gaugeY + 16);
+
+      // Pressure Value in PSI
+      c.fillStyle = psiColor;
+      c.font = 'bold 16px "Space Grotesk", sans-serif';
+      c.fillText(`${psiVal.toFixed(1)} PSI`, gaugeX + 10, gaugeY + 36);
+
+      // Status text badge
+      c.font = 'bold 9px "Space Grotesk", sans-serif';
+      c.fillStyle = psiColor;
+      const psiStatusText = isCriticalPsi ? '🚨 AUTO RELEASE ACTIVE' : (isWarnPsi ? '⚠️ COMPRESSION RISK' : '🟢 SAFE FLOW');
+      c.textAlign = 'right';
+      c.fillText(psiStatusText, gaugeX + gaugeW - 10, gaugeY + 36);
+
+      // Progress bar (0 to 15.0 PSI)
+      const barTrackX = gaugeX + 10;
+      const barTrackY = gaugeY + 44;
+      const barTrackW = gaugeW - 20;
+      const barTrackH = 8;
+      const fillPct = Math.min(1.0, psiVal / 15.0);
+
+      c.fillStyle = '#1e293b';
+      c.fillRect(barTrackX, barTrackY, barTrackW, barTrackH);
+
+      c.fillStyle = psiColor;
+      c.fillRect(barTrackX, barTrackY, barTrackW * fillPct, barTrackH);
+
+      // 8.5 PSI Critical threshold line
+      const threshX = barTrackX + barTrackW * (8.5 / 15.0);
+      c.strokeStyle = '#ffffff';
+      c.lineWidth = 1.5;
+      c.beginPath();
+      c.moveTo(threshX, barTrackY - 2);
+      c.lineTo(threshX, barTrackY + barTrackH + 2);
+      c.stroke();
+
+      // Gauge legend labels
+      c.fillStyle = '#64748b';
+      c.font = '8px "Space Grotesk", monospace';
+      c.textAlign = 'left';
+      c.fillText('0.0 PSI', barTrackX, barTrackY + barTrackH + 11);
+      c.textAlign = 'center';
+      c.fillText('8.5 CRITICAL', threshX, barTrackY + barTrackH + 11);
+      c.textAlign = 'right';
+      c.fillText('15.0 PSI', barTrackX + barTrackW, barTrackY + barTrackH + 11);
+      c.textAlign = 'left';
     }
 
     // Draw bounding boxes around tracked attendees in all modes
@@ -2019,10 +2287,10 @@ Email: ${fromEmail}`;
   // Top Header Banner
   const bannerW = Math.max(420, Math.min(w - 24, 490));
   c.fillStyle = 'rgba(17, 24, 39, 0.94)';
-  c.fillRect(12, 12, bannerW, isMegaModeActive ? 86 : 68);
+  c.fillRect(12, 12, bannerW, isMegaModeActive ? 102 : 68);
   c.strokeStyle = isSensorScanning ? '#f59e0b' : (isMegaModeActive && megaCrowdState.stampedeRisk >= 75 ? '#ef4444' : '#2563eb');
   c.lineWidth = 2;
-  c.strokeRect(12, 12, bannerW, isMegaModeActive ? 86 : 68);
+  c.strokeRect(12, 12, bannerW, isMegaModeActive ? 102 : 68);
 
   c.fillStyle = '#ffffff';
   c.font = 'bold 13px "Space Grotesk", sans-serif';
@@ -2069,6 +2337,7 @@ Email: ${fromEmail}`;
   if (isMegaModeActive) {
     c.fillText(`KINETIC FLUX: ${megaCrowdState.averageVelocity} m/s | COHERENCE: ${megaCrowdState.coherence}% | DENSITY: ${megaCrowdState.densityIndexPerM2} Pax/m²`, 22, 70);
     c.fillText(`HOTSPOTS: ${megaCrowdState.hotspotCount} Cells | SURGE RISK: ${megaCrowdState.stampedeRisk}% [${megaCrowdState.stampedeStatus}]`, 22, 84);
+    c.fillText(`BARRICADE: ${megaCrowdState.gatePressurePsi} PSI ${megaCrowdState.gateReleaseTriggered ? '🚨 [AUTO-RELEASE TRIGGERED]' : '[NOMINAL]'} | COLLISION: ${megaCrowdState.counterFlowDetected ? '⚠️ OPPOSING STREAM' : 'CLEAR'}`, 22, 98);
   } else {
     c.fillText(`IN: ${totalEntries}  |  OUT: ${totalExits}  |  RE-ENTERED: ${totalReEntries}`, 22, 70);
   }
@@ -2303,6 +2572,30 @@ Email: ${fromEmail}`;
         gain.connect(actx.destination);
         osc.start(actx.currentTime);
         osc.stop(actx.currentTime + 0.13);
+      } else if (type === 'COUNTER_FLOW') {
+        const osc = actx.createOscillator();
+        const gain = actx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(660, actx.currentTime);
+        osc.frequency.setValueAtTime(440, actx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.22, actx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.25);
+        osc.connect(gain);
+        gain.connect(actx.destination);
+        osc.start(actx.currentTime);
+        osc.stop(actx.currentTime + 0.26);
+      } else if (type === 'GATE_RELEASE') {
+        const osc = actx.createOscillator();
+        const gain = actx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(320, actx.currentTime);
+        osc.frequency.linearRampToValueAtTime(780, actx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.28, actx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(actx.destination);
+        osc.start(actx.currentTime);
+        osc.stop(actx.currentTime + 0.36);
       } else {
         const osc = actx.createOscillator();
         const gain = actx.createGain();

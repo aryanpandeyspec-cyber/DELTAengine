@@ -52,6 +52,7 @@ const db = {
     llmLimiter: false,
     dbLimiter: false
   },
+  autopilotEnabled: true, // Tesla Autonomous Zero-Touch Self-Healing mode
   schedulesByDate: {
     [todayDateStr]: {
       'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },

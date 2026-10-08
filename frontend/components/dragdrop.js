@@ -39,7 +39,7 @@ function renderScheduleGrid() {
       td.addEventListener('dragleave', handleDragLeaveCell);
       td.addEventListener('drop', handleDropOnCell);
       
-      const topicId = scheduleState[slotId][hallId];
+      const topicId = (scheduleState[slotId] && scheduleState[slotId][hallId]) ? scheduleState[slotId][hallId] : null;
       
       if (topicId) {
         const topic = graphState.topics[topicId];

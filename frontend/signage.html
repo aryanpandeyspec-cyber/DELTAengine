@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DELTA ENGINE • Dynamic Hallway TV Signage & Wayfinding Display</title>
+
+  <!-- Google Fonts matching DELTA Engine Main Website -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;600;800;900&family=Space+Grotesk:wght@400;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="app.css">
+
+  <style>
+    /* Signage TV Dedicated Neubrutalist TV Display Styles */
+    body.signage-tv-body {
+      background-color: var(--bg-primary, #f6f5f0);
+      font-family: var(--font-main, 'Outfit', sans-serif);
+      color: #000000;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: 30px;
+    }
+
+    /* Top TV Display Navigation Bar */
+    .signage-nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      width: 100%;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 3px solid #000000;
+    }
+
+    .signage-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .signage-venue-picker-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #ffffff;
+      border: 3px solid #000000;
+      border-radius: 12px;
+      padding: 6px 14px;
+      box-shadow: 4px 4px 0px #000000;
+    }
+
+    .signage-venue-label {
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 800;
+      font-size: 0.82rem;
+      letter-spacing: 0.5px;
+      color: #000000;
+    }
+
+    .signage-venue-select {
+      background: #fef7e0;
+      border: 2px solid #000000;
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 800;
+      font-size: 0.95rem;
+      outline: none;
+      box-shadow: 2px 2px 0px #000000;
+    }
+
+    .signage-venue-select:focus {
+      background: #fff;
+      border-color: #4285f4;
+    }
+
+    .signage-nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Main Display Layout Grid */
+    .signage-display-grid {
+      display: grid;
+      grid-template-columns: 1.65fr 1fr;
+      gap: 24px;
+      width: 100%;
+      flex: 1;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 1024px) {
+      .signage-display-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Hero Session Card */
+    .hero-signage-card {
+      background: #ffffff;
+      border: 3px solid #000000;
+      border-radius: 18px;
+      box-shadow: 6px 6px 0px #000000;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+    }
+
+    .hero-card-header {
+      background: #000000;
+      color: #ffffff;
+      padding: 14px 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .session-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 800;
+      font-size: 0.85rem;
+      letter-spacing: 0.5px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      border: 2px solid #000000;
+    }
+
+    .session-status-badge.in-progress {
+      background: #34a853;
+      color: #ffffff;
+    }
+
+    .session-status-badge.upcoming {
+      background: #f9ab00;
+      color: #000000;
+    }
+
+    .session-status-badge.standby {
+      background: #e2e8f0;
+      color: #334155;
+    }
+
+    .session-time-pill {
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 800;
+      font-size: 0.95rem;
+      background: #f9ab00;
+      color: #000000;
+      padding: 4px 14px;
+      border-radius: 8px;
+      border: 2px solid #ffffff;
+      box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+    }
+
+    .hero-card-body {
+      padding: 28px 24px 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      flex: 1;
+    }
+
+    .hero-hall-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 800;
+      font-size: 0.88rem;
+      color: #4285f4;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .hero-topic-title {
+      font-family: var(--font-main, 'Outfit', sans-serif);
+      font-weight: 800;
+      font-size: 2.3rem;
+      line-height: 1.25;
+      color: #000000;
+      letter-spacing: -0.5px;
+      margin-top: -4px;
+    }
+
+    .hero-topic-summary {
+      font-size: 1.05rem;
+      color: #4b5563;
+      line-height: 1.5;
+      font-weight: 500;
+    }
+
+    .hero-tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .hero-tag {
+      background: #e8f0fe;
+      border: 2px solid #000000;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 700;
+      font-size: 0.78rem;
+      box-shadow: 2px 2px 0px #000000;
+    }
+
+    /* Speaker Profile Box */
+    .hero-speaker-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #faf9f6;
+      border: 2.5px solid #000000;
+      border-radius: 14px;
+      padding: 16px 20px;
+      box-shadow: 4px 4px 0px #000000;
+      margin-top: 4px;
+    }
+
+    .hero-speaker-avatar {
+      font-size: 3rem;
+      width: 64px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      border: 2.5px solid #000000;
+      border-radius: 12px;
+      box-shadow: 3px 3px 0px #000000;
+      flex-shrink: 0;
+    }
+
+    .hero-speaker-name {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #000000;
+    }
+
+    .hero-speaker-role {
+      font-size: 0.88rem;
+      color: #555555;
+      font-weight: 600;
+      margin-top: 2px;
+    }
+
+    /* Real-Time Live Capacity Hero Section */
+    .hero-capacity-container {
+      background: #f8fafc;
+      border-top: 3px solid #000000;
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .capacity-gauge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .capacity-gauge-title {
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 800;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .capacity-gauge-val {
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 900;
+      font-size: 1.25rem;
+      color: #2563eb;
+    }
+
+    .capacity-bar-track-neubrutalist {
+      width: 100%;
+      height: 24px;
+      background: #ffffff;
+      border: 3px solid #000000;
+      border-radius: 8px;
+      box-shadow: 4px 4px 0px #000000;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .capacity-bar-fill-neubrutalist {
+      height: 100%;
+      background: #34a853;
+      transition: width 0.4s ease, background-color 0.3s ease;
+      border-right: 2px solid #000000;
+    }
+
+    .capacity-footer-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    /* Side Column Cards */
+    .signage-side-col {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .side-signage-card {
+      background: #ffffff;
+      border: 3px solid #000000;
+      border-radius: 16px;
+      box-shadow: 5px 5px 0px #000000;
+      overflow: hidden;
+    }
+
+    .side-card-header {
+      background: #000000;
+      color: #ffffff;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 800;
+      font-size: 0.88rem;
+    }
+
+    .side-card-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .upcoming-session-item-neubrutalist {
+      background: #faf9f6;
+      border: 2px solid #000000;
+      border-radius: 10px;
+      padding: 12px 14px;
+      box-shadow: 3px 3px 0px #000000;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .upcoming-slot-time {
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 800;
+      font-size: 0.8rem;
+      color: #2563eb;
+    }
+
+    .upcoming-item-title {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #000000;
+      line-height: 1.3;
+    }
+
+    .upcoming-item-speaker {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #555555;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Empty State Notices */
+    .empty-agenda-notice {
+      background: #f8fafc;
+      border: 2px dashed #000000;
+      border-radius: 10px;
+      padding: 18px 14px;
+      text-align: center;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #64748b;
+      line-height: 1.4;
+    }
+
+    /* Mobile Wayfinding Card */
+    .qr-wayfinding-box {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: #fef7e0;
+      border: 2px solid #000000;
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 3px 3px 0px #000000;
+    }
+
+    .qr-code-svg {
+      width: 76px;
+      height: 76px;
+      background: #ffffff;
+      padding: 4px;
+      border: 2px solid #000000;
+      border-radius: 8px;
+      flex-shrink: 0;
+      box-shadow: 2px 2px 0px #000000;
+    }
+
+    /* Emergency Wayfinding Reallocation Overlay (Neubrutalist Flashing Banner) */
+    .reallocation-emergency-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(220, 38, 38, 0.96);
+      z-index: 999999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+      text-align: center;
+      backdrop-filter: blur(12px);
+      box-sizing: border-box;
+      color: #ffffff;
+      user-select: none;
+    }
+
+    .emergency-badge-neubrutalist {
+      background: #facc15;
+      color: #000000;
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-size: 1.8rem;
+      font-weight: 900;
+      padding: 12px 32px;
+      border-radius: 14px;
+      border: 4px solid #000000;
+      box-shadow: 8px 8px 0px #000000;
+      margin-bottom: 24px;
+      letter-spacing: 1px;
+    }
+
+    .emergency-topic-text {
+      font-size: 2.8rem;
+      font-weight: 900;
+      max-width: 1050px;
+      line-height: 1.2;
+      margin-bottom: 24px;
+      text-shadow: 3px 3px 0px #000000;
+    }
+
+    .emergency-arrow-card {
+      background: #ffffff;
+      color: #000000;
+      border: 5px solid #000000;
+      border-radius: 20px;
+      padding: 24px 44px;
+      box-shadow: 10px 10px 0px #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 24px;
+      max-width: 900px;
+    }
+
+    .arrow-icon-pulsing {
+      font-size: 4.5rem;
+      animation: pulseRight 0.8s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseRight {
+      0% { transform: translateX(-14px); }
+      100% { transform: translateX(14px); }
+    }
+
+    .emergency-target-hall-name {
+      font-size: 3.2rem;
+      font-weight: 900;
+      font-family: var(--font-title, 'Josefin Sans', sans-serif);
+      color: #dc2626;
+      letter-spacing: -0.5px;
+    }
+  </style>
+</head>
+
+<body class="signage-tv-body">
+  <!-- Neubrutalist Grid Background overlay matching main website -->
+  <div class="grid-overlay"></div>
+
+  <!-- Decorative levitating doodle images matching index.html -->
+  <div class="decorations">
+    <img src="doodles/yazg.png" class="doodle-img doodle-yazg" alt="Doodle">
+    <img src="doodles/5003155.png" class="doodle-img doodle-500" alt="Doodle">
+    <img src="doodles/2057748.png" class="doodle-img doodle-205" alt="Doodle">
+  </div>
+
+  <div class="container">
+    <!-- TOP NAVIGATION BAR -->
+    <div class="signage-nav-bar">
+      <div class="signage-nav-left">
+        <!-- Venue Selector Dropdown -->
+        <div class="signage-venue-picker-box">
+          <span class="signage-venue-label">🏛️ VENUE TV DISPLAY:</span>
+          <select id="venue-picker" class="signage-venue-select" title="Switch Hall Display Monitor">
+            <option value="hall-1" selected>Turing Hall (Room 101)</option>
+            <option value="hall-2">Lovelace Suite (Room 204)</option>
+            <option value="hall-3">Hopper Room (Room 302)</option>
+            <option value="hall-4">Keynote Arena (Hall 4)</option>
+          </select>
+        </div>
+
+        <span class="badge badge-blue" style="font-weight:800; font-size:0.8rem;">📺 OVERHEAD TV MODE</span>
+      </div>
+
+      <div class="signage-nav-right">
+        <!-- Live Dynamic Clock Pill -->
+        <div class="live-clock-pill" title="Live Venue Synchronized Time">
+          <span class="live-clock-pulse"></span>
+          <span id="live-dynamic-date" class="live-dynamic-date">Wed, 23 Sep 2026</span>
+          <span style="color:#9ca3af;">•</span>
+          <span id="live-dynamic-time" class="live-dynamic-time" style="color:#2563eb;">--:--:--</span>
+        </div>
+
+        <!-- Tesla Autopilot Pill -->
+        <div class="autopilot-pill active" title="Tesla Zero-Touch Autonomous Swarm Mode Active">
+          <span class="autopilot-indicator-dot pulse"></span>
+          <span>⚡ AUTOPILOT: <strong class="autopilot-status-text">ENGAGED</strong></span>
+        </div>
+
+        <!-- Fullscreen Toggle Button -->
+        <button id="btn-fullscreen-toggle" class="btn btn-sm btn-yellow" style="font-weight:800;"
+          title="Toggle Fullscreen for Hallway TV Display">⛶ Fullscreen</button>
+
+        <!-- Navigation Link to Dashboard -->
+        <a href="index.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;"
+          title="Return to Main Operating System Dashboard">💻 Dashboard</a>
+      </div>
+    </div>
+
+    <!-- MAIN HEADER SECTION MATCHING INDEX.HTML -->
+    <header class="main-header mb-8" style="padding: 20px 24px !important;">
+      <div class="header-logo-group" style="margin-bottom: 8px !important;">
+        <div class="logo-polymorphic-wrapper">
+          <img src="logo.jpeg" class="delta-polymorphic-logo" style="height:90px !important;" alt="DELTA ENGINE Logo">
+        </div>
+      </div>
+
+      <div class="header-text">
+        <h1 id="main-title" style="font-size: 2.4rem !important;">
+          <span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span>
+        </h1>
+        <p class="subtitle" style="font-size: 0.95rem; margin-top: 2px;">
+          Dynamic Venue Wayfinding & Digital TV Hallway Signage Portal
+        </p>
+      </div>
+    </header>
+
+    <!-- MAIN SIGNAGE TV GRID -->
+    <main class="signage-display-grid">
+      <!-- LEFT HERO COLUMN: CURRENT SESSION & REAL-TIME CAPACITY -->
+      <section class="hero-signage-card">
+        <!-- Top Black Bar with Status & Time -->
+        <div class="hero-card-header">
+          <div class="d-flex align-items-center gap-2">
+            <span id="hero-status-badge" class="session-status-badge in-progress">
+              <span>●</span> <span id="hero-status-text">SESSION IN PROGRESS</span>
+            </span>
+          </div>
+
+          <div id="hero-time-badge" class="session-time-pill">
+            ⏱️ 09:30 AM - 10:30 AM
+          </div>
+        </div>
+
+        <!-- Card Body with Real Session Details -->
+        <div class="hero-card-body">
+          <div class="hero-hall-tag" id="hero-hall-tag">
+            🏛️ TURING HALL • ROOM 101
+          </div>
+
+          <h2 class="hero-topic-title" id="hero-topic-title">
+            Loading scheduled session...
+          </h2>
+
+          <p class="hero-topic-summary" id="hero-topic-summary">
+            Connecting to DELTA Engine agent swarm and live schedule graph...
+          </p>
+
+          <div class="hero-tags-row" id="hero-tags-row">
+            <!-- Dynamically populated tags -->
+          </div>
+
+          <!-- Featured Speaker Profile Box -->
+          <div class="hero-speaker-card" id="hero-speaker-card">
+            <div class="hero-speaker-avatar" id="hero-speaker-avatar">🧑‍🔬</div>
+            <div>
+              <div class="hero-speaker-name" id="hero-speaker-name">Dr. Aditi Sharma</div>
+              <div class="hero-speaker-role" id="hero-speaker-role">AI Research Director • Agentic Swarm Models</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Real-Time Capacity & Multi-Gate Mesh Gauge -->
+        <div class="hero-capacity-container">
+          <div class="capacity-gauge-header">
+            <div class="capacity-gauge-title">
+              <span>🏛️ LIVE ROOM CAPACITY:</span>
+              <span id="hero-capacity-numbers" class="capacity-gauge-val">0 / 250 PAX (0%)</span>
+            </div>
+            <div id="hero-entrance-status-pill" class="status-pill optimal">
+              🟢 DOORS OPEN • SEATING AVAILABLE
+            </div>
+          </div>
+
+          <!-- Neubrutalist Progress Bar -->
+          <div class="capacity-bar-track-neubrutalist">
+            <div id="hero-capacity-bar-fill" class="capacity-bar-fill-neubrutalist" style="width: 0%;"></div>
+          </div>
+
+          <div class="capacity-footer-meta">
+            <span>🚪 Multi-Gate Mesh Fusion: <strong id="hero-mesh-status" style="color:#2563eb;">Gate A (Main) • Gate B (Egress) • Gate C (VIP)</strong></span>
+            <span>Perception Engine: <strong style="color:#000;">IoT Laser ToF + CCTV Eulerian AI</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: UPCOMING SESSIONS & WAYFINDING -->
+      <aside class="signage-side-col">
+        <!-- Upcoming Sessions Card -->
+        <div class="side-signage-card">
+          <div class="side-card-header">
+            <span>⏱️</span>
+            <span>UPCOMING SESSIONS IN THIS HALL</span>
+          </div>
+
+          <div class="side-card-body" id="upcoming-sessions-container">
+            <!-- Dynamically populated with real upcoming sessions -->
+          </div>
+        </div>
+
+        <!-- Attendee Mobile Wayfinding Card with QR Code -->
+        <div class="side-signage-card">
+          <div class="side-card-header" style="background:#2563eb;">
+            <span>📱</span>
+            <span>ATTENDEE REAL-TIME WAYFINDING</span>
+          </div>
+
+          <div class="side-card-body">
+            <div class="qr-wayfinding-box">
+              <svg class="qr-code-svg" viewBox="0 0 100 100">
+                <path
+                  d="M0 0h30v30H0zM10 10h10v10H10zM70 0h30v30H70zM80 10h10v10H80zM0 70h30v30H0zM10 80h10v10H10zM40 0h10v10H40zM50 10h10v10H50zM40 20h10v10H40zM40 40h20v20H40zM70 40h10v10H70zM90 40h10v10H90zM80 50h20v10H80zM40 70h10v10H40zM60 70h10v20H60zM40 90h20v10H40zM80 70h10v20H80zM90 90h10v10H90z"
+                  fill="#000000" />
+              </svg>
+              <div>
+                <strong style="font-size:0.92rem; color:#000000;">SCAN FOR INSTANT NAVIGATION</strong>
+                <p style="font-size:0.78rem; color:#555555; line-height:1.4; margin-top:3px;">
+                  Turn-by-turn hallway directions and dynamic schedule sync directly pushed to your phone.
+                </p>
+              </div>
+            </div>
+
+            <div style="font-size:0.75rem; color:#666; font-weight:600; line-height:1.4; margin-top:2px;">
+              ⚡ Autonomous Agent Swarm monitors capacity 24/7. Any hall reallocations will flash on this display and alert your mobile pass immediately.
+            </div>
+          </div>
+        </div>
+
+        <!-- Assigned Duty Coordinators Directory -->
+        <div class="side-signage-card">
+          <div class="side-card-header" style="background:#16a34a;">
+            <span>🤝</span>
+            <span>ASSIGNED HALL COORDINATORS</span>
+          </div>
+
+          <div class="side-card-body" style="gap:8px;">
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+              <span>🚪 <strong>Suryansh</strong> (Entrance Lead)</span>
+              <span class="badge-mini-green">ON DUTY</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+              <span>🎤 <strong>Shahid</strong> (Stage Operations)</span>
+              <span class="badge-mini-green">ON DUTY</span>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+              <span>🖥️ <strong>Aryan Pandey</strong> (Systems Lead)</span>
+              <span class="badge-mini-blue">COMMAND DESK</span>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <!-- EMERGENCY REALLOCATION FLIP OVERLAY (Autonomous Mitigated Display) -->
+  <div id="emergency-overlay" class="reallocation-emergency-overlay hidden">
+    <div class="emergency-badge-neubrutalist">🚨 EMERGENCY VENUE REALLOCATION 🚨</div>
+
+    <div id="emergency-topic-text" class="emergency-topic-text">
+      Autonomous Agent Swarms: Coordination without Controllers
+    </div>
+
+    <div class="emergency-arrow-card">
+      <div class="arrow-icon-pulsing">👉</div>
+      <div>
+        <div style="font-size:1.1rem; color:#000000; font-family:var(--font-mono, 'Space Grotesk', monospace); font-weight:800; text-transform:uppercase;">
+          PLEASE PROCEED IMMEDIATELY TO:
+        </div>
+        <div id="emergency-target-hall" class="emergency-target-hall-name">LOVELACE SUITE</div>
+        <div id="emergency-target-slot" style="font-size:1.25rem; font-family:var(--font-mono, 'Space Grotesk', monospace); font-weight:800; color:#4b5563; margin-top:4px;">
+          ⏱️ Starting at 11:00 AM • Room 204 (Level 2)
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; gap:20px; background:#ffffff; color:#000000; padding:16px 28px; border-radius:14px; border:3px solid #000000; box-shadow:6px 6px 0px #000000;">
+      <svg class="qr-code-svg" style="width:68px; height:68px;" viewBox="0 0 100 100">
+        <path
+          d="M0 0h30v30H0zM10 10h10v10H10zM70 0h30v30H70zM80 10h10v10H80zM0 70h30v30H0zM10 80h10v10H10zM40 0h10v10H40zM50 10h10v10H50zM40 20h10v10H40zM40 40h20v20H40zM70 40h10v10H70zM90 40h10v10H90zM80 50h20v10H80zM40 70h10v10H40zM60 70h10v20H60zM40 90h20v10H40zM80 70h10v20H80zM90 90h10v10H90z"
+          fill="#000000" />
+      </svg>
+      <div style="text-align:left; font-size:1rem; font-weight:800; line-height:1.4;">
+        SCAN FOR INSTANT HALLWAY TURN-BY-TURN DIRECTIONS<br>
+        <span style="font-size:0.85rem; font-weight:600; color:#555;">Follow overhead yellow hallway beacons to destination.</span>
+      </div>
+    </div>
+
+    <div style="margin-top:20px; font-family:var(--font-mono, 'Space Grotesk', monospace); font-size:0.9rem; font-weight:800; color:#fef7e0;">
+      ⚡ Autonomous Mitigated by DELTA Engine • Zero-Touch Solver Applied in 12ms
+    </div>
+
+    <button id="btn-dismiss-emergency" class="btn btn-sm btn-yellow" style="margin-top:16px; font-weight:800;">
+      Dismiss Overlay (Return to TV Mode)
+    </button>
+  </div>
+
+  <script>
+    // --- REAL-TIME SIGNAGE PORTAL CONTROLLER ---
+    let activeHallId = new URLSearchParams(window.location.search).get('hall') || 'hall-1';
+    let graphData = null;
+    let scheduleData = null;
+    let cctvState = null;
+    let gatesMesh = null;
+    let currentOccupancy = 0;
+
+    const venuePicker = document.getElementById('venue-picker');
+
+    // Fullscreen TV Mode
+    document.getElementById('btn-fullscreen-toggle')?.addEventListener('click', () => {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.warn(err));
+      } else {
+        document.exitFullscreen();
+      }
+    });
+
+    // Venue switcher
+    venuePicker.addEventListener('change', (e) => {
+      activeHallId = e.target.value;
+      const url = new URL(window.location);
+      url.searchParams.set('hall', activeHallId);
+      window.history.replaceState({}, '', url);
+      renderSignage();
+    });
+
+    // Dismiss Emergency Overlay
+    document.getElementById('btn-dismiss-emergency')?.addEventListener('click', () => {
+      document.getElementById('emergency-overlay')?.classList.add('hidden');
+    });
+
+    // Live Dynamic Clock matching index.html
+    function updateClock() {
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: false });
+      const dateStr = now.toLocaleDateString('en-GB', {
+        weekday: 'short', day: '2-digit', month: 'short', year: 'numeric'
+      });
+      const elTime = document.getElementById('live-dynamic-time');
+      const elDate = document.getElementById('live-dynamic-date');
+      if (elTime) elTime.textContent = timeStr;
+      if (elDate) elDate.textContent = dateStr;
+    }
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // Populate Venue Dropdown dynamically from real database halls
+    function populateVenueDropdown() {
+      if (!graphData || !graphData.halls) return;
+      const select = document.getElementById('venue-picker');
+      const currentVal = select.value || activeHallId;
+      select.innerHTML = '';
+
+      for (const hId in graphData.halls) {
+        const hall = graphData.halls[hId];
+        const opt = document.createElement('option');
+        opt.value = hId;
+        const icon = hId.includes('kumbh') || hId.includes('rally') || hId.includes('stadium') ? '🌊' : '🏛️';
+        opt.textContent = `${icon} ${hall.name} (${hall.capacity} Pax)`;
+        if (hId === activeHallId) opt.selected = true;
+        select.appendChild(opt);
+      }
+    }
+
+    // Main Render Function: Pulls ONLY Real Scheduled Data
+    function renderSignage() {
+      if (!graphData || !scheduleData) return;
+
+      const hall = graphData.halls[activeHallId] || { name: 'Conference Hall', capacity: 250 };
+      populateVenueDropdown();
+
+      // Find real sessions in schedule for this hall
+      let featuredSlotId = null;
+      let featuredTopicId = null;
+
+      // Check slot-1 first
+      if (scheduleData['slot-1'] && scheduleData['slot-1'][activeHallId]) {
+        featuredSlotId = 'slot-1';
+        featuredTopicId = scheduleData['slot-1'][activeHallId];
+      } else {
+        // Find first upcoming slot that has a session in this hall
+        const slotsOrder = ['slot-2', 'slot-3', 'slot-4'];
+        for (const sId of slotsOrder) {
+          if (scheduleData[sId] && scheduleData[sId][activeHallId]) {
+            featuredSlotId = sId;
+            featuredTopicId = scheduleData[sId][activeHallId];
+            break;
+          }
+        }
+      }
+
+      // Update Header Badges & Hall Tag
+      const elHallTag = document.getElementById('hero-hall-tag');
+      const elStatusBadge = document.getElementById('hero-status-badge');
+      const elStatusText = document.getElementById('hero-status-text');
+      const elTimeBadge = document.getElementById('hero-time-badge');
+
+      if (elHallTag) elHallTag.textContent = `🏛️ ${hall.name.toUpperCase()} • CAPACITY: ${hall.capacity} PAX`;
+
+      if (featuredTopicId && graphData.topics[featuredTopicId]) {
+        const topic = graphData.topics[featuredTopicId];
+        const speaker = graphData.speakers[topic.speakerId] || {
+          name: 'Guest Keynote Speaker',
+          role: 'Featured Presenter',
+          avatar: '🧑‍💼',
+          bio: 'Speaker details verified.'
+        };
+        const slotTime = graphData.slots[featuredSlotId]?.time || featuredSlotId;
+
+        // Status badge
+        if (featuredSlotId === 'slot-1') {
+          elStatusBadge.className = 'session-status-badge in-progress';
+          elStatusText.textContent = 'SESSION IN PROGRESS';
+        } else {
+          elStatusBadge.className = 'session-status-badge upcoming';
+          elStatusText.textContent = `UPCOMING SESSION (${slotTime.split('-')[0].trim()})`;
+        }
+        elTimeBadge.textContent = `⏱️ ${slotTime}`;
+
+        // Populate Real Topic Details
+        document.getElementById('hero-topic-title').textContent = topic.title;
+        document.getElementById('hero-topic-summary').textContent = topic.summary || 'Presentation in progress. Live telemetry monitored by DELTA Engine.';
+
+        // Populate Tags
+        const tagsContainer = document.getElementById('hero-tags-row');
+        tagsContainer.innerHTML = '';
+        const tags = topic.tags || ['Keynote', 'Agentic'];
+        tags.forEach(t => {
+          const tagSpan = document.createElement('span');
+          tagSpan.className = 'hero-tag';
+          tagSpan.textContent = `#${t}`;
+          tagsContainer.appendChild(tagSpan);
+        });
+
+        // Speaker Card
+        document.getElementById('hero-speaker-avatar').textContent = speaker.avatar || '🧑‍🔬';
+        document.getElementById('hero-speaker-name').textContent = speaker.name;
+        document.getElementById('hero-speaker-role').textContent = `${speaker.role}${speaker.bio ? ' • ' + speaker.bio : ''}`;
+        document.getElementById('hero-speaker-card').style.display = 'flex';
+      } else {
+        // No session scheduled in this hall
+        elStatusBadge.className = 'session-status-badge standby';
+        elStatusText.textContent = 'HALL AVAILABLE / OVERFLOW STANDBY';
+        elTimeBadge.textContent = '⏱️ ALL-DAY STANDBY';
+
+        document.getElementById('hero-topic-title').textContent = 'Open Hallway Seating & Standby Overflow Lounge';
+        document.getElementById('hero-topic-summary').textContent = `No presentation is currently scheduled in ${hall.name}. This room is open for attendee seating, informal discussions, and autonomous overflow spillover.`;
+        document.getElementById('hero-tags-row').innerHTML = '<span class="hero-tag">#OverflowLounge</span><span class="hero-tag">#SeatingAvailable</span>';
+
+        document.getElementById('hero-speaker-avatar').textContent = '🏛️';
+        document.getElementById('hero-speaker-name').textContent = 'Hall Coordinator On Duty';
+        document.getElementById('hero-speaker-role').textContent = 'Stage & Technical Aisle Clearance Maintained';
+      }
+
+      // Render Real Upcoming Sessions in this Hall
+      renderUpcomingAgenda(featuredSlotId);
+
+      // Render Real Live Room Capacity Gauge (NO RANDOM FALLBACKS)
+      renderRealCapacityGauge(hall.capacity);
+    }
+
+    // Render Upcoming Agenda for this specific hall
+    function renderUpcomingAgenda(excludeSlotId) {
+      const container = document.getElementById('upcoming-sessions-container');
+      container.innerHTML = '';
+
+      const allSlots = ['slot-1', 'slot-2', 'slot-3', 'slot-4'];
+      let upcomingFound = 0;
+
+      allSlots.forEach(sId => {
+        if (sId === excludeSlotId) return; // Skip currently featured slot
+
+        const tId = scheduleData[sId]?.[activeHallId];
+        if (tId && graphData.topics[tId]) {
+          upcomingFound++;
+          const t = graphData.topics[tId];
+          const s = graphData.speakers[t.speakerId] || { name: 'Keynote Speaker', avatar: '🎤' };
+          const time = graphData.slots[sId]?.time || sId;
+
+          const item = document.createElement('div');
+          item.className = 'upcoming-session-item-neubrutalist';
+          item.innerHTML = `
+            <div class="upcoming-slot-time">⏱️ ${time}</div>
+            <div class="upcoming-item-title">${escapeHtml(t.title)}</div>
+            <div class="upcoming-item-speaker">${s.avatar || '🎤'} <strong>${escapeHtml(s.name)}</strong> • ${t.interest || 120} Expected Pax</div>
+          `;
+          container.appendChild(item);
+        }
+      });
+
+      if (upcomingFound === 0) {
+        container.innerHTML = `
+          <div class="empty-agenda-notice">
+            <span>🏛️</span>
+            <div style="margin-top:4px;">No further sessions scheduled for this hall today.</div>
+            <div style="font-size:0.75rem; color:#888; font-weight:600; margin-top:2px;">Hall maintained on active standby for attendee overflow.</div>
+          </div>
+        `;
+      }
+    }
+
+    // Render Real Capacity Gauge based on server CCTV / Sensor state
+    function renderRealCapacityGauge(hallCapacity) {
+      let occ = 0;
+
+      // 1. Check cctvState from server
+      if (cctvState && cctvState[activeHallId] && cctvState[activeHallId].peopleDetected !== undefined) {
+        occ = cctvState[activeHallId].peopleDetected;
+      } else if (currentOccupancy > 0 && activeHallId === 'hall-1') {
+        occ = currentOccupancy;
+      }
+
+      const cap = hallCapacity || (graphData?.halls[activeHallId]?.capacity) || 250;
+      const pct = Math.min(100, Math.round((occ / cap) * 100));
+
+      const numEl = document.getElementById('hero-capacity-numbers');
+      const barEl = document.getElementById('hero-capacity-bar-fill');
+      const statusPill = document.getElementById('hero-entrance-status-pill');
+
+      if (numEl) numEl.textContent = `${occ} / ${cap} PAX (${pct}%)`;
+      if (barEl) {
+        barEl.style.width = `${pct}%`;
+        if (pct >= 95) barEl.style.backgroundColor = '#ea4335';
+        else if (pct >= 80) barEl.style.backgroundColor = '#f9ab00';
+        else barEl.style.backgroundColor = '#34a853';
+      }
+
+      if (statusPill) {
+        if (pct >= 95) {
+          statusPill.className = 'status-pill critical';
+          statusPill.textContent = '⛔ CAPACITY FULL (100%) • ADMISSIONS PAUSED';
+        } else if (pct >= 80) {
+          statusPill.className = 'status-pill warning';
+          statusPill.textContent = `⚠️ NEAR FULL (${pct}%) • LIMITED SEATING`;
+        } else {
+          statusPill.className = 'status-pill optimal';
+          statusPill.textContent = '🟢 DOORS OPEN • OPTIMAL SEATING';
+        }
+      }
+    }
+
+    // Emergency Reallocation Flip Detector
+    function checkReallocationFlip(prevSched, newSched) {
+      if (!prevSched || !newSched || !graphData) return;
+
+      const prevTopicId = prevSched['slot-1']?.[activeHallId];
+      if (!prevTopicId) return;
+
+      // Find where that topic was relocated to
+      let newLocationHallId = null;
+      let newLocationSlotId = null;
+
+      for (const sId in newSched) {
+        for (const hId in newSched[sId]) {
+          if (newSched[sId][hId] === prevTopicId) {
+            newLocationSlotId = sId;
+            newLocationHallId = hId;
+            break;
+          }
+        }
+      }
+
+      // If moved away from this hall, trigger emergency wayfinding overlay!
+      if (newLocationHallId && newLocationHallId !== activeHallId) {
+        triggerEmergencyOverlay(prevTopicId, newLocationHallId, newLocationSlotId);
+      }
+    }
+
+    function triggerEmergencyOverlay(topicId, targetHallId, targetSlotId) {
+      const topic = graphData?.topics[topicId];
+      const targetHall = graphData?.halls[targetHallId] || { name: 'Lovelace Suite' };
+      const targetSlot = graphData?.slots[targetSlotId] || { time: '11:00 AM' };
+
+      const overlay = document.getElementById('emergency-overlay');
+      const elTopic = document.getElementById('emergency-topic-text');
+      const elHall = document.getElementById('emergency-target-hall');
+      const elSlot = document.getElementById('emergency-target-slot');
+
+      if (elTopic) elTopic.textContent = topic ? topic.title : 'Scheduled Session Relocated';
+      if (elHall) elHall.textContent = targetHall.name.toUpperCase();
+      if (elSlot) elSlot.textContent = `⏱️ Session Slot: ${targetSlot.time} • Proceed to ${targetHall.name}`;
+
+      overlay.classList.remove('hidden');
+
+      // Auto-revert after 18 seconds
+      setTimeout(() => {
+        if (overlay) overlay.classList.add('hidden');
+      }, 18000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // Connect WebSocket for Live Real-Time Multi-Gate & Perception Sync
+    let signageWs = null;
+    let signageReconnectTimer = null;
+
+    function initWebSocket() {
+      if (signageWs && (signageWs.readyState === WebSocket.CONNECTING || signageWs.readyState === WebSocket.OPEN)) {
+        return;
+      }
+      if (signageReconnectTimer) {
+        clearTimeout(signageReconnectTimer);
+        signageReconnectTimer = null;
+      }
+
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}`;
+      signageWs = new WebSocket(wsUrl);
+
+      signageWs.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.type === 'INIT_STATE') {
+            graphData = payload.data.graph;
+            scheduleData = payload.data.schedule;
+            cctvState = payload.data.cctvState;
+            gatesMesh = payload.data.gatesMesh;
+            renderSignage();
+          } else if (payload.type === 'SCHEDULE_HEALED' || payload.type === 'SCHEDULE_UPDATED') {
+            const prev = scheduleData;
+            graphData = payload.data.graph || graphData;
+            scheduleData = payload.data.schedule || scheduleData;
+            checkReallocationFlip(prev, scheduleData);
+            renderSignage();
+          } else if (payload.type === 'ROOM_OCCUPANCY_UPDATE' || payload.type === 'CCTV_OCCUPANCY_UPDATE') {
+            if (payload.data.hallId === activeHallId) {
+              currentOccupancy = payload.data.peopleDetected ?? payload.data.occupancy ?? currentOccupancy;
+              if (cctvState && cctvState[activeHallId]) {
+                cctvState[activeHallId].peopleDetected = currentOccupancy;
+              }
+              renderRealCapacityGauge(payload.data.capacity);
+            }
+          } else if (payload.type === 'GATE_MESH_UPDATE') {
+            if (payload.data.hallId === activeHallId) {
+              currentOccupancy = payload.data.netOccupancy ?? currentOccupancy;
+              renderRealCapacityGauge();
+            }
+          } else if (payload.type === 'DOOR_TRIGGER') {
+            if (payload.data.hallId === activeHallId) {
+              currentOccupancy = payload.data.occupancy ?? (currentOccupancy + 1);
+              renderRealCapacityGauge();
+            }
+          }
+        } catch (err) {
+          console.warn('[Signage WS]', err);
+        }
+      };
+
+      signageWs.onclose = () => {
+        signageWs = null;
+        if (!signageReconnectTimer) {
+          signageReconnectTimer = setTimeout(() => {
+            signageReconnectTimer = null;
+            initWebSocket();
+          }, 5000);
+        }
+      };
+
+      signageWs.onerror = () => {
+        if (signageWs) {
+          signageWs.close();
+        }
+      };
+    }
+
+    // Initial Fetch from Server
+    fetch('/api/state')
+      .then(res => res.json())
+      .then(data => {
+        graphData = data.graph;
+        scheduleData = data.schedule;
+        cctvState = data.cctvState;
+        gatesMesh = data.gatesMesh;
+        renderSignage();
+        initWebSocket();
+      })
+      .catch(err => {
+        console.error('State load error:', err);
+        initWebSocket();
+      });
+  </script>
+  <script src="components/customCursor.js?v=cursorFix4"></script>
+</body>
+
+</html>

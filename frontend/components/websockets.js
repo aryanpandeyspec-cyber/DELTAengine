@@ -33,7 +33,17 @@ function updateAgentHealthIndicator(status) {
   }
 }
 
+let wsReconnectTimer = null;
+
 function initWebSockets() {
+  if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
+    return;
+  }
+  if (wsReconnectTimer) {
+    clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = null;
+  }
+
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${protocol}//${window.location.host}`;
 
@@ -55,9 +65,19 @@ function initWebSockets() {
         graphState = payload.data.graph;
         scheduleState = payload.data.schedule;
 
+        if (payload.data.autopilotEnabled !== undefined && typeof window.setAutopilotMode === 'function') {
+          window.setAutopilotMode(payload.data.autopilotEnabled);
+        }
+
         safeSyncUI(selectedNodeId);
         if (typeof window.syncAdminDashboard === 'function') {
           window.syncAdminDashboard(payload.data);
+        }
+        break;
+
+      case 'AUTOPILOT_STATUS_UPDATE':
+        if (typeof window.setAutopilotMode === 'function') {
+          window.setAutopilotMode(payload.data.autopilotEnabled);
         }
         break;
 
@@ -99,58 +119,97 @@ function initWebSockets() {
         }
 
         const hasConflict = payload.data.hasConflict || (payload.data.logs && payload.data.logs.some(l => l.includes('[CONFLICT]')));
+        const isAutopilot = (typeof window.isAutopilotEnabled === 'function')
+          ? window.isAutopilotEnabled()
+          : (payload.data.autopilotEnabled !== false);
 
         if (hasConflict) {
-          // If initial conflicting schedule provided, render it so coordinator sees the conflict in place
-          if (payload.data.initialSchedule) {
-            scheduleState = payload.data.initialSchedule;
-            if (typeof renderScheduleGrid === 'function') renderScheduleGrid();
-          }
-
           const conflictLog = payload.data.logs ? payload.data.logs.find(l => l.includes('[CONFLICT]') || l.includes('exceeds') || l.includes('Capacity')) : null;
           const actionLog = payload.data.logs ? payload.data.logs.find(l => l.includes('[Action') || l.includes('moved to') || l.includes('Relocating') || l.includes('Scheduled') || l.includes('Solver')) : null;
 
           const conflictText = payload.data.conflictReason || (conflictLog ? conflictLog.replace(/\[.*?\]/g, '').trim() : '⚠️ Self-Healing Triggered: Operational constraint violation detected.');
           const destText = payload.data.destinationTarget || (actionLog ? actionLog.replace(/\[.*?\]/g, '').trim() : '📍 Optimization Solver reallocating talk node to viable venue position.');
 
-          const fnCountdown = window.triggerReallocationCountdown || (typeof triggerReallocationCountdown === 'function' ? triggerReallocationCountdown : null);
-
-          if (fnCountdown) {
-            fnCountdown(conflictText, destText, () => {
-              previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
-              graphState = payload.data.graph;
-              scheduleState = payload.data.schedule;
-
-              if (payload.data.logs && typeof appendLog === 'function') {
-                payload.data.logs.forEach(log => {
-                  let logType = 'system';
-                  if (log.includes('[CONFLICT]')) logType = 'conflict';
-                  else if (log.includes('[Action]')) logType = 'action';
-                  else if (log.includes('[Solver:')) logType = 'system';
-                  else if (log.includes('Audit clean')) logType = 'success';
-                  appendLog(log, logType);
-                });
-              }
-
-              safeSyncUI(selectedNodeId);
-
-              if (payload.data.notifications && payload.data.notifications.length > 0) {
-                payload.data.notifications.forEach(n => {
-                  if (typeof createToast === 'function') createToast(n.message, n.type);
-                });
-                if (typeof showPushAlert === 'function') showPushAlert(payload.data.notifications[0].message);
-              }
-              if (typeof createToast === 'function') createToast('✨ Self-Healing complete: Talk node redirected to applicable hall!', 'success');
-              if (typeof highlightHealedDestination === 'function') {
-                highlightHealedDestination(destText, payload.data.schedule);
-              }
-            });
-          } else {
-            // Direct apply fallback
+          if (isAutopilot) {
+            // --- TESLA AUTONOMOUS AUTOPILOT MODE (Zero-Touch Instant Application) ---
             previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
             graphState = payload.data.graph;
             scheduleState = payload.data.schedule;
+
+            if (payload.data.logs && typeof appendLog === 'function') {
+              payload.data.logs.forEach(log => {
+                let logType = 'system';
+                if (log.includes('[CONFLICT]')) logType = 'conflict';
+                else if (log.includes('[Action]')) logType = 'action';
+                else if (log.includes('[Solver:')) logType = 'system';
+                else if (log.includes('Audit clean')) logType = 'success';
+                appendLog(log, logType);
+              });
+            }
+
             safeSyncUI(selectedNodeId);
+
+            if (payload.data.notifications && payload.data.notifications.length > 0) {
+              payload.data.notifications.forEach(n => {
+                if (typeof createToast === 'function') createToast(n.message, n.type);
+              });
+              if (typeof showPushAlert === 'function') showPushAlert(payload.data.notifications[0].message);
+            }
+
+            if (typeof window.showAutopilotResolutionHUD === 'function') {
+              window.showAutopilotResolutionHUD(conflictText, destText);
+            } else if (typeof createToast === 'function') {
+              createToast(`⚡ TESLA AUTOPILOT: Zero-touch resolution applied! ${destText}`, 'success');
+            }
+
+            if (typeof highlightHealedDestination === 'function') {
+              highlightHealedDestination(destText, payload.data.schedule);
+            }
+          } else {
+            // --- MANUAL CO-PILOT MODE (Human Coordinator Countdown Confirmation) ---
+            if (payload.data.initialSchedule) {
+              scheduleState = payload.data.initialSchedule;
+              if (typeof renderScheduleGrid === 'function') renderScheduleGrid();
+            }
+
+            const fnCountdown = window.triggerReallocationCountdown || (typeof triggerReallocationCountdown === 'function' ? triggerReallocationCountdown : null);
+
+            if (fnCountdown) {
+              fnCountdown(conflictText, destText, () => {
+                previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
+                graphState = payload.data.graph;
+                scheduleState = payload.data.schedule;
+
+                if (payload.data.logs && typeof appendLog === 'function') {
+                  payload.data.logs.forEach(log => {
+                    let logType = 'system';
+                    if (log.includes('[CONFLICT]')) logType = 'conflict';
+                    else if (log.includes('[Action]')) logType = 'action';
+                    else if (log.includes('[Solver:')) logType = 'system';
+                    else if (log.includes('Audit clean')) logType = 'success';
+                    appendLog(log, logType);
+                  });
+                }
+
+                safeSyncUI(selectedNodeId);
+
+                if (payload.data.notifications && payload.data.notifications.length > 0) {
+                  payload.data.notifications.forEach(n => {
+                    if (typeof createToast === 'function') createToast(n.message, n.type);
+                  });
+                  if (typeof showPushAlert === 'function') showPushAlert(payload.data.notifications[0].message);
+                }
+                if (typeof createToast === 'function') createToast('✨ Self-Healing complete: Talk node redirected to applicable hall!', 'success');
+                if (typeof highlightHealedDestination === 'function') {
+                  highlightHealedDestination(destText, payload.data.schedule);
+                }
+              });
+            } else {
+              previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
+              graphState = payload.data.graph;
+              scheduleState = payload.data.schedule;
+              safeSyncUI(selectedNodeId);
+            }
           }
         } else {
           // Clean update with no conflicts
@@ -291,6 +350,11 @@ function initWebSockets() {
   ws.onclose = () => {
     updateAgentHealthIndicator('OFFLINE');
     if (typeof appendLog === 'function') appendLog('[SYSTEM] Connection offline. Offline synchronization active.', 'system');
-    setTimeout(initWebSockets, 5000);
+    if (!wsReconnectTimer) {
+      wsReconnectTimer = setTimeout(() => {
+        wsReconnectTimer = null;
+        initWebSockets();
+      }, 5000);
+    }
   };
 }

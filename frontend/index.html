@@ -11,7 +11,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="app.css?v=cursorFix4">
 </head>
 
 <body>
@@ -71,10 +71,15 @@
           <button id="btn-trigger-pa-test" class="btn btn-sm btn-yellow"
             style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
             title="Test ElevenLabs Voice PA Broadcast">🎙️ Test PA Voice</button>
+          <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Click to toggle between Tesla Autopilot (Zero-Touch Autonomous Mitigation) and Manual Co-Pilot">
+            <span class="autopilot-indicator-dot pulse"></span>
+            <span>⚡ AUTOPILOT: <strong class="autopilot-status-text">ENGAGED</strong></span>
+          </div>
           <button id="btn-sound-toggle" class="btn btn-sm btn-white" style="font-weight:700;"
             title="Toggle Synthesized Audio Feedback">🔊 SFX: ON</button>
           <button id="btn-shortcuts-modal" class="btn btn-sm btn-white" style="font-weight:700;"
             title="Keyboard Hotkeys [?]">⌨️ Hotkeys</button>
+          <a href="signage.html" target="_blank" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;" title="Open Dynamic Hallway TV Signage Display Portal">📺 Signage TV</a>
           <a href="admin.html" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;">👑 Admin
             Portal</a>
           <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Switch
@@ -112,7 +117,7 @@
           </div>
           <div id="venue-pa-live-text" class="venue-pa-text">"Attention attendees. Autonomous perception system active."</div>
           <div style="font-size:0.75rem; color:#c7d2fe; margin-top:2px;">
-            Voice: <span style="font-weight:800; color:#fff;">Daniel (Broadcaster)</span> • Broadcasted: <span id="venue-pa-live-time">Live</span>
+            Voice: <span style="font-weight:800; color:#fff;" id="venue-pa-live-voice">Nico Robin (Calm & Elegant)</span> • Broadcasted: <span id="venue-pa-live-time">Live</span>
           </div>
         </div>
       </div>
@@ -459,7 +464,7 @@
                 <span id="stress-factor-label" style="color:var(--google-blue);">1.0x (Normal)</span>
               </div>
               <input type="range" id="stress-slider" min="0.5" max="3.0" step="0.1" value="1.0"
-                class="stress-slider-input" style="width:100%; cursor:pointer;">
+                class="stress-slider-input" style="width:100%;">
               <div style="font-size:0.72rem; color:#666; font-weight:600; line-height:1.2;">Surges registrations to
                 highlight venue congestion heatmaps.</div>
             </div>
@@ -481,7 +486,7 @@
                 <input type="text" id="matrix-search-input" placeholder="🔍 Quick filter talks..." class="input-text"
                   style="font-family:var(--font-mono); font-size:0.78rem; padding:4px 10px; width:180px; border-radius:20px; border:2px solid #000;">
                 <input type="date" id="schedule-date-picker" class="input-select"
-                  style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; padding:4px 8px; cursor:pointer;"
+                  style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; padding:4px 8px;"
                   title="Select Calendar Date to View Schedule Matrix">
                 <span class="badge badge-blue">Dynamic Grid</span>
               </div>
@@ -942,7 +947,7 @@
 
         <div style="display:flex; justify-content:center; gap:10px; margin-top:14px;">
           <button id="btn-skip-countdown" class="btn btn-sm btn-yellow"
-            style="font-weight:800; font-family:var(--font-mono); font-size:0.8rem; padding:6px 16px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+            style="font-weight:800; font-family:var(--font-mono); font-size:0.8rem; padding:6px 16px; border:2px solid #000; box-shadow:2px 2px 0px #000;"
             title="Fast-forward and execute reallocation immediately (Space / Esc)">
             ⚡ Apply Immediately (Skip Wait)
           </button>
@@ -1448,15 +1453,15 @@
       </div>
     </div>
 
-    <script src="components/app.js"></script>
+    <script src="components/app.js?v=cursorFix4"></script>
     <script src="components/websockets.js"></script>
     <script src="components/dragdrop.js"></script>
-    <script src="components/graphVisualizer.js"></script>
+    <script src="components/graphVisualizer.js?v=cursorFix4"></script>
     <script src="components/tourGuide.js"></script>
     <script src="components/contentPipeline.js"></script>
     <script src="components/stressTester.js"></script>
     <script src="components/auth.js"></script>
-    <script src="components/customCursor.js"></script>
+    <script src="components/customCursor.js?v=cursorFix4"></script>
     <!-- REAL-TIME WEBGL OBJECT & PERSON DETECTION (100% FREE & ZERO LATENCY) -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>

@@ -179,7 +179,6 @@ function drawGraphSVG() {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
     g.setAttribute('data-node-id', n.id);
-    g.style.cursor = draggedNode === n ? 'grabbing' : 'pointer';
 
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     circle.setAttribute('r', n.radius);

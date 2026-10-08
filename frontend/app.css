@@ -53,6 +53,87 @@
 .loader-text .dots { letter-spacing: 8px; opacity: 0.7; animation: dots-blink-wave 1.5s infinite linear; }
 @keyframes dots-blink-wave { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
 
+/* --- TRIPOINT INVERSUS ELECTRIC BLUE CURSOR & COMET TAIL --- */
+*,
+*::before,
+*::after,
+html,
+body,
+:root,
+html body *,
+html body *:hover,
+html body *:active,
+html body *:focus,
+html body [class],
+html body [class]:hover,
+html body [id],
+html body [id]:hover,
+a,
+a:hover,
+button,
+button:hover,
+input,
+select,
+textarea,
+label,
+div,
+span,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+svg,
+svg *,
+circle,
+path,
+polygon,
+table,
+tr,
+td,
+th,
+section,
+header,
+footer,
+nav,
+aside,
+main,
+ul,
+li,
+[role="button"],
+[style*="cursor"],
+:hover,
+:active,
+:focus {
+  cursor: none !important;
+}
+
+#custom-tripoint-cursor {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 24px !important;
+  height: 24px !important;
+  pointer-events: none !important;
+  z-index: 99999999 !important;
+  filter: drop-shadow(2px 3px 0px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 8px rgba(66, 133, 244, 0.7)) !important;
+  transform-origin: 12px 1.2px !important;
+  will-change: transform !important;
+}
+
+#cursor-comet-canvas {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  pointer-events: none !important;
+  z-index: 99999997 !important;
+}
+
+
 :root {
   --bg-primary: #f6f5f0;
   --bg-card: #ffffff;
@@ -719,7 +800,6 @@ td {
   border: 2px solid #000;
   border-radius: 8px;
   background-color: #fff;
-  cursor: pointer;
 }
 
 .input-select.select-short {
@@ -746,7 +826,6 @@ td {
   text-transform: uppercase;
   border: 2.5px solid #000;
   border-radius: 8px;
-  cursor: pointer;
   background-color: #ffffff;
   box-shadow: 3px 3px 0px #000;
   transition: all 0.15s ease;
@@ -887,7 +966,6 @@ td {
 .graph-node {
   stroke: #000000;
   stroke-width: 2px;
-  cursor: pointer;
   transition: r 0.2s ease;
 }
 
@@ -920,7 +998,6 @@ td {
   border-radius: var(--elem-radius);
   padding: 30px 20px;
   text-align: center;
-  cursor: pointer;
   transition: all 0.2s ease;
 }
 
@@ -1153,7 +1230,6 @@ td {
 
 .toast-close {
   margin-left: auto;
-  cursor: pointer;
   font-weight: bold;
 }
 
@@ -1231,7 +1307,6 @@ td {
   border: 2px solid #000;
   border-radius: 6px;
   background-color: #fff;
-  cursor: pointer;
 }
 
 .btn-clear-logs {
@@ -1242,7 +1317,6 @@ td {
   font-family: var(--font-mono);
   font-size: 0.8rem;
   font-weight: 700;
-  cursor: pointer;
   box-shadow: 2px 2px 0px #000;
   transition: all 0.1s ease;
 }
@@ -1267,7 +1341,6 @@ td {
   border: none;
   font-size: 1.5rem;
   font-weight: bold;
-  cursor: pointer;
   line-height: 1;
 }
 
@@ -1386,7 +1459,6 @@ td {
   height: 24px;
   border-radius: 50%;
   border: 2px solid #000;
-  cursor: pointer;
   box-shadow: 1px 1px 0px #000;
   transition: all 0.1s ease;
 }
@@ -1465,7 +1537,6 @@ td {
   color: #fff;
   font-size: 1.1rem;
   font-weight: bold;
-  cursor: pointer;
 }
 
 .tour-body {
@@ -1498,12 +1569,11 @@ td.drag-over {
 }
 
 .schedule-block[draggable="true"] {
-  cursor: grab;
   user-select: none;
 }
 
 .schedule-block[draggable="true"]:active {
-  cursor: grabbing;
+  user-select: none;
 }
 
 .schedule-block.dragging {
@@ -1629,7 +1699,6 @@ td.drag-over {
   border: none;
   font-size: 1.6rem;
   font-weight: bold;
-  cursor: pointer;
   line-height: 1;
 }
 
@@ -1767,7 +1836,6 @@ td.drag-over {
   font-family: var(--font-mono) !important;
   font-size: 0.78rem !important;
   font-weight: 700 !important;
-  cursor: pointer !important;
   box-shadow: 2px 2px 0px #000 !important;
   white-space: nowrap !important;
   transition: transform 0.15s ease !important;
@@ -1791,7 +1859,6 @@ td.drag-over {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
-  cursor: pointer !important;
   z-index: 999999 !important;
   transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease !important;
 }
@@ -1867,35 +1934,6 @@ td.drag-over {
   clear: both !important;
 }
 
-/* --- TRIPOINT INVERSUS ELECTRIC BLUE CURSOR & COMET TAIL --- */
-* {
-  cursor: none !important;
-}
-
-#custom-tripoint-cursor {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 32px !important;
-  height: 32px !important;
-  pointer-events: none !important;
-  z-index: 99999999 !important;
-  filter: drop-shadow(3px 4px 0px rgba(0, 0, 0, 0.95)) drop-shadow(0 0 10px rgba(66, 133, 244, 0.6)) !important;
-  will-change: transform !important;
-}
-
-.cursor-dust-particle {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  border-radius: 50% !important;
-  background: radial-gradient(circle, #ff1a1a 0%, #ff5252 65%, #ea4335 100%) !important;
-  border: 1.5px solid #000000 !important;
-  pointer-events: none !important;
-  z-index: 99999998 !important;
-  box-shadow: 0 0 10px #ff1a1a, 2px 2px 0px #000000 !important;
-  will-change: transform, opacity !important;
-}
 
 .card-swarm .card-header h2 {
   white-space: nowrap !important;
@@ -2296,7 +2334,6 @@ body.self-healing-active {
   border: none !important;
   font-size: 1.8rem !important;
   font-weight: 900 !important;
-  cursor: pointer !important;
 }
 
 .auth-role-tabs {
@@ -2314,7 +2351,6 @@ body.self-healing-active {
   border: 2px solid #000000 !important;
   border-radius: 12px !important;
   background: #f0f0f0 !important;
-  cursor: pointer !important;
   transition: all 0.15s ease !important;
 }
 
@@ -2519,7 +2555,6 @@ body.self-healing-active {
 
 .slider {
   position: absolute !important;
-  cursor: pointer !important;
   top: 0; left: 0; right: 0; bottom: 0;
   background-color: #ccc !important;
   transition: .2s !important;
@@ -2648,7 +2683,6 @@ input:checked + .slider:before {
   border-right: none !important;
   background: #f9ab00 !important;
   box-shadow: -4px 4px 0px #000000 !important;
-  cursor: pointer !important;
 }
 
 .tour-minimized-bar {
@@ -2715,7 +2749,6 @@ input:checked + .slider:before {
   height: 28px;
   font-weight: 900;
   font-size: 1.1rem;
-  cursor: pointer;
   box-shadow: 2px 2px 0px #000;
   display: flex;
   align-items: center;
@@ -2948,7 +2981,6 @@ input:checked + .slider:before {
   justify-content: center;
   font-size: 13px;
   font-weight: 900;
-  cursor: pointer;
   box-shadow: 1px 1px 0px #000;
   transition: all 0.15s ease;
   line-height: 1;
@@ -3275,7 +3307,6 @@ input:checked + .slider:before {
 .neubrutalist-slider {
   width: 100%;
   accent-color: #2563eb;
-  cursor: pointer;
 }
 
 .capacity-hint {
@@ -3420,15 +3451,7 @@ input:checked + .slider:before {
 
 /* 1. TOUCH & POINTER HYGIENE */
 @media (pointer: coarse), (max-width: 768px) {
-  * {
-    cursor: auto !important;
-  }
-  #custom-tripoint-cursor,
-  .cursor-dust-particle {
-    display: none !important;
-  }
   button, a, select, input, .btn, .pill, [role="button"] {
-    cursor: pointer !important;
     touch-action: manipulation;
   }
 }
@@ -4102,5 +4125,169 @@ input:checked + .slider:before {
   color: #166534;
 }
 
+/* --- TESLA AUTOPILOT ZERO-TOUCH HUD & CONTROLS --- */
+.autopilot-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #ffffff;
+  border: 3px solid #000000;
+  border-radius: 30px;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.82rem;
+  font-weight: 800;
+  box-shadow: 3px 3px 0px #000000;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  user-select: none;
+}
 
+.autopilot-pill:hover {
+  transform: translateY(-2px);
+  box-shadow: 5px 5px 0px #000000;
+}
 
+.autopilot-pill.active {
+  background: #0f172a !important;
+  color: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 3px 3px 0px #38bdf8 !important;
+}
+
+.autopilot-pill.manual {
+  background: #fffbeb !important;
+  color: #b45309 !important;
+  border-color: #f59e0b !important;
+}
+
+.autopilot-indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.autopilot-indicator-dot.pulse {
+  background: #22c55e;
+  box-shadow: 0 0 10px #22c55e;
+  animation: autopilotPulse 1.4s infinite;
+}
+
+.autopilot-indicator-dot.paused {
+  background: #f59e0b;
+}
+
+@keyframes autopilotPulse {
+  0% { transform: scale(0.9); opacity: 0.8; }
+  50% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 14px #22c55e; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+
+.tesla-autopilot-hud {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-130%);
+  background: #0f172a;
+  border: 3px solid #38bdf8;
+  border-radius: 16px;
+  padding: 16px 24px;
+  color: #ffffff;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4), 0 0 20px rgba(56, 189, 248, 0.4);
+  z-index: 1000000;
+  min-width: 420px;
+  max-width: 650px;
+  text-align: center;
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.tesla-autopilot-hud.active {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.tesla-autopilot-hud .hud-badge {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.tesla-autopilot-hud .hud-conflict {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #f87171;
+}
+
+.tesla-autopilot-hud .hud-arrow {
+  font-size: 1.1rem;
+  color: #38bdf8;
+  margin: 3px 0;
+}
+
+.tesla-autopilot-hud .hud-dest {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #4ade80;
+}
+
+.tesla-autopilot-hud .hud-time {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-top: 8px;
+  font-family: var(--font-mono, monospace);
+}
+
+.tesla-autopilot-hud .hud-time .latency {
+  color: #38bdf8;
+  font-weight: 800;
+}
+
+/* FINAL UNIVERSAL CURSOR OVERRIDE - ABSOLUTE NATIVE CURSOR KILLER */
+*,
+*::before,
+*::after,
+html,
+body,
+:root,
+html body *,
+html body *:hover,
+html body *:active,
+html body *:focus,
+html body [class],
+html body [class]:hover,
+html body [id],
+html body [id]:hover,
+a,
+a:hover,
+button,
+button:hover,
+input,
+select,
+textarea,
+label,
+div,
+span,
+p,
+svg,
+svg *,
+circle,
+path,
+polygon,
+table,
+tr,
+td,
+th,
+section,
+[role="button"],
+[style*="cursor"],
+:hover,
+:active,
+:focus {
+  cursor: none !important;
+}

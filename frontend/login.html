@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <!-- Styling -->
-  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="app.css?v=cursorFix4">
 
   <style>
     body {
@@ -86,7 +86,6 @@
       font-family: var(--font-main);
       font-weight: 800;
       font-size: 0.95rem;
-      cursor: pointer;
       box-shadow: 4px 4px 0px #000000;
       transition: all 0.15s ease;
       margin-bottom: 20px;
@@ -184,12 +183,11 @@
     </div>
   </div>
 
-  <script src="components/customCursor.js"></script>
   <script>
     // --- SUPABASE CLIENT INITIALIZATION ---
     const SUPABASE_URL = 'https://frlrazzskbzmtlqrswjl.supabase.co';
-    const SUPABASE_KEY = window.SUPABASE_ANON_KEY || 'sb_anon_public_key';
-    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
+    const SUPABASE_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_bcmjO-FDpberqg7vt94Etw_0pSElRbx';
+    const supabaseClient = (window.supabase && SUPABASE_KEY) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
     let selectedRole = 'coordinator';
 
@@ -259,6 +257,7 @@
       }
     }
   </script>
+  <script src="components/customCursor.js?v=cursorFix4"></script>
 </body>
 
 </html>
