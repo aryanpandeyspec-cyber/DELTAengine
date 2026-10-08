@@ -30,11 +30,10 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
 
         const topic = graph.topics[topicId];
         if (!topic) continue;
-        const speaker = graph.speakers[topic.speakerId || topic.speaker_id];
-        const hall = graph.halls[hallId];
-        if (!speaker || !hall) continue;
+        const speaker = (graph.speakers && graph.speakers[topic.speakerId || topic.speaker_id]) || { name: 'Featured Speaker', delay: 0 };
+        const hall = (graph.halls && graph.halls[hallId]) || { name: 'Hall Venue', capacity: 250 };
 
-        if (speaker.delay > 0) {
+        if (speaker && speaker.delay > 0) {
           const availabilityStartHour = 9.5 + (speaker.delay / 60);
           if (slot.startHour < availabilityStartHour) {
             logs.push(`[CONFLICT] Speaker "${speaker.name}" is delayed by ${speaker.delay} mins. Available at ${formatHour(availabilityStartHour)}, but talk "${topic.title}" is scheduled at ${slot.time} in ${hall.name}.`);
@@ -139,21 +138,54 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
   // AUTOMATIC EMAIL DISPATCH: Self-Healing Engine automatically composes & sends email to all personnel
   if (notifications.length > 0) {
     const firstNotif = notifications[0];
+    const healedTopicId = firstNotif.topicId;
+    const healedTopic = healedTopicId ? graph.topics[healedTopicId] : null;
+    const healedSpeaker = (healedTopic && graph.speakers[healedTopic.speakerId]) ? graph.speakers[healedTopic.speakerId] : null;
+
     const topicMatch = firstNotif.message.match(/"([^"]+)"/);
-    const topicTitle = topicMatch ? topicMatch[1] : 'Conference Session';
-    
+    const topicTitle = healedTopic ? healedTopic.title : (topicMatch ? topicMatch[1] : 'Conference Session');
+    const speakerName = healedSpeaker ? healedSpeaker.name : 'Keynote Speaker';
+
+    // Find newVenue and timeSlot from healed schedule
+    let newVenue = 'Reallocated Venue';
+    let timeSlot = 'Scheduled Session';
+    if (healedTopicId) {
+      for (const sId in schedule) {
+        for (const hId in schedule[sId]) {
+          if (schedule[sId][hId] === healedTopicId) {
+            newVenue = graph.halls[hId]?.name || hId;
+            timeSlot = graph.slots[sId]?.time || sId;
+            break;
+          }
+        }
+      }
+    }
+
+    // Find oldVenue from initial schedule
+    let oldVenue = 'Original Venue';
+    if (healedTopicId) {
+      for (const sId in initialSchedule) {
+        for (const hId in initialSchedule[sId]) {
+          if (initialSchedule[sId][hId] === healedTopicId) {
+            oldVenue = graph.halls[hId]?.name || hId;
+            break;
+          }
+        }
+      }
+    }
+
     autoDispatchSelfHealingEmail({
       topicTitle,
-      speakerName: 'Dr. Evelyn Wright / Carlos Santana',
-      oldVenue: 'Turing Hall',
-      newVenue: 'Lovelace Suite',
-      timeSlot: '11:00 AM - 12:00 PM',
+      speakerName,
+      oldVenue,
+      newVenue,
+      timeSlot,
       reason: firstNotif.message
     }, db, broadcast);
 
     // AUTONOMOUS VENUE PA VOICE ANNOUNCEMENT VIA ELEVENLABS
-    const paScript = `Attention attendees. Autonomous schedule update: ${topicTitle} is now scheduled in Lovelace Suite to ensure safe venue capacity. Please follow digital hall signage.`;
-    generateVenueVoiceAnnouncement(paScript).then(voiceRes => {
+    const paScript = `Attention attendees. Autonomous schedule update: ${topicTitle} is now scheduled in ${newVenue} (${timeSlot}) to ensure safe venue capacity. Please follow digital hall signage.`;
+    generateVenueVoiceAnnouncement(paScript, 'EXAVITQu4vr4xnSDxMaL').then(voiceRes => {
       if (voiceRes && voiceRes.success && typeof broadcast === 'function') {
         broadcast({
           type: 'VOICE_ANNOUNCEMENT',
@@ -183,12 +215,13 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
       isManual: !!options.isManual,
       hasConflict: wasHealed,
       conflictReason,
-      destinationTarget
+      destinationTarget,
+      autopilotEnabled: db.autopilotEnabled !== false
     }
   };
   broadcast(updatePayload);
 
-  return { schedule, initialSchedule, logs, notifications, swarmChat, hasConflict: wasHealed, conflictReason, destinationTarget };
+  return { schedule, initialSchedule, logs, notifications, swarmChat, hasConflict: wasHealed, conflictReason, destinationTarget, autopilotEnabled: db.autopilotEnabled !== false };
 }
 
 function formatHour(hourDec) {

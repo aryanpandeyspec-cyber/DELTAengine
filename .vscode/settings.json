@@ -1,0 +1,21 @@
+{
+  "terminal.integrated.scrollback": 1500,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/node_modules/**": true,
+    "**/*.mp4": true,
+    "**/*.zip": true,
+    "**/*.pptx": true,
+    "**/*.pdf": true,
+    "**/video_frames/**": true,
+    "**/extracted_assets/**": true
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/*.mp4": true,
+    "**/*.zip": true,
+    "**/video_frames": true,
+    "**/extracted_assets": true
+  }
+}

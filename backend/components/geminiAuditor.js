@@ -108,7 +108,8 @@ async function composeDynamicPAScript({ reason, topicTitle, venueName }) {
   const prompt = `Write a calm, professional, 1-2 sentence Public Address (PA) announcement for a tech summit where session "${topicTitle || 'Keynote'}" has been moved to "${venueName || 'Lovelace Suite'}" due to: ${reason || 'venue capacity optimization'}. Start with "Attention attendees" or "Ladies and gentlemen". Output only the speech script without quotes.`;
 
   try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
+    const model = GEMINI_MODELS[0];
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

@@ -13,7 +13,7 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Josefin+Sans:wght@600;700&family=JetBrains+Mono:wght@500;700;800&display=swap"
     rel="stylesheet">
 
-  <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="app.css?v=cursorFix4">
 </head>
 
 <body>
@@ -45,8 +45,13 @@
         </div>
         <div class="auth-nav-buttons">
           <button id="btn-open-cctv" class="btn btn-sm btn-yellow"
-            style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+            style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;"
             title="Open CCTV Room Density Perception HUD">📹 CCTV HUD <span class="cctv-live-dot"></span></button>
+          <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Click to toggle between Tesla Autopilot (Zero-Touch Autonomous Mitigation) and Manual Co-Pilot">
+            <span class="autopilot-indicator-dot pulse"></span>
+            <span>⚡ AUTOPILOT: <strong class="autopilot-status-text">ENGAGED</strong></span>
+          </div>
+          <a href="signage.html" target="_blank" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;" title="Open Dynamic Hallway TV Signage Display Portal">📺 Signage TV</a>
           <a href="index.html" class="btn btn-sm btn-blue" style="font-weight:700; text-decoration:none;">💻 OS
             Dashboard</a>
           <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Logout</a>
@@ -276,7 +281,7 @@
                     style="font-weight:800; color:#000; font-size:0.85rem; white-space:nowrap;">📹 CCTV Turing Hall
                     Feed:</span>
                   <button id="btn-open-cctv-secondary" class="btn btn-sm btn-yellow"
-                    style="font-size:0.75rem; font-weight:800; padding:4px 10px; border:2px solid #000; cursor:pointer; white-space:nowrap;"
+                    style="font-size:0.75rem; font-weight:800; padding:4px 10px; border:2px solid #000; white-space:nowrap;"
                     title="Jump to Top CCTV Perception Station">
                     🔍 View Camera Feed ⬆️
                   </button>
@@ -427,7 +432,24 @@
       <div class="card-body">
         <div class="integrations-summary-bar">
           
-          <!-- RESEND CLOUD MAILER -->
+          <!-- SUPABASE POSTGRESQL & AUTH -->
+          <div class="integration-chip-card">
+            <div>
+              <div class="integration-header">
+                <span class="integration-title">⚡ Supabase Cloud</span>
+                <span class="integration-status-pill active">POSTGRESQL</span>
+              </div>
+              <div class="integration-meta">
+                <strong>Project:</strong> <code>frlrazzskbzmtlqrswjl</code><br>
+                <strong>Engine:</strong> PostgreSQL + Auth SDK<br>
+                <strong>Status:</strong> Cloud Hydration Armed
+              </div>
+            </div>
+            <div class="badge-mini-green w-full" style="display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px; font-weight:800; font-size:0.75rem; border-radius:6px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;">
+              <span class="pulse-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
+              ☁️ POSTGRESQL CONNECTED
+            </div>
+          </div>
           <div class="integration-chip-card">
             <div>
               <div class="integration-header">
@@ -454,7 +476,7 @@
               </div>
               <div class="integration-meta">
                 <strong>Model:</strong> <code>eleven_flash_v2_5</code><br>
-                <strong>Voice:</strong> Daniel (Broadcaster)<br>
+                <strong>Voice:</strong> Nico Robin (Calm & Elegant)<br>
                 <strong>Mode:</strong> Autonomous Venue PA
               </div>
             </div>
@@ -824,8 +846,8 @@
 
   <script src="components/websockets.js"></script>
   <script src="components/auth.js"></script>
-  <script src="components/customCursor.js"></script>
   <script src="components/app.js"></script>
+  <script src="components/customCursor.js?v=cursorFix4"></script>
   <!-- REAL-TIME WEBGL OBJECT & PERSON DETECTION (100% FREE & ZERO LATENCY) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>

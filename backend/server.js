@@ -29,7 +29,19 @@ const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
 
-app.use(express.json({ limit: '5mb' }));
+// Enable Cross-Origin Resource Sharing (CORS) for all origins & dev tools
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
+app.use(express.json({ limit: '15mb' }));
+app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.use(rateLimiter); // Apply Rate Limiter to prevent DoS attacks
 
 // Prevent browser from caching perception engine & client scripts
@@ -61,6 +73,10 @@ app.get('/dashboard', (req, res) => {
 
 app.get('/presentation', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/presentation.html'));
+});
+
+app.get('/signage', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/signage.html'));
 });
 
 app.get('/download-deck', (req, res) => {
@@ -109,7 +125,7 @@ async function sendWhatsAppNotification(recipientName, phoneNumber, messageText)
 }
 
 wss.on('connection', ws => {
-  console.log('[WS] Client connected');
+  if (process.env.DEBUG_WS) console.log('[WS] Client connected');
   db.tokensUsed = db.tokensUsed || 28450;
   ws.send(JSON.stringify({
     type: 'INIT_STATE',
@@ -122,13 +138,16 @@ wss.on('connection', ws => {
       whatsappLogs: db.whatsappLogs,
       limiters: db.limiters,
       cctvState: db.cctvState,
+      autopilotEnabled: db.autopilotEnabled !== false,
       uptimeSeconds: Math.floor(process.uptime()),
       tokensUsed: db.tokensUsed,
       activeScenario: getActiveScenario().id,
       scenarios: getScenarios()
     }
   }));
-  ws.on('close', () => console.log('[WS] Client disconnected'));
+  ws.on('close', () => {
+    if (process.env.DEBUG_WS) console.log('[WS] Client disconnected');
+  });
 });
 
 app.get('/api/state', (req, res) => {
@@ -142,6 +161,7 @@ app.get('/api/state', (req, res) => {
     whatsappLogs: db.whatsappLogs,
     limiters: db.limiters,
     cctvState: db.cctvState,
+    autopilotEnabled: db.autopilotEnabled !== false,
     uptimeSeconds: Math.floor(process.uptime()),
     tokensUsed: db.tokensUsed,
     activeScenario: getActiveScenario().id,
@@ -184,10 +204,124 @@ app.post('/api/notify/whatsapp-all', async (req, res) => {
   res.json({ success: true, count: results.length, notifications: results });
 });
 
+// 2-WAY VOLUNTEER WHATSAPP WEBHOOK (Twilio Cloud & Direct Rest)
+// Enables volunteers (Suryansh, Shahid, Aryan) to text:
+// "GATE CLEAR", "OVERFLOW OPEN", "STATUS", "AUTOPILOT ON/OFF" directly from WhatsApp!
+app.post('/api/whatsapp/incoming', async (req, res) => {
+  const rawBody = (req.body.Body || req.body.body || req.body.message || req.body.text || '').trim();
+  const rawFrom = (req.body.From || req.body.from || '').trim();
+  const senderNumber = rawFrom.replace(/whatsapp:/i, '').trim();
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  // Resolve volunteer name from contacts / volunteers directory
+  let volunteer = db.volunteers ? db.volunteers.find(v => v.phone.replace(/[^0-9]/g, '') === senderNumber.replace(/[^0-9]/g, '')) : null;
+  if (!volunteer && db.contacts) {
+    const contact = db.contacts.find(c => c.phone.replace(/[^0-9]/g, '') === senderNumber.replace(/[^0-9]/g, ''));
+    if (contact) volunteer = { name: contact.name, role: contact.role };
+  }
+  const volunteerName = volunteer ? volunteer.name : (senderNumber ? `Coordinator (${senderNumber})` : 'Authorized Volunteer');
+
+  console.log(`[WhatsApp Webhook 2-Way] 📩 Message from ${volunteerName} (${rawFrom}): "${rawBody}"`);
+
+  const cmd = rawBody.toUpperCase();
+  let replyText = '';
+  let actionTaken = 'NONE';
+
+  if (cmd.includes('CLEAR') || cmd.includes('GATE CLEAR')) {
+    actionTaken = 'GATE_CLEARED';
+    lastCctvAlertState = 'OPTIMAL';
+    broadcast({
+      type: 'VOLUNTEER_ALERT_ACK',
+      data: {
+        volunteer: volunteerName,
+        status: 'NOMINAL',
+        message: `Door chokepoint cleared by ${volunteerName}.`,
+        timestamp: timeStr
+      }
+    });
+    replyText = `✅ Confirmed, ${volunteerName}. Door chokepoint alert cleared across DELTA Engine central command. Hall status returned to NOMINAL.`;
+  } else if (cmd.includes('OVERFLOW') || cmd.includes('OPEN OVERFLOW')) {
+    actionTaken = 'OVERFLOW_OPENED';
+    db.overflowActive = true;
+    broadcast({
+      type: 'VOLUNTEER_OVERFLOW_OPEN',
+      data: {
+        volunteer: volunteerName,
+        note: 'Overflow lounge active',
+        timestamp: timeStr
+      }
+    });
+    replyText = `🏛️ Copy that, ${volunteerName}. Overflow Hall and 4K digital broadcast channels are now active. Capacity limits adjusted.`;
+  } else if (cmd.includes('AUTOPILOT ON') || (cmd.includes('AUTOPILOT') && cmd.includes('ON'))) {
+    db.autopilotEnabled = true;
+    actionTaken = 'AUTOPILOT_ENGAGED';
+    broadcast({
+      type: 'AUTOPILOT_STATUS_UPDATE',
+      data: { autopilotEnabled: true, timestamp: timeStr }
+    });
+    replyText = `⚡ Tesla Autopilot has been ENGAGED by ${volunteerName}. Zero-Touch Autonomous self-healing is active.`;
+  } else if (cmd.includes('AUTOPILOT OFF') || (cmd.includes('AUTOPILOT') && cmd.includes('OFF'))) {
+    db.autopilotEnabled = false;
+    actionTaken = 'AUTOPILOT_PAUSED';
+    broadcast({
+      type: 'AUTOPILOT_STATUS_UPDATE',
+      data: { autopilotEnabled: false, timestamp: timeStr }
+    });
+    replyText = `🕹️ Tesla Autopilot PAUSED by ${volunteerName}. System switched to Manual Co-Pilot mode.`;
+  } else if (cmd.includes('STATUS')) {
+    actionTaken = 'STATUS_QUERY';
+    const occTuring = db.cctvState && db.cctvState['hall-1'] ? db.cctvState['hall-1'].peopleDetected : (doorSensorNetOccupancy || 0);
+    const capTuring = db.graph.halls['hall-1'] ? db.graph.halls['hall-1'].capacity : 250;
+    const pct = Math.round((occTuring / capTuring) * 100);
+    replyText = `📊 DELTA Engine Live Telemetry:\n• Turing Hall: ${occTuring}/${capTuring} pax (${pct}%)\n• Autopilot: ${db.autopilotEnabled ? 'ENGAGED ⚡' : 'MANUAL 🕹️'}\n• Gates Mesh: Active (Gate A / B / C)\n• System Uptime: ${Math.floor(process.uptime())}s`;
+  } else {
+    actionTaken = 'HELP_PROMPT';
+    replyText = `DELTA Engine Coordinator Bot. Available Commands:\n• GATE CLEAR - Reset door chokepoint alert\n• OVERFLOW OPEN - Unlock overflow lounge\n• STATUS - Live headcount & capacity\n• AUTOPILOT ON/OFF - Toggle zero-touch healing`;
+  }
+
+  // Record into live whatsappLogs feed
+  const logEntry = {
+    id: 'wa_in_' + Date.now(),
+    timestamp: timeStr,
+    recipientName: 'DELTA Central Command',
+    phoneNumber: senderNumber || '+91 Coordinator',
+    messageText: `[2-WAY INCOMING from ${volunteerName}]: "${rawBody}" ➔ REPLY: "${replyText.substring(0, 75)}..."`,
+    status: 'RECEIVED & EXECUTED',
+    agent: `📱 ${volunteerName} (Two-Way SMS/WA Action)`
+  };
+  if (!db.whatsappLogs) db.whatsappLogs = [];
+  db.whatsappLogs.unshift(logEntry);
+  if (db.whatsappLogs.length > 50) db.whatsappLogs.pop();
+
+  broadcast({
+    type: 'WHATSAPP_DISPATCH',
+    data: logEntry
+  });
+
+  // TwiML XML formatting if request originates from Twilio webhook
+  const isTwilio = req.headers['content-type']?.includes('urlencoded') || req.body.AccountSid || req.body.From;
+  if (isTwilio && !req.headers.accept?.includes('application/json')) {
+    res.setHeader('Content-Type', 'text/xml');
+    return res.send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Message>${replyText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</Message>
+</Response>`);
+  }
+
+  res.json({
+    success: true,
+    action: actionTaken,
+    sender: volunteerName,
+    messageReceived: rawBody,
+    reply: replyText
+  });
+});
+
+
 // Autonomous ElevenLabs Venue PA Voice Announcement Route
 app.post('/api/voice/announce', async (req, res) => {
   const { text, voiceId } = req.body || {};
-  const result = await generateVenueVoiceAnnouncement(text, voiceId);
+  const result = await generateVenueVoiceAnnouncement(text, voiceId || 'EXAVITQu4vr4xnSDxMaL');
   if (result.success) {
     broadcast({
       type: 'VOICE_ANNOUNCEMENT',
@@ -276,6 +410,11 @@ app.post('/api/cctv/gemini-scene-audit', async (req, res) => {
 // Cloud Integrations Diagnostic & Connection Status
 app.get('/api/system/integrations', (req, res) => {
   res.json({
+    supabase: {
+      connected: !!(process.env.SUPABASE_URL && (process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY)),
+      provider: 'Supabase PostgreSQL & Cloud Persistence',
+      projectUrl: process.env.SUPABASE_URL || 'https://frlrazzskbzmtlqrswjl.supabase.co'
+    },
     resend: {
       connected: !!process.env.RESEND_API_KEY,
       provider: 'Resend Cloud Mailer (DKIM/SPF)',
@@ -286,7 +425,7 @@ app.get('/api/system/integrations', (req, res) => {
       connected: !!process.env.ELEVENLABS_API_KEY,
       provider: 'ElevenLabs Studio Voice API',
       model: 'eleven_flash_v2_5',
-      voice: 'Daniel (Steady Broadcaster)'
+      voice: 'Nico Robin (Calm & Elegant)'
     },
     gemini: {
       connected: !!process.env.GEMINI_API_KEY,
@@ -385,6 +524,15 @@ app.post('/api/admin/action', (req, res) => {
     });
   } else if (action === 'clear_locks') {
     message = '[LOCK TABLE] Purged active transaction locks. Restored concurrency channels.';
+  } else if (action === 'toggle_autopilot') {
+    db.autopilotEnabled = !db.autopilotEnabled;
+    message = db.autopilotEnabled
+      ? '⚡ [TESLA AUTOPILOT] Autonomous Zero-Touch Self-Healing ENGAGED.'
+      : '🕹️ [MANUAL CO-PILOT] Autonomous Zero-Touch Paused. Human coordinator approval required.';
+    broadcast({
+      type: 'AUTOPILOT_STATUS_UPDATE',
+      data: { autopilotEnabled: db.autopilotEnabled, timestamp: time }
+    });
   }
 
   broadcast({
@@ -392,7 +540,22 @@ app.post('/api/admin/action', (req, res) => {
     data: { message, time, action }
   });
 
-  res.json({ success: true, message });
+  res.json({ success: true, message, autopilotEnabled: db.autopilotEnabled });
+});
+
+app.post('/api/admin/toggle-autopilot', (req, res) => {
+  const { enabled } = req.body || {};
+  db.autopilotEnabled = (enabled !== undefined) ? !!enabled : !db.autopilotEnabled;
+  const time = new Date().toLocaleTimeString();
+  broadcast({
+    type: 'AUTOPILOT_STATUS_UPDATE',
+    data: {
+      autopilotEnabled: db.autopilotEnabled,
+      timestamp: time
+    }
+  });
+  console.log(`[Tesla Autopilot] Mode toggled: ${db.autopilotEnabled ? 'ENGAGED (Zero-Touch Autonomous)' : 'MANUAL CO-PILOT'}`);
+  res.json({ success: true, autopilotEnabled: db.autopilotEnabled });
 });
 
 app.post('/api/admin/stress-test-500', async (req, res) => {
@@ -489,17 +652,27 @@ app.post('/api/reset', (req, res) => {
     if (db.graph.topics['topic-3']) db.graph.topics['topic-3'].interest = 180;
   }
 
-  broadcast({
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const resetPayload = {
     type: 'STATE_RESET',
     data: {
       graph: db.graph,
       schedule: db.schedule,
-      logs: ['[Agent OS] System state reset to default configurations.'],
-      notifications: []
+      activeDate: db.activeDate,
+      logs: ['[Agent OS] Operational Reset: Conference layout restored to default 3-talk baseline.'],
+      notifications: [{ topicId: null, message: '✨ Layout reset to normal status!', type: 'success' }],
+      swarmChat: [
+        { sender: 'Liaison Agent', avatar: '🗣️', text: 'System reset complete. Conference schedule restored to default baseline.', time: timeStr },
+        { sender: 'Scheduler Agent', avatar: '⏱️', text: 'All tracks aligned to initial timeline with zero conflicts.', time: timeStr },
+        { sender: 'Logistics Agent', avatar: '🏛️', text: 'Stage facilities and hall occupancy re-calibrated.', time: timeStr },
+        { sender: 'Marketing Agent', avatar: '📢', text: 'iCal sync feed synchronized with default conference timetable.', time: timeStr }
+      ]
     }
-  });
+  };
 
-  res.json({ success: true, graph: db.graph, schedule: db.schedule });
+  broadcast(resetPayload);
+
+  res.json({ success: true, graph: db.graph, schedule: db.schedule, activeDate: db.activeDate });
 });
 
 app.post('/api/simulate/delay', async (req, res) => {
@@ -537,22 +710,77 @@ app.post('/api/simulate/capacity', async (req, res) => {
   });
 });
 
-// Track running door passage counters
+// Track running door passage counters & Multi-Gate Mesh Fusion ledger
 let doorSensorTotalEntries = 0;
 let doorSensorTotalExits = 0;
 let doorSensorNetOccupancy = 0;
 
+if (!db.gatesMesh) {
+  db.gatesMesh = {
+    'gate-a': { id: 'gate-a', name: 'Gate A (Main Entrance)', entries: 0, exits: 0, net: 0, hallId: 'hall-1', lastUpdated: 'Online' },
+    'gate-b': { id: 'gate-b', name: 'Gate B (Emergency Egress)', entries: 0, exits: 0, net: 0, hallId: 'hall-1', lastUpdated: 'Online' },
+    'gate-c': { id: 'gate-c', name: 'Gate C (VIP / Speaker)', entries: 0, exits: 0, net: 0, hallId: 'hall-1', lastUpdated: 'Online' }
+  };
+}
+
+app.get('/api/sensors/doors/mesh', (req, res) => {
+  res.json({ success: true, gates: db.gatesMesh, netOccupancy: doorSensorNetOccupancy });
+});
+
 app.post('/api/sensors/door', async (req, res) => {
-  const { event, hallId, netOccupancy, entries, exits, dist1, dist2 } = req.body;
+  const { event, hallId, netOccupancy, entries, exits, dist1, dist2, gateId, gateName } = req.body;
   const targetHallId = hallId || 'hall-1';
-  const hall = db.graph.halls[targetHallId] || { name: 'Turing Auditorium', capacity: 150 };
+  const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
   const timeStr = new Date().toLocaleTimeString();
+
+  // Multi-Gate Mesh Tracking
+  const targetGateId = gateId || 'gate-a';
+  const targetGateName = gateName || (targetGateId === 'gate-b' ? 'Gate B (Emergency Egress)' : targetGateId === 'gate-c' ? 'Gate C (VIP Passage)' : 'Gate A (Main Entrance)');
+  if (!db.gatesMesh[targetGateId]) {
+    db.gatesMesh[targetGateId] = { id: targetGateId, name: targetGateName, entries: 0, exits: 0, net: 0, hallId: targetHallId, lastUpdated: timeStr };
+  }
+  const currentGate = db.gatesMesh[targetGateId];
+
+  // Emergency Barricade Pressure Release Pulse (Automated stampede prevention)
+  if (event === 'EMERGENCY_RELEASE' || req.body.action === 'EMERGENCY_RELEASE') {
+    const pressurePsi = parseFloat(req.body.pressurePsi) || 8.5;
+    currentGate.status = 'AUTOMATED_RELEASE_ACTIVE';
+    currentGate.pressurePsi = pressurePsi;
+    currentGate.lastUpdated = timeStr;
+
+    console.log(`[IoT Door Sensor] 🚨 AUTOMATED GATE RELEASE TRIGGERED at ${targetGateName} (${pressurePsi} PSI). Barricade latch released!`);
+
+    broadcast({
+      type: 'GATE_RELEASE_PULSE',
+      data: {
+        hallId: targetHallId,
+        hallName: hall.name,
+        gateId: targetGateId,
+        gateName: targetGateName,
+        pressurePsi,
+        reason: req.body.reason || 'Critical Barricade Pressure Overload (>8.5 PSI)',
+        timestamp: timeStr
+      }
+    });
+
+    return res.json({
+      success: true,
+      gateId: targetGateId,
+      status: 'EMERGENCY_RELEASE_ACTIVATED',
+      pressurePsi,
+      gatesMesh: db.gatesMesh
+    });
+  }
 
   // Every time the sensor glows / triggers, directly register an entry (decoupled from camera)
   if (event === 'DOOR_TRIGGER') {
     doorSensorTotalEntries++;
     doorSensorNetOccupancy++;
-    console.log(`[IoT Door Sensor] 💡 [SENSOR GLOW] Passage Registered (+1 Entry) -> Total Entries: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax (Dist: ${dist2 || dist1}mm)`);
+    currentGate.entries++;
+    currentGate.net++;
+    currentGate.lastUpdated = timeStr;
+
+    console.log(`[IoT Door Sensor] 💡 [${targetGateName}] Glow Passage Registered (+1 In) -> Total In: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax`);
 
     // Update db.cctvState
     if (db.cctvState && db.cctvState[targetHallId]) {
@@ -567,10 +795,24 @@ app.post('/api/sensors/door', async (req, res) => {
       data: {
         hallId: targetHallId,
         hallName: hall.name,
+        gateId: targetGateId,
+        gateName: targetGateName,
         dist1: dist1 || 0,
         dist2: dist2 || 0,
         entries: doorSensorTotalEntries,
         occupancy: doorSensorNetOccupancy,
+        timestamp: timeStr
+      }
+    });
+
+    broadcast({
+      type: 'GATE_MESH_UPDATE',
+      data: {
+        hallId: targetHallId,
+        gateId: targetGateId,
+        gateName: targetGateName,
+        gates: db.gatesMesh,
+        netOccupancy: doorSensorNetOccupancy,
         timestamp: timeStr
       }
     });
@@ -589,20 +831,25 @@ app.post('/api/sensors/door', async (req, res) => {
       }
     });
 
-    return res.json({ success: true, entries: doorSensorTotalEntries, occupancy: doorSensorNetOccupancy });
+    return res.json({ success: true, gateId: targetGateId, entries: doorSensorTotalEntries, occupancy: doorSensorNetOccupancy, gatesMesh: db.gatesMesh });
   }
 
   if (event === 'ENTRY') {
     doorSensorTotalEntries = (entries !== undefined && entries > 0) ? entries : (doorSensorTotalEntries + 1);
     doorSensorNetOccupancy = (netOccupancy !== undefined && netOccupancy > 0) ? netOccupancy : (doorSensorNetOccupancy + 1);
+    currentGate.entries++;
+    currentGate.net++;
   } else if (event === 'EXIT') {
     doorSensorTotalExits = (exits !== undefined && exits > 0) ? exits : (doorSensorTotalExits + 1);
     if (doorSensorNetOccupancy > 0) doorSensorNetOccupancy--;
+    currentGate.exits++;
+    if (currentGate.net > 0) currentGate.net--;
   }
+  currentGate.lastUpdated = timeStr;
 
   const occupancy = parseInt(netOccupancy, 10) || doorSensorNetOccupancy;
 
-  console.log(`[IoT Door Sensor] ${event}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries || doorSensorTotalEntries}, Out: ${exits || doorSensorTotalExits})`);
+  console.log(`[IoT Door Sensor] ${event} at ${targetGateName}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries || doorSensorTotalEntries}, Out: ${exits || doorSensorTotalExits})`);
 
   // Update db.cctvState
   if (db.cctvState && db.cctvState[targetHallId]) {
@@ -627,6 +874,18 @@ app.post('/api/sensors/door', async (req, res) => {
     }
   });
 
+  broadcast({
+    type: 'GATE_MESH_UPDATE',
+    data: {
+      hallId: targetHallId,
+      gateId: targetGateId,
+      gateName: targetGateName,
+      gates: db.gatesMesh,
+      netOccupancy: occupancy,
+      timestamp: timeStr
+    }
+  });
+
   // Check for capacity overshoot
   let healingReport = null;
   let surgeTriggered = false;
@@ -634,7 +893,7 @@ app.post('/api/sensors/door', async (req, res) => {
   if (occupancy > hall.capacity) {
     let activeTopicId = null;
     for (const slotId in db.schedule) {
-      if (db.schedule[slotId][targetHallId]) {
+      if (db.schedule[slotId] && db.schedule[slotId][targetHallId]) {
         activeTopicId = db.schedule[slotId][targetHallId];
         break;
       }
@@ -644,7 +903,7 @@ app.post('/api/sensors/door', async (req, res) => {
       surgeTriggered = true;
       const topic = db.graph.topics[activeTopicId];
       topic.interest = occupancy;
-      const eventDesc = `⚡ IoT Door Sensor: "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
+      const eventDesc = `⚡ IoT Door Sensor (${targetGateName}): "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
       healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
     }
   }
@@ -652,10 +911,12 @@ app.post('/api/sensors/door', async (req, res) => {
   res.json({
     success: true,
     hallId: targetHallId,
+    gateId: targetGateId,
     occupancy,
     capacity: hall.capacity,
     surgeTriggered,
-    healingReport
+    healingReport,
+    gatesMesh: db.gatesMesh
   });
 });
 
@@ -712,7 +973,13 @@ app.post('/api/sensors/face-passage', async (req, res) => {
 
   // Evaluate self-healing capacity breach
   if (occupancy > hall.capacity) {
-    const activeTopicId = db.schedule['slot-1'] ? db.schedule['slot-1'][targetHallId] : null;
+    let activeTopicId = null;
+    for (const slotId in db.schedule) {
+      if (db.schedule[slotId] && db.schedule[slotId][targetHallId]) {
+        activeTopicId = db.schedule[slotId][targetHallId];
+        break;
+      }
+    }
     if (activeTopicId && db.graph.topics[activeTopicId]) {
       const topic = db.graph.topics[activeTopicId];
       topic.interest = occupancy;
@@ -725,15 +992,148 @@ app.post('/api/sensors/face-passage', async (req, res) => {
   res.json({ success: true, passageData });
 });
 
-app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
-  const fileCheck = validateSlideFile(req.file);
-  if (!fileCheck.valid) {
-    return res.status(400).json({ error: fileCheck.error });
+// --- EPHEMERAL SPATIAL STORAGE (2-Hour Post-Event Retention per HackIndia Specifications) ---
+const ephemeralSpatialPlans = new Map();
+
+// Periodic cleaner: automatically purges expired room plans from memory
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, plan] of ephemeralSpatialPlans.entries()) {
+    if (plan.expiresAt && now > plan.expiresAt) {
+      ephemeralSpatialPlans.delete(id);
+      console.log(`[Ephemeral Storage] ⏱️ Auto-purged expired venue plan: "${id}" (2 hours post-event TTL reached)`);
+    }
   }
+}, 15 * 60 * 1000);
 
-  const fileName = escapeHtml(req.file.originalname);
-  const fileStr = req.file.buffer ? req.file.buffer.toString('utf-8') : '';
+app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
+  try {
+    const isRoomPlanRequest = req.body.documentType === 'ROOM_PLAN' || Boolean(req.body.width && req.body.length);
+    const fileCheck = validateSlideFile(req.file, isRoomPlanRequest);
+    if (!fileCheck.valid) {
+      return res.status(400).json({ success: false, error: fileCheck.error });
+    }
 
+    const fileName = req.file ? escapeHtml(req.file.originalname) : (req.body.hallName ? `${escapeHtml(req.body.hallName)}_calibrated_plan.pdf` : 'venue_room_plan.pdf');
+    const fileStr = (req.file && req.file.buffer) ? req.file.buffer.toString('utf-8') : '';
+    const isImage = req.file ? (req.file.mimetype.startsWith('image/') || /\.(png|jpe?g|webp|svg)$/i.test(fileName)) : false;
+    const documentType = req.body.documentType || (isImage || fileName.toLowerCase().match(/(plan|floor|blueprint|room|layout|venue|hall)/) ? 'ROOM_PLAN' : 'SLIDES');
+
+    // --- BRANCH 1: VENUE ROOM PLAN / BLUEPRINT (3D Spatial Model & Capacity Calculation) ---
+    if (documentType === 'ROOM_PLAN') {
+      const hallId = req.body.hallId || 'hall-1';
+      const hallName = escapeHtml(req.body.hallName || (db.graph.halls[hallId] ? db.graph.halls[hallId].name : 'Turing Hall'));
+      const width = parseFloat(req.body.width) || 18;
+      const length = parseFloat(req.body.length) || 24;
+      const height = parseFloat(req.body.height) || 5.5;
+      const areaM2 = Math.round(width * length);
+      const doorsCount = parseInt(req.body.doorsCount, 10) || 2;
+      const ephemeralHours = parseFloat(req.body.ephemeralHours) || 2;
+      
+      // Safety standard calculations
+      const highDensityCap = Math.round(areaM2 / 1.4);
+      const safeEgressCap = Math.round(areaM2 / 1.8);
+      const standingCap = Math.round(areaM2 / 0.75);
+      const capacity = parseInt(req.body.calculatedCapacity, 10) || safeEgressCap || 240;
+
+      const planId = `plan_${hallId}_${Date.now()}`;
+      const expiresAt = Date.now() + ephemeralHours * 3600 * 1000;
+
+      const spatialModel = {
+        planId,
+        hallId,
+        hallName,
+        fileName,
+        fileSize: req.file ? req.file.size : 12400,
+        mimeType: req.file ? req.file.mimetype : 'application/pdf',
+        dimensions: { width, length, height, areaM2 },
+        capacityMetrics: {
+          capacity,
+          safeEgressCap,
+          highDensityCap,
+          standingCap,
+          egressFlowRatePaxPerMin: doorsCount * 60,
+          doorwayClearWidthM: doorsCount * 1.2
+        },
+        doorsCount,
+        doors: [
+          { id: 'gate-a', name: 'Entrance Gate A', x: Math.round(width * 0.15), y: 0, type: 'ENTRY', sensorTripwire: true },
+          { id: 'gate-b', name: 'Emergency Exit B', x: Math.round(width * 0.85), y: length, type: 'EXIT', sensorTripwire: false }
+        ],
+        stage: {
+          x: Math.round(width * 0.5),
+          y: Math.round(length * 0.12),
+          width: Math.round(width * 0.45),
+          length: Math.round(length * 0.18),
+          elevatedM: 0.85
+        },
+        ephemeralStorage: {
+          active: true,
+          expiresAt,
+          ephemeralHours,
+          retentionLabel: `${ephemeralHours} hours post-event`
+        },
+        updatedAt: new Date().toLocaleTimeString()
+      };
+
+      // Update Hall in graph database
+      if (!db.graph.halls[hallId]) {
+        db.graph.halls[hallId] = { id: hallId, name: hallName, capacity };
+      } else {
+        db.graph.halls[hallId].name = hallName;
+        db.graph.halls[hallId].capacity = capacity;
+      }
+      db.graph.halls[hallId].spatialModel = spatialModel;
+
+      // Cache image buffer ephemerally with expiration
+      ephemeralSpatialPlans.set(planId, {
+        ...spatialModel,
+        base64: (req.file && req.file.buffer) ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : null
+      });
+
+      // Broadcast over WebSocket to all connected clients
+      broadcast({
+        type: 'VENUE_SPATIAL_MODEL_UPDATE',
+        data: {
+          hallId,
+          hallName,
+          capacity,
+          spatialModel
+        }
+      });
+
+      const eventDesc = `🏛️ Room Blueprint Ingested: "${hallName}" mapped (${width}m x ${length}m = ${areaM2}m²). Safe capacity calibrated to ${capacity} pax (${doorsCount} doors). Ephemeral TTL: ${ephemeralHours}h post-event.`;
+      
+      // Evaluate if current live occupancy in this hall exceeds new capacity limit
+      const currentOccupancy = db.cctvState ? (db.cctvState.currentOccupancy || 0) : 0;
+      let healingReport = { logs: [], notifications: [] };
+      if (currentOccupancy > capacity) {
+        try {
+          healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+        } catch (healErr) {
+          console.warn('[Spatial Self-Healing Agent Guard]', healErr.message);
+        }
+      } else {
+        broadcast({
+          type: 'SYSTEM_LOG',
+          data: { text: eventDesc, type: 'system', timestamp: new Date().toLocaleTimeString() }
+        });
+      }
+
+      return res.json({
+        success: true,
+        documentType: 'ROOM_PLAN',
+        hall: db.graph.halls[hallId],
+        spatialModel,
+        calculatedCapacity: capacity,
+        ephemeralExpiresAt: new Date(expiresAt).toLocaleTimeString(),
+        scheduleMessage: `Venue hall "${hallName}" successfully calibrated from blueprint. 3D spatial room model active with capacity of ${capacity} pax.`,
+        logs: healingReport.logs || [eventDesc],
+        notifications: healingReport.notifications || []
+      });
+    }
+
+  // --- BRANCH 2: PRESENTATION SLIDES / SESSION DOCUMENT ---
   // Real PDF / Document Text Stream Extraction
   let extractedTitle = '';
   let extractedSpeakerId = 'speaker-1';
@@ -767,59 +1167,137 @@ app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
     extractedSummary = `Scanned PDF text buffer (${req.file.size} bytes). Extracted semantic structures and re-wove event database graphs.`;
   }
 
+  // Support user-edited inputs from Review & Edit modal
+  const finalTitle = req.body.customTitle ? escapeHtml(req.body.customTitle) : extractedTitle;
+  const finalSpeakerId = req.body.customSpeakerId || extractedSpeakerId;
+  const finalSummary = req.body.customSummary ? escapeHtml(req.body.customSummary) : extractedSummary;
+  let finalTags = extractedTags;
+  if (req.body.customTags) {
+    if (Array.isArray(req.body.customTags)) {
+      finalTags = req.body.customTags.map(t => escapeHtml(String(t).replace(/^#/, '').trim())).filter(Boolean);
+    } else if (typeof req.body.customTags === 'string') {
+      finalTags = req.body.customTags.split(',').map(t => escapeHtml(t.replace(/^#/, '').trim())).filter(Boolean);
+    }
+  }
+
   const newTopicId = `topic-${Date.now()}`;
   const newTopic = {
     id: newTopicId,
-    title: extractedTitle,
-    speakerId: extractedSpeakerId,
-    tags: extractedTags,
+    title: finalTitle,
+    speakerId: finalSpeakerId,
+    tags: finalTags,
     interest: Math.floor(Math.random() * 90) + 110,
-    duration: 60,
+    duration: parseInt(req.body.customDuration, 10) || 60,
     slidesUploaded: true,
-    summary: extractedSummary
+    summary: finalSummary
   };
 
   db.graph.topics[newTopicId] = newTopic;
-  db.graph.edges.push({ source: newTopicId, target: extractedSpeakerId, type: 'SPEAKER_OF' });
+  db.graph.edges.push({ source: newTopicId, target: finalSpeakerId, type: 'SPEAKER_OF' });
 
-  // Guaranteed Schedule Matrix Insertion (If grid is full, replace/shift slot so event ALWAYS appears in grid)
-  let targetSlotId = null;
-  let targetHallId = null;
+  // Guaranteed Schedule Matrix Insertion
+  let targetSlotId = req.body.targetSlotId || null;
+  let targetHallId = req.body.targetHallId || null;
 
-  for (const slotId in db.schedule) {
-    for (const hallId in db.schedule[slotId]) {
-      if (!db.schedule[slotId][hallId]) {
-        targetSlotId = slotId;
-        targetHallId = hallId;
-        break;
+  if (!targetSlotId || !targetHallId) {
+    for (const slotId in db.schedule) {
+      for (const hallId in db.schedule[slotId]) {
+        if (!db.schedule[slotId][hallId]) {
+          targetSlotId = targetSlotId || slotId;
+          targetHallId = targetHallId || hallId;
+          break;
+        }
       }
+      if (targetSlotId && targetHallId) break;
     }
-    if (targetSlotId) break;
   }
 
-  // If all cells were occupied, force place into slot-4/hall-2 so it is immediately visible in the Live Schedule Matrix!
-  if (!targetSlotId) {
-    targetSlotId = 'slot-4';
-    targetHallId = 'hall-2';
-  }
+  // Fallback slot if all cells were occupied
+  if (!targetSlotId) targetSlotId = 'slot-4';
+  if (!targetHallId) targetHallId = 'hall-2';
 
   db.schedule[targetSlotId][targetHallId] = newTopicId;
   db.syncScheduleEdges();
 
-  const speakerName = db.graph.speakers[extractedSpeakerId].name;
-  const eventDesc = `Ingestion: Scanned PDF "${fileName}". Scheduled "${extractedTitle}" by ${speakerName} in ${db.graph.halls[targetHallId].name} (${db.graph.slots[targetSlotId].time}).`;
+  if (!db.graph.speakers[finalSpeakerId]) {
+    db.graph.speakers[finalSpeakerId] = {
+      id: finalSpeakerId,
+      name: req.body.customSpeakerName || 'Featured Speaker',
+      role: 'Speaker',
+      bio: 'Event Presenter',
+      avatar: '🎙️',
+      delay: 0
+    };
+  }
 
-  const healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+  const speakerName = db.graph.speakers[finalSpeakerId].name;
+  const hallName = db.graph.halls[targetHallId] ? db.graph.halls[targetHallId].name : 'Main Hall';
+  const slotTime = db.graph.slots[targetSlotId] ? db.graph.slots[targetSlotId].time : '11:00 AM';
+  const eventDesc = `Ingestion: Scanned "${fileName}". Scheduled "${finalTitle}" by ${speakerName} in ${hallName} (${slotTime}).`;
 
+  let healingReport = { logs: [eventDesc], notifications: [] };
+  try {
+    healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+  } catch (err) {
+    console.warn('[Ingestion Self-Healing Alert]', err.message);
+  }
+
+    return res.json({
+      success: true,
+      documentType: 'SLIDES',
+      topic: newTopic,
+      speaker: db.graph.speakers[finalSpeakerId],
+      socialCopy: `🚀 Just ingested slides for "${finalTitle}" by ${speakerName}! Scheduled at ${slotTime} in ${hallName}. #${finalTags.join(' #')}`,
+      scheduleMessage: `Event successfully scanned from "${fileName}" and placed into Live Schedule Matrix (${hallName} @ ${slotTime}).`,
+      logs: healingReport.logs || [eventDesc],
+      notifications: healingReport.notifications || []
+    });
+  } catch (outerErr) {
+    console.error('[Upload Pipeline Ingestion Error]', outerErr);
+    return res.status(500).json({
+      success: false,
+      error: `Server processing error: ${outerErr.message}`
+    });
+  }
+});
+
+// Dedicated alias endpoint for Room Plan blueprints
+app.post('/api/upload-room-plan', upload.single('slides'), async (req, res, next) => {
+  req.body.documentType = 'ROOM_PLAN';
+  return app._router.handle(req, res, next);
+});
+
+// Spatial Room Model Query Endpoints
+app.get('/api/spatial/room-models', (req, res) => {
+  const models = {};
+  for (const hallId in db.graph.halls) {
+    models[hallId] = db.graph.halls[hallId].spatialModel || {
+      hallId,
+      hallName: db.graph.halls[hallId].name,
+      capacity: db.graph.halls[hallId].capacity,
+      dimensions: { width: 18, length: 24, height: 5.5, areaM2: 432 },
+      doorsCount: 2
+    };
+  }
+  res.json({ success: true, models });
+});
+
+app.get('/api/spatial/room-model/:hallId', (req, res) => {
+  const hall = db.graph.halls[req.params.hallId];
+  if (!hall) return res.status(404).json({ error: 'Hall not found' });
   res.json({
     success: true,
-    topic: newTopic,
-    speaker: db.graph.speakers[extractedSpeakerId],
-    socialCopy: `🚀 Just ingested PDF slides for "${extractedTitle}" by ${speakerName}! Scheduled at ${db.graph.slots[targetSlotId].time} in ${db.graph.halls[targetHallId].name}. #${extractedTags.join(' #')}`,
-    scheduleMessage: `Event successfully scanned from PDF and placed into Live Schedule Matrix (${db.graph.halls[targetHallId].name} @ ${db.graph.slots[targetSlotId].time}).`,
-    logs: healingReport.logs,
-    notifications: healingReport.notifications
+    hallId: hall.id,
+    hallName: hall.name,
+    capacity: hall.capacity,
+    spatialModel: hall.spatialModel || null
   });
+});
+
+app.get('/api/spatial/plan-preview/:planId', (req, res) => {
+  const plan = ephemeralSpatialPlans.get(req.params.planId);
+  if (!plan) return res.status(404).json({ error: 'Plan preview not found or expired' });
+  res.json({ success: true, plan });
 });
 
 app.post('/api/schedule/move', async (req, res) => {
@@ -840,7 +1318,11 @@ app.post('/api/schedule/move', async (req, res) => {
     db.schedule[sourceSlotId][sourceHallId] = null;
   }
 
-  const occupiedTopicId = db.schedule[targetSlotId][targetHallId];
+  if (!db.schedule[targetSlotId]) {
+    db.schedule[targetSlotId] = {};
+  }
+
+  const occupiedTopicId = db.schedule[targetSlotId][targetHallId] || null;
   if (occupiedTopicId && sourceSlotId && sourceHallId) {
     db.schedule[sourceSlotId][sourceHallId] = occupiedTopicId;
   }
@@ -1157,21 +1639,6 @@ app.post('/api/simulate/sentiment', (req, res) => {
   res.json({ success: true, logs, notifications, swarmChat });
 });
 
-app.post('/api/reset', (req, res) => {
-  db.reset();
-  const updatePayload = {
-    type: 'SCHEDULE_HEALED',
-    data: {
-      graph: db.graph,
-      schedule: db.schedule,
-      logs: ['[SYSTEM] Operational Reset: Conference layout restored to default 3-talk schedule.'],
-      notifications: [{ topicId: null, message: '✨ Layout reset to normal status!', type: 'success' }],
-      swarmChat: [{ sender: 'Liaison Agent', avatar: '🗣️', text: 'System reset complete. Conference schedule restored to default baseline.', time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) }]
-    }
-  };
-  broadcast(updatePayload);
-  res.json({ success: true, schedule: db.schedule, graph: db.graph });
-});
 
 app.post('/api/sim/mass-disruption', async (req, res) => {
   const currentSched = db.schedule;

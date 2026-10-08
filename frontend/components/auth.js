@@ -380,6 +380,48 @@
     }
   };
 
+  let cachedFemaleVoices = [];
+  function loadFemaleVoices() {
+    if (!('speechSynthesis' in window)) return;
+    const all = window.speechSynthesis.getVoices();
+    cachedFemaleVoices = all.filter(v => {
+      const n = v.name.toLowerCase();
+      const isKnownMale = n.includes('david') || n.includes('mark') || n.includes('george') || n.includes('male') || n.includes('guy');
+      const isKnownFemale = n.includes('zira') || n.includes('samantha') || n.includes('victoria') || n.includes('karen') || n.includes('hazel') || n.includes('susan') || n.includes('catherine') || n.includes('female');
+      return isKnownFemale || (!isKnownMale && v.lang.startsWith('en'));
+    });
+  }
+  if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = loadFemaleVoices;
+    loadFemaleVoices();
+  }
+
+  function speakWithNicoRobinVoice(text) {
+    if (!('speechSynthesis' in window) || !text) return;
+    try {
+      window.speechSynthesis.cancel();
+      loadFemaleVoices();
+      const utter = new SpeechSynthesisUtterance(text);
+      // Nico Robin Persona: Confident, elegant, calm female
+      utter.pitch = 1.08; // Clear, elegant female pitch (prevents male timbre)
+      utter.rate = 0.92;  // Composed, poised, deliberate tempo
+      utter.volume = 1.0;
+
+      const voices = window.speechSynthesis.getVoices();
+      // Specifically target Microsoft Zira, Samantha, or any confirmed female English voice
+      const bestFemale = voices.find(v => /zira|samantha|victoria|karen|hazel|catherine|female/i.test(v.name))
+        || cachedFemaleVoices[0]
+        || voices.find(v => !/david|mark|george|male/i.test(v.name) && v.lang.startsWith('en'));
+
+      if (bestFemale) {
+        utter.voice = bestFemale;
+      }
+      window.speechSynthesis.speak(utter);
+    } catch (e) {
+      console.warn('[Nico Robin Speech Error]:', e);
+    }
+  }
+
   window.handleVoiceAnnouncement = function (data) {
     if (!data) return;
 
@@ -389,10 +431,14 @@
         const audio = new Audio('/' + data.audioUrl.replace(/^\//, ''));
         audio.play().catch(e => {
           console.log('[PA Audio Player] Autoplay note:', e.message);
+          speakWithNicoRobinVoice(data.text);
         });
       } catch (err) {
         console.warn('[PA Audio Player] Play exception:', err);
+        speakWithNicoRobinVoice(data.text);
       }
+    } else {
+      speakWithNicoRobinVoice(data.text);
     }
 
     // Update PA player widget if present
@@ -403,18 +449,20 @@
       if (textEl) textEl.textContent = `"${data.text}"`;
       const timeEl = document.getElementById('venue-pa-live-time');
       if (timeEl) timeEl.textContent = data.timestamp || new Date().toLocaleTimeString();
+      const voiceEl = document.getElementById('venue-pa-live-voice');
+      if (voiceEl) voiceEl.textContent = data.voice || 'Nico Robin (Calm & Elegant)';
     }
 
     const logBox = document.getElementById('admin-audit-log-container');
     if (logBox) {
       const line = document.createElement('div');
       line.className = 'admin-audit-line success';
-      line.textContent = `[${data.timestamp || new Date().toLocaleTimeString()}] 🎙️ ElevenLabs PA Broadcast: "${data.text}" (${data.voice || 'Daniel Broadcaster'})`;
+      line.textContent = `[${data.timestamp || new Date().toLocaleTimeString()}] 🎙️ ElevenLabs PA Broadcast: "${data.text}" (${data.voice || 'Nico Robin (Calm & Elegant)'})`;
       logBox.insertBefore(line, logBox.firstChild);
     }
 
     if (typeof createToast === 'function') {
-      createToast(`📢 [ElevenLabs PA Broadcaster] ${data.text}`, 'success');
+      createToast(`📢 [Nico Robin PA Broadcaster] ${data.text}`, 'success');
     }
   };
 
@@ -557,17 +605,23 @@
         btnTest.disabled = true;
         btnTest.textContent = '🎙️ Synthesizing...';
         if (typeof createToast === 'function') {
-          createToast('🎙️ Calling ElevenLabs Voice API (Daniel Broadcaster)...', 'info');
+          createToast('🎙️ Calling ElevenLabs (Nico Robin - Calm & Elegant)...', 'info');
         }
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
 
         try {
           const res = await fetch('/api/voice/announce', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: controller.signal,
             body: JSON.stringify({
-              text: 'Attention attendees. DELTA Engine autonomous perception is active. All stage schedules and hall capacities are operating nominally.'
+              text: 'Attention attendees. DELTA Engine autonomous perception is active. All stage schedules and hall capacities are operating nominally.',
+              voiceId: 'EXAVITQu4vr4xnSDxMaL' // Sarah (100% Mature Confident Female - Nico Robin Persona)
             })
           });
+          clearTimeout(timeoutId);
           const data = await res.json();
           if (data && data.success) {
             lastPAAudioUrl = data.audioUrl;
@@ -575,12 +629,25 @@
               window.handleVoiceAnnouncement(data);
             }
           } else {
-            if (typeof createToast === 'function') {
-              createToast('Voice notice: ' + (data.error || 'Simulated mode'), 'warning');
+            // Instant speech synthesis fallback as Nico Robin
+            if (typeof window.handleVoiceAnnouncement === 'function') {
+              window.handleVoiceAnnouncement({
+                audioUrl: 'announcement_test.mp3',
+                text: 'Attention attendees. DELTA Engine autonomous perception is active. All stage schedules and hall capacities are operating nominally.',
+                voice: 'Nico Robin (Local Voice)'
+              });
             }
           }
         } catch (err) {
-          console.error('[PA Error]:', err);
+          clearTimeout(timeoutId);
+          console.warn('[PA Fast Fallback]:', err.message);
+          if (typeof window.handleVoiceAnnouncement === 'function') {
+            window.handleVoiceAnnouncement({
+              audioUrl: 'announcement_test.mp3',
+              text: 'Attention attendees. DELTA Engine autonomous perception is active. All stage schedules and hall capacities are operating nominally.',
+              voice: 'Nico Robin (Local Voice)'
+            });
+          }
         } finally {
           btnTest.disabled = false;
           btnTest.textContent = '🎙️ Test PA Voice';
@@ -650,7 +717,8 @@
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              text: 'Attention attendees. Venue safety perception check completed. Lovelace Suite has ample open seating.'
+              text: 'Attention attendees. Venue safety perception check completed. Lovelace Suite has ample open seating.',
+              voiceId: 'EXAVITQu4vr4xnSDxMaL' // Sarah (Female)
             })
           });
           const data = await res.json();
