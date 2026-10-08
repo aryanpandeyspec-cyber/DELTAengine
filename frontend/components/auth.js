@@ -237,6 +237,8 @@
     renderFeaturedVolunteers();
     bindAdminActionButtons();
     bindLimiterToggles();
+    bindVoicePAControls();
+    bindCloudIntegrationsControls();
   });
 
   function renderFeaturedVolunteers() {
@@ -374,7 +376,45 @@
       logBox.insertBefore(line, logBox.firstChild);
     }
     if (typeof createToast === 'function') {
-      createToast(`📧 [Supabase AI Mailer] Composed & sent official notice to personnel: "${data.topicTitle}"`, 'info');
+      createToast(`📧 [Resend / Supabase Mailer] Composed & sent official notice to personnel: "${data.topicTitle}"`, 'info');
+    }
+  };
+
+  window.handleVoiceAnnouncement = function (data) {
+    if (!data) return;
+
+    // Play announcement audio in browser
+    if (data.audioUrl) {
+      try {
+        const audio = new Audio('/' + data.audioUrl.replace(/^\//, ''));
+        audio.play().catch(e => {
+          console.log('[PA Audio Player] Autoplay note:', e.message);
+        });
+      } catch (err) {
+        console.warn('[PA Audio Player] Play exception:', err);
+      }
+    }
+
+    // Update PA player widget if present
+    const paBanner = document.getElementById('venue-pa-live-banner');
+    if (paBanner) {
+      paBanner.style.display = 'flex';
+      const textEl = document.getElementById('venue-pa-live-text');
+      if (textEl) textEl.textContent = `"${data.text}"`;
+      const timeEl = document.getElementById('venue-pa-live-time');
+      if (timeEl) timeEl.textContent = data.timestamp || new Date().toLocaleTimeString();
+    }
+
+    const logBox = document.getElementById('admin-audit-log-container');
+    if (logBox) {
+      const line = document.createElement('div');
+      line.className = 'admin-audit-line success';
+      line.textContent = `[${data.timestamp || new Date().toLocaleTimeString()}] 🎙️ ElevenLabs PA Broadcast: "${data.text}" (${data.voice || 'Daniel Broadcaster'})`;
+      logBox.insertBefore(line, logBox.firstChild);
+    }
+
+    if (typeof createToast === 'function') {
+      createToast(`📢 [ElevenLabs PA Broadcaster] ${data.text}`, 'success');
     }
   };
 
@@ -504,4 +544,165 @@
       adminClientStartTime = Date.now();
     }
   };
+
+  let lastPAAudioUrl = null;
+
+  function bindVoicePAControls() {
+    const btnTest = document.getElementById('btn-trigger-pa-test');
+    const btnReplay = document.getElementById('btn-replay-pa-audio');
+    const btnDismiss = document.getElementById('btn-dismiss-pa-banner');
+
+    if (btnTest) {
+      btnTest.addEventListener('click', async () => {
+        btnTest.disabled = true;
+        btnTest.textContent = '🎙️ Synthesizing...';
+        if (typeof createToast === 'function') {
+          createToast('🎙️ Calling ElevenLabs Voice API (Daniel Broadcaster)...', 'info');
+        }
+
+        try {
+          const res = await fetch('/api/voice/announce', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: 'Attention attendees. DELTA Engine autonomous perception is active. All stage schedules and hall capacities are operating nominally.'
+            })
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            lastPAAudioUrl = data.audioUrl;
+            if (typeof window.handleVoiceAnnouncement === 'function') {
+              window.handleVoiceAnnouncement(data);
+            }
+          } else {
+            if (typeof createToast === 'function') {
+              createToast('Voice notice: ' + (data.error || 'Simulated mode'), 'warning');
+            }
+          }
+        } catch (err) {
+          console.error('[PA Error]:', err);
+        } finally {
+          btnTest.disabled = false;
+          btnTest.textContent = '🎙️ Test PA Voice';
+        }
+      });
+    }
+
+    if (btnReplay) {
+      btnReplay.addEventListener('click', () => {
+        const audioUrl = lastPAAudioUrl || 'announcement_test.mp3';
+        const audio = new Audio('/' + audioUrl.replace(/^\//, ''));
+        audio.play().catch(e => console.log('Replay note:', e));
+      });
+    }
+
+    if (btnDismiss) {
+      btnDismiss.addEventListener('click', () => {
+        const banner = document.getElementById('venue-pa-live-banner');
+        if (banner) banner.style.display = 'none';
+      });
+    }
+  }
+
+  function bindCloudIntegrationsControls() {
+    const btnResend = document.getElementById('btn-admin-test-resend');
+    const btnEleven = document.getElementById('btn-admin-test-elevenlabs');
+    const btnTwilio = document.getElementById('btn-admin-test-twilio');
+
+    if (btnResend) {
+      btnResend.addEventListener('click', async () => {
+        btnResend.disabled = true;
+        btnResend.textContent = '📧 Sending...';
+        try {
+          const res = await fetch('/api/notify/email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              topicTitle: 'Keynote Session: Autonomous AI Swarms',
+              speakerName: 'Aryan Pandey (Lead Coordinator)',
+              oldVenue: 'Turing Hall',
+              newVenue: 'Lovelace Suite',
+              timeSlot: '02:00 PM - 03:00 PM',
+              reason: 'Super Admin manual dispatch test via Resend API'
+            })
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            if (typeof createToast === 'function') {
+              createToast(`🚀 Real email sent via Resend API to aryan.pandey777hyd@gmail.com!`, 'success');
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          btnResend.disabled = false;
+          btnResend.textContent = '🚀 Test Email Dispatch';
+        }
+      });
+    }
+
+    if (btnEleven) {
+      btnEleven.addEventListener('click', async () => {
+        btnEleven.disabled = true;
+        btnEleven.textContent = '🎙️ Synthesizing...';
+        try {
+          const res = await fetch('/api/voice/announce', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: 'Attention attendees. Venue safety perception check completed. Lovelace Suite has ample open seating.'
+            })
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            lastPAAudioUrl = data.audioUrl;
+            if (typeof window.handleVoiceAnnouncement === 'function') {
+              window.handleVoiceAnnouncement(data);
+            }
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          btnEleven.disabled = false;
+          btnEleven.textContent = '🔊 Test PA Announcement';
+        }
+      });
+    }
+
+    // Autonomous Tesla-style Live Occlusion Guard (Updates automatically from WebSocket broadcast)
+    window.handleGeminiOcclusionAlert = function (data) {
+      if (!data) return;
+      const summaryEl = document.getElementById('gemini-audit-summary');
+      const bottleneckEl = document.getElementById('gemini-audit-bottleneck');
+      const scriptEl = document.getElementById('gemini-audit-script');
+      const ratingBox = document.getElementById('gemini-audit-rating-box');
+
+      if (summaryEl) {
+        summaryEl.textContent = `🚨 [${data.time || 'Live'}] Autonomous Vision in ${data.hall}: ${data.count} attendees detected (${data.occluded || 0} occluded behind pillars). Self-healing dispatched!`;
+      }
+      if (bottleneckEl && data.observation) {
+        bottleneckEl.textContent = data.observation;
+      }
+      if (scriptEl && data.recommendation) {
+        scriptEl.textContent = data.recommendation;
+      }
+      if (ratingBox) {
+        ratingBox.innerHTML = `
+          <span class="gemini-rating-badge rating-critical" style="font-size:0.7rem; font-weight:800; padding:2px 8px; border-radius:4px; background:#fee2e2; color:#b91c1c; border:1px solid #fca5a5;">
+            SURGE VERIFIED • SELF-HEALING ACTIVE
+          </span>
+        `;
+      }
+    };
+
+    if (btnTwilio) {
+      btnTwilio.addEventListener('click', () => {
+        triggerWhatsAppNotification(
+          'Aryan Pandey (Lead Coordinator)',
+          '+91 91542 76178',
+          '⚠️ Operational update from DELTA Engine Central AV desk: Venue crowd nominal.'
+        );
+      });
+    }
+  }
 })();

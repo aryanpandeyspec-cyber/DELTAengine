@@ -1,5 +1,6 @@
 const { generateGroqAgentSwarmDialogue } = require('./agentSwarm');
 const { autoDispatchSelfHealingEmail } = require('./supabaseEmailIntegrator');
+const { generateVenueVoiceAnnouncement } = require('./voiceAnnouncer');
 
 async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}) {
   const logs = [];
@@ -147,6 +148,17 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
       timeSlot: '11:00 AM - 12:00 PM',
       reason: firstNotif.message
     }, db, broadcast);
+
+    // AUTONOMOUS VENUE PA VOICE ANNOUNCEMENT VIA ELEVENLABS
+    const paScript = `Attention attendees. Autonomous schedule update: ${topicTitle} is now scheduled in Lovelace Suite to ensure safe venue capacity. Please follow digital hall signage.`;
+    generateVenueVoiceAnnouncement(paScript).then(voiceRes => {
+      if (voiceRes && voiceRes.success && typeof broadcast === 'function') {
+        broadcast({
+          type: 'VOICE_ANNOUNCEMENT',
+          data: voiceRes
+        });
+      }
+    }).catch(err => console.warn('[SelfHealing Voice Notice]:', err.message));
   }
 
   const conflictLog = logs.find(l => l.includes('[CONFLICT]') || l.includes('exceeds') || l.includes('Capacity'));

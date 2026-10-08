@@ -217,6 +217,12 @@ function initWebSockets() {
         }
         break;
 
+      case 'VOICE_ANNOUNCEMENT':
+        if (typeof window.handleVoiceAnnouncement === 'function') {
+          window.handleVoiceAnnouncement(payload.data);
+        }
+        break;
+
       case 'ADMIN_AUDIT':
         const auditBox = document.getElementById('admin-audit-log-container');
         if (auditBox) {
@@ -261,6 +267,16 @@ function initWebSockets() {
       case 'ROOM_OCCUPANCY_UPDATE':
         if (typeof window.handleRoomOccupancyUpdate === 'function') {
           window.handleRoomOccupancyUpdate(payload.data);
+        }
+        break;
+
+      case 'GEMINI_OCCLUSION_ALERT':
+        if (typeof window.handleGeminiOcclusionAlert === 'function') {
+          window.handleGeminiOcclusionAlert(payload.data);
+        }
+        if (typeof createToast === 'function') {
+          const occText = (payload.data && payload.data.occluded > 0) ? ` (${payload.data.occluded} occluded behind pillars)` : '';
+          createToast(`🤖 Autonomous Vision: ${payload.data.hall || 'Venue'} verified at ${payload.data.count || 0} Pax${occText}. Self-healing active!`, 'info');
         }
         break;
     }

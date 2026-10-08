@@ -68,6 +68,9 @@
             style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
             title="Open CCTV Room Density Perception HUD">📹 CCTV Density HUD <span
               class="cctv-live-dot"></span></button>
+          <button id="btn-trigger-pa-test" class="btn btn-sm btn-yellow"
+            style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
+            title="Test ElevenLabs Voice PA Broadcast">🎙️ Test PA Voice</button>
           <button id="btn-sound-toggle" class="btn btn-sm btn-white" style="font-weight:700;"
             title="Toggle Synthesized Audio Feedback">🔊 SFX: ON</button>
           <button id="btn-shortcuts-modal" class="btn btn-sm btn-white" style="font-weight:700;"
@@ -91,6 +94,37 @@
         <p class="subtitle">The Self-Healing & Agentic Conference Coordinator</p>
       </div>
     </header>
+
+    <!-- AUTONOMOUS VENUE PA VOICE BROADCASTER BANNER -->
+    <div id="venue-pa-live-banner" class="venue-pa-live-banner" style="display:none;">
+      <div class="venue-pa-left">
+        <div class="venue-pa-icon-box">🎙️</div>
+        <div>
+          <div class="venue-pa-title">
+            ELEVENLABS AUTONOMOUS VENUE PA SYSTEM
+            <span class="audio-equalizer">
+              <span class="audio-bar"></span>
+              <span class="audio-bar"></span>
+              <span class="audio-bar"></span>
+              <span class="audio-bar"></span>
+              <span class="audio-bar"></span>
+            </span>
+          </div>
+          <div id="venue-pa-live-text" class="venue-pa-text">"Attention attendees. Autonomous perception system active."</div>
+          <div style="font-size:0.75rem; color:#c7d2fe; margin-top:2px;">
+            Voice: <span style="font-weight:800; color:#fff;">Daniel (Broadcaster)</span> • Broadcasted: <span id="venue-pa-live-time">Live</span>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button id="btn-replay-pa-audio" class="btn btn-sm btn-white" style="font-weight:800; border:2px solid #fff;">
+          🔊 Replay Audio
+        </button>
+        <button id="btn-dismiss-pa-banner" class="btn btn-sm btn-white" style="font-weight:800; border:2px solid #fff;">
+          ✕
+        </button>
+      </div>
+    </div>
 
     <!-- VOLUNTEER & COORDINATOR REAL-TIME EMERGENCY ALERT BANNER -->
     <div id="volunteer-alert-banner" class="volunteer-alert-banner hidden">
@@ -127,6 +161,9 @@
             <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
             <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
             <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
+            <option value="hall-kumbh" data-capacity="1200" data-name="Kumbh Mela Sector A (Ghat)">🕉️ Kumbh Mela Sector A (1,200)</option>
+            <option value="hall-rally" data-capacity="2500" data-name="Mega Election Rally Grounds">🚩 Mega Election Rally (2,500)</option>
+            <option value="hall-stadium" data-capacity="5000" data-name="Olympic Stadium Arena">🏟️ Stadium Arena (5,000)</option>
             <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
           </select>
           <select id="cctv-device-select" class="cctv-select">
@@ -134,6 +171,10 @@
           </select>
           <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
           <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
+          <button id="btn-cctv-crowd-mode" class="btn btn-sm btn-white btn-cctv-crowd-mode" style="font-weight:800;"
+            title="Toggle between Eulerian Mega-Crowd (1,000+ Kumbh/Rally) and Precision Room mode">👥 Mode: Auto</button>
+          <button id="btn-cctv-tint-fix" class="btn btn-sm btn-white btn-cctv-tint-fix" style="font-weight:800;"
+            title="Toggle Camera Color Correction / IR Pink Fix">🎨 Tint: Auto-Fix</button>
           <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;"
             title="Toggle between Full Camera HUD and Compact Bar">🔼 Minimize View</button>
         </div>
@@ -990,6 +1031,9 @@
                   <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
                   <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
                   <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
+                  <option value="hall-kumbh" data-capacity="1200" data-name="Kumbh Mela Sector A (Ghat)">🕉️ Kumbh Mela Sector A (1,200)</option>
+                  <option value="hall-rally" data-capacity="2500" data-name="Mega Election Rally Grounds">🚩 Mega Election Rally (2,500)</option>
+                  <option value="hall-stadium" data-capacity="5000" data-name="Olympic Stadium Arena">🏟️ Stadium Arena (5,000)</option>
                   <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
                 </select>
                 <select id="modal-cctv-device-select" class="cctv-select">
@@ -1413,9 +1457,12 @@
     <script src="components/stressTester.js"></script>
     <script src="components/auth.js"></script>
     <script src="components/customCursor.js"></script>
+    <!-- REAL-TIME WEBGL OBJECT & PERSON DETECTION (100% FREE & ZERO LATENCY) -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
     <script src="components/pico.js?v=3.0"></script>
     <script src="components/facefinder.js?v=3.0"></script>
-    <script src="components/cctvPerception.js?v=3.3"></script>
+    <script src="components/cctvPerception.js?v=3.5"></script>
 </body>
 
 </html>

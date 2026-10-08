@@ -100,6 +100,9 @@
             <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
             <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
             <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
+            <option value="hall-kumbh" data-capacity="1200" data-name="Kumbh Mela Sector A (Ghat)">🕉️ Kumbh Mela Sector A (1,200)</option>
+            <option value="hall-rally" data-capacity="2500" data-name="Mega Election Rally Grounds">🚩 Mega Election Rally (2,500)</option>
+            <option value="hall-stadium" data-capacity="5000" data-name="Olympic Stadium Arena">🏟️ Stadium Arena (5,000)</option>
             <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
           </select>
           <select id="cctv-device-select" class="cctv-select">
@@ -107,6 +110,10 @@
           </select>
           <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
           <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
+          <button id="btn-cctv-crowd-mode" class="btn btn-sm btn-white btn-cctv-crowd-mode" style="font-weight:800;"
+            title="Toggle between Eulerian Mega-Crowd (1,000+ Kumbh/Rally) and Precision Room mode">👥 Mode: Auto</button>
+          <button id="btn-cctv-tint-fix" class="btn btn-sm btn-white btn-cctv-tint-fix" style="font-weight:800;"
+            title="Toggle Camera Color Correction / IR Pink Fix">🎨 Tint: Auto-Fix</button>
           <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;"
             title="Toggle between Full Camera HUD and Compact Bar">🔼 Minimize View</button>
         </div>
@@ -411,6 +418,120 @@
       </div>
     </div>
 
+    <!-- SECTION 1.5: ACTIVE CLOUD AI & MESSAGING INTEGRATIONS HUB -->
+    <div class="dash-card admin-card mb-6">
+      <div class="card-header">
+        <span class="card-title">⚡ ACTIVE CLOUD AI & MESSAGING INFRASTRUCTURE</span>
+        <span class="card-badge green">4 CLOUD ENGINES INTEGRATED</span>
+      </div>
+      <div class="card-body">
+        <div class="integrations-summary-bar">
+          
+          <!-- RESEND CLOUD MAILER -->
+          <div class="integration-chip-card">
+            <div>
+              <div class="integration-header">
+                <span class="integration-title">📧 Resend Cloud</span>
+                <span class="integration-status-pill active">LIVE DKIM</span>
+              </div>
+              <div class="integration-meta">
+                <strong>Provider:</strong> Resend API<br>
+                <strong>Sender:</strong> <code>onboarding@resend.dev</code><br>
+                <strong>Verified Admin:</strong> <code>aryan.pandey777hyd@gmail.com</code>
+              </div>
+            </div>
+            <button id="btn-admin-test-resend" class="btn btn-sm btn-blue w-full" style="font-weight:800; font-size:0.75rem;">
+              🚀 Test Email Dispatch
+            </button>
+          </div>
+
+          <!-- ELEVENLABS VOICE STUDIO -->
+          <div class="integration-chip-card">
+            <div>
+              <div class="integration-header">
+                <span class="integration-title">🎙️ ElevenLabs Voice</span>
+                <span class="integration-status-pill active">FLASH v2.5</span>
+              </div>
+              <div class="integration-meta">
+                <strong>Model:</strong> <code>eleven_flash_v2_5</code><br>
+                <strong>Voice:</strong> Daniel (Broadcaster)<br>
+                <strong>Mode:</strong> Autonomous Venue PA
+              </div>
+            </div>
+            <button id="btn-admin-test-elevenlabs" class="btn btn-sm btn-yellow w-full" style="font-weight:800; font-size:0.75rem;">
+              🔊 Test PA Announcement
+            </button>
+          </div>
+
+          <!-- GOOGLE GEMINI FLASH (AUTONOMOUS) -->
+          <div class="integration-chip-card">
+            <div>
+              <div class="integration-header">
+                <span class="integration-title">🧠 Google Gemini</span>
+                <span class="integration-status-pill active">3.5 / 3.8 FLASH</span>
+              </div>
+              <div class="integration-meta">
+                <strong>Autonomous Mode:</strong> Tesla-Style Continuous Guard<br>
+                <strong>Trigger:</strong> Auto-Fires at 80%+ Capacity / Surge<br>
+                <strong>Action:</strong> Autonomous Occlusion & Reallocation
+              </div>
+            </div>
+            <div class="badge-mini-green w-full" style="display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px; font-weight:800; font-size:0.75rem; border-radius:6px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;">
+              <span class="pulse-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
+              🤖 AUTONOMOUS PERCEPTION ACTIVE
+            </div>
+          </div>
+
+          <!-- TWILIO WHATSAPP -->
+          <div class="integration-chip-card">
+            <div>
+              <div class="integration-header">
+                <span class="integration-title">💬 Twilio Messaging</span>
+                <span class="integration-status-pill ready">CLICK-TO-CHAT</span>
+              </div>
+              <div class="integration-meta">
+                <strong>API Status:</strong> Ready for SID/Token<br>
+                <strong>Mode:</strong> Direct WhatsApp Intent<br>
+                <strong>Active Lines:</strong> 3 Coordinators (+91)
+              </div>
+            </div>
+            <button id="btn-admin-test-twilio" class="btn btn-sm btn-white w-full" style="font-weight:800; font-size:0.75rem;">
+              💬 Test WhatsApp Alert
+            </button>
+          </div>
+
+        </div>
+
+        <!-- LIVE GEMINI AUTONOMOUS PERCEPTION & OCCLUSION MONITOR -->
+        <div id="gemini-audit-container" class="gemini-audit-box" style="margin-top:14px; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:10px; padding:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.1rem;">🤖</span>
+              <strong style="font-size:0.9rem; color:#0f172a;">Autonomous Vision & Occlusion Guard (Tesla FSD Mode)</strong>
+              <span id="gemini-audit-model-badge" style="font-size:0.72rem; background:#ecfdf5; color:#065f46; font-weight:800; padding:2px 8px; border-radius:4px; border:1px solid #a7f3d0;">Gemini 3.5 Flash • Zero-Click</span>
+            </div>
+            <div id="gemini-audit-rating-box">
+              <span class="gemini-rating-badge rating-nominal" style="font-size:0.7rem; font-weight:800; padding:2px 8px; border-radius:4px;">
+                AUTONOMOUS SELF-HEALING ARMED
+              </span>
+            </div>
+          </div>
+          <div style="font-size:0.82rem; color:#475569; margin-bottom:8px;" id="gemini-audit-summary">
+            Continuous on-device WebGL perception running at 30 FPS. Auto-triggers Gemini multimodal vision reasoning when capacity reaches 80% to resolve pillar occlusions and crowd bottlenecks with zero human intervention.
+          </div>
+          <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:8px; font-size:0.78rem;">
+              <strong style="color:#0f172a;">👁️ Occlusion Reasoning:</strong> <span id="gemini-audit-bottleneck" style="color:#64748b;">Scanning active frame...</span>
+            </div>
+            <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:8px; font-size:0.78rem;">
+              <strong style="color:#0f172a;">🎙️ Autonomous PA Dispatch:</strong> <span id="gemini-audit-script" style="color:#64748b;">Standby • Dynamic voice triggered on surge</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- SECTION 2: AUTOMATED WHATSAPP DISPATCH & GLOBAL OVERRIDES -->
     <div class="admin-grid mb-6">
       <!-- Widget 3: Live Automated WhatsApp Notification Dispatch Feed -->
@@ -516,6 +637,9 @@
                 <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
                 <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
                 <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
+                <option value="hall-kumbh" data-capacity="1200" data-name="Kumbh Mela Sector A (Ghat)">🕉️ Kumbh Mela Sector A (1,200)</option>
+                <option value="hall-rally" data-capacity="2500" data-name="Mega Election Rally Grounds">🚩 Mega Election Rally (2,500)</option>
+                <option value="hall-stadium" data-capacity="5000" data-name="Olympic Stadium Arena">🏟️ Stadium Arena (5,000)</option>
                 <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
               </select>
               <select id="modal-cctv-device-select" class="cctv-select">
@@ -703,9 +827,12 @@
   <script src="components/auth.js"></script>
   <script src="components/customCursor.js"></script>
   <script src="components/app.js"></script>
+  <!-- REAL-TIME WEBGL OBJECT & PERSON DETECTION (100% FREE & ZERO LATENCY) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
   <script src="components/pico.js?v=3.0"></script>
   <script src="components/facefinder.js?v=3.0"></script>
-  <script src="components/cctvPerception.js?v=3.3"></script>
+  <script src="components/cctvPerception.js?v=3.5"></script>
 </body>
 
 </html>
