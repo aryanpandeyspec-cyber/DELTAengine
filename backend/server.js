@@ -76,9 +76,75 @@ app.get('/signage', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/signage.html'));
 });
 
+app.get('/app', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/app.html'));
+});
+
+app.get('/mobile', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/app.html'));
+});
+
 app.get('/download-deck', (req, res) => {
   res.download(path.join(__dirname, '../DELTA_ENGINE_Presentation.pptx'));
 });
+
+// DELTA Mobile App Chat & Messaging Endpoints
+app.get('/api/messages', (req, res) => {
+  if (!db.chatMessages) {
+    db.chatMessages = [
+      {
+        id: 'msg_init_1',
+        sender: 'Aryan Pandey',
+        recipient: 'Suryansh',
+        text: 'Hey Suryansh! Entrance Door A is looking smooth. Keep an eye on Room 1 crowd levels.',
+        timestamp: '10:14 AM',
+        status: 'read'
+      },
+      {
+        id: 'msg_init_2',
+        sender: 'Shahid',
+        recipient: 'Suryansh',
+        text: 'Stage mic checks complete for Lovelace Suite (Room 2). Speaker setup is ready.',
+        timestamp: '10:22 AM',
+        status: 'read'
+      },
+      {
+        id: 'msg_init_3',
+        sender: 'DELTA AI Liaison',
+        recipient: 'Suryansh',
+        text: 'Autonomous Perception Active. All 5 event rooms operating within nominal limits.',
+        timestamp: '10:30 AM',
+        status: 'read'
+      }
+    ];
+  }
+  res.json({ success: true, messages: db.chatMessages });
+});
+
+app.post('/api/messages/send', (req, res) => {
+  const { sender, recipient, text, recipientPhone } = req.body;
+  if (!text) return res.status(400).json({ error: 'Message text is required' });
+  const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const newMsg = {
+    id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+    sender: sender || 'Suryansh',
+    recipient: recipient || 'Aryan Pandey',
+    text,
+    recipientPhone: recipientPhone || '+91 91542 76178',
+    timestamp: timeStr,
+    status: 'delivered'
+  };
+  if (!db.chatMessages) db.chatMessages = [];
+  db.chatMessages.push(newMsg);
+
+  broadcast({
+    type: 'CHAT_MESSAGE',
+    data: newMsg
+  });
+
+  res.json({ success: true, message: newMsg });
+});
+
 
 // Configure multer with strict file size limits (20MB max)
 const storage = multer.memoryStorage();
