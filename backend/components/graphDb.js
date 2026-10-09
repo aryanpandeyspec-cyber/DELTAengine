@@ -278,6 +278,11 @@ const db = {
     this.graph.topics['topic-2'].interest = 140;
     this.graph.topics['topic-3'].interest = 180;
 
+    if (this.graph.halls['hall-1']) this.graph.halls['hall-1'].capacity = 250;
+    if (this.graph.halls['hall-2']) this.graph.halls['hall-2'].capacity = 120;
+    if (this.graph.halls['hall-3']) this.graph.halls['hall-3'].capacity = 60;
+    if (this.graph.halls['hall-4']) this.graph.halls['hall-4'].capacity = 500;
+
     this.schedulesByDate[todayStr] = {
       'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
       'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },

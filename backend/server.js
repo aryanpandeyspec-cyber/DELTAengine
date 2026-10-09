@@ -19,6 +19,7 @@ const { generateVenueVoiceAnnouncement } = require('./components/voiceAnnouncer'
 const { auditVenueCrowdAndRisks, composeDynamicPAScript, auditVisualSceneWithGemini } = require('./components/geminiAuditor');
 const { dispatchTwilioWhatsApp, isTwilioConfigured } = require('./components/twilioDispatcher');
 const { normalizeHallId, getHallDisplayName, getAssignedPersonnelForHall, dispatchHallTargetedAlert } = require('./components/volunteerRouter');
+const { reconstructRoom3DFromImages } = require('./components/spatial3dEngine');
 
 // Process Uncaught Crash Guards (Prevents server process from ever freezing or exiting on errors)
 process.on('uncaughtException', (err) => {
@@ -1187,6 +1188,56 @@ setInterval(() => {
     }
   }
 }, 15 * 60 * 1000);
+
+// --- DEDICATED 3D VENUE SPATIAL RECONSTRUCTION API (Google Gemini Multimodal Vision) ---
+// Cross-references multiple physical hall photos (entrance, stage, seating rows, ceiling)
+// to triangulate room dimensions, entrance/exit gates, and safe capacity.
+app.post('/api/spatial/reconstruct-3d', upload.array('images', 12), async (req, res) => {
+  try {
+    const hallId = req.body.hallId || 'hall-1';
+    const hallName = req.body.hallName || (db.graph.halls[hallId] ? db.graph.halls[hallId].name : 'Turing Hall');
+    
+    // Collect images from multipart files and/or JSON body
+    let imagePayloads = [];
+    if (req.files && req.files.length > 0) {
+      imagePayloads = req.files.map(f => `data:${f.mimetype};base64,${f.buffer.toString('base64')}`);
+    } else if (req.body.images && Array.isArray(req.body.images)) {
+      imagePayloads = req.body.images;
+    } else if (req.body.image) {
+      imagePayloads = [req.body.image];
+    }
+
+    const spatialModel = await reconstructRoom3DFromImages({
+      images: imagePayloads,
+      hallId,
+      hallName,
+      db,
+      broadcast
+    });
+
+    res.json({
+      success: true,
+      hallId,
+      hallName,
+      spatialModel,
+      calculatedCapacity: spatialModel.capacityMetrics.capacity,
+      message: `Successfully calibrated 3D digital twin for "${hallName}" from ${spatialModel.imagesAnalyzedCount} multi-angle photo(s).`
+    });
+  } catch (err) {
+    console.error('[Spatial 3D API Error]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/spatial/model/:hallId', (req, res) => {
+  const hallId = req.params.hallId || 'hall-1';
+  const hall = db.graph.halls[hallId];
+  if (hall && hall.spatialModel) {
+    return res.json({ success: true, hallId, spatialModel: hall.spatialModel });
+  }
+  const defaultModel = reconstructRoom3DFromImages({ images: [], hallId, hallName: hall ? hall.name : 'Turing Hall', db: null, broadcast: null });
+  res.json({ success: true, hallId, spatialModel: defaultModel });
+});
 
 app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
   try {

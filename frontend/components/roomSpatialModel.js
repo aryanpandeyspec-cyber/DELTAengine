@@ -486,6 +486,11 @@ class RoomSpatialModelRenderer {
     this.requestRender();
   }
 
+  tilt(deltaTilt) {
+    this.tiltAngle = Math.max(0.25, Math.min(1.15, this.tiltAngle + deltaTilt));
+    this.requestRender();
+  }
+
   resetView() {
     this.rotationAngle = Math.PI / 4;
     this.tiltAngle = 0.58;

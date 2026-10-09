@@ -708,34 +708,33 @@
             </div>
           </section>
 
-          <!-- CONTENT PIPELINE -->
-          <section class="dash-card card-pipeline">
+          <!-- EVENT BROCHURE & SCHEDULE INGESTION PIPELINE -->
+          <section class="dash-card card-pipeline mb-8">
             <div class="card-header">
-              <h2><img src="ioncs/pipeline.png" class="header-icon-img" alt="Pipeline"> Automated Content Pipeline
-              </h2>
-              <span class="badge badge-red">Ingestion</span>
+              <h2><img src="ioncs/pipeline.png" class="header-icon-img" alt="Brochure"> 📄 Event Brochure & Presentation Ingestion</h2>
+              <span class="badge badge-red">Schedule AI</span>
             </div>
             <div class="card-body">
               <div class="pipeline-flow">
                 <div class="drag-zone" id="drag-zone">
-                  <svg class="upload-icon" viewBox="0 0 24 24" width="48" height="48">
-                    <path d="M12 5v14M5 12h14" fill="none" stroke="#ea4335" stroke-width="3" stroke-linecap="round" />
+                  <svg class="upload-icon" viewBox="0 0 24 24" width="46" height="46" style="margin: 0 auto 8px auto; display:block;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="14 2 14 8 20 8" fill="none" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="12" y1="18" x2="12" y2="12" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="9" y1="15" x2="15" y2="15" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round"/>
                   </svg>
-                  <h3>Drag & Drop Slides or 3D Room Plan</h3>
-                  <p>Ingest .pdf, .pptx, or room blueprint photo / .png / .jpg (Max 20MB)</p>
-                  <input type="file" id="file-input" style="display:none;" accept=".pdf,.pptx,.ppt,.txt,.png,.jpg,.jpeg,.webp,.svg">
+                  <h3 style="font-size:1.05rem; font-weight:800; color:#0f172a;">Drag & Drop Event Brochure or Slides</h3>
+                  <p style="font-size:0.8rem; color:#64748b; margin-top:4px;">Ingests schedule matrix, talk titles, and speakers from PDF, PPTX, or timetable (.txt/.doc) (Max 20MB)</p>
+                  <input type="file" id="file-input" style="display:none;" accept=".pdf,.pptx,.ppt,.txt,.doc,.docx">
                 </div>
 
                 <!-- 1-Click Mock Sample Feed Actions -->
                 <div class="sample-feed-buttons" style="display: flex; gap: 8px; justify-content: center; margin-top: 10px; margin-bottom: 8px; flex-wrap: wrap;">
-                  <button type="button" class="btn btn-sm" id="btn-feed-sample-blueprint" title="Load sample architectural CAD blueprint PDF" style="font-size: 0.72rem; padding: 5px 12px; background: #eff6ff; border: 2px solid #2563eb; color: #1e40af; border-radius: 6px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;">
-                    📄 Load Blueprint PDF
+                  <button type="button" class="btn btn-sm" id="btn-feed-sample-slides" title="Load sample keynote presentation slides PDF" style="font-size: 0.75rem; padding: 5px 12px; background: #fefce8; border: 2px solid #ca8a04; color: #854d0e; border-radius: 6px; font-weight: 700; cursor: pointer; box-shadow:2px 2px 0px #000;">
+                    📊 Load Sample Keynote Slides
                   </button>
-                  <button type="button" class="btn btn-sm" id="btn-feed-sample-photo" title="Load sample architectural floor plan PNG photo" style="font-size: 0.72rem; padding: 5px 12px; background: #f0fdf4; border: 2px solid #16a34a; color: #15803d; border-radius: 6px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;">
-                    🖼️ Load Blueprint Photo
-                  </button>
-                  <button type="button" class="btn btn-sm" id="btn-feed-sample-slides" title="Load sample keynote presentation slides PDF" style="font-size: 0.72rem; padding: 5px 12px; background: #fefce8; border: 2px solid #ca8a04; color: #854d0e; border-radius: 6px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;">
-                    📊 Load Sample Slides
+                  <button type="button" class="btn btn-sm" id="btn-feed-sample-blueprint" title="Load sample conference schedule brochure PDF" style="font-size: 0.75rem; padding: 5px 12px; background: #eff6ff; border: 2px solid #2563eb; color: #1e40af; border-radius: 6px; font-weight: 700; cursor: pointer; box-shadow:2px 2px 0px #000;">
+                    📄 Load Summit Brochure PDF
                   </button>
                 </div>
 
@@ -743,12 +742,9 @@
                 <div class="pipeline-loader mb-4" id="pipeline-loader" style="display: none;">
                   <div class="loader-stages">
                     <div class="stage-item" id="stage-1"><span class="stage-dot"></span> Ingesting slide data...</div>
-                    <div class="stage-item" id="stage-2"><span class="stage-dot"></span> Extracting semantic tags...
-                    </div>
-                    <div class="stage-item" id="stage-3"><span class="stage-dot"></span> Re-weaving graph database...
-                    </div>
-                    <div class="stage-item" id="stage-4"><span class="stage-dot"></span> Auto-generating promo copy...
-                    </div>
+                    <div class="stage-item" id="stage-2"><span class="stage-dot"></span> Extracting semantic tags...</div>
+                    <div class="stage-item" id="stage-3"><span class="stage-dot"></span> Re-weaving graph database...</div>
+                    <div class="stage-item" id="stage-4"><span class="stage-dot"></span> Auto-generating promo copy...</div>
                   </div>
                 </div>
 
@@ -772,18 +768,6 @@
                       <!-- Injected dynamically: Review & Edit Button -->
                     </div>
 
-                    <!-- 3D Spatial Room Model Result Card (Rendered for Room Plans) -->
-                    <div id="spatial-result-card" class="mb-4" style="display:none; background:#020617; border:2.5px solid #000; border-radius:8px; padding:12px; box-shadow:3px 3px 0px #000;">
-                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size:0.85rem; font-weight:800; color:#38bdf8;">🏛️ LIVE 3D SPATIAL DIGITAL TWIN</span>
-                        <span class="badge-mini-green">Synced with Laser Tripwire</span>
-                      </div>
-                      <canvas id="dashboard-spatial-canvas" width="460" height="260" style="width:100%; height:220px; display:block; border-radius:6px; background:#0f172a;"></canvas>
-                      <div style="font-size:0.75rem; color:#94a3b8; margin-top:6px; text-align:center;">
-                        Interactive 3D Hall • Drag to rotate perspective angle • Egress & safe seating active
-                      </div>
-                    </div>
-
                     <!-- Generated Copy -->
                     <div class="copy-box mb-4">
                       <label>Social Promo Copy:</label>
@@ -791,7 +775,7 @@
                       <button id="btn-copy-social" class="btn btn-sm btn-yellow">Copy Copy text</button>
                     </div>
 
-                    <!-- Visual Exporter Bindings (QoL Refinement) -->
+                    <!-- Visual Exporter Bindings -->
                     <div class="graphics-customizer mb-4">
                       <label class="custom-label">Customize Visual Banner:</label>
                       <div class="customizer-inputs">
@@ -811,7 +795,6 @@
 
                     <!-- Generated Graphics Visualizer -->
                     <div class="social-graphic-card blue mb-4" id="social-graphic-card">
-                      <!-- Generated Canvas / Custom card visually matching the design -->
                       <div class="card-canvas-header">
                         <span class="pill-brand">DELTA ENGINE</span>
                       </div>
@@ -821,11 +804,9 @@
                       </div>
                       <div class="card-canvas-footer">
                         <span class="tag-brand">#DeltaEngineOS</span>
-                        <!-- Semicolon SVG visual decorator -->
                         <svg class="canvas-decor-semicolon" viewBox="0 0 50 100" width="15" height="30">
                           <circle cx="25" cy="25" r="10" fill="#f9ab00" stroke="#000" stroke-width="2" />
-                          <path d="M25,60 C25,75 15,90 5,95 C15,85 25,75 25,60 Z" fill="#f9ab00" stroke="#000"
-                            stroke-width="2" />
+                          <path d="M25,60 C25,75 15,90 5,95 C15,85 25,75 25,60 Z" fill="#f9ab00" stroke="#000" stroke-width="2" />
                         </svg>
                       </div>
                     </div>
@@ -836,6 +817,190 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <!-- DEDICATED 3D VENUE SPATIAL RECONSTRUCTION & DIGITAL TWIN BUILDER -->
+          <section class="dash-card card-spatial-builder mb-8" id="card-spatial-builder">
+            <div class="card-header" style="background:#f0f9ff; border-bottom:2.5px solid #000; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <h2><img src="ioncs/DB.png" class="header-icon-img" alt="3D"> 🏛️ 3D Venue Spatial Reconstruction & Digital Twin Builder</h2>
+              <span class="badge badge-purple" style="font-family:var(--font-mono); font-weight:800;">Gemini 2.0 Flash Vision</span>
+            </div>
+            <div class="card-body">
+              <div style="font-size:0.83rem; color:#475569; font-weight:600; margin-bottom:12px; line-height:1.4;">
+                Multi-angle photo triangulation engine. Upload multiple physical photos of a venue hall (entrance gates, stage front, seating rows, ceiling height) to automatically reconstruct a calibrated 3D architectural digital twin.
+              </div>
+
+              <!-- Multi-Image Dropzone -->
+              <div class="spatial-drop-zone" id="spatial-drop-zone">
+                <svg viewBox="0 0 24 24" width="44" height="44" style="margin: 0 auto 8px auto; display:block;">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="13" r="4" fill="none" stroke="#0284c7" stroke-width="2.2"/>
+                </svg>
+                <h3 style="font-size:1.05rem; font-weight:800; margin-bottom:4px; color:#0f172a;">Drag & Drop Multiple Hall Photos Here</h3>
+                <p style="font-size:0.8rem; color:#64748b; margin:0;">Stage multiple photos (Doors, Stage, Seating, Ceiling) before processing • .jpg, .png, .webp</p>
+                <input type="file" id="spatial-file-input" style="display:none;" multiple accept="image/*,.png,.jpg,.jpeg,.webp">
+              </div>
+
+              <!-- Sample Photos Demo Buttons & Actions Row -->
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px; margin-bottom:12px;">
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-sm" id="btn-load-sample-hall-photos" style="font-size:0.75rem; padding:5px 12px; background:#f0fdf4; border:2px solid #16a34a; color:#15803d; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
+                    📸 Load 3 Sample Hall Photos (Entrance + Stage + Panoramic)
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" id="btn-add-more-photos" style="font-size:0.75rem; padding:5px 10px; border:2px solid #000; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
+                    ➕ Add More Photos
+                  </button>
+                  <button type="button" class="btn btn-sm btn-red" id="btn-clear-staged-photos" style="display:none; font-size:0.75rem; padding:5px 10px; border:2px solid #000; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
+                    🧹 Clear Tray
+                  </button>
+                </div>
+              </div>
+
+              <!-- Multi-Photo Staging Tray Container (Holds multiple images before processing) -->
+              <div id="staged-photos-container" style="display:none; background:#f8fafc; border:2px solid #000; border-radius:10px; padding:12px; margin-bottom:14px; box-shadow:3px 3px 0px #000;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1.5px dashed #cbd5e1; padding-bottom:6px;">
+                  <span style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800; color:#0f172a;">
+                    📸 MULTI-ANGLE STAGED PHOTOS TRAY
+                  </span>
+                  <span class="badge badge-blue" id="staged-photos-count-badge" style="font-size:0.7rem;">0 Photos Staged</span>
+                </div>
+                <!-- Gallery Tray of Staged Images -->
+                <div class="staged-photos-tray" id="staged-photos-tray">
+                  <!-- Injected dynamically by spatialReconstruction.js -->
+                </div>
+              </div>
+
+              <!-- Target Hall & Reconstruct Execution Row -->
+              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 12px; background:#f1f5f9; border:2px solid #000; border-radius:8px; margin-bottom:14px;">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <label for="spatial-target-hall-select" style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800;">TARGET VENUE HALL:</label>
+                  <select id="spatial-target-hall-select" style="padding:5px 10px; border:2px solid #000; border-radius:6px; font-weight:700; font-size:0.8rem;">
+                    <option value="hall-1">Turing Hall (hall-1)</option>
+                    <option value="hall-2">Lovelace Suite (hall-2)</option>
+                    <option value="hall-3">Hopper Room (hall-3)</option>
+                    <option value="hall-4">Keynote Arena (hall-4)</option>
+                    <option value="hall-kumbh">Kumbh Mela Sector A</option>
+                  </select>
+                </div>
+                <button type="button" id="btn-execute-3d-reconstruction" class="btn btn-blue" style="font-weight:800; font-size:0.82rem; padding:8px 16px; border:2.5px solid #000; box-shadow:3px 3px 0px #000; opacity:0.5; cursor:not-allowed;" disabled>
+                  ✨ Reconstruct 3D Digital Twin (Gemini Multimodal Vision API)
+                </button>
+              </div>
+
+              <!-- Processing Loading Stage Status -->
+              <div class="pipeline-loader mb-4" id="spatial-loader" style="display:none;">
+                <div class="loader-stages">
+                  <div class="stage-item" id="spatial-stage-1"><span class="stage-dot"></span> Ingesting multi-angle photos...</div>
+                  <div class="stage-item" id="spatial-stage-2"><span class="stage-dot"></span> Triangulating dimensions & ceiling via Gemini 2.0 Flash...</div>
+                  <div class="stage-item" id="spatial-stage-3"><span class="stage-dot"></span> Mapping doors, stage deck & laser tripwire sensors...</div>
+                  <div class="stage-item" id="spatial-stage-4"><span class="stage-dot"></span> Calibrating egress flow & life-safety capacity...</div>
+                </div>
+              </div>
+
+              <!-- Reconstructed 3D Digital Twin Results View -->
+              <div id="spatial-results-container" style="display:none;">
+                <!-- 3D Interactive Canvas Card -->
+                <div style="background:#0a0f1d; border:3px solid #000; border-radius:12px; padding:14px; box-shadow:5px 5px 0px #000; margin-bottom:14px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #1e293b; padding-bottom:8px;">
+                    <span id="spatial-twin-title" style="font-family:var(--font-mono); font-size:0.92rem; font-weight:800; color:#38bdf8;">
+                      🏛️ Turing Hall — 3D Digital Twin
+                    </span>
+                    <span class="badge-mini-green" id="spatial-twin-engine-badge" style="background:#10b981; color:#000; font-weight:800; font-size:0.7rem; border:1px solid #000; border-radius:4px; padding:2px 8px;">
+                      Gemini 2.0 Flash Vision (94% Confidence)
+                    </span>
+                  </div>
+
+                  <canvas id="spatial-reconstruction-canvas" width="600" height="320" style="width:100%; height:280px; display:block; border-radius:8px; background:#020617; border:2px solid #334155; cursor:grab;"></canvas>
+
+                  <!-- 3D Camera Controls -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:6px;">
+                    <div style="font-size:0.72rem; color:#94a3b8; font-family:var(--font-mono);">
+                      🖱️ Drag mouse to orbit 3D hall • Scroll wheel to zoom
+                    </div>
+                    <div style="display:flex; gap:4px;">
+                      <button type="button" id="btn-3d-rotate-left" class="btn btn-sm btn-white" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">↺ Yaw -</button>
+                      <button type="button" id="btn-3d-rotate-right" class="btn btn-sm btn-white" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">↻ Yaw +</button>
+                      <button type="button" id="btn-3d-tilt-up" class="btn btn-sm btn-white" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">⬆ Pitch -</button>
+                      <button type="button" id="btn-3d-tilt-down" class="btn btn-sm btn-white" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">⬇ Pitch +</button>
+                      <button type="button" id="btn-3d-reset-view" class="btn btn-sm btn-yellow" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">🎯 Reset</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Detected Spatial Metrics Chips Grid -->
+                <div class="spatial-metrics-grid">
+                  <div class="spatial-metric-chip">
+                    <div class="label">📐 DIMENSIONS & AREA</div>
+                    <div class="value" id="spatial-metric-dim">20m × 26m (H: 5.8m)</div>
+                    <div style="font-size:0.75rem; color:#64748b; font-weight:700;" id="spatial-metric-area">520 m² Floor</div>
+                  </div>
+                  <div class="spatial-metric-chip">
+                    <div class="label">👥 LIFE-SAFETY CAPACITY</div>
+                    <div class="value" style="color:#16a34a;" id="spatial-metric-capacity">289 Pax (Safe Egress)</div>
+                    <div style="font-size:0.75rem; color:#64748b; font-weight:700;">Density: 1.8 m²/attendee</div>
+                  </div>
+                  <div class="spatial-metric-chip">
+                    <div class="label">🚪 ACCESS GATES & FLOW</div>
+                    <div class="value" id="spatial-metric-doors">3 Gates (180 pax/min)</div>
+                    <div style="font-size:0.75rem; color:#0284c7; font-weight:700;">Laser Tripwire Synced</div>
+                  </div>
+                  <div class="spatial-metric-chip">
+                    <div class="label">🎭 STAGE & PODIUM</div>
+                    <div class="value" id="spatial-metric-stage">12m × 4m Raised 0.85m</div>
+                    <div style="font-size:0.75rem; color:#64748b; font-weight:700;">Front North Wall</div>
+                  </div>
+                </div>
+
+                <!-- Architectural Features & Obstacle Detection -->
+                <div style="background:#f8fafc; border:2px solid #000; border-radius:10px; padding:12px; margin-bottom:14px; box-shadow:3px 3px 0px #000;">
+                  <div style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800; color:#0f172a; margin-bottom:6px;">
+                    👁️ MULTIMODAL VISION DETECTIONS & ARCHITECTURAL FEATURES:
+                  </div>
+                  <div id="spatial-features-list">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+
+                <!-- Manual Calibration Sliders (Safety Coordinator Oversight) -->
+                <div style="background:#fffbeb; border:2px solid #000; border-radius:10px; padding:12px; margin-bottom:14px; box-shadow:3px 3px 0px #000;">
+                  <div style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800; color:#92400e; margin-bottom:8px;">
+                    ⚙️ HUMAN-IN-THE-LOOP CALIBRATION OVERRIDES:
+                  </div>
+                  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+                    <div>
+                      <label style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono);">
+                        <span>ROOM WIDTH:</span><span id="val-calib-width">20m</span>
+                      </label>
+                      <input type="range" id="slider-calib-width" min="8" max="60" value="20" style="width:100%;">
+                    </div>
+                    <div>
+                      <label style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono);">
+                        <span>ROOM LENGTH:</span><span id="val-calib-length">26m</span>
+                      </label>
+                      <input type="range" id="slider-calib-length" min="10" max="80" value="26" style="width:100%;">
+                    </div>
+                    <div>
+                      <label style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono);">
+                        <span>DOORS COUNT:</span><span id="val-calib-doors">3 Gates</span>
+                      </label>
+                      <input type="range" id="slider-calib-doors" min="1" max="8" value="3" style="width:100%;">
+                    </div>
+                    <div>
+                      <label style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono);">
+                        <span>CAPACITY LIMIT:</span><span id="val-calib-capacity">289 Pax</span>
+                      </label>
+                      <input type="range" id="slider-calib-capacity" min="50" max="800" value="289" style="width:100%;">
+                    </div>
+                  </div>
+                  <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                    <button type="button" id="btn-deploy-calibrated-twin" class="btn btn-sm btn-green" style="font-weight:800; padding:6px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                      💾 Deploy Calibrated Twin to Self-Healing Engine
+                    </button>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </section>
         </div>
@@ -1984,6 +2149,7 @@
     <script src="components/graphVisualizer.js?v=cursorFix4"></script>
     <script src="components/tourGuide.js"></script>
     <script src="components/roomSpatialModel.js"></script>
+    <script src="components/spatialReconstruction.js"></script>
     <script src="components/contentPipeline.js"></script>
     <script src="components/stressTester.js"></script>
     <script src="components/auth.js"></script>

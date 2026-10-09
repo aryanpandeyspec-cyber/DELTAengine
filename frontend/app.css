@@ -4908,6 +4908,107 @@ input:checked + .slider:before {
   font-weight: 800;
 }
 
+/* ==========================================================================
+   🏛️ 3D VENUE SPATIAL RECONSTRUCTION & DIGITAL TWIN BUILDER (NEUBRUTALISM PRO)
+   ========================================================================== */
+.card-spatial-builder {
+  background: #ffffff;
+  border: 2.5px solid #000000;
+  border-radius: 12px;
+  box-shadow: 4px 4px 0px #000000;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.card-spatial-builder:hover {
+  box-shadow: 6px 6px 0px #000000;
+}
+
+.spatial-drop-zone {
+  border: 2.5px dashed #0284c7;
+  border-radius: 10px;
+  background: #f0f9ff;
+  padding: 24px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.spatial-drop-zone:hover,
+.spatial-drop-zone.drag-active {
+  background: #e0f2fe;
+  border-color: #0369a1;
+  border-style: solid;
+  transform: scale(1.01);
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.staged-photos-tray {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 6px 2px 8px 2px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.staged-photo-card {
+  flex-shrink: 0;
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  padding: 6px;
+  width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 2px 2px 0px #000000;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.staged-photo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 4px 4px 0px #000000;
+}
+
+.spatial-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.spatial-metric-chip {
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  padding: 10px 12px;
+  box-shadow: 3px 3px 0px #000000;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  transition: transform 0.15s ease;
+}
+
+.spatial-metric-chip:hover {
+  transform: translateY(-1px);
+}
+
+.spatial-metric-chip .label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.5px;
+}
+
+.spatial-metric-chip .value {
+  font-family: var(--font-mono, monospace);
+  font-size: 1rem;
+  font-weight: 900;
+  color: #0f172a;
+}
+
 /* FINAL UNIVERSAL CURSOR OVERRIDE - ABSOLUTE NATIVE CURSOR KILLER */
 *,
 *::before,
