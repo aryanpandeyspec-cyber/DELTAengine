@@ -2,6 +2,9 @@
 // Integrates with Twilio Programmable Messaging API to dispatch real-time
 // WhatsApp coordinator and speaker alerts during emergency schedule changes.
 
+const dns = require('dns');
+try { dns.setDefaultResultOrder('ipv4first'); } catch (e) {}
+
 /**
  * Checks if active Twilio credentials exist and are not documentation placeholders.
  */
