@@ -222,46 +222,117 @@
 
   // Contacts & WhatsApp Notification State (Indian Personnel & +91 Format)
   const defaultContacts = [
-    { id: 'cnt_01', name: 'Aryan Pandey', role: 'Lead Event Coordinator & Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', hall: 'ALL VENUES (Central Command)' },
-    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'Suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A' },
-    { id: 'cnt_03', name: 'Shahid', role: 'Stage & Hall Operations Coordinator', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', hall: 'Lovelace Suite & Stage Front' },
-    { id: 'cnt_04', name: 'Dr. Aditi Sharma', role: 'Guest Keynote Speaker (AI Research Lead)', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall' },
-    { id: 'cnt_05', name: 'Vikramaditya Verma', role: 'Guest Keynote Speaker (Graphics Lead)', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite' },
-    { id: 'cnt_06', name: 'Priya Nair', role: 'Guest Speaker (DevOps Architect)', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room' }
+    { id: 'cnt_01', name: 'Aryan Pandey', role: 'Lead Event Coordinator & Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', hall: 'ALL VENUES (Central Command)', assignedHallId: 'ALL' },
+    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'Suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A', assignedHallId: 'hall-1' },
+    { id: 'cnt_03', name: 'Shahid', role: 'Stage & Hall Operations Coordinator', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', hall: 'Lovelace Suite & Stage Front', assignedHallId: 'hall-2' },
+    { id: 'cnt_04', name: 'Dr. Aditi Sharma', role: 'Guest Keynote Speaker (AI Research Lead)', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall', assignedHallId: 'hall-1' },
+    { id: 'cnt_05', name: 'Vikramaditya Verma', role: 'Guest Keynote Speaker (Graphics Lead)', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite', assignedHallId: 'hall-2' },
+    { id: 'cnt_06', name: 'Priya Nair', role: 'Guest Speaker (DevOps Architect)', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room', assignedHallId: 'hall-3' }
   ];
+
+  let currentHallFilter = 'ALL_PERSONNEL';
+  let cachedVolunteers = [];
 
   window.addEventListener('DOMContentLoaded', () => {
     bindAuthEventListeners();
     updateAuthUI();
-    renderAdminContactsTable();
-    renderFeaturedVolunteers();
+    fetchVolunteersAndRender();
     bindAdminActionButtons();
     bindLimiterToggles();
     bindVoicePAControls();
     bindCloudIntegrationsControls();
+    bindVolunteerControls();
   });
+
+  async function fetchVolunteersAndRender() {
+    try {
+      const res = await fetch('/api/volunteers');
+      const data = await res.json();
+      if (data && Array.isArray(data.volunteers)) {
+        cachedVolunteers = data.volunteers;
+      }
+    } catch (e) {
+      console.warn('[Volunteers] Using default contacts fallback:', e);
+    }
+    renderAdminContactsTable(currentHallFilter);
+    renderFeaturedVolunteers();
+  }
+
+  window.handleVolunteersUpdated = function (data) {
+    if (data && Array.isArray(data.volunteers)) {
+      cachedVolunteers = data.volunteers;
+    }
+    renderAdminContactsTable(currentHallFilter);
+    renderFeaturedVolunteers();
+    if (typeof createToast === 'function') {
+      createToast('👥 Volunteer directory updated across all active stations.', 'info');
+    }
+  };
+
+  function normalizeHallString(val) {
+    if (!val) return '';
+    const str = String(val).toLowerCase();
+    if (str.includes('turing') || str === 'hall-1') return 'hall-1';
+    if (str.includes('lovelace') || str === 'hall-2') return 'hall-2';
+    if (str.includes('hopper') || str === 'hall-3') return 'hall-3';
+    if (str.includes('keynote') || str.includes('arena') || str === 'hall-4') return 'hall-4';
+    if (str.includes('kumbh')) return 'hall-kumbh';
+    if (str.includes('rally')) return 'hall-rally';
+    if (str === 'all' || str.startsWith('all ') || str.includes('central') || str.includes('all venue')) return 'ALL';
+    return str;
+  }
+
+  function getCombinedPersonnelList() {
+    // Merge db.volunteers with defaultContacts ensuring no duplicate phones
+    const combined = [];
+    const seen = new Set();
+
+    (cachedVolunteers || []).forEach(v => {
+      const cleanPhone = (v.phone || '').replace(/[^0-9]/g, '');
+      seen.add(cleanPhone);
+      combined.push({
+        id: v.id,
+        name: v.name,
+        role: v.role,
+        phone: v.phone,
+        email: v.email || `${v.name.toLowerCase().replace(/[^a-z]/g, '')}@delta-engine.in`,
+        hall: v.location || v.assignedHallId || 'Turing Hall',
+        assignedHallId: v.assignedHallId || 'hall-1',
+        isVolunteer: true
+      });
+    });
+
+    defaultContacts.forEach(c => {
+      const cleanPhone = (c.phone || '').replace(/[^0-9]/g, '');
+      if (!seen.has(cleanPhone)) {
+        seen.add(cleanPhone);
+        combined.push({
+          ...c,
+          assignedHallId: c.assignedHallId || normalizeHallString(c.hall)
+        });
+      }
+    });
+
+    return combined;
+  }
 
   function renderFeaturedVolunteers() {
     const container = document.getElementById('featured-volunteers-list');
     if (!container) return;
     container.innerHTML = '';
 
-    const volunteers = [
-      { name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', location: 'Door A', task: 'Scanning passes & door routing', status: 'ON DUTY' },
-      { name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', location: 'Stage Front', task: 'Safety aisle clearance & mic checks', status: 'ON DUTY' },
-      { name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', location: 'Central AV Desk', task: 'Perception monitoring & volunteer dispatch', status: 'ON DUTY' }
-    ];
+    const list = getCombinedPersonnelList().filter(p => !p.role?.toLowerCase().includes('speaker')).slice(0, 6);
 
-    volunteers.forEach(v => {
+    list.forEach(v => {
       const card = document.createElement('div');
       card.style.cssText = 'background:#f8f9fa; border:2px solid #000; border-radius:10px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;';
       card.innerHTML = `
         <div>
           <div style="font-size:0.85rem; font-weight:800; color:#000;">${v.name} <span style="font-size:0.72rem; color:#555; font-weight:600;">(${v.role})</span></div>
-          <div style="font-size:0.75rem; color:#444; font-weight:600;">📍 ${v.location} • 📋 ${v.task}</div>
+          <div style="font-size:0.75rem; color:#444; font-weight:600;">📍 ${v.hall} • 🛡️ ${v.assignedHallId === 'ALL' ? 'Central Command' : 'Hall-Targeted'}</div>
         </div>
         <button class="btn btn-sm btn-yellow btn-vol-ping" data-name="${v.name}" data-phone="${v.phone}" style="font-size:0.72rem; font-weight:800; padding:3px 8px;">
-          💬 WhatsApp Contact
+          💬 WhatsApp
         </button>
       `;
       container.appendChild(card);
@@ -271,27 +342,50 @@
       btn.addEventListener('click', (e) => {
         const name = e.target.getAttribute('data-name');
         const phone = e.target.getAttribute('data-phone');
-        triggerWhatsAppNotification(name, phone, `Hello ${name}, this is DELTA ENGINE Event Control. Please report to stage desk for session transition.`);
+        triggerWhatsAppNotification(name, phone, `Hello ${name}, this is DELTA ENGINE Event Control. Please report to station for hall operations.`);
       });
     });
   }
 
-  function renderAdminContactsTable() {
+  function renderAdminContactsTable(filter = 'ALL_PERSONNEL') {
     const tbody = document.getElementById('admin-contacts-table-body');
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    defaultContacts.forEach(c => {
+    const allPersonnel = getCombinedPersonnelList();
+
+    // Update count in UI tab
+    const countEl = document.getElementById('count-all-vols');
+    if (countEl) countEl.textContent = allPersonnel.length;
+
+    // Filter logic
+    const filtered = allPersonnel.filter(item => {
+      if (!filter || filter === 'ALL_PERSONNEL') return true;
+      const itemHallNorm = normalizeHallString(item.assignedHallId || item.hall);
+      if (filter === 'CENTRAL') return itemHallNorm === 'ALL';
+      return itemHallNorm === filter || (filter === 'hall-1' && itemHallNorm === 'ALL');
+    });
+
+    filtered.forEach(c => {
       const tr = document.createElement('tr');
+      const normHall = normalizeHallString(c.assignedHallId || c.hall);
+      const isLead = normHall === 'ALL';
+      const hallBadgeColor = isLead ? '#dbeafe' : '#fef3c7';
+      const hallTextColor = isLead ? '#1e40af' : '#92400e';
+
       tr.innerHTML = `
         <td><strong>${c.name}</strong></td>
         <td><span class="role-chip coord">${c.role}</span></td>
         <td><code>💬 ${c.phone}</code></td>
         <td><a href="mailto:${c.email}" style="color:#4285f4; text-decoration:underline;">${c.email}</a></td>
-        <td>${c.hall}</td>
         <td>
-          <button class="btn btn-sm btn-yellow btn-wa-alert" data-name="${c.name}" data-phone="${c.phone}">
-            💬 WhatsApp Contact
+          <span style="background:${hallBadgeColor}; color:${hallTextColor}; border:1.5px solid #000; border-radius:6px; padding:2px 8px; font-weight:800; font-size:0.72rem; display:inline-block;">
+            ${isLead ? '⚡ Central Command (ALL)' : `📍 ${c.hall}`}
+          </span>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-yellow btn-wa-alert" data-name="${c.name}" data-phone="${c.phone}" style="font-weight:800; font-size:0.75rem;">
+            💬 WhatsApp
           </button>
         </td>
       `;
@@ -305,6 +399,131 @@
         triggerWhatsAppNotification(name, phone, `Hello ${name}, this is DELTA ENGINE Event OS. Operational alert regarding schedule matrix.`);
       });
     });
+  }
+
+  function bindVolunteerControls() {
+    // 1. Hall Filter Tabs (Dashboard)
+    const tabContainer = document.getElementById('volunteer-hall-filter-tabs');
+    if (tabContainer) {
+      tabContainer.querySelectorAll('button[data-hall-filter]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          tabContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+          const targetBtn = e.target.closest('button');
+          targetBtn.classList.add('active');
+          currentHallFilter = targetBtn.getAttribute('data-hall-filter');
+          renderAdminContactsTable(currentHallFilter);
+        });
+      });
+    }
+
+    // Hall Filter Tabs (Admin Page)
+    const tabAdmin = document.getElementById('volunteer-hall-filter-tabs-admin');
+    if (tabAdmin) {
+      tabAdmin.querySelectorAll('button[data-hall-filter]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          tabAdmin.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+          const targetBtn = e.target.closest('button');
+          targetBtn.classList.add('active');
+          currentHallFilter = targetBtn.getAttribute('data-hall-filter');
+          renderAdminContactsTable(currentHallFilter);
+        });
+      });
+    }
+
+    // 2. Add Volunteer Modal Toggle
+    const btnOpenAddModal = document.getElementById('btn-open-add-vol-modal');
+    const modalAddVol = document.getElementById('modal-add-volunteer');
+    const btnCloseAddVol = document.getElementById('btn-close-add-vol');
+    const btnCancelAddVol = document.getElementById('btn-cancel-add-vol');
+    const formAddVol = document.getElementById('form-add-volunteer');
+
+    if (btnOpenAddModal && modalAddVol) {
+      btnOpenAddModal.addEventListener('click', () => {
+        modalAddVol.style.display = 'flex';
+      });
+    }
+
+    const closeModal = () => {
+      if (modalAddVol) modalAddVol.style.display = 'none';
+      if (formAddVol) formAddVol.reset();
+    };
+
+    if (btnCloseAddVol) btnCloseAddVol.addEventListener('click', closeModal);
+    if (btnCancelAddVol) btnCancelAddVol.addEventListener('click', closeModal);
+
+    // 3. Form Submit -> POST /api/volunteers
+    if (formAddVol) {
+      formAddVol.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('add-vol-name')?.value.trim();
+        const phone = document.getElementById('add-vol-phone')?.value.trim();
+        const assignedHallId = document.getElementById('add-vol-hall')?.value;
+        const role = document.getElementById('add-vol-role')?.value.trim();
+        const email = document.getElementById('add-vol-email')?.value.trim();
+
+        if (!name || !phone) return;
+
+        try {
+          const res = await fetch('/api/volunteers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, assignedHallId, role, email })
+          });
+          const data = await res.json();
+          if (data.success) {
+            closeModal();
+            if (typeof createToast === 'function') {
+              createToast(`✅ Registered ${name} to ${data.volunteer.location}! Total: ${data.totalVolunteers} volunteers.`, 'success');
+            }
+            fetchVolunteersAndRender();
+          }
+        } catch (err) {
+          console.error('[Add Volunteer] Error:', err);
+          if (typeof createToast === 'function') {
+            createToast('❌ Failed to save volunteer: ' + err.message, 'conflict');
+          }
+        }
+      });
+    }
+
+    // 4. Test Hall Targeted Alert Buttons
+    const bindTestAlert = (btnId, hallId, hallName) => {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.addEventListener('click', async () => {
+          if (typeof createToast === 'function') {
+            createToast(`🚀 Simulating capacity breach at ${hallName}...`, 'info');
+          }
+          try {
+            const res = await fetch('/api/volunteers/test-hall-alert', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                hallId,
+                eventType: 'CAPACITY_BREACH',
+                count: hallId === 'hall-1' ? 250 : 180,
+                capacity: hallId === 'hall-1' ? 250 : 180
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              const alertedNames = data.alertPayload.targetedVolunteers.map(v => v.name).join(', ');
+              const shielded = data.alertPayload.excludedCount;
+              if (typeof createToast === 'function') {
+                createToast(`🎯 [${hallName} Alert Dispatched] Alerted: ${alertedNames}. Shielded: ${shielded} volunteers at other halls!`, 'success');
+              }
+            }
+          } catch (err) {
+            console.error('[Test Alert] Error:', err);
+          }
+        });
+      }
+    };
+
+    bindTestAlert('btn-test-turing-alert', 'hall-1', 'Turing Hall');
+    bindTestAlert('btn-admin-test-turing-alert', 'hall-1', 'Turing Hall');
+    bindTestAlert('btn-test-lovelace-alert', 'hall-2', 'Lovelace Suite');
+    bindTestAlert('btn-admin-test-lovelace-alert', 'hall-2', 'Lovelace Suite');
   }
 
   function bindLimiterToggles() {

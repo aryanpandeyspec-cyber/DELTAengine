@@ -339,6 +339,12 @@ function initWebSockets() {
         }
         break;
 
+      case 'VOLUNTEERS_UPDATED':
+        if (typeof window.handleVolunteersUpdated === 'function') {
+          window.handleVolunteersUpdated(payload.data);
+        }
+        break;
+
       case 'DOOR_TRIGGER':
         if (typeof window.handleDoorSensorTrigger === 'function') {
           window.handleDoorSensorTrigger(payload.data);

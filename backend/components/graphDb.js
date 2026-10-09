@@ -70,9 +70,13 @@ const db = {
     { id: 'cnt_06', name: 'Priya Nair', role: 'Guest Speaker (DevOps Architect)', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room', status: 'Speaker Confirmed' }
   ],
   volunteers: [
-    { id: 'vol_01', name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', assignedEvent: 'topic-1', location: 'Turing Hall (Door Entrance A)', task: 'Scanning passes & door routing', status: 'ON DUTY' },
-    { id: 'vol_02', name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', assignedEvent: 'topic-1', location: 'Turing Hall (Stage Front)', task: 'Safety aisle clearance & mic checks', status: 'ON DUTY' },
-    { id: 'vol_03', name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', assignedEvent: 'topic-1', location: 'Central AV & IoT Control Desk', task: 'Perception monitoring & volunteer dispatch', status: 'ON DUTY' }
+    { id: 'vol_01', name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', email: 'suryansh@delta-engine.in', assignedHallId: 'hall-1', location: 'Turing Hall (Door Entrance A)', task: 'Scanning passes & door routing', status: 'ON DUTY' },
+    { id: 'vol_02', name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', assignedHallId: 'hall-2', location: 'Lovelace Suite (Stage Front)', task: 'Safety aisle clearance & mic checks', status: 'ON DUTY' },
+    { id: 'vol_03', name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', assignedHallId: 'ALL', location: 'Central AV & IoT Control Desk', task: 'Perception monitoring & volunteer dispatch', status: 'ON DUTY' },
+    { id: 'vol_04', name: 'Rohan Sharma', role: 'Aisle Marshal & Usher Lead', phone: '+91 98765 43210', email: 'rohan@delta-engine.in', assignedHallId: 'hall-1', location: 'Turing Hall (Center Aisle)', task: 'Seat row optimization & aisle clearance', status: 'ON DUTY' },
+    { id: 'vol_05', name: 'Ananya Iyer', role: 'AV & Presentation Specialist', phone: '+91 97654 32109', email: 'ananya@delta-engine.in', assignedHallId: 'hall-2', location: 'Lovelace Suite (AV Desk)', task: 'Slide projection & speaker timing', status: 'ON DUTY' },
+    { id: 'vol_06', name: 'Kabir Mehta', role: 'Rapid Response Crowd Marshal', phone: '+91 96543 21098', email: 'kabir@delta-engine.in', assignedHallId: 'hall-3', location: 'Hopper Room (Entrance)', task: 'Session flow & door monitoring', status: 'ON DUTY' },
+    { id: 'vol_07', name: 'Zoya Khan', role: 'Main Gate Flow Controller', phone: '+91 95432 10987', email: 'zoya@delta-engine.in', assignedHallId: 'hall-4', location: 'Keynote Arena (North Gate)', task: 'VIP passage & ingress management', status: 'ON DUTY' }
   ],
   whatsappLogs: [],
   limiters: {

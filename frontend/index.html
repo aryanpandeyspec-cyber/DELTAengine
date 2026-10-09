@@ -872,6 +872,34 @@
             <span class="badge badge-yellow">WhatsApp Dispatches Active</span>
           </div>
           <div class="card-body">
+            <!-- Intelligent Hall-Targeted Volunteer Shielding Action Bar -->
+            <div style="background:#eff6ff; border:2px solid #3b82f6; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div style="font-size:0.83rem; color:#1e3a8a; font-weight:700;">
+                🛡️ <strong>Intelligent Hall-Targeted Routing:</strong> When an issue occurs at Hall X, DELTA automatically dispatches <em>ONLY</em> the volunteers assigned to Hall X. Volunteers at other venues are shielded from spam (supports 20+ volunteers across large events).
+              </div>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-sm btn-green" id="btn-open-add-vol-modal" style="font-size:0.75rem; font-weight:800; padding:5px 12px;">
+                  ➕ Add Volunteer
+                </button>
+                <button class="btn btn-sm btn-yellow" id="btn-test-turing-alert" style="font-size:0.75rem; font-weight:800; padding:5px 10px;">
+                  🚨 Test Turing Hall (hall-1)
+                </button>
+                <button class="btn btn-sm btn-blue" id="btn-test-lovelace-alert" style="font-size:0.75rem; font-weight:800; padding:5px 10px;">
+                  🚨 Test Lovelace Suite (hall-2)
+                </button>
+              </div>
+            </div>
+
+            <!-- Hall Filter Tabs -->
+            <div id="volunteer-hall-filter-tabs" style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+              <button class="btn btn-sm btn-tab active" data-hall-filter="ALL_PERSONNEL" style="font-size:0.75rem; font-weight:800;">All Personnel (<span id="count-all-vols">7</span>)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="hall-1" style="font-size:0.75rem; font-weight:800;">🏛️ Turing Hall (hall-1)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="hall-2" style="font-size:0.75rem; font-weight:800;">💻 Lovelace Suite (hall-2)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="hall-3" style="font-size:0.75rem; font-weight:800;">⚙️ Hopper Room (hall-3)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="hall-4" style="font-size:0.75rem; font-weight:800;">🎤 Keynote Arena (hall-4)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="CENTRAL" style="font-size:0.75rem; font-weight:800;">⚡ Central Command Lead</button>
+            </div>
+
             <div class="table-responsive">
               <table class="admin-table">
                 <thead>
@@ -915,6 +943,50 @@
         </div>
         <button class="btn btn-sm btn-blue" onclick="document.getElementById('push-alert').style.display='none'">Dismiss
           Alert</button>
+      </div>
+    </div>
+
+    <!-- ADD VOLUNTEER REGISTRATION MODAL -->
+    <div id="modal-add-volunteer" class="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); z-index:99999; align-items:center; justify-content:center;">
+      <div class="modal-card" style="background:#ffffff; border:3px solid #000000; box-shadow:6px 6px 0px #000000; border-radius:12px; max-width:480px; width:92%; padding:22px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:14px;">
+          <h3 style="margin:0; font-family:var(--font-mono); font-size:1.05rem; font-weight:800;">➕ Register Venue Volunteer</h3>
+          <button type="button" class="btn btn-sm" id="btn-close-add-vol" style="background:#fee2e2; border:2px solid #000; font-weight:800; cursor:pointer;">✖</button>
+        </div>
+        <form id="form-add-volunteer">
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">VOLUNTEER FULL NAME *</label>
+            <input type="text" id="add-vol-name" required placeholder="e.g. Vikramaditya Singhania" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-weight:600; font-size:0.85rem; box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">PHONE NUMBER (WHATSAPP +91) *</label>
+            <input type="tel" id="add-vol-phone" required placeholder="+91 98765 43210" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-weight:600; font-size:0.85rem; box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">ASSIGNED VENUE HALL *</label>
+            <select id="add-vol-hall" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-weight:700; font-size:0.85rem; box-sizing:border-box;">
+              <option value="hall-1">Turing Hall (hall-1)</option>
+              <option value="hall-2">Lovelace Suite (hall-2)</option>
+              <option value="hall-3">Hopper Room (hall-3)</option>
+              <option value="hall-4">Keynote Arena (hall-4)</option>
+              <option value="ALL">Central Command (All Halls - Lead)</option>
+              <option value="hall-kumbh">Kumbh Mela Sector A</option>
+              <option value="hall-rally">Mega Election Rally Grounds</option>
+            </select>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">ROLE & RESPONSIBILITY</label>
+            <input type="text" id="add-vol-role" placeholder="e.g. Door Entrance Marshal / Stage AV Lead" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-size:0.85rem; box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">EMAIL ADDRESS</label>
+            <input type="email" id="add-vol-email" placeholder="volunteer@delta-engine.in" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-size:0.85rem; box-sizing:border-box;">
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn btn-sm" id="btn-cancel-add-vol" style="background:#e5e7eb; border:2px solid #000; font-weight:800; padding:6px 14px;">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-green" style="font-weight:800; padding:6px 14px;">💾 Save Volunteer</button>
+          </div>
+        </form>
       </div>
     </div>
     <!-- Interactive Tour Walkthrough Card (Right-Edge Docked & 90° Rotated Minimized Bar) -->

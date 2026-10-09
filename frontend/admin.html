@@ -615,6 +615,31 @@
         <span class="card-badge yellow">AUTOMATED WHATSAPP NOTIFICATIONS ACTIVE</span>
       </div>
       <div class="card-body">
+        <!-- Intelligent Hall-Targeted Volunteer Shielding Action Bar -->
+        <div style="background:#eff6ff; border:2px solid #3b82f6; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:0.83rem; color:#1e3a8a; font-weight:700;">
+            🛡️ <strong>Intelligent Hall-Targeted Routing:</strong> When an issue occurs at Hall X, DELTA automatically dispatches <em>ONLY</em> the volunteers assigned to Hall X. Volunteers at other venues are shielded from spam (supports 20+ volunteers across large events).
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button class="btn btn-sm btn-yellow" id="btn-admin-test-turing-alert" style="font-size:0.75rem; font-weight:800; padding:5px 10px;">
+              🚨 Test Turing Hall (hall-1)
+            </button>
+            <button class="btn btn-sm btn-blue" id="btn-admin-test-lovelace-alert" style="font-size:0.75rem; font-weight:800; padding:5px 10px;">
+              🚨 Test Lovelace Suite (hall-2)
+            </button>
+          </div>
+        </div>
+
+        <!-- Hall Filter Tabs -->
+        <div id="volunteer-hall-filter-tabs-admin" style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-tab active" data-hall-filter="ALL_PERSONNEL" style="font-size:0.75rem; font-weight:800;">All Personnel</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="hall-1" style="font-size:0.75rem; font-weight:800;">🏛️ Turing Hall (hall-1)</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="hall-2" style="font-size:0.75rem; font-weight:800;">💻 Lovelace Suite (hall-2)</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="hall-3" style="font-size:0.75rem; font-weight:800;">⚙️ Hopper Room (hall-3)</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="hall-4" style="font-size:0.75rem; font-weight:800;">🎤 Keynote Arena (hall-4)</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="CENTRAL" style="font-size:0.75rem; font-weight:800;">⚡ Central Command Lead</button>
+        </div>
+
         <table class="admin-table">
           <thead>
             <tr>

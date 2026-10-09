@@ -18,6 +18,7 @@ const { evaluateTelemetryRequirements, evaluateActionFeasibility } = require('./
 const { generateVenueVoiceAnnouncement } = require('./components/voiceAnnouncer');
 const { auditVenueCrowdAndRisks, composeDynamicPAScript, auditVisualSceneWithGemini } = require('./components/geminiAuditor');
 const { dispatchTwilioWhatsApp, isTwilioConfigured } = require('./components/twilioDispatcher');
+const { normalizeHallId, getHallDisplayName, getAssignedPersonnelForHall, dispatchHallTargetedAlert } = require('./components/volunteerRouter');
 
 // Process Uncaught Crash Guards (Prevents server process from ever freezing or exiting on errors)
 process.on('uncaughtException', (err) => {
@@ -318,6 +319,185 @@ app.post('/api/whatsapp/incoming', async (req, res) => {
     reply: replyText
   });
 });
+
+// --- DYNAMIC HALL-AWARE VOLUNTEER REGISTRY APIS ---
+
+// 1. List all registered volunteers
+app.get('/api/volunteers', (req, res) => {
+  res.json({
+    success: true,
+    count: (db.volunteers || []).length,
+    volunteers: db.volunteers || []
+  });
+});
+
+// 2. Query volunteers assigned to a specific hall
+app.get('/api/volunteers/by-hall/:hallId', (req, res) => {
+  const result = getAssignedPersonnelForHall(req.params.hallId, db);
+  res.json({
+    success: true,
+    ...result
+  });
+});
+
+// 3. Add single volunteer with hall assignment
+app.post('/api/volunteers', (req, res) => {
+  const { name, role, phone, email, assignedHallId, location, task } = req.body;
+  if (!name || !phone) {
+    return res.status(400).json({ error: 'Name and phone are required' });
+  }
+
+  const newVol = {
+    id: 'vol_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 5),
+    name,
+    role: role || 'Event Safety Marshal',
+    phone,
+    email: email || '',
+    assignedHallId: normalizeHallId(assignedHallId || 'hall-1'),
+    location: location || getHallDisplayName(assignedHallId, db),
+    task: task || 'General Venue Safety',
+    status: 'ON DUTY'
+  };
+
+  if (!Array.isArray(db.volunteers)) db.volunteers = [];
+  db.volunteers.push(newVol);
+
+  // Cross-register in contacts directory for unified lookups
+  if (Array.isArray(db.contacts) && !db.contacts.some(c => c.phone === phone)) {
+    db.contacts.push({
+      id: 'cnt_' + newVol.id,
+      name,
+      role: newVol.role,
+      phone,
+      email: newVol.email,
+      hall: newVol.location,
+      status: 'Online'
+    });
+  }
+
+  broadcast({
+    type: 'VOLUNTEERS_UPDATED',
+    data: { volunteers: db.volunteers, contacts: db.contacts }
+  });
+
+  res.json({ success: true, volunteer: newVol, totalVolunteers: db.volunteers.length });
+});
+
+// 4. Update volunteer hall assignment or details
+app.put('/api/volunteers/:id', (req, res) => {
+  const vol = (db.volunteers || []).find(v => v.id === req.params.id);
+  if (!vol) return res.status(404).json({ error: 'Volunteer not found' });
+
+  const { name, role, phone, email, assignedHallId, location, task, status } = req.body;
+  if (name) vol.name = name;
+  if (role) vol.role = role;
+  if (phone) vol.phone = phone;
+  if (email) vol.email = email;
+  if (assignedHallId) {
+    vol.assignedHallId = normalizeHallId(assignedHallId);
+    vol.location = location || getHallDisplayName(vol.assignedHallId, db);
+  }
+  if (task) vol.task = task;
+  if (status) vol.status = status;
+
+  broadcast({
+    type: 'VOLUNTEERS_UPDATED',
+    data: { volunteers: db.volunteers }
+  });
+
+  res.json({ success: true, volunteer: vol });
+});
+
+// 5. Delete volunteer
+app.delete('/api/volunteers/:id', (req, res) => {
+  const idx = (db.volunteers || []).findIndex(v => v.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: 'Volunteer not found' });
+  const removed = db.volunteers.splice(idx, 1)[0];
+
+  broadcast({
+    type: 'VOLUNTEERS_UPDATED',
+    data: { volunteers: db.volunteers }
+  });
+
+  res.json({ success: true, removed, remaining: db.volunteers.length });
+});
+
+// 6. Bulk add volunteers (supports 20+ volunteers in a single request)
+app.post('/api/volunteers/bulk', (req, res) => {
+  const { volunteers: newVolunteers } = req.body;
+  if (!Array.isArray(newVolunteers) || newVolunteers.length === 0) {
+    return res.status(400).json({ error: 'Array of volunteers required' });
+  }
+
+  if (!Array.isArray(db.volunteers)) db.volunteers = [];
+  const added = [];
+
+  for (const v of newVolunteers) {
+    if (!v.name || !v.phone) continue;
+    const vol = {
+      id: 'vol_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 6),
+      name: v.name,
+      role: v.role || 'Event Safety Marshal',
+      phone: v.phone,
+      email: v.email || '',
+      assignedHallId: normalizeHallId(v.assignedHallId || v.hall || 'hall-1'),
+      location: v.location || getHallDisplayName(v.assignedHallId || v.hall || 'hall-1', db),
+      task: v.task || 'Active Venue Patrol',
+      status: 'ON DUTY'
+    };
+    db.volunteers.push(vol);
+    added.push(vol);
+
+    if (Array.isArray(db.contacts) && !db.contacts.some(c => c.phone === vol.phone)) {
+      db.contacts.push({
+        id: 'cnt_' + vol.id,
+        name: vol.name,
+        role: vol.role,
+        phone: vol.phone,
+        email: vol.email,
+        hall: vol.location,
+        status: 'Online'
+      });
+    }
+  }
+
+  broadcast({
+    type: 'VOLUNTEERS_UPDATED',
+    data: { volunteers: db.volunteers, contacts: db.contacts }
+  });
+
+  res.json({ success: true, addedCount: added.length, totalVolunteers: db.volunteers.length, added });
+});
+
+// 7. Test Targeted Hall Emergency Dispatch Endpoint (Pings ONLY assigned hall crew)
+app.post('/api/volunteers/test-hall-alert', async (req, res) => {
+  const { hallId, eventType, count, capacity } = req.body;
+  const targetHall = hallId || 'hall-1';
+  const cap = capacity || (db.graph.halls[targetHall]?.capacity || 250);
+  const curCount = count || cap;
+  const occupiedPercent = Math.round((curCount / cap) * 100);
+
+  const alertPayload = await dispatchHallTargetedAlert({
+    hallId: targetHall,
+    eventType: eventType || 'CAPACITY_BREACH',
+    details: {
+      occupiedPercent,
+      emptyPercent: Math.max(0, 100 - occupiedPercent),
+      currentCount: curCount,
+      capacity: cap,
+      timestamp: new Date().toLocaleTimeString()
+    },
+    db,
+    broadcast,
+    sendWhatsAppNotification
+  });
+
+  res.json({
+    success: true,
+    alertPayload
+  });
+});
+
 
 
 // Autonomous ElevenLabs Venue PA Voice Announcement Route
@@ -1747,7 +1927,7 @@ let lastCctvAlertState = null;
 let lastAlertTimestamp = 0;
 
 // 1. CCTV & Webcam Room Occupancy Perception Endpoint (% Occupied / % Empty)
-app.post('/api/sensors/camera', (req, res) => {
+app.post('/api/sensors/camera', async (req, res) => {
   const { hallId, peopleDetected, capacity, status, source } = req.body;
   const targetHallId = hallId || 'hall-1';
   const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
@@ -1794,142 +1974,59 @@ app.post('/api/sensors/camera', (req, res) => {
       lastCctvAlertState = 'ROOM_FULL';
       lastAlertTimestamp = now;
 
-      const fullAlert = {
-        id: 'cctv_full_' + now,
-        type: 'ROOM_FULL',
-        severity: 'critical',
+      await dispatchHallTargetedAlert({
         hallId: targetHallId,
-        hallName: hall.name,
-        occupiedPercent,
-        emptyPercent,
-        peopleDetected: currentCount,
-        capacity: targetCap,
-        timestamp: cameraPayload.timestamp,
-        assignedVolunteers: [
-          { name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', location: `${hall.name} (Entrance A)`, task: 'HALT ENTRANCE & REDIRECT ATTENDEES' },
-          { name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', location: `${hall.name} (Stage Front)`, task: 'FIRE SAFETY & AISLE CLEARANCE' },
-          { name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', location: 'Central AV & IoT Control Desk', task: 'EMERGENCY OVERFLOW DISPATCH' }
-        ],
-        assignedCoordinators: [
-          { name: 'Aryan Pandey', role: 'Lead Event Coordinator', phone: '+91 91542 76178' },
-          { name: 'Suryansh', role: 'Crowd Operations Lead', phone: '+91 83030 09159' },
-          { name: 'Shahid', role: 'Stage Operations Lead', phone: '+91 63035 70916' }
-        ],
-        message: `🚨 CCTV ALERT: "${hall.name}" is ${occupiedPercent}% FULL (${emptyPercent}% Empty)! Capacity reached (${currentCount}/${targetCap} pax). Volunteers deployed to redirect incoming crowd to overflow halls.`
-      };
-
-      broadcast({
-        type: 'VOLUNTEER_ALERT',
-        data: fullAlert
+        eventType: 'ROOM_FULL',
+        details: {
+          occupiedPercent,
+          emptyPercent,
+          currentCount,
+          capacity: targetCap,
+          timestamp: cameraPayload.timestamp
+        },
+        db,
+        broadcast,
+        sendWhatsAppNotification
       });
-
-      sendWhatsAppNotification(
-        'Suryansh (Crowd Lead)',
-        '+91 83030 09159',
-        `🚨 [CCTV URGENT] ${hall.name} is ${occupiedPercent}% FULL (${currentCount}/${targetCap} Pax)! Halt admissions and direct attendees to overflow halls.`
-      );
-
-      sendWhatsAppNotification(
-        'Shahid (Stage Lead)',
-        '+91 63035 70916',
-        `🚨 [CCTV URGENT] ${hall.name} at 100% capacity! Clear safety aisles and verify stage emergency exits.`
-      );
-
-      sendWhatsAppNotification(
-        'Aryan Pandey (Lead Coordinator)',
-        '+91 91542 76178',
-        `🚨 [CCTV BREACH] ${hall.name} capacity breached (${occupiedPercent}% Occupied). Gate closure active.`
-      );
 
     } else if (currentStatus === 'NEAR_CAPACITY' || (occupiedPercent >= 80 && occupiedPercent < 95)) {
       lastCctvAlertState = 'NEAR_CAPACITY';
       lastAlertTimestamp = now;
 
-      const warn80Alert = {
-        id: 'cctv_warn80_' + now,
-        type: 'ROOM_80_PERCENT',
-        severity: 'warning',
+      await dispatchHallTargetedAlert({
         hallId: targetHallId,
-        hallName: hall.name,
-        occupiedPercent,
-        emptyPercent,
-        peopleDetected: currentCount,
-        capacity: targetCap,
-        timestamp: cameraPayload.timestamp,
-        assignedVolunteers: [
-          { name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', location: `${hall.name} (Entrance A)`, task: 'PREPARE OVERFLOW ROUTING' },
-          { name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', location: `${hall.name} (Stage Front)`, task: 'MONITOR SEAT OCCUPANCY DENSITY' }
-        ],
-        assignedCoordinators: [
-          { name: 'Aryan Pandey', role: 'Lead Event Coordinator', phone: '+91 91542 76178' }
-        ],
-        message: `⚠️ CCTV WARNING: "${hall.name}" is ${occupiedPercent}% FULL (${emptyPercent}% Empty)! 80% room capacity threshold reached (${currentCount}/${targetCap} pax). Crowd volunteers alerted to prepare overflow routing.`
-      };
-
-      broadcast({
-        type: 'VOLUNTEER_ALERT',
-        data: warn80Alert
+        eventType: 'ROOM_80_PERCENT',
+        details: {
+          occupiedPercent,
+          emptyPercent,
+          currentCount,
+          capacity: targetCap,
+          timestamp: cameraPayload.timestamp
+        },
+        db,
+        broadcast,
+        sendWhatsAppNotification
       });
-
-      sendWhatsAppNotification(
-        'Suryansh (Crowd Lead)',
-        '+91 83030 09159',
-        `⚠️ [CCTV 80% WARNING] ${hall.name} is ${occupiedPercent}% FULL! Prepare overflow queue management.`
-      );
-
-      sendWhatsAppNotification(
-        'Shahid (Stage Lead)',
-        '+91 63035 70916',
-        `⚠️ [CCTV 80% NOTICE] ${hall.name} reached ${occupiedPercent}% capacity. Monitor seat row density.`
-      );
-
-      sendWhatsAppNotification(
-        'Aryan Pandey (Lead Coordinator)',
-        '+91 91542 76178',
-        `⚠️ [CCTV 80% NOTICE] ${hall.name} has reached ${occupiedPercent}% capacity. Near capacity warning active.`
-      );
 
     } else if (currentStatus === 'EMPTY' || occupiedPercent <= 10) {
       lastCctvAlertState = 'EMPTY';
       lastAlertTimestamp = now;
 
-      const emptyAlert = {
-        id: 'cctv_empty_' + now,
-        type: 'ROOM_EMPTY',
-        severity: 'info',
+      await dispatchHallTargetedAlert({
         hallId: targetHallId,
-        hallName: hall.name,
-        occupiedPercent,
-        emptyPercent,
-        peopleDetected: currentCount,
-        capacity: targetCap,
-        timestamp: cameraPayload.timestamp,
-        assignedVolunteers: [
-          { name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', location: `${hall.name} (Stage Front)`, task: 'SPEAKER PODIUM & MIC PREP' },
-          { name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', location: 'AV Desk', task: 'STAGE & LIVE STREAM SETUP PERMITTED' }
-        ],
-        assignedCoordinators: [
-          { name: 'Aryan Pandey', role: 'Lead Coordinator', phone: '+91 91542 76178' }
-        ],
-        message: `ℹ️ CCTV NOTICE: "${hall.name}" is EMPTY (${emptyPercent}% Vacant, ${occupiedPercent}% Occupied). Stage and AV volunteers cleared to enter for session setup.`
-      };
-
-      broadcast({
-        type: 'VOLUNTEER_ALERT',
-        data: emptyAlert
+        eventType: 'ROOM_EMPTY',
+        details: {
+          occupiedPercent,
+          emptyPercent,
+          currentCount,
+          capacity: targetCap,
+          timestamp: cameraPayload.timestamp
+        },
+        db,
+        broadcast,
+        sendWhatsAppNotification
       });
 
-      sendWhatsAppNotification(
-        'Shahid (Stage Lead)',
-        '+91 63035 70916',
-        `ℹ️ [CCTV NOTICE] ${hall.name} is now EMPTY (${emptyPercent}% Vacant). You are cleared to begin stage AV setup.`
-      );
-
-      sendWhatsAppNotification(
-        'Aryan Pandey (Lead Coordinator)',
-        '+91 91542 76178',
-        `ℹ️ [CCTV NOTICE] ${hall.name} is cleared and ready for next session setup.`
-      );
     } else if (currentStatus === 'OPTIMAL') {
       lastCctvAlertState = 'OPTIMAL';
     }

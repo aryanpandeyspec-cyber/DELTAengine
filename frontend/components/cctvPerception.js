@@ -2813,7 +2813,10 @@ Email: ${fromEmail}`;
       msgEl.textContent = alert.message;
 
       if (tagEl && alert.assignedVolunteers) {
-        tagEl.innerHTML = alert.assignedVolunteers.map(v =>
+        const targetedNote = alert.excludedCount !== undefined
+          ? `<div style="font-size:0.73rem; color:#1e3a8a; font-weight:800; margin-bottom:6px;">🎯 TARGETED DISPATCH (${(alert.hallName || 'VENUE').toUpperCase()} ONLY) — ${alert.excludedCount} volunteers at other venues shielded from notification spam</div>`
+          : '';
+        tagEl.innerHTML = targetedNote + alert.assignedVolunteers.map(v =>
           `<span class="badge-volunteer-chip">👤 ${v.name} (${v.role}): <strong>${v.task}</strong></span>`
         ).join(' ');
       }
