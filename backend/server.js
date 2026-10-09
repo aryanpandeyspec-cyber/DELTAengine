@@ -1207,10 +1207,13 @@ app.post('/api/spatial/reconstruct-3d', upload.array('images', 12), async (req, 
       imagePayloads = [req.body.image];
     }
 
+    const engine = req.body.engine || 'auto';
+
     const spatialModel = await reconstructRoom3DFromImages({
       images: imagePayloads,
       hallId,
       hallName,
+      engine,
       db,
       broadcast
     });

@@ -396,10 +396,14 @@
       }
     }, 1400);
 
+    const engineSelect = document.getElementById('spatial-engine-select');
+    const engine = engineSelect ? engineSelect.value : 'auto';
+
     try {
       const payload = {
         hallId,
         hallName,
+        engine,
         images: stagedRoomPhotos.map(p => p.dataUrl)
       };
 
@@ -484,25 +488,26 @@
     // Render Canvas
     const canvas = document.getElementById('spatial-reconstruction-canvas');
     if (canvas && typeof RoomSpatialModelRenderer === 'function') {
+      const renderOptions = {
+        width: sm.dimensions.width,
+        length: sm.dimensions.length,
+        height: sm.dimensions.height,
+        capacity: sm.capacityMetrics.capacity,
+        hallName: sm.hallName,
+        doorsCount: sm.doorsCount,
+        currentOccupancy: window.cctvNetOccupancy || 45,
+        venueType: sm.venueType,
+        stage: sm.stage,
+        seating: sm.seating,
+        doors: sm.doors,
+        columns: sm.columns,
+        colorPalette: sm.colorPalette
+      };
+
       if (!active3dRenderer) {
-        active3dRenderer = new RoomSpatialModelRenderer(canvas, {
-          width: sm.dimensions.width,
-          length: sm.dimensions.length,
-          height: sm.dimensions.height,
-          capacity: sm.capacityMetrics.capacity,
-          hallName: sm.hallName,
-          doorsCount: sm.doorsCount,
-          currentOccupancy: window.cctvNetOccupancy || 45
-        });
+        active3dRenderer = new RoomSpatialModelRenderer(canvas, renderOptions);
       } else {
-        active3dRenderer.setDimensions({
-          width: sm.dimensions.width,
-          length: sm.dimensions.length,
-          height: sm.dimensions.height,
-          capacity: sm.capacityMetrics.capacity,
-          hallName: sm.hallName,
-          doorsCount: sm.doorsCount
-        });
+        active3dRenderer.setDimensions(renderOptions);
       }
       active3dRenderer.requestRender();
     }
