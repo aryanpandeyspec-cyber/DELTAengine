@@ -71,8 +71,10 @@ function rebuildGraphData() {
 
 let isPhysicsRunning = false;
 let physicsAnimFrameId = null;
+let simulationTicks = 0;
 
 function wakePhysicsSimulation() {
+  simulationTicks = 0;
   if (isPhysicsRunning) return;
   isPhysicsRunning = true;
   physicsAnimFrameId = requestAnimationFrame(physicsTick);
@@ -84,6 +86,8 @@ function physicsTick() {
     physicsAnimFrameId = null;
     return;
   }
+
+  simulationTicks++;
 
   const k = 0.04; // Spring stiffness
   const rep = 2200; // Repulsion constant
@@ -164,8 +168,8 @@ function physicsTick() {
   // D. Update graph elements in-place without destroying DOM
   drawGraphSVG();
 
-  // If system has reached equilibrium and no user drag, SLEEP! Zero idle CPU usage.
-  if (totalMotion < 0.12 && !draggedNode) {
+  // If system has reached equilibrium or tick budget exhausted and no user drag, SLEEP! Zero idle CPU usage.
+  if ((totalMotion < 0.22 || simulationTicks > 80) && !draggedNode) {
     isPhysicsRunning = false;
     physicsAnimFrameId = null;
     return;

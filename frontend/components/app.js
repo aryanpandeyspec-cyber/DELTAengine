@@ -96,7 +96,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // Custom Node Graph animation loop (sleeps when settled)
   if (typeof wakePhysicsSimulation === 'function') {
     wakePhysicsSimulation();
-  } else {
+  } else if (typeof physicsTick === 'function') {
     requestAnimationFrame(physicsTick);
   }
 });
