@@ -1,5 +1,5 @@
 // --- SUPABASE POSTGRESQL PERSISTENCE & HYDRATION CONNECTOR ---
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -13,7 +13,6 @@ const supabase = (supabaseUrl && supabaseKey)
 // Hydrate In-Memory Graph from Supabase PostgreSQL on Server Boot
 async function loadGraphFromSupabase(dbContainer) {
   if (!supabase) {
-    console.log('[Supabase Sync] SUPABASE_ANON_KEY not set yet. Running in local graph mode.');
     return false;
   }
 

@@ -37,9 +37,7 @@ async function reconstructRoom3DFromImages({ images = [], hallId = 'hall-1', hal
   const normHallName = hallName || (db?.graph?.halls?.[normHallId]?.name || 'Turing Hall');
   const preferredEngine = (engine || 'auto').toLowerCase();
 
-  console.log(`\n🏛️ [3D Spatial Reconstruction] Initiating multi-angle analysis for "${normHallName}" (${normHallId})...`);
-  console.log(`   📸 Received ${images.length} physical hall photo(s) for triangulation.`);
-  console.log(`   ⚙️ Engine Strategy: ${preferredEngine.toUpperCase()}`);
+  console.log(`[3D Spatial Engine] 🏛️ Analyzing "${normHallName}" (${images.length} photo(s), strategy: ${preferredEngine.toUpperCase()})...`);
 
   // Clean and prepare image payloads
   const cleanedImages = (images || []).map(img => {
@@ -170,7 +168,7 @@ async function reconstructRoom3DFromImages({ images = [], hallId = 'hall-1', hal
     });
   }
 
-  console.log(`✅ [3D Spatial Twin] Calibrated "${normHallName}" via ${fullSpatialModel.modelEngine}! Capacity: ${fullSpatialModel.capacityMetrics.capacity} pax (${fullSpatialModel.dimensions.areaM2} m²)\n`);
+  console.log(`[3D Spatial Engine] ✅ Calibrated "${normHallName}" via ${fullSpatialModel.modelEngine} (Capacity: ${fullSpatialModel.capacityMetrics.capacity} pax, ${fullSpatialModel.dimensions.areaM2} m²)`);
 
   return fullSpatialModel;
 }
