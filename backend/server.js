@@ -2512,6 +2512,17 @@ app.get('/api/sensors/camera/latest', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n❌ [PORT CONFLICT] Port ${PORT} is already occupied by another running instance of DELTA Engine.`);
+      console.error(`👉 Stop the existing process or run: npx kill-port ${PORT}\n`);
+      process.exit(1);
+    } else {
+      console.error('Server error:', err);
+      process.exit(1);
+    }
+  });
+
   server.listen(PORT, async () => {
     if (!process.env.CI) {
       try {
