@@ -10,6 +10,7 @@
 1. [Overview & Change Policy](#1-overview--change-policy)
 2. [Component-by-Component Change Ledger](#2-component-by-component-change-ledger)
 3. [Chronological Release History](#3-chronological-release-history)
+   - [v3.6.5 (October 2026) — Exhaustive System Feature Audit, Browser Load Syntax Fix & IoT Door Telemetry Resiliency](#v365-october-2026--exhaustive-system-feature-audit-browser-load-syntax-fix--iot-door-telemetry-resiliency)
    - [v3.6.4 (October 2026) — High-Speed CCTV Optical Perception, Zero-Lag Cascade Optimization & Auto-Expanding Feed HUD](#v364-october-2026--high-speed-cctv-optical-perception-zero-lag-cascade-optimization--auto-expanding-feed-hud)
    - [v3.6.3 (October 2026) — Unified Sequential Alert Coordinator, Instant Voice Muting & 2-Second Announcement Pacing](#v363-october-2026--unified-sequential-alert-coordinator-instant-voice-muting--2-second-announcement-pacing)
    - [v3.6.2 (October 2026) — Comprehensive UI Decluttering & Zero-Lag Performance Optimization](#v362-october-2026--comprehensive-ui-decluttering--zero-lag-performance-optimization)
@@ -62,6 +63,27 @@ This ledger provides an unabridged audit trail for all engineering work on DELTA
 ---
 
 ## 3. Chronological Release History
+
+### v3.6.5 (October 2026) — Exhaustive System Feature Audit, Browser Load Syntax Fix & IoT Door Telemetry Resiliency
+- **Objective**: Conduct comprehensive, in-depth feature audit across all 61 HTTP routes, static entry points, WebSocket feeds, DOM control IDs, self-healing engines, perception subsystems, alert coordinators, and compliance auditors; fix frontend browser load failure caused by merge syntax error in `app.js`; fix backend IoT door sensor hang caused by undeclared variable in `server.js`.
+- **Key Deliverables**:
+  1. **Frontend Browser Load Syntax Restoration**: In `frontend/components/app.js`, restored missing closing braces (`  });\n}`) in `initSwarmCopy()` that had caused `SyntaxError: Unexpected end of input` at line 1382. This syntax error had previously halted browser JavaScript parsing on `<script src="components/app.js">`, freezing DOM initialization, event bindings, and UI hydration.
+  2. **IoT Door Telemetry Variable Resolution**: In `backend/server.js`, declared missing `const occupancy` resolution in `app.post('/api/sensors/door')` and wrapped the endpoint in a robust `try-catch` crash guard, eliminating unhandled promise rejections and preventing client requests from hanging during door tripwire sensor ingestion.
+  3. **Comprehensive System Audit Suite (`comprehensive_system_audit.js`)**: Created an exhaustive, automated 120-test master audit runner verifying:
+     - All 30 frontend and backend JS source files for static syntax validity.
+     - All 13 HTML routes and static entry points (dashboard, admin, volunteer terminal, presentation, signage TV, CSS).
+     - All 14 mandatory DOM control IDs and 7 verified interactive modals.
+     - Core graph database state, hall capacity overflow self-healing, speaker flight delay self-healing, database reset, and iCalendar export.
+     - Dynamic 5-scenario domain registry loading (`CONFERENCE`, `PUBLIC_RALLY`, `LARGE_GATHERING`, `MOVIE_PROMO`, `RELIGIOUS_GATHERING`), telemetry requirements model, and crowd incident dispatch.
+     - CCTV camera telemetry ingestion (`/api/sensors/camera`), optical turnstile beams, multi-gate mesh fusion, and biometric face passage.
+     - Volunteer field routing (`GET`, `POST`, `PUT`, `DELETE /api/volunteers`), targeted hall emergency alerts, and 1-tap SOS dispatch.
+     - NFPA-101 / IBC-2024 Fire Marshal compliance auditor, cryptographic SHA-256 seal generation, supervisor autonomy SLA signing, and voice announcement synthesis.
+     - Admin Tesla autopilot toggle, rate limiter toggle, multi-hall mass disruption chaos simulation, and 500-iteration stress testing.
+     - WebSocket real-time live telemetry handshake and `INIT_STATE` broadcast.
+     - HTTP 200 OK delivery for all 15 modular frontend component scripts.
+     - AlertCoordinator single-alert FIFO queueing, instant voice muting on dismiss (`speechSynthesis.cancel()`), and paced 2-second interval enforcement.
+     - CCTV perception HUD webcam stream detection, hardware fallback simulation, and throttled zero-lag performance pipeline.
+  4. **100% Full Test Pass Rate**: Verified 120/120 tests pass in `tests/comprehensive_system_audit.js` and 73/73 tests pass in `tests/runAllTests.js` (total 193/193 automated validations green).
 
 ### v3.6.4 (October 2026) — High-Speed CCTV Optical Perception, Zero-Lag Cascade Optimization & Auto-Expanding Feed HUD
 - **Objective**: Fix camera feed failure where camera failed to display/detect on startup, eliminate severe UI/rendering lag caused by heavy main-thread cascade evaluations when camera was turned on, implement high-fidelity simulated venue feed when no webcam hardware is connected, and auto-expand CCTV body when feed starts.

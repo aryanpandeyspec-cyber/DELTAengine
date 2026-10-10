@@ -1212,6 +1212,9 @@ function initSwarmCopy() {
         console.error('Clipboard copy failed:', err);
         createToast('Failed to copy to clipboard.', 'warning');
       });
+  });
+}
+
 // --- NFPA-101 & IBC-2024 FIRE MARSHAL & LIFE-SAFETY COMPLIANCE AUDITOR ---
 function initFireMarshalCompliance() {
   const btnTrigger = document.getElementById('btn-download-fire-marshal-audit');

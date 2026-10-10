@@ -1084,83 +1084,160 @@ let lastLoggedFaceTick = 0;
 const TELEMETRY_LOG_COOLDOWN_MS = 6000;
 
 app.post('/api/sensors/door', async (req, res) => {
-  const { event, hallId, netOccupancy, entries, exits, dist1, dist2, gateId, gateName } = req.body;
-  const targetHallId = hallId || 'hall-1';
-  const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
-  const timeStr = new Date().toLocaleTimeString();
+  try {
+    const { event, hallId, netOccupancy, entries, exits, dist1, dist2, gateId, gateName } = req.body;
+    const targetHallId = hallId || 'hall-1';
+    const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
+    const timeStr = new Date().toLocaleTimeString();
 
-  // Multi-Gate Mesh Tracking
-  const targetGateId = gateId || 'gate-a';
-  const targetGateName = gateName || (targetGateId === 'gate-b' ? 'Gate B (Emergency Egress)' : targetGateId === 'gate-c' ? 'Gate C (VIP Passage)' : 'Gate A (Main Entrance)');
-  if (!db.gatesMesh[targetGateId]) {
-    db.gatesMesh[targetGateId] = { id: targetGateId, name: targetGateName, entries: 0, exits: 0, net: 0, hallId: targetHallId, lastUpdated: timeStr };
-  }
-  const currentGate = db.gatesMesh[targetGateId];
+    // Multi-Gate Mesh Tracking
+    const targetGateId = gateId || 'gate-a';
+    const targetGateName = gateName || (targetGateId === 'gate-b' ? 'Gate B (Emergency Egress)' : targetGateId === 'gate-c' ? 'Gate C (VIP Passage)' : 'Gate A (Main Entrance)');
+    if (!db.gatesMesh[targetGateId]) {
+      db.gatesMesh[targetGateId] = { id: targetGateId, name: targetGateName, entries: 0, exits: 0, net: 0, hallId: targetHallId, lastUpdated: timeStr };
+    }
+    const currentGate = db.gatesMesh[targetGateId];
 
-  // Emergency Barricade Pressure Release Pulse (Automated stampede prevention)
-  if (event === 'EMERGENCY_RELEASE' || req.body.action === 'EMERGENCY_RELEASE') {
-    const pressurePsi = parseFloat(req.body.pressurePsi) || 8.5;
-    currentGate.status = 'AUTOMATED_RELEASE_ACTIVE';
-    currentGate.pressurePsi = pressurePsi;
-    currentGate.lastUpdated = timeStr;
+    // Emergency Barricade Pressure Release Pulse (Automated stampede prevention)
+    if (event === 'EMERGENCY_RELEASE' || req.body.action === 'EMERGENCY_RELEASE') {
+      const pressurePsi = parseFloat(req.body.pressurePsi) || 8.5;
+      currentGate.status = 'AUTOMATED_RELEASE_ACTIVE';
+      currentGate.pressurePsi = pressurePsi;
+      currentGate.lastUpdated = timeStr;
 
-    console.log(`[IoT Door Sensor] 🚨 AUTOMATED GATE RELEASE TRIGGERED at ${targetGateName} (${pressurePsi} PSI). Barricade latch released!`);
+      console.log(`[IoT Door Sensor] 🚨 AUTOMATED GATE RELEASE TRIGGERED at ${targetGateName} (${pressurePsi} PSI). Barricade latch released!`);
 
-    broadcast({
-      type: 'GATE_RELEASE_PULSE',
-      data: {
-        hallId: targetHallId,
-        hallName: hall.name,
+      broadcast({
+        type: 'GATE_RELEASE_PULSE',
+        data: {
+          hallId: targetHallId,
+          hallName: hall.name,
+          gateId: targetGateId,
+          gateName: targetGateName,
+          pressurePsi,
+          reason: req.body.reason || 'Critical Barricade Pressure Overload (>8.5 PSI)',
+          timestamp: timeStr
+        }
+      });
+
+      return res.json({
+        success: true,
         gateId: targetGateId,
-        gateName: targetGateName,
+        status: 'EMERGENCY_RELEASE_ACTIVATED',
         pressurePsi,
-        reason: req.body.reason || 'Critical Barricade Pressure Overload (>8.5 PSI)',
-        timestamp: timeStr
+        gatesMesh: db.gatesMesh
+      });
+    }
+
+    // Every time the sensor glows / triggers, directly register an entry (decoupled from camera)
+    if (event === 'DOOR_TRIGGER') {
+      doorSensorTotalEntries++;
+      doorSensorNetOccupancy++;
+      currentGate.entries++;
+      currentGate.net++;
+      currentGate.lastUpdated = timeStr;
+
+      const nowTrigger = Date.now();
+      if (nowTrigger - lastLoggedDoorTick > TELEMETRY_LOG_COOLDOWN_MS) {
+        lastLoggedDoorTick = nowTrigger;
+        console.log(`[IoT Door Sensor] 💡 [${targetGateName}] Glow Passage Registered (+1 In) -> Total In: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax`);
       }
-    });
 
-    return res.json({
-      success: true,
-      gateId: targetGateId,
-      status: 'EMERGENCY_RELEASE_ACTIVATED',
-      pressurePsi,
-      gatesMesh: db.gatesMesh
-    });
-  }
+      // Update db.cctvState
+      if (db.cctvState && db.cctvState[targetHallId]) {
+        db.cctvState[targetHallId].peopleDetected = doorSensorNetOccupancy;
+        db.cctvState[targetHallId].occupiedPercent = Math.min(100, Math.round((doorSensorNetOccupancy / hall.capacity) * 100));
+        db.cctvState[targetHallId].emptyPercent = Math.max(0, 100 - db.cctvState[targetHallId].occupiedPercent);
+        db.cctvState[targetHallId].timestamp = timeStr;
+      }
 
-  // Every time the sensor glows / triggers, directly register an entry (decoupled from camera)
-  if (event === 'DOOR_TRIGGER') {
-    doorSensorTotalEntries++;
-    doorSensorNetOccupancy++;
-    currentGate.entries++;
-    currentGate.net++;
+      broadcast({
+        type: 'DOOR_TRIGGER',
+        data: {
+          hallId: targetHallId,
+          hallName: hall.name,
+          gateId: targetGateId,
+          gateName: targetGateName,
+          dist1: dist1 || 0,
+          dist2: dist2 || 0,
+          entries: doorSensorTotalEntries,
+          occupancy: doorSensorNetOccupancy,
+          timestamp: timeStr
+        }
+      });
+
+      broadcast({
+        type: 'GATE_MESH_UPDATE',
+        data: {
+          hallId: targetHallId,
+          gateId: targetGateId,
+          gateName: targetGateName,
+          gates: db.gatesMesh,
+          netOccupancy: doorSensorNetOccupancy,
+          timestamp: timeStr
+        }
+      });
+
+      broadcast({
+        type: 'ROOM_OCCUPANCY_UPDATE',
+        data: {
+          hallId: targetHallId,
+          hallName: hall.name,
+          capacity: hall.capacity,
+          occupancy: doorSensorNetOccupancy,
+          entries: doorSensorTotalEntries,
+          exits: doorSensorTotalExits,
+          event: 'ENTRY',
+          timestamp: timeStr
+        }
+      });
+
+      return res.json({ success: true, gateId: targetGateId, entries: doorSensorTotalEntries, occupancy: doorSensorNetOccupancy, gatesMesh: db.gatesMesh });
+    }
+
+    if (event === 'ENTRY') {
+      doorSensorTotalEntries = (entries !== undefined && entries > 0) ? entries : (doorSensorTotalEntries + 1);
+      doorSensorNetOccupancy = (netOccupancy !== undefined && netOccupancy > 0) ? netOccupancy : (doorSensorNetOccupancy + 1);
+      currentGate.entries++;
+      currentGate.net++;
+    } else if (event === 'EXIT') {
+      doorSensorTotalExits = (exits !== undefined && exits > 0) ? exits : (doorSensorTotalExits + 1);
+      if (doorSensorNetOccupancy > 0) doorSensorNetOccupancy--;
+      currentGate.exits++;
+      if (currentGate.net > 0) currentGate.net--;
+    }
     currentGate.lastUpdated = timeStr;
 
-    const nowTrigger = Date.now();
-    if (nowTrigger - lastLoggedDoorTick > TELEMETRY_LOG_COOLDOWN_MS) {
-      lastLoggedDoorTick = nowTrigger;
-      console.log(`[IoT Door Sensor] 💡 [${targetGateName}] Glow Passage Registered (+1 In) -> Total In: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax`);
+    const occupancy = (netOccupancy !== undefined && netOccupancy !== null)
+      ? parseInt(netOccupancy, 10)
+      : (doorSensorNetOccupancy >= 0 ? doorSensorNetOccupancy : 0);
+
+    const nowDoor = Date.now();
+    const isHighOccupancy = occupancy >= (hall.capacity * 0.8);
+    if (isHighOccupancy || (nowDoor - lastLoggedDoorTick > TELEMETRY_LOG_COOLDOWN_MS)) {
+      lastLoggedDoorTick = nowDoor;
+      console.log(`[IoT Door Sensor] ${event} at ${targetGateName}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries || doorSensorTotalEntries}, Out: ${exits || doorSensorTotalExits})`);
     }
 
     // Update db.cctvState
     if (db.cctvState && db.cctvState[targetHallId]) {
-      db.cctvState[targetHallId].peopleDetected = doorSensorNetOccupancy;
-      db.cctvState[targetHallId].occupiedPercent = Math.min(100, Math.round((doorSensorNetOccupancy / hall.capacity) * 100));
+      db.cctvState[targetHallId].peopleDetected = occupancy;
+      db.cctvState[targetHallId].occupiedPercent = Math.min(100, Math.round((occupancy / hall.capacity) * 100));
       db.cctvState[targetHallId].emptyPercent = Math.max(0, 100 - db.cctvState[targetHallId].occupiedPercent);
       db.cctvState[targetHallId].timestamp = timeStr;
     }
 
+    // Broadcast live occupancy update to all connected frontend clients
     broadcast({
-      type: 'DOOR_TRIGGER',
+      type: 'ROOM_OCCUPANCY_UPDATE',
       data: {
         hallId: targetHallId,
         hallName: hall.name,
-        gateId: targetGateId,
-        gateName: targetGateName,
-        dist1: dist1 || 0,
-        dist2: dist2 || 0,
-        entries: doorSensorTotalEntries,
-        occupancy: doorSensorNetOccupancy,
+        capacity: hall.capacity,
+        occupancy: occupancy,
+        entries: entries || doorSensorTotalEntries,
+        exits: exits || doorSensorTotalExits,
+        event: event || 'ENTRY',
         timestamp: timeStr
       }
     });
@@ -1172,115 +1249,47 @@ app.post('/api/sensors/door', async (req, res) => {
         gateId: targetGateId,
         gateName: targetGateName,
         gates: db.gatesMesh,
-        netOccupancy: doorSensorNetOccupancy,
+        netOccupancy: occupancy,
         timestamp: timeStr
       }
     });
 
-    broadcast({
-      type: 'ROOM_OCCUPANCY_UPDATE',
-      data: {
-        hallId: targetHallId,
-        hallName: hall.name,
-        capacity: hall.capacity,
-        occupancy: doorSensorNetOccupancy,
-        entries: doorSensorTotalEntries,
-        exits: doorSensorTotalExits,
-        event: 'ENTRY',
-        timestamp: timeStr
+    // Check for capacity overshoot
+    let healingReport = null;
+    let surgeTriggered = false;
+
+    if (occupancy > hall.capacity) {
+      let activeTopicId = null;
+      for (const slotId in db.schedule) {
+        if (db.schedule[slotId] && db.schedule[slotId][targetHallId]) {
+          activeTopicId = db.schedule[slotId][targetHallId];
+          break;
+        }
       }
-    });
 
-    return res.json({ success: true, gateId: targetGateId, entries: doorSensorTotalEntries, occupancy: doorSensorNetOccupancy, gatesMesh: db.gatesMesh });
-  }
-
-  if (event === 'ENTRY') {
-    doorSensorTotalEntries = (entries !== undefined && entries > 0) ? entries : (doorSensorTotalEntries + 1);
-    doorSensorNetOccupancy = (netOccupancy !== undefined && netOccupancy > 0) ? netOccupancy : (doorSensorNetOccupancy + 1);
-    currentGate.entries++;
-    currentGate.net++;
-  } else if (event === 'EXIT') {
-    doorSensorTotalExits = (exits !== undefined && exits > 0) ? exits : (doorSensorTotalExits + 1);
-    if (doorSensorNetOccupancy > 0) doorSensorNetOccupancy--;
-    currentGate.exits++;
-    if (currentGate.net > 0) currentGate.net--;
-  }
-  currentGate.lastUpdated = timeStr;
-
-  const nowDoor = Date.now();
-  const isHighOccupancy = occupancy >= (hall.capacity * 0.8);
-  if (isHighOccupancy || (nowDoor - lastLoggedDoorTick > TELEMETRY_LOG_COOLDOWN_MS)) {
-    lastLoggedDoorTick = nowDoor;
-    console.log(`[IoT Door Sensor] ${event} at ${targetGateName}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries || doorSensorTotalEntries}, Out: ${exits || doorSensorTotalExits})`);
-  }
-
-  // Update db.cctvState
-  if (db.cctvState && db.cctvState[targetHallId]) {
-    db.cctvState[targetHallId].peopleDetected = occupancy;
-    db.cctvState[targetHallId].occupiedPercent = Math.min(100, Math.round((occupancy / hall.capacity) * 100));
-    db.cctvState[targetHallId].emptyPercent = Math.max(0, 100 - db.cctvState[targetHallId].occupiedPercent);
-    db.cctvState[targetHallId].timestamp = timeStr;
-  }
-
-  // Broadcast live occupancy update to all connected frontend clients
-  broadcast({
-    type: 'ROOM_OCCUPANCY_UPDATE',
-    data: {
-      hallId: targetHallId,
-      hallName: hall.name,
-      capacity: hall.capacity,
-      occupancy: occupancy,
-      entries: entries || doorSensorTotalEntries,
-      exits: exits || doorSensorTotalExits,
-      event: event || 'ENTRY',
-      timestamp: timeStr
+      if (activeTopicId && db.graph.topics[activeTopicId]) {
+        surgeTriggered = true;
+        const topic = db.graph.topics[activeTopicId];
+        topic.interest = occupancy;
+        const eventDesc = `⚡ IoT Door Sensor (${targetGateName}): "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
+        healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+      }
     }
-  });
 
-  broadcast({
-    type: 'GATE_MESH_UPDATE',
-    data: {
+    res.json({
+      success: true,
       hallId: targetHallId,
       gateId: targetGateId,
-      gateName: targetGateName,
-      gates: db.gatesMesh,
-      netOccupancy: occupancy,
-      timestamp: timeStr
-    }
-  });
-
-  // Check for capacity overshoot
-  let healingReport = null;
-  let surgeTriggered = false;
-
-  if (occupancy > hall.capacity) {
-    let activeTopicId = null;
-    for (const slotId in db.schedule) {
-      if (db.schedule[slotId] && db.schedule[slotId][targetHallId]) {
-        activeTopicId = db.schedule[slotId][targetHallId];
-        break;
-      }
-    }
-
-    if (activeTopicId && db.graph.topics[activeTopicId]) {
-      surgeTriggered = true;
-      const topic = db.graph.topics[activeTopicId];
-      topic.interest = occupancy;
-      const eventDesc = `⚡ IoT Door Sensor (${targetGateName}): "${hall.name}" capacity breached! Live headcount ${occupancy} exceeds hall limit of ${hall.capacity}.`;
-      healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
-    }
+      occupancy,
+      capacity: hall.capacity,
+      surgeTriggered,
+      healingReport,
+      gatesMesh: db.gatesMesh
+    });
+  } catch (err) {
+    console.error('[IoT Door Sensor Error]', err);
+    res.status(500).json({ success: false, error: err.message });
   }
-
-  res.json({
-    success: true,
-    hallId: targetHallId,
-    gateId: targetGateId,
-    occupancy,
-    capacity: hall.capacity,
-    surgeTriggered,
-    healingReport,
-    gatesMesh: db.gatesMesh
-  });
 });
 
 // Endpoint for Camera Face Verification (Entry / Exit / Re-entry)

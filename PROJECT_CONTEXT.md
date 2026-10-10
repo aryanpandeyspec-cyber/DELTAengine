@@ -4,7 +4,7 @@
 > **Hackathon**: HackIndia Spark 2026 — South Central Region (Hyderabad, Telangana)  
 > **Repository**: [aryanpandeyspec-cyber/DELTAengine](https://github.com/aryanpandeyspec-cyber/DELTAengine)  
 > **Core Leadership**: Aryan Pandey (Lead Coordinator), Suryansh (Crowd & Safety Lead), Shahid (Stage & Ops Lead)  
-> **Last Updated**: October 2026 (v3.6.4 — High-Speed CCTV Optical Perception, Zero-Lag Cascade Optimization & Auto-Expanding Feed HUD)
+> **Last Updated**: October 2026 (v3.6.5 — Exhaustive System Feature Audit, Browser Load Syntax Fix & IoT Door Telemetry Resiliency)
 
 ---
 
