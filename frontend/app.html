@@ -28,16 +28,28 @@
        REAL PHONE MINIMAL OUTLINE THEME (STRICTLY CONTAINED IN PHONE SCREEN)
        ========================================================================== */
     :root {
-      --bg-primary: #f8fafc;
-      --bg-card: #ffffff;
-      --border-color: #0f172a;
-      --border-outline: 1.5px solid #0f172a;
-      --border-outline-bold: 2px solid #0f172a;
+      /* User Master Color Palette Tokens */
+      --pal-yale-blue: #094074;      /* 094074: Yale Blue */
+      --pal-baltic-blue: #3C6997;    /* 3C6997: Baltic Blue */
+      --pal-sky-aqua: #5ADBFF;       /* 5ADBFF: Sky Aqua */
+      --pal-mustard: #FFDD4A;        /* FFDD4A: Mustard */
+      --pal-deep-saffron: #FE9000;   /* FE9000: Deep Saffron */
 
-      --blue-accent: #2563eb;
-      --green-accent: #16a34a;
-      --yellow-accent: #f59e0b;
-      --red-accent: #ef4444;
+      --bg-primary: #f4f8fb;
+      --bg-card: #ffffff;
+      --border-color: #094074;
+      --border-outline: 1.5px solid #094074;
+      --border-outline-bold: 2px solid #094074;
+
+      --blue-accent: #094074;
+      --baltic-accent: #3C6997;
+      --aqua-accent: #5ADBFF;
+      --mustard-accent: #FFDD4A;
+      --saffron-accent: #FE9000;
+
+      --green-accent: #5ADBFF;
+      --yellow-accent: #FFDD4A;
+      --red-accent: #FE9000;
 
       --font-main: 'Outfit', sans-serif;
       --font-mono: 'Space Grotesk', monospace;
@@ -47,13 +59,13 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    /* Dark Mode (Clean Dark Outline) */
+    /* Dark Mode (Sleek Yale Midnight & Sky Aqua Outline) */
     body.dark-mode {
-      --bg-primary: #090d16;
-      --bg-card: #131926;
-      --border-color: #38bdf8;
-      --border-outline: 1.5px solid #38bdf8;
-      --border-outline-bold: 2px solid #38bdf8;
+      --bg-primary: #041224;
+      --bg-card: #092342;
+      --border-color: #5ADBFF;
+      --border-outline: 1.5px solid #5ADBFF;
+      --border-outline-bold: 2px solid #5ADBFF;
       color: #f8fafc;
     }
     body.dark-mode .desktop-utility-bar,
@@ -64,23 +76,61 @@
     body.dark-mode .view-top-bar,
     body.dark-mode .messenger-input-bar,
     body.dark-mode .app-bottom-nav,
-    body.dark-mode .settings-group {
-      background: #131926 !important;
+    body.dark-mode .settings-group,
+    body.dark-mode .task-board-section {
+      background: #092342 !important;
       color: #f8fafc !important;
-      border-color: #38bdf8 !important;
+      border-color: #5ADBFF !important;
+    }
+    body.dark-mode .btn-top {
+      background: #092342 !important;
+      color: #f8fafc !important;
+      border-color: #5ADBFF !important;
+    }
+    body.dark-mode .btn-top:hover {
+      background: #0d2e53 !important;
+    }
+    body.dark-mode .btn-top.active {
+      background: #0d2e53 !important;
+      color: #5ADBFF !important;
+      border-color: #5ADBFF !important;
     }
     body.dark-mode .room-line-input {
       color: #f8fafc !important;
-      border-bottom-color: #64748b !important;
+      border-bottom-color: #3C6997 !important;
     }
     body.dark-mode .contact-item,
     body.dark-mode .notif-item {
-      background: #1e293b !important;
-      border-color: #38bdf8 !important;
+      background: #0d2e53 !important;
+      border-color: #5ADBFF !important;
       color: #f8fafc !important;
     }
     body.dark-mode .delta-brand-title {
       color: #f8fafc !important;
+    }
+    body.dark-mode .nav-tab-item.active {
+      color: #5ADBFF !important;
+    }
+    body.dark-mode .channel-tab.active {
+      background: #5ADBFF !important;
+      color: #041224 !important;
+      border-color: #5ADBFF !important;
+    }
+    body.dark-mode .role-btn.active {
+      background: #5ADBFF !important;
+      color: #041224 !important;
+      border-color: #5ADBFF !important;
+    }
+    body.dark-mode .btn-push-to-talk {
+      background: #07192f !important;
+      border-color: #5ADBFF !important;
+      color: #5ADBFF !important;
+    }
+    body.dark-mode .btn-push-to-talk.transmitting {
+      background: #FE9000 !important;
+      border-color: #FE9000 !important;
+      color: #ffffff !important;
+      box-shadow: 0 0 35px rgba(254, 144, 0, 0.7) !important;
     }
 
     * {
@@ -92,9 +142,15 @@
     }
 
     body {
-      background-color: #e2e8f0;
+      background-color: #092038;
+      background-image: 
+        radial-gradient(circle at 50% 15%, rgba(90, 219, 255, 0.12), transparent 60%),
+        radial-gradient(circle at 85% 85%, rgba(254, 144, 0, 0.08), transparent 50%),
+        linear-gradient(rgba(90, 219, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(90, 219, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
       font-family: var(--font-main);
-      color: #0f172a;
+      color: #094074;
       min-height: 100vh;
       min-height: 100dvh;
       display: flex;
@@ -180,9 +236,10 @@
     }
 
     .btn-top.active {
-      background: #eff6ff;
-      border-color: #2563eb;
-      color: #2563eb;
+      background: #e0f6fc;
+      border-color: #5ADBFF;
+      color: #094074;
+      font-weight: 800;
     }
 
     /* ==========================================================================
@@ -198,10 +255,10 @@
     .phone-chassis {
       width: 100%;
       background: #ffffff;
-      border: 2.5px solid #0f172a;
+      border: 3px solid #094074;
       border-radius: 38px;
       padding: 10px;
-      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 12px 36px rgba(9, 64, 116, 0.22), 0 0 20px rgba(90, 219, 255, 0.18);
       position: relative;
       box-sizing: border-box;
     }
@@ -211,7 +268,7 @@
       width: 100%;
       height: 760px;
       background: var(--bg-primary);
-      border: 1.5px solid #0f172a;
+      border: 1.5px solid #094074;
       border-radius: 28px;
       position: relative;
       overflow: hidden;
@@ -224,7 +281,8 @@
     .phone-dynamic-island {
       width: 110px;
       height: 24px;
-      background: #0f172a;
+      background: #094074;
+      border: 1px solid #5ADBFF;
       border-radius: 16px;
       margin: 6px auto 0;
       display: flex;
@@ -241,7 +299,8 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #22c55e;
+      background: #5ADBFF;
+      box-shadow: 0 0 6px #5ADBFF;
     }
 
     /* Phone Status Bar */
@@ -623,17 +682,17 @@
       margin-top: 1px;
       white-space: nowrap;
     }
-    .quick-action-btn.action-gate { border-color: #16a34a; }
-    .quick-action-btn.action-surge { border-color: #ef4444; }
-    .quick-action-btn.action-audio { border-color: #2563eb; }
-    .quick-action-btn.action-support { border-color: #f59e0b; }
+    .quick-action-btn.action-gate { border-color: #3C6997; }
+    .quick-action-btn.action-surge { border-color: #FE9000; background: #fff6eb; }
+    .quick-action-btn.action-audio { border-color: #094074; }
+    .quick-action-btn.action-support { border-color: #FFDD4A; background: #fffde8; }
     body.dark-mode .quick-action-section {
-      background: #131926;
-      border-color: #38bdf8;
+      background: #092342;
+      border-color: #5ADBFF;
     }
     body.dark-mode .quick-action-btn {
-      background: #1e293b;
-      border-color: #475569;
+      background: #0d2e53;
+      border-color: #3C6997;
     }
     body.dark-mode .quick-action-btn .action-title {
       color: #f8fafc;
@@ -649,7 +708,7 @@
     .room-meter-track {
       flex: 1;
       height: 7px;
-      background: #f1f5f9;
+      background: #e2eaf2;
       border: 1px solid #cbd5e1;
       border-radius: 6px;
       overflow: hidden;
@@ -661,13 +720,13 @@
       transition: width 0.3s ease;
     }
     .room-meter-fill.meter-nominal {
-      background: #16a34a;
+      background: #5ADBFF;
     }
     .room-meter-fill.meter-busy {
-      background: #f59e0b;
+      background: #FFDD4A;
     }
     .room-meter-fill.meter-alert {
-      background: #ef4444;
+      background: #FE9000;
       animation: meterPulse 1.5s infinite;
     }
     @keyframes meterPulse {
@@ -678,19 +737,19 @@
       font-family: var(--font-mono);
       font-size: 0.62rem;
       font-weight: 700;
-      color: #64748b;
+      color: #3C6997;
       white-space: nowrap;
     }
     body.dark-mode .room-meter-track {
-      background: #1e293b;
-      border-color: #475569;
+      background: #07192f;
+      border-color: #3C6997;
     }
 
     /* Feature 3: Cyber-Tactile Walkie-Talkie Visualizer */
     .voice-radar-container {
       width: 100%;
-      background: #0f172a;
-      border: 1.5px solid #38bdf8;
+      background: #092038;
+      border: 1.5px solid #5ADBFF;
       border-radius: 12px;
       padding: 8px 10px;
       display: flex;
@@ -711,15 +770,15 @@
       align-items: center;
       font-family: var(--font-mono);
       font-size: 0.65rem;
-      color: #38bdf8;
+      color: #5ADBFF;
       font-weight: 700;
-      border-top: 1px dashed rgba(56, 189, 248, 0.3);
+      border-top: 1px dashed rgba(90, 219, 255, 0.35);
       padding-top: 4px;
     }
     /* Point 6: Live Event Phase Ticker */
     .event-phase-ticker {
-      background: #ffffff;
-      border: var(--border-outline);
+      background: #eaf3fb;
+      border: 1.5px solid #3C6997;
       border-radius: 10px;
       padding: 6px 10px;
       display: flex;
@@ -734,15 +793,15 @@
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #16a34a;
-      box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7);
+      background: #FE9000;
+      box-shadow: 0 0 0 0 rgba(254, 144, 0, 0.7);
       animation: tickerGlow 2s infinite;
       flex-shrink: 0;
     }
     @keyframes tickerGlow {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
-      70% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(22, 163, 74, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(254, 144, 0, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(254, 144, 0, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(254, 144, 0, 0); }
     }
     .ticker-content {
       display: flex;
@@ -840,23 +899,26 @@
       transform: scale(0.98);
     }
     .identity-select-btn.active {
-      background: #eff6ff;
-      border: 1.5px solid #2563eb;
+      background: #e8f4fc;
+      border: 1.5px solid #094074;
     }
     .identity-check-mark {
       font-size: 0.68rem;
       font-weight: 800;
-      color: #2563eb;
+      color: #094074;
       font-family: var(--font-mono);
     }
     body.dark-mode .identity-select-btn {
-      background: #1e293b;
-      border-color: #475569;
+      background: #092342;
+      border-color: #3C6997;
       color: #f8fafc;
     }
     body.dark-mode .identity-select-btn.active {
-      background: #0c4a6e;
-      border-color: #38bdf8;
+      background: #0d3663;
+      border-color: #5ADBFF;
+    }
+    body.dark-mode .identity-select-btn.active .identity-check-mark {
+      color: #5ADBFF;
     }
 
     /* ROOMS SECTION (ROOM 1 to ROOM 5 with Lines) */
@@ -879,7 +941,7 @@
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
-      color: #64748b;
+      color: #3C6997;
       border-bottom: 1.5px solid #e2e8f0;
       padding-bottom: 6px;
       margin-bottom: 2px;
@@ -904,7 +966,7 @@
       font-size: 0.95rem;
       white-space: nowrap;
       letter-spacing: 0.5px;
-      color: #0f172a;
+      color: #094074;
       min-width: 70px;
     }
 
@@ -919,17 +981,17 @@
       width: 100%;
       background: transparent;
       border: none;
-      border-bottom: 1.5px solid #94a3b8;
+      border-bottom: 1.5px solid #cbd5e1;
       font-family: var(--font-main);
       font-size: 0.82rem;
       font-weight: 600;
-      color: #0f172a;
+      color: #094074;
       padding: 2px 4px 4px 2px;
       outline: none;
     }
 
     .room-line-input:focus {
-      border-bottom: 2px solid #2563eb;
+      border-bottom: 2px solid #5ADBFF;
     }
 
     .room-status-badge {
@@ -944,21 +1006,21 @@
     }
 
     .badge-nominal {
-      background: #f0fdf4;
-      color: #166534;
-      border-color: #16a34a;
+      background: #e0f8ff;
+      color: #094074;
+      border-color: #5ADBFF;
     }
 
     .badge-busy {
-      background: #fefce8;
-      color: #854d0e;
-      border-color: #eab308;
+      background: #fff8cc;
+      color: #7a5800;
+      border-color: #FFDD4A;
     }
 
     .badge-alert {
-      background: #fef2f2;
-      color: #991b1b;
-      border-color: #ef4444;
+      background: #ffe8cc;
+      color: #b35900;
+      border-color: #FE9000;
     }
 
     .room-sub-row {
@@ -1666,9 +1728,9 @@
       letter-spacing: 0.5px;
     }
     .task-count-badge {
-      background: #eff6ff;
-      border: 1px solid #2563eb;
-      color: #2563eb;
+      background: #e0f6fc;
+      border: 1px solid #5ADBFF;
+      color: #094074;
       font-size: 0.65rem;
       padding: 1px 6px;
       border-radius: 10px;
@@ -1676,9 +1738,9 @@
       font-weight: 800;
     }
     .btn-new-task-trigger {
-      background: #2563eb;
+      background: #094074;
       color: #ffffff;
-      border: none;
+      border: 1px solid #5ADBFF;
       border-radius: 6px;
       padding: 3px 8px;
       font-size: 0.68rem;
@@ -1718,7 +1780,7 @@
     }
     .btn-post-task {
       height: 28px;
-      background: #0f172a;
+      background: #094074;
       color: #ffffff;
       border: none;
       border-radius: 6px;
@@ -1743,16 +1805,17 @@
       transition: all 0.2s ease;
     }
     .task-card.task-urgent {
-      border-left: 3.5px solid #ef4444;
-      background: #fff5f5;
+      border-left: 3.5px solid #FE9000;
+      background: #fff8f0;
     }
     .task-card.task-normal {
-      border-left: 3.5px solid #3b82f6;
+      border-left: 3.5px solid #3C6997;
+      background: #f0f6fb;
     }
     .task-card.task-resolved {
-      opacity: 0.6;
-      border-left: 3.5px solid #10b981;
-      background: #f0fdf4;
+      opacity: 0.7;
+      border-left: 3.5px solid #5ADBFF;
+      background: #f0faff;
     }
     .task-card-top {
       display: flex;
@@ -1763,7 +1826,7 @@
       font-family: var(--font-mono);
       font-size: 0.65rem;
       font-weight: 800;
-      color: #334155;
+      color: #094074;
     }
     .task-badge-pill {
       font-size: 0.62rem;
@@ -1772,14 +1835,14 @@
       border-radius: 4px;
       font-family: var(--font-mono);
     }
-    .pill-urgent { background: #fee2e2; color: #991b1b; }
-    .pill-normal { background: #e0f2fe; color: #0369a1; }
-    .pill-claimed { background: #fef3c7; color: #92400e; }
-    .pill-resolved { background: #dcfce7; color: #166534; }
+    .pill-urgent { background: #ffe6cc; color: #b35900; }
+    .pill-normal { background: #dff0fa; color: #094074; }
+    .pill-claimed { background: #fff8cc; color: #855d00; }
+    .pill-resolved { background: #e0f8ff; color: #094074; }
     .task-title-text {
       font-size: 0.75rem;
       font-weight: 700;
-      color: #0f172a;
+      color: #094074;
       line-height: 1.25;
     }
     .task-card-footer {
@@ -1788,12 +1851,12 @@
       justify-content: space-between;
       margin-top: 2px;
       font-size: 0.65rem;
-      color: #64748b;
+      color: #3C6997;
     }
     .btn-task-action {
-      border: 1px solid #2563eb;
+      border: 1px solid #094074;
       background: #ffffff;
-      color: #2563eb;
+      color: #094074;
       border-radius: 5px;
       padding: 2px 8px;
       font-size: 0.65rem;
@@ -1801,15 +1864,15 @@
       cursor: pointer;
     }
     .btn-task-action.btn-resolve {
-      border-color: #16a34a;
-      color: #16a34a;
+      border-color: #3C6997;
+      color: #3C6997;
     }
 
     /* 2. QR Badge Scanner Modal */
     .qr-scanner-modal {
       position: absolute;
       inset: 0;
-      background: #0f172a;
+      background: #092038;
       z-index: 1200;
       display: none;
       flex-direction: column;
@@ -1824,8 +1887,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(15, 23, 42, 0.95);
+      border-bottom: 1px solid rgba(90, 219, 255, 0.2);
+      background: rgba(9, 32, 56, 0.96);
     }
     .qr-viewfinder-wrap {
       flex: 1;
@@ -1839,22 +1902,22 @@
     .qr-target-box {
       width: 220px;
       height: 220px;
-      border: 2px solid #38bdf8;
+      border: 2px solid #5ADBFF;
       border-radius: 16px;
       position: relative;
       overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: rgba(0, 0, 0, 0.3);
-      box-shadow: 0 0 25px rgba(56, 189, 248, 0.25);
+      background: rgba(0, 0, 0, 0.4);
+      box-shadow: 0 0 25px rgba(90, 219, 255, 0.35);
     }
     .qr-laser-line {
       position: absolute;
       width: 100%;
       height: 2.5px;
-      background: linear-gradient(90deg, transparent, #38bdf8, transparent);
-      box-shadow: 0 0 8px #38bdf8;
+      background: linear-gradient(90deg, transparent, #5ADBFF, transparent);
+      box-shadow: 0 0 8px #5ADBFF;
       animation: qrLaserScan 2s ease-in-out infinite alternate;
     }
     @keyframes qrLaserScan {
@@ -1863,8 +1926,8 @@
     }
     .qr-result-card {
       margin: 10px 12px;
-      background: rgba(30, 41, 59, 0.95);
-      border: 1.5px solid #38bdf8;
+      background: rgba(9, 32, 56, 0.95);
+      border: 1.5px solid #5ADBFF;
       border-radius: 12px;
       padding: 10px 12px;
       display: none;
@@ -1878,7 +1941,7 @@
     }
     .qr-chip-test {
       background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(255, 255, 255, 0.2);
+      border: 1px solid rgba(90, 219, 255, 0.4);
       color: #e2e8f0;
       border-radius: 14px;
       padding: 4px 9px;
@@ -1888,9 +1951,9 @@
       cursor: pointer;
     }
     .btn-qr-scan-top {
-      background: #eff6ff;
-      border: 1px solid #2563eb;
-      color: #2563eb;
+      background: #fff4e5;
+      border: 1.5px solid #FE9000;
+      color: #b35900;
       border-radius: 8px;
       padding: 4px 8px;
       font-size: 0.68rem;
@@ -1901,7 +1964,7 @@
       cursor: pointer;
     }
     .btn-qr-scan-top:hover {
-      background: #2563eb;
+      background: #FE9000;
       color: #ffffff;
     }
 
@@ -1911,7 +1974,7 @@
       align-items: center;
       gap: 5px;
       padding: 2px 8px;
-      background: #ef4444;
+      background: #FE9000;
       color: #ffffff;
       border-radius: 12px;
       font-size: 0.65rem;
@@ -1973,6 +2036,9 @@
     <div class="controls-group">
       <button id="btn-toggle-sfx" class="btn-top active">
         🔊 SFX: ON
+      </button>
+      <button id="btn-toggle-theme" class="btn-top" title="Toggle Palette Dark / Light Mode">
+        🌓 Dark Theme
       </button>
       <a href="index.html" class="btn-top">
         💻 Web OS
@@ -2262,81 +2328,81 @@
               <section class="venue-blueprint-section" id="venue-blueprint-section">
                 <div class="section-eyebrow">
                   <span>🗺️ Interactive Venue Blueprint</span>
-                  <span style="color:#2563eb; font-weight:700;">● 5 Chambers Active</span>
+                  <span style="color:#094074; font-weight:700;">● 5 Chambers Active</span>
                 </div>
 
                 <div class="blueprint-map-container">
                   <svg viewBox="0 0 340 180" class="blueprint-svg" id="blueprint-svg">
                     <defs>
                       <pattern id="blueprint-grid" width="16" height="16" patternUnits="userSpaceOnUse">
-                        <path d="M 16 0 L 0 0 0 16" fill="none" stroke="rgba(15, 23, 42, 0.08)" stroke-width="0.8"/>
+                        <path d="M 16 0 L 0 0 0 16" fill="none" stroke="rgba(9, 64, 116, 0.08)" stroke-width="0.8"/>
                       </pattern>
                     </defs>
                     <rect width="340" height="180" fill="url(#blueprint-grid)" rx="8" />
 
                     <!-- Central Corridor -->
-                    <rect x="20" y="75" width="300" height="30" fill="#f8fafc" stroke="#0f172a" stroke-width="1.2" stroke-dasharray="3,3" rx="4"/>
-                    <text x="170" y="93" font-family="'Space Grotesk', monospace" font-size="7" font-weight="700" fill="#64748b" text-anchor="middle">CENTRAL CORRIDOR CONCOURSE</text>
+                    <rect x="20" y="75" width="300" height="30" fill="#f8fafc" stroke="#3C6997" stroke-width="1.2" stroke-dasharray="3,3" rx="4"/>
+                    <text x="170" y="93" font-family="'Space Grotesk', monospace" font-size="7" font-weight="700" fill="#3C6997" text-anchor="middle">CENTRAL CORRIDOR CONCOURSE</text>
 
                     <!-- Gate A Entrance -->
                     <g class="map-gate" id="map-gate-a">
-                      <rect x="5" y="77" width="15" height="26" fill="#eff6ff" stroke="#2563eb" stroke-width="1.2" rx="2"/>
-                      <text x="12" y="93" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#2563eb" text-anchor="middle">GATE</text>
+                      <rect x="5" y="77" width="15" height="26" fill="#e0f8ff" stroke="#094074" stroke-width="1.2" rx="2"/>
+                      <text x="12" y="93" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#094074" text-anchor="middle">GATE</text>
                     </g>
 
                     <!-- Room 1 (Turing Hall - 250) -->
                     <g class="map-room" data-room="1" id="map-room-1">
-                      <rect x="20" y="10" width="85" height="55" fill="#fffbeb" stroke="#0f172a" stroke-width="1.5" rx="6"/>
-                      <circle cx="30" cy="22" r="3.5" fill="#f59e0b"/>
-                      <text x="38" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 1</text>
-                      <text x="28" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Turing (250)</text>
+                      <rect x="20" y="10" width="85" height="55" fill="#fffdf0" stroke="#094074" stroke-width="1.5" rx="6"/>
+                      <circle cx="30" cy="22" r="3.5" fill="#FFDD4A"/>
+                      <text x="38" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 1</text>
+                      <text x="28" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Turing (250)</text>
                       <rect x="28" y="46" width="69" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="28" y="46" width="56" height="4" fill="#f59e0b" rx="2"/>
-                      <text x="28" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#b45309">82% • Active</text>
+                      <rect x="28" y="46" width="56" height="4" fill="#FFDD4A" rx="2"/>
+                      <text x="28" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#7a5800">82% • Active</text>
                     </g>
 
                     <!-- Room 2 (Lovelace Suite - 120) -->
                     <g class="map-room" data-room="2" id="map-room-2">
-                      <rect x="115" y="10" width="85" height="55" fill="#f0fdf4" stroke="#0f172a" stroke-width="1.5" rx="6"/>
-                      <circle cx="125" cy="22" r="3.5" fill="#16a34a"/>
-                      <text x="133" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 2</text>
-                      <text x="123" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Lovelace (120)</text>
+                      <rect x="115" y="10" width="85" height="55" fill="#f0fbff" stroke="#094074" stroke-width="1.5" rx="6"/>
+                      <circle cx="125" cy="22" r="3.5" fill="#5ADBFF"/>
+                      <text x="133" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 2</text>
+                      <text x="123" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Lovelace (120)</text>
                       <rect x="123" y="46" width="69" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="123" y="46" width="31" height="4" fill="#16a34a" rx="2"/>
-                      <text x="123" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#15803d">45% • Nominal</text>
+                      <rect x="123" y="46" width="31" height="4" fill="#5ADBFF" rx="2"/>
+                      <text x="123" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#094074">45% • Nominal</text>
                     </g>
 
                     <!-- Room 3 (Hopper - 60) -->
                     <g class="map-room" data-room="3" id="map-room-3">
-                      <rect x="210" y="10" width="110" height="55" fill="#f0fdf4" stroke="#0f172a" stroke-width="1.5" rx="6"/>
-                      <circle cx="220" cy="22" r="3.5" fill="#16a34a"/>
-                      <text x="228" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 3</text>
-                      <text x="218" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Hopper (60)</text>
+                      <rect x="210" y="10" width="110" height="55" fill="#f0fbff" stroke="#094074" stroke-width="1.5" rx="6"/>
+                      <circle cx="220" cy="22" r="3.5" fill="#5ADBFF"/>
+                      <text x="228" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 3</text>
+                      <text x="218" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Hopper (60)</text>
                       <rect x="218" y="46" width="94" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="218" y="46" width="56" height="4" fill="#16a34a" rx="2"/>
-                      <text x="218" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#15803d">60% • Nominal</text>
+                      <rect x="218" y="46" width="56" height="4" fill="#5ADBFF" rx="2"/>
+                      <text x="218" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#094074">60% • Nominal</text>
                     </g>
 
                     <!-- Room 4 (Keynote Arena - 500) -->
                     <g class="map-room" data-room="4" id="map-room-4">
-                      <rect x="20" y="115" width="140" height="55" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" rx="6"/>
-                      <circle cx="30" cy="127" r="3.5" fill="#ef4444"/>
-                      <text x="38" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 4 (ARENA)</text>
-                      <text x="28" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Keynote Arena (500)</text>
+                      <rect x="20" y="115" width="140" height="55" fill="#fff5eb" stroke="#FE9000" stroke-width="1.5" rx="6"/>
+                      <circle cx="30" cy="127" r="3.5" fill="#FE9000"/>
+                      <text x="38" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 4 (ARENA)</text>
+                      <text x="28" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Keynote Arena (500)</text>
                       <rect x="28" y="151" width="124" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="28" y="151" width="112" height="4" fill="#ef4444" rx="2"/>
-                      <text x="28" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#b91c1c">91% • HIGH SURGE</text>
+                      <rect x="28" y="151" width="112" height="4" fill="#FE9000" rx="2"/>
+                      <text x="28" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#b35900">91% • HIGH SURGE</text>
                     </g>
 
                     <!-- Room 5 (Innovation Lab - 1200) -->
                     <g class="map-room" data-room="5" id="map-room-5">
-                      <rect x="170" y="115" width="150" height="55" fill="#f0fdf4" stroke="#0f172a" stroke-width="1.5" rx="6"/>
-                      <circle cx="180" cy="127" r="3.5" fill="#16a34a"/>
-                      <text x="188" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 5 (LAB)</text>
-                      <text x="178" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Innovation Lab (1,200)</text>
+                      <rect x="170" y="115" width="150" height="55" fill="#f0fbff" stroke="#094074" stroke-width="1.5" rx="6"/>
+                      <circle cx="180" cy="127" r="3.5" fill="#5ADBFF"/>
+                      <text x="188" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 5 (LAB)</text>
+                      <text x="178" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Innovation Lab (1,200)</text>
                       <rect x="178" y="151" width="134" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="178" y="151" width="46" height="4" fill="#16a34a" rx="2"/>
-                      <text x="178" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#15803d">35% • Nominal</text>
+                      <rect x="178" y="151" width="46" height="4" fill="#5ADBFF" rx="2"/>
+                      <text x="178" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#094074">35% • Nominal</text>
                     </g>
                   </svg>
                 </div>
@@ -3760,13 +3826,47 @@
       document.addEventListener('click', unlockAudio, { once: true });
       document.addEventListener('touchstart', unlockAudio, { once: true });
 
-      // Settings toggles
+      // Theme Dark/Light Palette synchronization & persistence
       const settingDarkmode = document.getElementById('setting-darkmode');
+      const btnToggleTheme = document.getElementById('btn-toggle-theme');
+
+      function applyAppTheme(isDark) {
+        document.body.classList.toggle('dark-mode', isDark);
+        if (settingDarkmode) settingDarkmode.checked = isDark;
+        if (btnToggleTheme) {
+          btnToggleTheme.innerHTML = isDark ? '☀️ Light Theme' : '🌓 Dark Theme';
+          btnToggleTheme.classList.toggle('active', isDark);
+        }
+        try {
+          localStorage.setItem('delta_theme_dark', isDark ? '1' : '0');
+        } catch (e) {}
+      }
+
+      // Check saved theme or URL parameter
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlDark = urlParams.get('dark');
+        if (urlDark === '1' || urlDark === 'true') {
+          applyAppTheme(true);
+        } else if (localStorage.getItem('delta_theme_dark') === '1') {
+          applyAppTheme(true);
+        }
+      } catch (e) {}
+
       if (settingDarkmode) {
         settingDarkmode.addEventListener('change', () => {
           playSound('click');
-          document.body.classList.toggle('dark-mode', settingDarkmode.checked);
+          applyAppTheme(settingDarkmode.checked);
           showToast(`Theme: ${settingDarkmode.checked ? 'Dark Outline' : 'Light Outline'}`);
+        });
+      }
+
+      if (btnToggleTheme) {
+        btnToggleTheme.addEventListener('click', () => {
+          playSound('click');
+          const isCurrentlyDark = document.body.classList.contains('dark-mode');
+          applyAppTheme(!isCurrentlyDark);
+          showToast(`Theme: ${!isCurrentlyDark ? 'Dark Outline' : 'Light Outline'}`);
         });
       }
 
