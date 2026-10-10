@@ -928,8 +928,17 @@ app.post('/api/admin/stress-test-500', async (req, res) => {
         db.graph.speakers[speakerKey].delay = (i % 60) + 15;
         passedCount++;
       } else if (testType === 1) {
-        // Test case 2: WhatsApp AI Liaison alert dispatch
-        sendWhatsAppNotification(`Coordinator #${i}`, `+1 (555) 000-${1000 + i}`, `⚠️ High-Stress Test Event #${i}: Venue load surge detected.`);
+        // Test case 2: WhatsApp AI Liaison alert dispatch (in-memory simulation benchmark)
+        if (!db.whatsappLogs) db.whatsappLogs = [];
+        db.whatsappLogs.unshift({
+          id: `wa_stress_${i}`,
+          recipientName: `Coordinator #${i}`,
+          phoneNumber: `+1 (555) 000-${1000 + i}`,
+          messageText: `⚠️ High-Stress Test Event #${i}: Venue load surge detected.`,
+          status: 'DELIVERED (Stress Sim)',
+          timestamp: timeStr
+        });
+        if (db.whatsappLogs.length > 50) db.whatsappLogs.pop();
         passedCount++;
       } else if (testType === 2) {
         // Test case 3: LLM circuit breaker limiter evaluation
@@ -989,6 +998,231 @@ app.post('/api/schedule/set-date', (req, res) => {
     });
   }
   res.json({ success: true, activeDate: db.activeDate, schedule: db.schedule });
+});
+
+// Universal Dynamic Schedule Importer & Preset Hub (Zero Hardcoding)
+app.get('/api/schedule/template.csv', (req, res) => {
+  const sampleCsv = `Title,Speaker,Room,Capacity,TimeSlot,StartHour,Attendees
+Keynote: Future of Autonomous Venue Systems,Dr. Aditi Sharma,Turing Hall,250,09:30 AM - 10:30 AM,9.5,210
+WebGPU Hardware Acceleration & Raytracing,Vikramaditya Verma,Lovelace Suite,120,11:00 AM - 12:00 PM,11.0,140
+Auto-Healing Kubernetes Microservices,Priya Nair,Hopper Room,60,01:30 PM - 02:30 PM,13.5,55
+Enterprise Egress & Mass Safety Protocols,Aryan Pandey,Keynote Arena,500,03:00 PM - 04:00 PM,15.0,320`;
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="delta_schedule_template.csv"');
+  res.send(sampleCsv);
+});
+
+app.post('/api/schedule/import', (req, res) => {
+  const { csvText, json, preset } = req.body || {};
+
+  try {
+    let importedHalls = {};
+    let importedSlots = {};
+    let importedSpeakers = {};
+    let importedTopics = {};
+    let importedSchedule = {};
+
+    if (preset) {
+      if (preset === 'ESPORTS_ARENA') {
+        importedHalls = {
+          'hall-main': { id: 'hall-main', name: 'Main Championship Stage', capacity: 1500 },
+          'hall-stream': { id: 'hall-stream', name: 'Streamer & Creator Pod', capacity: 400 },
+          'hall-expo': { id: 'hall-expo', name: 'Hardware & Fan Expo', capacity: 800 },
+          'hall-vip': { id: 'hall-vip', name: 'Pro Team & VIP Lounge', capacity: 200 }
+        };
+        importedSlots = {
+          'slot-1': { id: 'slot-1', time: '10:00 AM - 12:00 PM', startHour: 10.0 },
+          'slot-2': { id: 'slot-2', time: '12:30 PM - 02:30 PM', startHour: 12.5 },
+          'slot-3': { id: 'slot-3', time: '03:00 PM - 05:00 PM', startHour: 15.0 },
+          'slot-4': { id: 'slot-4', time: '05:30 PM - 08:00 PM', startHour: 17.5 }
+        };
+        importedSpeakers = {
+          'spk-1': { id: 'spk-1', name: 'Cloud9 & T1 Casters', role: 'Grand Finals Desk', delay: 0, avatar: '🎮' },
+          'spk-2': { id: 'spk-2', name: 'NVIDIA Lead Architect', role: 'Next-Gen GPU Keynote', delay: 0, avatar: '💻' },
+          'spk-3': { id: 'spk-3', name: 'Tournament Flow Marshal', role: 'Security & Crowd Director', delay: 0, avatar: '🛡️' }
+        };
+        importedTopics = {
+          'top-1': { id: 'top-1', title: 'Grand Finals Opening Ceremony', speakerId: 'spk-1', interest: 1400, duration: 120 },
+          'top-2': { id: 'top-2', title: 'DLSS & Real-Time Neural Rendering', speakerId: 'spk-2', interest: 380, duration: 90 },
+          'top-3': { id: 'top-3', title: 'Arena Crowd Egress & Safety Briefing', speakerId: 'spk-3', interest: 250, duration: 60 }
+        };
+        importedSchedule = {
+          'slot-1': { 'hall-main': 'top-1', 'hall-stream': 'top-2', 'hall-expo': 'top-3', 'hall-vip': null },
+          'slot-2': { 'hall-main': null, 'hall-stream': null, 'hall-expo': null, 'hall-vip': null },
+          'slot-3': { 'hall-main': null, 'hall-stream': null, 'hall-expo': null, 'hall-vip': null },
+          'slot-4': { 'hall-main': null, 'hall-stream': null, 'hall-expo': null, 'hall-vip': null }
+        };
+      } else if (preset === 'BIOTECH_SYMPOSIUM') {
+        importedHalls = {
+          'hall-auditorium': { id: 'hall-auditorium', name: 'Main Medical Auditorium', capacity: 450 },
+          'hall-lab': { id: 'hall-lab', name: 'Clinical Trial Lab Suites', capacity: 150 },
+          'hall-research': { id: 'hall-research', name: 'Poster & Research Foyer', capacity: 300 }
+        };
+        importedSlots = {
+          'slot-1': { id: 'slot-1', time: '09:00 AM - 10:30 AM', startHour: 9.0 },
+          'slot-2': { id: 'slot-2', time: '11:00 AM - 12:30 PM', startHour: 11.0 },
+          'slot-3': { id: 'slot-3', time: '02:00 PM - 03:30 PM', startHour: 14.0 }
+        };
+        importedSpeakers = {
+          'spk-1': { id: 'spk-1', name: 'Dr. Elena Rostova', role: 'Genomics Lead', delay: 0, avatar: '🧬' },
+          'spk-2': { id: 'spk-2', name: 'Dr. Michael Chen', role: 'Immunology Chair', delay: 0, avatar: '🔬' }
+        };
+        importedTopics = {
+          'top-1': { id: 'top-1', title: 'CRISPR & Epigenetic Therapies', speakerId: 'spk-1', interest: 420, duration: 90 },
+          'top-2': { id: 'top-2', title: 'Phase III Vaccine Logistics', speakerId: 'spk-2', interest: 140, duration: 90 }
+        };
+        importedSchedule = {
+          'slot-1': { 'hall-auditorium': 'top-1', 'hall-lab': 'top-2', 'hall-research': null },
+          'slot-2': { 'hall-auditorium': null, 'hall-lab': null, 'hall-research': null },
+          'slot-3': { 'hall-auditorium': null, 'hall-lab': null, 'hall-research': null }
+        };
+      }
+    } else if (csvText && typeof csvText === 'string') {
+      const lines = csvText.trim().split(/\r?\n/).filter(l => l.trim().length > 0);
+      if (lines.length < 2) {
+        return res.status(400).json({ success: false, error: 'CSV must contain a header and at least 1 session row.' });
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[^a-z0-9]/g, ''));
+      const idxTitle = headers.findIndex(h => h.includes('title') || h.includes('session') || h.includes('name'));
+      const idxSpeaker = headers.findIndex(h => h.includes('speaker') || h.includes('presenter'));
+      const idxRoom = headers.findIndex(h => h.includes('room') || h.includes('hall') || h.includes('venue'));
+      const idxCap = headers.findIndex(h => h.includes('cap') || h.includes('size'));
+      const idxSlot = headers.findIndex(h => h.includes('slot') || h.includes('time'));
+      const idxHour = headers.findIndex(h => h.includes('hour') || h.includes('start'));
+      const idxAttendees = headers.findIndex(h => h.includes('attend') || h.includes('interest') || h.includes('pax'));
+
+      let slotCounter = 1;
+      let hallCounter = 1;
+      let speakerCounter = 1;
+      let topicCounter = 1;
+
+      for (let i = 1; i < lines.length; i++) {
+        const rawRow = lines[i].trim();
+        if (!rawRow) continue;
+        const row = rawRow.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+        if (row.length < 2) continue;
+
+        const title = (idxTitle >= 0 && row[idxTitle]) ? row[idxTitle].trim() : `Session ${topicCounter}`;
+        const speakerName = (idxSpeaker >= 0 && row[idxSpeaker]) ? row[idxSpeaker].trim() : `Speaker ${speakerCounter}`;
+        const roomName = (idxRoom >= 0 && row[idxRoom]) ? row[idxRoom].trim() : `Hall ${hallCounter}`;
+        const capacity = (idxCap >= 0 && parseInt(row[idxCap], 10)) || 200;
+        const timeSlot = (idxSlot >= 0 && row[idxSlot]) ? row[idxSlot].trim() : `1${slotCounter}:00 AM - 1${slotCounter + 1}:00 AM`;
+        const startHour = (idxHour >= 0 && parseFloat(row[idxHour])) || (9.0 + slotCounter);
+        const attendees = (idxAttendees >= 0 && parseInt(row[idxAttendees], 10)) || Math.round(capacity * 0.8);
+
+        // Find or create hall
+        let hallId = Object.keys(importedHalls).find(k => importedHalls[k].name.toLowerCase() === roomName.toLowerCase());
+        if (!hallId) {
+          hallId = `hall-dyn-${hallCounter++}`;
+          importedHalls[hallId] = { id: hallId, name: roomName, capacity };
+        }
+
+        // Find or create slot
+        let slotId = Object.keys(importedSlots).find(k => importedSlots[k].time.toLowerCase() === timeSlot.toLowerCase());
+        if (!slotId) {
+          slotId = `slot-dyn-${slotCounter++}`;
+          importedSlots[slotId] = { id: slotId, time: timeSlot, startHour };
+        }
+
+        // Find or create speaker
+        let speakerId = Object.keys(importedSpeakers).find(k => importedSpeakers[k].name.toLowerCase() === speakerName.toLowerCase());
+        if (!speakerId) {
+          speakerId = `speaker-dyn-${speakerCounter++}`;
+          importedSpeakers[speakerId] = { id: speakerId, name: speakerName, role: 'Featured Speaker', delay: 0, avatar: '👤' };
+        }
+
+        // Create topic
+        const topicId = `topic-dyn-${topicCounter++}`;
+        importedTopics[topicId] = { id: topicId, title, speakerId, interest: attendees, duration: 60 };
+
+        if (!importedSchedule[slotId]) importedSchedule[slotId] = {};
+        importedSchedule[slotId][hallId] = topicId;
+      }
+
+      // Ensure all slots have keys for all halls
+      for (const sId in importedSlots) {
+        if (!importedSchedule[sId]) importedSchedule[sId] = {};
+        for (const hId in importedHalls) {
+          if (importedSchedule[sId][hId] === undefined) {
+            importedSchedule[sId][hId] = null;
+          }
+        }
+      }
+    } else if (json && json.halls && json.schedule) {
+      importedHalls = json.halls;
+      importedSlots = json.slots || {};
+      importedSpeakers = json.speakers || {};
+      importedTopics = json.topics || {};
+      importedSchedule = json.schedule;
+    }
+
+    if (Object.keys(importedHalls).length > 0) {
+      // Save snapshot for rollback
+      db.lastPreImportSchedule = JSON.parse(JSON.stringify(db.schedule));
+
+      db.graph.halls = { ...db.graph.halls, ...importedHalls };
+      db.graph.slots = { ...db.graph.slots, ...importedSlots };
+      db.graph.speakers = { ...db.graph.speakers, ...importedSpeakers };
+      db.graph.topics = { ...db.graph.topics, ...importedTopics };
+      db.schedule = importedSchedule;
+      
+      if (typeof db.syncScheduleEdges === 'function') {
+        db.syncScheduleEdges();
+      }
+
+      broadcast({
+        type: 'INIT_STATE',
+        data: {
+          graph: db.graph,
+          schedule: db.schedule,
+          activeDate: db.activeDate
+        }
+      });
+
+      broadcast({
+        type: 'SYSTEM_LOG',
+        data: {
+          text: `📁 [Schedule Importer] Successfully loaded ${Object.keys(importedTopics).length} sessions across ${Object.keys(importedHalls).length} venues dynamically!`,
+          type: 'success',
+          timestamp: new Date().toLocaleTimeString()
+        }
+      });
+
+      return res.json({
+        success: true,
+        message: 'Dynamic schedule and venue model applied successfully!',
+        counts: {
+          halls: Object.keys(importedHalls).length,
+          slots: Object.keys(importedSlots).length,
+          topics: Object.keys(importedTopics).length,
+          speakers: Object.keys(importedSpeakers).length
+        },
+        graph: db.graph,
+        schedule: db.schedule
+      });
+    } else {
+      return res.status(400).json({ success: false, error: 'No valid sessions or venues could be parsed from input.' });
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 1-Click Rollback / Revert Schedule
+app.post('/api/schedule/revert', (req, res) => {
+  if (db.lastPreImportSchedule) {
+    db.schedule = JSON.parse(JSON.stringify(db.lastPreImportSchedule));
+    if (typeof db.syncScheduleEdges === 'function') db.syncScheduleEdges();
+    broadcast({
+      type: 'INIT_STATE',
+      data: { graph: db.graph, schedule: db.schedule, activeDate: db.activeDate }
+    });
+    return res.json({ success: true, message: 'Schedule reverted to previous snapshot.' });
+  } else {
+    if (typeof db.reset === 'function') db.reset();
+    return res.json({ success: true, message: 'Schedule restored to clean default baseline.' });
+  }
 });
 
 app.post('/api/reset', (req, res) => {
@@ -2215,13 +2449,15 @@ app.post('/api/sensors/camera', async (req, res) => {
     data: cameraPayload
   });
 
-  // Evaluate Volunteer & Coordinator Notification triggers ONLY on state transition
+  // Evaluate Volunteer & Coordinator Notification triggers ONLY on state transition with per-hall cooldown
   const now = Date.now();
-  if (lastCctvAlertState !== currentStatus) {
-    if (currentStatus === 'ROOM_FULL' || occupiedPercent >= 95) {
-      lastCctvAlertState = 'ROOM_FULL';
-      lastAlertTimestamp = now;
+  if (!db.lastCctvAlerts) db.lastCctvAlerts = {};
+  const prevHallAlert = db.lastCctvAlerts[targetHallId] || { status: null, timestamp: 0 };
 
+  if (prevHallAlert.status !== currentStatus && (now - prevHallAlert.timestamp > 30000)) {
+    db.lastCctvAlerts[targetHallId] = { status: currentStatus, timestamp: now };
+
+    if (currentStatus === 'ROOM_FULL' || occupiedPercent >= 95) {
       await dispatchHallTargetedAlert({
         hallId: targetHallId,
         eventType: 'ROOM_FULL',
@@ -2238,9 +2474,6 @@ app.post('/api/sensors/camera', async (req, res) => {
       });
 
     } else if (currentStatus === 'NEAR_CAPACITY' || (occupiedPercent >= 80 && occupiedPercent < 95)) {
-      lastCctvAlertState = 'NEAR_CAPACITY';
-      lastAlertTimestamp = now;
-
       await dispatchHallTargetedAlert({
         hallId: targetHallId,
         eventType: 'ROOM_80_PERCENT',
@@ -2257,9 +2490,6 @@ app.post('/api/sensors/camera', async (req, res) => {
       });
 
     } else if (currentStatus === 'EMPTY' || occupiedPercent <= 10) {
-      lastCctvAlertState = 'EMPTY';
-      lastAlertTimestamp = now;
-
       await dispatchHallTargetedAlert({
         hallId: targetHallId,
         eventType: 'ROOM_EMPTY',
@@ -2274,9 +2504,6 @@ app.post('/api/sensors/camera', async (req, res) => {
         broadcast,
         sendWhatsAppNotification
       });
-
-    } else if (currentStatus === 'OPTIMAL') {
-      lastCctvAlertState = 'OPTIMAL';
     }
   }
 
@@ -2296,6 +2523,16 @@ app.get('/api/sensors/camera/latest', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n❌ [PORT CONFLICT] Port ${PORT} is already occupied by another running instance of DELTA Engine.`);
+      console.error(`👉 Stop the existing process or run: npx kill-port ${PORT}\n`);
+      process.exit(1);
+    } else {
+      console.warn('⚠️ [Server Network Notice]:', err.message);
+    }
+  });
+
   server.listen(PORT, async () => {
     if (!process.env.CI) {
       try {

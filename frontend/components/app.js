@@ -58,14 +58,14 @@ let dragStartY = 0;
 window.addEventListener('DOMContentLoaded', () => {
   removeLogoBackground();
 
-  // Shackleton Global Loader Smooth Fade-Out (3.6s loop)
+  // Shackleton Global Loader Smooth Fade-Out
   setTimeout(() => {
     const loader = document.getElementById('global-loader');
     if (loader) {
       loader.classList.add('fade-out');
-      setTimeout(() => loader.remove(), 800);
+      setTimeout(() => loader.remove(), 600);
     }
-  }, 3600);
+  }, 400);
 
   initWebSockets();
   initFormListeners();
@@ -91,11 +91,12 @@ window.addEventListener('DOMContentLoaded', () => {
   initScenarioLabDrawer(); // Unified Scenario & Stress Lab drawer controller
   initAutopilotController(); // Tesla Autopilot autonomous mode controller
   initFireMarshalCompliance(); // Regulatory NFPA-101 Fire Marshal compliance auditor
+  initScheduleImporter(); // Universal dynamic schedule & venue importer
 
   // Custom Node Graph animation loop (sleeps when settled)
   if (typeof wakePhysicsSimulation === 'function') {
     wakePhysicsSimulation();
-  } else {
+  } else if (typeof physicsTick === 'function') {
     requestAnimationFrame(physicsTick);
   }
 });
@@ -1381,4 +1382,105 @@ function initFireMarshalCompliance() {
 
   // Initial fetch to sync card badge on load
   fetchAndUpdateAuditReport(false);
+}
+
+// --- UNIVERSAL DYNAMIC SCHEDULE & VENUE IMPORTER CONTROLLER ---
+function initScheduleImporter() {
+  const btnOpen = document.getElementById('btn-open-importer');
+  const modal = document.getElementById('modal-schedule-importer');
+  const btnClose = document.getElementById('btn-close-importer');
+  const btnSubmitCsv = document.getElementById('btn-submit-csv-import');
+  const csvTextarea = document.getElementById('import-csv-textarea');
+  const btnRevert = document.getElementById('btn-revert-schedule');
+  const presetBtns = document.querySelectorAll('.btn-preset-import');
+
+  if (btnOpen && modal) {
+    btnOpen.addEventListener('click', () => {
+      modal.classList.remove('hidden');
+    });
+  }
+
+  if (btnClose && modal) {
+    btnClose.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+  }
+
+  // Handle Preset Buttons
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const preset = btn.getAttribute('data-preset');
+      const origText = btn.textContent;
+      btn.textContent = '⏳ Ingesting...';
+      try {
+        const res = await fetch('/api/schedule/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ preset })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (typeof createToast === 'function') createToast(`✅ Loaded preset (${data.counts.topics} sessions across ${data.counts.halls} halls)!`, 'success');
+          if (typeof playSuccessSfx === 'function') playSuccessSfx();
+          if (modal) modal.classList.add('hidden');
+        } else {
+          if (typeof createToast === 'function') createToast(`Import error: ${data.error}`, 'warning');
+        }
+      } catch (err) {
+        if (typeof createToast === 'function') createToast('Import failed. Check network.', 'conflict');
+      } finally {
+        btn.textContent = origText;
+      }
+    });
+  });
+
+  // Handle Custom CSV Submit
+  if (btnSubmitCsv && csvTextarea) {
+    btnSubmitCsv.addEventListener('click', async () => {
+      const csvText = csvTextarea.value.trim();
+      if (!csvText) {
+        if (typeof createToast === 'function') createToast('Please paste CSV text or download the sample template first.', 'info');
+        return;
+      }
+
+      btnSubmitCsv.textContent = '⏳ Parsing & Compiling Graph...';
+      try {
+        const res = await fetch('/api/schedule/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ csvText })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (typeof createToast === 'function') createToast(`✅ Successfully compiled ${data.counts.topics} sessions across ${data.counts.halls} halls into live graph!`, 'success');
+          if (typeof playSuccessSfx === 'function') playSuccessSfx();
+          csvTextarea.value = '';
+          if (modal) modal.classList.add('hidden');
+        } else {
+          if (typeof createToast === 'function') createToast(`CSV Parse Error: ${data.error}`, 'warning');
+        }
+      } catch (err) {
+        if (typeof createToast === 'function') createToast('CSV ingestion failed.', 'conflict');
+      } finally {
+        btnSubmitCsv.textContent = '⚡ INGEST & APPLY TO LIVE ENGINE';
+      }
+    });
+  }
+
+  // Handle 1-Click Rollback / Revert
+  if (btnRevert) {
+    btnRevert.addEventListener('click', async () => {
+      try {
+        const res = await fetch('/api/schedule/revert', { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          if (typeof createToast === 'function') createToast('↩️ Reverted schedule to previous snapshot!', 'info');
+          if (modal) modal.classList.add('hidden');
+        }
+      } catch (e) {}
+    });
+  }
 }

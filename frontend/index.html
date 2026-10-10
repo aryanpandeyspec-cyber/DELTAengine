@@ -31,6 +31,15 @@
       </div>
     </div>
   </div>
+  <script>
+    setTimeout(function() {
+      var l = document.getElementById('global-loader');
+      if (l) {
+        l.classList.add('fade-out');
+        setTimeout(function() { if (l && l.parentNode) l.remove(); }, 600);
+      }
+    }, 800);
+  </script>
 
   <!-- Neubrutalist Grid Background overlay -->
   <div class="grid-overlay"></div>
@@ -616,6 +625,11 @@
                   style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; padding:4px 8px;"
                   title="Select Calendar Date to View Schedule Matrix">
                 <span class="badge badge-blue">Dynamic Grid</span>
+                <button id="btn-open-importer" class="btn btn-sm btn-yellow"
+                  style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:4px 10px; cursor:pointer;"
+                  title="Import Custom Schedule (CSV / Presets / Zero Hardcoding)">
+                  📁 Import Schedule ↗
+                </button>
               </div>
             </div>
             <div class="card-body">
@@ -1530,6 +1544,71 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DYNAMIC SCHEDULE & VENUE IMPORTER MODAL (ZERO HARDCODING) -->
+    <div id="modal-schedule-importer" class="modal-backdrop hidden" style="z-index: 10003;">
+      <div class="modal-card" style="max-width: 760px; width: 92%; max-height: 90vh; overflow-y: auto; border: 3px solid #000; box-shadow: 10px 10px 0px #000; border-radius: 12px; background: #fff; padding: 24px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.4rem;">📁</span>
+              <h2 style="font-size:1.2rem; font-weight:900; margin:0; font-family:var(--font-mono); color:#0f172a;">
+                UNIVERSAL DYNAMIC SCHEDULE & VENUE IMPORTER
+              </h2>
+            </div>
+            <div style="font-size:0.75rem; color:#475569; font-weight:700; font-family:var(--font-mono); margin-top:2px;">
+              Zero hardcoding • Import real-world CSV schedules, load industry presets, or rollback snapshots
+            </div>
+          </div>
+          <button id="btn-close-importer" class="btn-close-modal" aria-label="Close" style="font-size:1.5rem; line-height:1; cursor:pointer; background:none; border:none; font-weight:900;">&times;</button>
+        </div>
+
+        <!-- 1-Click Industry Presets -->
+        <div style="background:#f8fafc; border:2px solid #000; border-radius:8px; padding:12px; margin-bottom:16px;">
+          <div style="font-size:0.72rem; font-weight:900; font-family:var(--font-mono); color:#0f172a; margin-bottom:8px;">
+            ⚡ 1-CLICK INDUSTRY DEMO PRESETS (INSTANT TRANSITION):
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:8px;">
+            <button class="btn btn-sm btn-white btn-preset-import" data-preset="TECH_SUMMIT" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; padding:8px;">
+              🏙️ Tech Summit (4 Halls)
+            </button>
+            <button class="btn btn-sm btn-white btn-preset-import" data-preset="ESPORTS_ARENA" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; padding:8px;">
+              🎮 Esports Arena (Championship)
+            </button>
+            <button class="btn btn-sm btn-white btn-preset-import" data-preset="BIOTECH_SYMPOSIUM" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; padding:8px;">
+              🧬 Biotech Symposium (Labs)
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom CSV Ingestion Form -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="font-size:0.75rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">
+              📄 PASTE OR DRAG CSV SCHEDULE DATA:
+            </label>
+            <a href="/api/schedule/template.csv" download="delta_schedule_template.csv" class="btn btn-sm btn-yellow" style="text-decoration:none; font-size:0.7rem; font-weight:800; font-family:var(--font-mono); padding:2px 8px; border:1.5px solid #000;">
+              ⬇️ Download Sample CSV Template
+            </a>
+          </div>
+          <textarea id="import-csv-textarea" rows="7" placeholder="Title,Speaker,Room,Capacity,TimeSlot,StartHour,Attendees&#10;Keynote: Future of Autonomous Venue Systems,Dr. Aditi Sharma,Turing Hall,250,09:30 AM - 10:30 AM,9.5,210&#10;WebGPU Hardware Acceleration & Raytracing,Vikramaditya Verma,Lovelace Suite,120,11:00 AM - 12:00 PM,11.0,140"
+            style="width:100%; box-sizing:border-box; font-family:var(--font-mono); font-size:0.78rem; padding:10px; border:2px solid #000; border-radius:8px; background:#fffbeb; resize:vertical;"></textarea>
+          <div style="font-size:0.68rem; color:#64748b; font-family:var(--font-mono); margin-top:4px;">
+            Expected columns: <code>Title, Speaker, Room, Capacity, TimeSlot, StartHour, Attendees</code> (comma separated).
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:2px solid #000; padding-top:14px;">
+          <button id="btn-revert-schedule" class="btn btn-sm btn-white" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+            ↩️ Revert to Previous Snapshot
+          </button>
+          <button id="btn-submit-csv-import" class="btn btn-sm btn-green" style="font-weight:900; font-family:var(--font-mono); font-size:0.8rem; border:2px solid #000; box-shadow:3px 3px 0px #000; padding:8px 18px; cursor:pointer;">
+            ⚡ INGEST & APPLY TO LIVE ENGINE
+          </button>
         </div>
       </div>
     </div>

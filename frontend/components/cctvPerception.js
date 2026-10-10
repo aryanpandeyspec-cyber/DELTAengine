@@ -176,7 +176,16 @@
   function bootCctv() {
     initDetectors();
     initPico();
-    initCocoSsd();
+    // Zero-lag deferred initialization: don't block main thread on initial page load
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(() => {
+        if (!cocoModel && !isCocoLoading) initCocoSsd();
+      }, { timeout: 5000 });
+    } else {
+      setTimeout(() => {
+        if (!cocoModel && !isCocoLoading) initCocoSsd();
+      }, 3500);
+    }
     bindCctvElements();
     initVolunteerAlertBanner();
     requestPushPermission();

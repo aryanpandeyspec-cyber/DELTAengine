@@ -1,21 +1,48 @@
-// --- INTERACTIVE TOUR SANDBOX GUIDE (QoL) ---
+// --- DELTA ENGINE — INTERACTIVE ENTERPRISE TOUR GUIDE ---
+// Provides a step-by-step interactive spotlight onboarding tutorial across the 7 core pillars:
+// 1. Live Matrix & Deterministic Graph Solver
+// 2. Universal Schedule & Venue Importer (CSV / Presets)
+// 3. Real-Time Optical & Computer Vision Telemetry
+// 4. Supervised Autonomy & 15s Action SLA
+// 5. NFPA-101 Fire Marshal Regulatory Compliance
+// 6. Mobile Field Marshal Terminal (/volunteer)
+// 7. Zoned Autonomous Voice Announcements
 
 const tourSteps = [
   {
-    text: "Drag & Drop: Drag any scheduled session card inside the Live Matrix grid and drop it in another cell to reschedule manually. The Agent will validate and heal any capacity overflows!",
+    title: "1. Live Schedule Matrix & Graph Solver",
+    text: "Drag & drop any session card between halls. If an overflow or conflict is detected, DELTA Engine's deterministic solver heals the schedule in <0.2ms with zero hot-path delay.",
     highlightId: "schedule-table"
   },
   {
-    text: "Node Inspector: Click on any circle node in the dynamic network graph. It will open the Database Inspector card below the graph to show linked topics, speakers, and venue capacities.",
-    highlightId: "graph-container"
+    title: "2. Universal Dynamic Schedule Importer",
+    text: "Zero hardcoding! Click 'Import Schedule' to upload your own CSV schedule or 1-click load presets (Esports Arena, Biotech Symposium, Tech Summit).",
+    highlightId: "btn-open-importer"
   },
   {
-    text: "Self-Healing Solver: Select a speaker from the delays form, choose a delay value, and click 'Trigger'. Watch the Agent write its multi-step logical chain of thoughts in the terminal log!",
-    highlightId: "agent-logs"
+    title: "3. Real-Time Sensor & Computer Vision Telemetry",
+    text: "Monitors real-time attendee ingress via optical LiDAR tripwires, USB webcams, and Eulerian crowd density flux vectors to detect crowd surges before stampedes form.",
+    highlightId: "cctv-metric-headcount"
   },
   {
-    text: "Content Pipeline: Drag and drop a text/presentation slides file into the uploader zone. Observe the progress loader simulate ML extraction, generating visual social cards and tweets.",
-    highlightId: "drag-zone"
+    title: "4. Supervised Autonomy & 15s Action SLA",
+    text: "When capacity breaches, a 15-second human-in-the-loop SLA modal gives the safety director triple controls: Approve, Hold for Review, or Abort with cryptographic SHA-256 signatures.",
+    highlightId: "reallocation-countdown-modal"
+  },
+  {
+    title: "5. NFPA-101 Fire Marshal Regulatory Audit",
+    text: "Calculates density (m²/pax) and portal flow rates under NFPA-101 § 12.7. Generates cryptographically sealed, printable audit certificates for municipal city inspectors.",
+    highlightId: "btn-download-fire-marshal-audit"
+  },
+  {
+    title: "6. Mobile Field Marshal Terminal (/volunteer)",
+    text: "On-ground staff use the lightweight /volunteer mobile terminal with tactile one-thumb entry/exit clickers and a 1-tap emergency SOS panic button.",
+    highlightId: "btn-open-scenario-hub"
+  },
+  {
+    title: "7. Autonomous Zoned Voice Announcements",
+    text: "When schedules adapt, ElevenLabs voice broadcasts route directly to hallways and foyer signage speakers, preserving silence inside active lecture auditoriums.",
+    highlightId: "speaker-pills-container"
   }
 ];
 
@@ -77,8 +104,12 @@ function initTourGuide() {
 
   function renderTourStep() {
     const step = tourSteps[currentTourStep];
-    if (textStep) textStep.textContent = step.text;
-    if (stepInd) stepInd.textContent = `${currentTourStep + 1} / ${tourSteps.length}`;
+    if (textStep) {
+      textStep.innerHTML = `<strong style="display:block; font-size:0.85rem; color:#0f172a; margin-bottom:4px;">${step.title}</strong>${step.text}`;
+    }
+    if (stepInd) {
+      stepInd.textContent = `${currentTourStep + 1} / ${tourSteps.length}`;
+    }
     
     // Highlight elements visually on page
     document.querySelectorAll('.highlight-tour').forEach(el => el.classList.remove('highlight-tour'));
@@ -86,10 +117,11 @@ function initTourGuide() {
     const highlightTarget = document.getElementById(step.highlightId);
     if (highlightTarget) {
       highlightTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      highlightTarget.style.outline = '4px solid var(--google-yellow)';
+      highlightTarget.style.outline = '4px solid #facc15';
+      highlightTarget.style.outlineOffset = '4px';
       setTimeout(() => {
-        highlightTarget.style.outline = 'none';
-      }, 2000);
+        if (highlightTarget) highlightTarget.style.outline = 'none';
+      }, 3000);
     }
   }
 
