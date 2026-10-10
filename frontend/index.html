@@ -1125,8 +1125,7 @@
         <div class="push-body" id="push-message">
           Schedule Update: Autonomous Agent Swarms shifted to slot 2 due to speaker delays.
         </div>
-        <button class="btn btn-sm btn-blue" onclick="document.getElementById('push-alert').style.display='none'">Dismiss
-          Alert</button>
+        <button class="btn btn-sm btn-blue" onclick="if(window.DeltaAlertManager){window.DeltaAlertManager.dismissCurrent();}else{document.getElementById('push-alert').style.display='none';}">Dismiss Alert</button>
       </div>
     </div>
 
@@ -2162,6 +2161,7 @@
       </div>
     </div>
 
+    <script src="components/alertCoordinator.js"></script>
     <script src="components/app.js?v=cursorFix4"></script>
     <script src="components/websockets.js"></script>
     <script src="components/dragdrop.js"></script>

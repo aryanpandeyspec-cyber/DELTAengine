@@ -678,6 +678,8 @@
     }
   }
 
+  window.speakWithNicoRobinVoice = speakWithNicoRobinVoice;
+
   function playNextVoiceInQueue() {
     if (voiceQueue.length === 0) {
       isVoicePlaying = false;
@@ -734,10 +736,10 @@
 
     const onPlaybackComplete = () => {
       activeAudioInstance = null;
-      // 400ms pause between sequential announcements to prevent overlap
+      // 2000ms gap between sequential announcements
       setTimeout(() => {
         playNextVoiceInQueue();
-      }, 400);
+      }, 2000);
     };
 
     if (currentItem.audioUrl) {
@@ -772,7 +774,21 @@
   window.handleVoiceAnnouncement = function (data) {
     if (!data) return;
 
-    // 1. Always update visual UI components (banner, logs, toasts) in all tabs
+    const logBox = document.getElementById('admin-audit-log-container');
+    if (logBox) {
+      const line = document.createElement('div');
+      line.className = 'admin-audit-line success';
+      line.textContent = `[${data.timestamp || new Date().toLocaleTimeString()}] 🎙️ ElevenLabs PA Broadcast: "${data.text}" (${data.voice || 'Nico Robin (Calm & Elegant)'})`;
+      logBox.insertBefore(line, logBox.firstChild);
+    }
+
+    // Unified Alert Coordinator handles single-active alert, instant stop on dismiss, and 2s gap
+    if (window.DeltaAlertManager) {
+      window.DeltaAlertManager.enqueuePAAnnouncement(data);
+      return;
+    }
+
+    // Fallback if DeltaAlertManager not loaded
     const paBanner = document.getElementById('venue-pa-live-banner');
     if (paBanner) {
       paBanner.style.display = 'flex';
@@ -784,24 +800,14 @@
       if (voiceEl) voiceEl.textContent = data.voice || 'Nico Robin (Calm & Elegant)';
     }
 
-    const logBox = document.getElementById('admin-audit-log-container');
-    if (logBox) {
-      const line = document.createElement('div');
-      line.className = 'admin-audit-line success';
-      line.textContent = `[${data.timestamp || new Date().toLocaleTimeString()}] 🎙️ ElevenLabs PA Broadcast: "${data.text}" (${data.voice || 'Nico Robin (Calm & Elegant)'})`;
-      logBox.insertBefore(line, logBox.firstChild);
-    }
-
     if (typeof createToast === 'function') {
       createToast(`📢 [Nico Robin PA Broadcaster] ${data.text}`, 'success');
     }
 
-    // 2. Check if user has muted audio
     if (localStorage.getItem('delta_sfx_enabled') === 'false') {
       return;
     }
 
-    // 3. Queue audio announcement cleanly to guarantee sequential playback
     voiceQueue.push(data);
     if (!isVoicePlaying) {
       playNextVoiceInQueue();
@@ -1006,9 +1012,20 @@
     }
 
     if (btnDismiss) {
-      btnDismiss.addEventListener('click', () => {
-        const banner = document.getElementById('venue-pa-live-banner');
-        if (banner) banner.style.display = 'none';
+      btnDismiss.addEventListener('click', (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (window.DeltaAlertManager) {
+          window.DeltaAlertManager.dismissCurrent();
+        } else {
+          const banner = document.getElementById('venue-pa-live-banner');
+          if (banner) banner.style.display = 'none';
+          if (typeof window.stopAllVoices === 'function') {
+            window.stopAllVoices();
+          }
+        }
       });
     }
   }

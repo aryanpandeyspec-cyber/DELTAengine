@@ -2655,6 +2655,8 @@ Email: ${fromEmail}`;
     }
   }
 
+  window.playCctvAlertTone = playCctvAlertTone;
+
   // Desktop push notification
   function fireBrowserPushNotification(title, body) {
     try {
@@ -2672,6 +2674,9 @@ Email: ${fromEmail}`;
 
   // Update volunteer duty cards in DOM
   function updateVolunteerDutyCards(alert) {
+    if (!alert || !alert.assignedVolunteers) return;
+  }
+  window.updateVolunteerDutyCards = function(alert) {
     if (!alert || !alert.assignedVolunteers) return;
 
     alert.assignedVolunteers.forEach(v => {
@@ -2743,8 +2748,22 @@ Email: ${fromEmail}`;
     const btnCloseX = document.getElementById('btn-close-alert-banner');
     const banner = document.getElementById('volunteer-alert-banner');
 
-    const dismissHandler = () => {
-      if (banner) banner.classList.add('hidden');
+    const dismissHandler = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (window.DeltaAlertManager) {
+        window.DeltaAlertManager.dismissCurrent();
+      } else {
+        if (banner) {
+          banner.classList.add('hidden');
+          banner.style.display = 'none';
+        }
+        if (typeof window.stopAllVoices === 'function') {
+          window.stopAllVoices();
+        }
+      }
       if (bannerDismissTimer) clearTimeout(bannerDismissTimer);
       dismissedAlertState = currentAlertState;
     };
@@ -2812,6 +2831,20 @@ Email: ${fromEmail}`;
 
   // Public hook for Volunteer Dispatches
   window.handleVolunteerAlert = function (alert) {
+    if (!alert) return;
+
+    currentAlertState = alert.type;
+
+    if (dismissedAlertState === alert.type) {
+      return;
+    }
+
+    // Unified Alert Coordinator handles single-active alert, instant stop on dismiss, and 2s gap
+    if (window.DeltaAlertManager) {
+      window.DeltaAlertManager.enqueueVolunteerAlert(alert);
+      return;
+    }
+
     const banner = document.getElementById('volunteer-alert-banner');
     const iconEl = banner ? banner.querySelector('.volunteer-alert-icon') : null;
     const titleEl = document.getElementById('volunteer-alert-title');

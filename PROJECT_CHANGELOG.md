@@ -10,6 +10,7 @@
 1. [Overview & Change Policy](#1-overview--change-policy)
 2. [Component-by-Component Change Ledger](#2-component-by-component-change-ledger)
 3. [Chronological Release History](#3-chronological-release-history)
+   - [v3.6.3 (October 2026) — Unified Sequential Alert Coordinator, Instant Voice Muting & 2-Second Announcement Pacing](#v363-october-2026--unified-sequential-alert-coordinator-instant-voice-muting--2-second-announcement-pacing)
    - [v3.6.2 (October 2026) — Comprehensive UI Decluttering & Zero-Lag Performance Optimization](#v362-october-2026--comprehensive-ui-decluttering--zero-lag-performance-optimization)
    - [v3.6.1 (October 2026) — Clean Dev Terminal Streamlining & High-Frequency Telemetry Throttling](#v361-october-2026--clean-dev-terminal-streamlining--high-frequency-telemetry-throttling)
    - [v3.6 (October 2026) — Autonomous Crowd Operations Engine, Three.js PBR 3D Twin & NVIDIA NIM](#v36-october-2026--autonomous-crowd-operations-engine-threejs-pbr-3d-twin--nvidia-nim)
@@ -32,46 +33,45 @@ This ledger provides an unabridged audit trail for all engineering work on DELTA
 ## 2. Component-by-Component Change Ledger
 
 ### Frontend & UI Layer (`frontend/`)
+- [`frontend/components/alertCoordinator.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/alertCoordinator.js) *(New Component)*:
+  - **Added**: Singleton `DeltaAlertManager` enforcing strict Single Active Alert Policy across all UI channels.
+  - **Added**: Central FIFO alert queue serializing bursts of volunteer breach alerts, ElevenLabs PA announcements, and push alerts.
+  - **Added**: Instant voice and audio muting (`stopAllAudio()`) halting active audio elements and canceling `SpeechSynthesis` on user dismissal.
+  - **Added**: Paced 2000ms delay between consecutive alert announcements.
+  - **Added**: Complete UI dismiss teardown hiding `#volunteer-alert-banner`, `#venue-pa-live-banner`, and `#push-alert` with 10s deduplication protection.
+  - **Added**: Global capture-phase click interceptors for all dismiss and close buttons.
 - [`frontend/components/customCursor.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/customCursor.js):
   - **Removed**: Dynamic `window.addEventListener('mouseover')` style injector that forced continuous inline style mutations and layout thrashing across all hovered DOM elements.
   - **Performance Impact**: Restored native 60–120 FPS cursor tracking smoothness across complex cards without CPU spikes.
 - [`frontend/components/cctvPerception.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/cctvPerception.js):
-  - **Added**: Dirty-checking state cache (`lastCachedMetrics`) in `updateDensityMetrics()` to eliminate 12 querySelector lookups and destructive `innerHTML` re-renders 13 times/sec on steady-state frames.
-  - **Added**: Element content and class cache guards for `#cctv-optical-detection-tag` during `processVideoFrame()`, preventing 60 FPS style invalidations.
-- [`frontend/components/roomSpatialModel.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/roomSpatialModel.js):
-  - **Added**: Zero-lag GPU idle guard in `animate()` loop (`if (!isVisible) setTimeout(...)`) sleeping 60 FPS WebGL PBR loop when canvas is hidden, off-DOM, or tab is backgrounded.
-  - **Added**: Explicit `destroy()` method disposing WebGLRenderer and OrbitControls to eliminate WebGL memory leaks.
-- [`frontend/components/contentPipeline.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/contentPipeline.js):
-  - **Added**: Clean disposal call to `activeModalSpatialRenderer.destroy()` on modal close, freeing GPU resources immediately.
-- [`frontend/app.css`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/app.css):
-  - **Performance**: Promoted 8 floating `.doodle-img` elements to dedicated GPU compositor layers (`will-change: transform; transform: translateZ(0); backface-visibility: hidden;`) and reduced opacity to 0.14 for reduced paint recomposition load.
-  - **Decluttering**: Added dedicated layout classes `.cctv-header-cluster`, `.widget-ingress-body`, `.ingress-kpi-top`, `.ingress-kpi-subbar`, `.ingress-kpi-actions`, `.spatial-actions-row`, `.spatial-sample-btn-lab`, `.spatial-sample-btn-hall`, `.spatial-config-bar`, and `.spatial-select-field`.
-- [`frontend/index.html`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/index.html):
-  - **Decluttering (CCTV Top Hub)**: Grouped 7 disjointed header controls into 3 semantic clusters (`.cctv-cluster-source`, `.cctv-cluster-stream`, `.cctv-cluster-modes`) with preserved IDs and actions.
-  - **Decluttering (Ingress KPI Card)**: Cleaned up `widget-ingress-kpi`, removing cramped inline styles and awkward `transform: scale(0.85)` in favor of a crisp native flex layout matching Cards 1–3.
-  - **Decluttering (Console Card)**: Relocated `.sentiment-ticker` ("ATTENDEE REACTION STREAM") beneath `.terminal-container` so agent incident logs read without interruption.
-  - **Decluttering (3D Spatial Builder)**: Standardized toolbar and config controls using clean semantic CSS classes instead of repetitive inline styling blobs.
-
-### Backend Services (`backend/`)
-- [`backend/components/operationsEngine.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/operationsEngine.js) *(New Component)*:
-  - **Added**: Real-time deterministic operations mitigation engine executing in 1.02ms (<5ms SLA) without LLM hot-path blocking.
-  - **Added**: Multi-incident safety solvers for overcrowding, bottlenecking, perimeter breach, and medical egress.
-- [`backend/components/scenarioManager.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/scenarioManager.js) *(New Component)*:
-  - **Added**: Generalized 5-domain scenario engine (Conference, Public Rally, Large Gathering / Mela, Movie Promotion, Religious Festival).
-  - **Added**: Zone topology, physical boundaries, marshal coordinator rosters, and dynamic telemetry mapping.
-- [`backend/components/incidentModel.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/incidentModel.js) *(New Component)*:
-  - **Added**: Telemetry requirements abstraction matrix defining "Data We Have", "Data We Need", "Actions We Can Take", and "Actions We Cannot Take".
-- [`backend/components/volunteerRouter.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/volunteerRouter.js) *(New Component)*:
-  - **Added**: Hall-aware targeted volunteer dispatch engine routing task alerts based on zone proximity.
-  - **Added**: Anti-spam rate shielding preventing duplicated volunteer notification fatigue.
-- [`backend/components/spatial3dEngine.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/backend/components/spatial3dEngine.js) *(New Component)*:
-  - **Added**: NVIDIA Nemotron NIM spatial construction engine with Gemini Vision integration for zero-boilerplate 3D venue layout synthesis.
-- [`tests/runAllTests.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/tests/runAllTests.js) *(New Test Suite)*:
-  - **Added**: 64-test automated regression suite covering baseline state, self-healing, multi-scenario registries, deterministic speed, agent swarms, 500-scenario stress testing, and visual lock integrity. All 64/64 tests pass with 100% success rate.
+  - **Updated**: Routed `handleVolunteerAlert(alert)` through `DeltaAlertManager.enqueueVolunteerAlert(alert)`.
+  - **Updated**: Dismiss buttons (`#btn-dismiss-volunteer-banner`, `#btn-close-alert-banner`) trigger `DeltaAlertManager.dismissCurrent()`.
+  - **Exposed**: `window.playCctvAlertTone` and `window.updateVolunteerDutyCards` for seamless centralized alert dispatch.
+- [`frontend/components/auth.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/auth.js):
+  - **Updated**: Routed `handleVoiceAnnouncement(data)` through `DeltaAlertManager.enqueuePAAnnouncement(data)`.
+  - **Updated**: `#btn-dismiss-pa-banner` click handler triggers `DeltaAlertManager.dismissCurrent()`.
+  - **Exposed**: `window.speakWithNicoRobinVoice` for speech synthesis fallback.
+  - **Pacing**: Extended sequential announcement gap to 2000ms.
+- [`frontend/components/app.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/app.js):
+  - **Updated**: Routed `showPushAlert(message)` through `DeltaAlertManager.enqueuePushAlert(message)`.
+- [`frontend/index.html`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/index.html) & [`frontend/admin.html`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/admin.html):
+  - **Added**: `<script src="components/alertCoordinator.js"></script>` script integration before app core.
+  - **Updated**: `#push-alert` dismiss button directly triggers `DeltaAlertManager.dismissCurrent()`.
 
 ---
 
 ## 3. Chronological Release History
+
+### v3.6.3 (October 2026) — Unified Sequential Alert Coordinator, Instant Voice Muting & 2-Second Announcement Pacing
+- **Objective**: Resolve multi-alert concurrency congestion, eliminate lingering alerts on dismissal, halt all active voice/audio immediately when an alert is dismissed, and ensure sequential alerts are spaced with a calm, orderly 2-second pause.
+- **Key Deliverables**:
+  1. **Singleton Alert Coordinator (`DeltaAlertManager`)**: Created `frontend/components/alertCoordinator.js` acting as the authoritative coordinator for all volunteer capacity breaches, ElevenLabs PA broadcasts, and push alerts.
+  2. **Single Active Alert Policy**: Replaced simultaneous alert chaos with an orderly FIFO queue. Only one alert banner is displayed and announced at any single point in time.
+  3. **Instant Voice Muting on Dismiss**: When any dismiss button ("Acknowledge ✕", "✕", "Dismiss Alert") is clicked, `stopAllAudio()` immediately pauses and resets `Audio` elements, cancels `window.speechSynthesis`, and silences all alert chimes without delay.
+  4. **Paced 2-Second Announcement Gap**: When an alert finishes (either naturally or via user dismissal), the system enforces a strict 2000ms (`2sec`) calm interval before dequeuing and announcing the next alert.
+  5. **Complete UI Dismiss Teardown**: Solved the issue where dismissed alerts remained visible by enforcing double-guard CSS (`classList.add('hidden')` and `style.display = 'none'`), clearing active timers, and storing a 10s cooldown key to prevent rapid sensor ticks from re-spawning dismissed alerts.
+  6. **Multi-Channel Integration**: Integrated `cctvPerception.js`, `auth.js`, `app.js`, `index.html`, and `admin.html` into the centralized alert coordinator.
+  7. **Full Test Suite Integrity**: Verified all 14 core operational control IDs and 64/64 test cases remain 100% green.
 
 ### v3.6.2 (October 2026) — Comprehensive UI Decluttering & Zero-Lag Performance Optimization
 - **Objective**: Eliminate frontend UI/render lag, frame drops, and visual clutter across cursor movement, video perception, Three.js 3D rendering, and dashboard layouts, while guaranteeing 100% feature preservation across all 14 required DOM control IDs.

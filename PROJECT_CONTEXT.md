@@ -4,7 +4,7 @@
 > **Hackathon**: HackIndia Spark 2026 — South Central Region (Hyderabad, Telangana)  
 > **Repository**: [aryanpandeyspec-cyber/DELTAengine](https://github.com/aryanpandeyspec-cyber/DELTAengine)  
 > **Core Leadership**: Aryan Pandey (Lead Coordinator), Suryansh (Crowd & Safety Lead), Shahid (Stage & Ops Lead)  
-> **Last Updated**: October 2026 (v3.6.2 — Comprehensive UI Decluttering, Visual Layout Sorting & Zero-Lag Performance Optimization)
+> **Last Updated**: October 2026 (v3.6.3 — Unified Sequential Alert Coordinator, Instant Voice Muting & 2-Second Announcement Pacing)
 
 ---
 
@@ -358,6 +358,13 @@ Volunteers on the floor can text commands straight to the DELTA Engine WhatsApp 
 - **`OVERFLOW OPEN`**: Activates overflow lounge and adjusts hall capacity limits.
 - **`AUTOPILOT ON` / `AUTOPILOT OFF`**: Toggles Tesla-style autonomous self-healing mode.
 - **`STATUS`**: Receives an instant headcount and capacity telemetry report.
+
+### Unified Alert & Voice Coordinator Engine (`alertCoordinator.js`)
+Located in [`frontend/components/alertCoordinator.js`](file:///d:/DESKTOP/Desktop/HACKATHONS/DELTAengine-main/frontend/components/alertCoordinator.js):
+- **Single Active Alert Policy**: Replaced simultaneous alert overlaps with an orderly FIFO queue (`queue[]`). Only one alert banner is displayed and announced at any single point in time.
+- **Instant Audio & Voice Muting on Dismiss**: Clicking any dismiss control (`#btn-dismiss-volunteer-banner`, `#btn-close-alert-banner`, `#btn-dismiss-pa-banner`, `#push-alert button`) triggers `stopAllAudio()`, which immediately pauses and resets `Audio` elements, cancels `SpeechSynthesis`, and silences all chime oscillators.
+- **Paced 2-Second Sequential Announcement Gap**: When an alert completes naturally or is dismissed, `DeltaAlertManager` enforces a strict 2000ms delay (`gapTimer`) before announcing the next alert, ensuring operators are never overwhelmed.
+- **Complete UI Dismiss Teardown**: Eliminates lingering alerts by enforcing double-guard CSS (`classList.add('hidden')` and `style.display = 'none'`), clearing active auto-dismiss timers, and tracking dismissed keys in a 10s cooldown map (`recentlyDismissed`) to prevent rapid sensor ticks from re-spawning dismissed alerts.
 
 ---
 

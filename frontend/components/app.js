@@ -688,6 +688,11 @@ function createToast(message, type = 'info') {
 }
 
 function showPushAlert(message) {
+  if (!message) return;
+  if (window.DeltaAlertManager) {
+    window.DeltaAlertManager.enqueuePushAlert(message);
+    return;
+  }
   const alertOverlay = document.getElementById('push-alert');
   const alertMsg = document.getElementById('push-message');
   if (alertOverlay && alertMsg) {

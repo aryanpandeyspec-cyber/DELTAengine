@@ -47,15 +47,23 @@ function assert(condition, message) {
   }
 }
 
-async function fetchJson(endpoint, options = {}) {
+async function fetchJson(endpoint, options = {}, retries = 2) {
   const url = `${BASE_URL}${endpoint}`;
-  const defaultHeaders = { 'Content-Type': 'application/json' };
+  const defaultHeaders = { 'Content-Type': 'application/json', 'Connection': 'close' };
   
-  const res = await fetch(url, {
-    headers: { ...defaultHeaders, ...(options.headers || {}) },
-    ...options
-  });
-  return await res.json();
+  try {
+    const res = await fetch(url, {
+      headers: { ...defaultHeaders, ...(options.headers || {}) },
+      ...options
+    });
+    return await res.json();
+  } catch (err) {
+    if (retries > 0 && (err.cause?.code === 'ECONNRESET' || err.code === 'ECONNRESET')) {
+      await new Promise(r => setTimeout(r, 150));
+      return fetchJson(endpoint, options, retries - 1);
+    }
+    throw err;
+  }
 }
 
 async function runTest1_ConferenceBaseline() {
@@ -239,6 +247,15 @@ async function runTest9_DeterministicSafetyExecution() {
   const { getScenario } = require('../backend/components/scenarioManager');
 
   const rallyScenario = getScenario('PUBLIC_RALLY');
+
+  // Warm up V8 JIT
+  for (let w = 0; w < 5; w++) {
+    const t = { occupancy: 6500, capacity: 5000, zoneId: 'rally-grounds', flowRate: 150, flowRateMax: 100 };
+    const incs = detectIncidentsFromTelemetry(t, db, rallyScenario);
+    assessOperationalImpact(incs[0], db, rallyScenario);
+    solveOperationalAction(incs[0], db, rallyScenario);
+  }
+
   const startTime = process.hrtime();
 
   // Run 50 deterministic decision cycles
