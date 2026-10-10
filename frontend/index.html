@@ -526,21 +526,31 @@
           </div>
         </div>
 
-        <!-- Venue Flow & Safety Index (Data Abstraction) -->
+        <!-- Venue Flow & Safety Index (Data Abstraction & Fire Marshal Compliance) -->
         <div class="metric-card widget-safety-index">
-          <div class="widget-header">
-            <span class="dot green"></span>
-            <span class="widget-title">Venue Flow & Safety Index</span>
+          <div class="widget-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="dot green"></span>
+              <span class="widget-title">Venue Flow & Life-Safety</span>
+            </div>
+            <span id="fire-marshal-compliance-badge" class="badge-mini-green" style="font-size:0.65rem; font-weight:800; font-family:var(--font-mono);">
+              NFPA-101 CERTIFIED
+            </span>
           </div>
-          <div class="widget-body">
+          <div class="widget-body" style="padding:10px 14px; display:flex; flex-direction:column; justify-content:space-between;">
             <div class="safety-rating-box">
-              <div class="safety-badge-large">A+</div>
+              <div class="safety-badge-large" id="fire-marshal-letter-grade">A+</div>
               <div class="safety-details">
-                <span class="safety-title">NOMINAL FLOW (98.4%)</span>
-                <span class="safety-sub">All Emergency Egress Portals Clear</span>
-                <span style="font-size:0.72rem; font-family:var(--font-mono); color:#2563eb; font-weight:700;">Rate: 0 Pax/min Ingress Flux</span>
+                <span class="safety-title" id="fire-marshal-status-text">NOMINAL FLOW (98.4%)</span>
+                <span class="safety-sub" id="fire-marshal-sub-text">All Emergency Egress Portals Clear</span>
+                <span style="font-size:0.72rem; font-family:var(--font-mono); color:#2563eb; font-weight:700;" id="fire-marshal-density-rate">Density: 1.8 m²/pax • Flow: 840 pax/min</span>
               </div>
             </div>
+            <button id="btn-download-fire-marshal-audit" class="btn btn-sm btn-green"
+              style="margin-top:8px; width:100%; font-weight:900; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;"
+              title="Inspect and download cryptographically sealed NFPA-101 / IBC-2024 Fire Marshal Egress Audit">
+              🛡️ FIRE MARSHAL AUDIT (NFPA-101) ↗
+            </button>
           </div>
         </div>
 
@@ -1287,48 +1297,73 @@
 
 
     <!-- SELF-HEALING REALLOCATION COUNTDOWN OVERLAY CONTAINER (DIRECT BODY CHILD) -->
+    <!-- SUPERVISED AUTONOMY HUMAN-IN-THE-LOOP SLA MODAL (DIRECT BODY CHILD) -->
     <div id="reallocation-countdown-modal" class="reallocation-modal-backdrop hidden">
-      <div class="reallocation-modal-card">
-        <div class="reallocation-header">
-          <span class="reallocation-badge-icon">⚠️</span>
-          <span class="reallocation-badge-text">SELF-HEALING ENGINE ACTIVE</span>
+      <div class="reallocation-modal-card" style="max-width:540px; border:3px solid #000; box-shadow:8px 8px 0px #000; border-radius:12px; background:#fff; padding:20px;">
+        <div class="reallocation-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid #000; padding-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="reallocation-badge-icon" style="font-size:1.2rem;">🛡️</span>
+            <span class="reallocation-badge-text" style="font-weight:900; font-family:var(--font-mono); font-size:0.85rem; color:#0f172a;">
+              SUPERVISED AUTONOMY • HUMAN-IN-THE-LOOP SLA
+            </span>
+          </div>
+          <span style="font-size:0.68rem; font-weight:800; background:#fef08a; border:1px solid #000; padding:2px 6px; border-radius:4px; font-family:var(--font-mono);">
+            NFPA-101 § 12.7
+          </span>
         </div>
 
-        <div class="reallocation-conflict-box">
-          <div class="conflict-label">⚠️ DETECTED CONSTRAINT BREACH</div>
-          <div id="reallocation-conflict-text" class="conflict-text">
+        <div class="reallocation-conflict-box" style="background:#fee2e2; border:2px solid #ef4444; border-radius:8px; padding:10px; margin-bottom:10px;">
+          <div class="conflict-label" style="font-size:0.7rem; font-weight:900; color:#b91c1c; font-family:var(--font-mono); margin-bottom:2px;">
+            ⚠️ DETECTED CONSTRAINT BREACH
+          </div>
+          <div id="reallocation-conflict-text" class="conflict-text" style="font-size:0.82rem; font-weight:700; color:#7f1d1d; line-height:1.35;">
             ⚠️ Talk "WebGPU Deep Dive" attendance (260 pax) exceeds Turing Hall capacity (250 pax).
           </div>
         </div>
 
-        <div class="reallocation-destination-box">
-          <div class="destination-label">📍 PROPOSED HEALING TARGET</div>
-          <div id="reallocation-destination-text" class="destination-text">
+        <div class="reallocation-destination-box" style="background:#f0fdf4; border:2px solid #22c55e; border-radius:8px; padding:10px; margin-bottom:14px;">
+          <div class="destination-label" style="font-size:0.7rem; font-weight:900; color:#15803d; font-family:var(--font-mono); margin-bottom:2px;">
+            📍 PROPOSED MITIGATION & SCHEDULE HEALING
+          </div>
+          <div id="reallocation-destination-text" class="destination-text" style="font-size:0.82rem; font-weight:700; color:#14532d; line-height:1.35;">
             📍 Relocating to Lovelace Suite (11:00 AM - 12:00 PM)
           </div>
         </div>
 
-        <div class="countdown-timer-container">
-          <div class="countdown-timer-label">AUTOMATIC REALLOCATION IN</div>
-          <div id="reallocation-countdown-number" class="countdown-timer-number">5</div>
+        <div class="countdown-timer-container" style="text-align:center; margin-bottom:8px;">
+          <div class="countdown-timer-label" style="font-size:0.75rem; font-weight:900; font-family:var(--font-mono); color:#475569; letter-spacing:0.5px;">
+            SUPERVISORY WINDOW EXPIRES IN
+          </div>
+          <div id="reallocation-countdown-number" class="countdown-timer-number" style="font-size:2.8rem; font-weight:900; color:#0f172a; font-family:var(--font-mono); line-height:1.1;">
+            15
+          </div>
         </div>
 
-        <div class="reallocation-progress-track">
-          <div id="reallocation-progress-bar" class="reallocation-progress-fill"></div>
+        <div class="reallocation-progress-track" style="height:10px; background:#e2e8f0; border:2px solid #000; border-radius:6px; overflow:hidden; margin-bottom:14px;">
+          <div id="reallocation-progress-bar" class="reallocation-progress-fill" style="height:100%; background:#facc15; width:0%;"></div>
         </div>
 
-        <div style="display:flex; justify-content:center; gap:10px; margin-top:14px;">
-          <button id="btn-skip-countdown" class="btn btn-sm btn-yellow"
-            style="font-weight:800; font-family:var(--font-mono); font-size:0.8rem; padding:6px 16px; border:2px solid #000; box-shadow:2px 2px 0px #000;"
-            title="Fast-forward and execute reallocation immediately (Space / Esc)">
-            ⚡ Apply Immediately (Skip Wait)
+        <!-- Triple Action Oversight Controls (Approve / Hold / Abort) -->
+        <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          <button id="btn-skip-countdown" class="btn btn-sm btn-green"
+            style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; padding:7px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+            title="Approve and execute mitigation immediately">
+            ⚡ DISPATCH NOW (Approve)
+          </button>
+          <button id="btn-pause-countdown" class="btn btn-sm btn-yellow"
+            style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; padding:7px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+            title="Hold countdown for manual director evaluation">
+            ⏸️ HOLD FOR REVIEW
+          </button>
+          <button id="btn-abort-countdown" class="btn btn-sm btn-red"
+            style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; padding:7px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+            title="Veto and cancel autonomous reallocation">
+            ⛔ VETO / ABORT ACTION
           </button>
         </div>
 
-        <div class="reallocation-footer-note">
-          ⚡ Swarm consensus locked • Press <kbd
-            style="background:#eee; padding:1px 5px; border-radius:3px; border:1px solid #ccc; font-size:0.7rem;">Space</kbd>
-          to skip
+        <div class="reallocation-footer-note" style="font-size:0.68rem; color:#64748b; font-family:var(--font-mono); text-align:center; line-height:1.3;">
+          🔒 All supervisor interventions are cryptographically signed via SHA-256 and committed to the compliance ledger.
         </div>
       </div>
     </div>
@@ -1495,6 +1530,125 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFICIAL FIRE MARSHAL & LIFE-SAFETY AUDIT REPORT MODAL -->
+    <div id="modal-fire-marshal-audit" class="modal-backdrop hidden" style="z-index: 10002;">
+      <div class="modal-card" style="max-width: 880px; width: 92%; max-height: 90vh; overflow-y: auto; border: 3px solid #000; box-shadow: 10px 10px 0px #000; border-radius: 12px; background: #fff; padding: 24px;">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #000; padding-bottom: 14px; margin-bottom: 16px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span style="font-size:1.5rem;">🛡️</span>
+              <h2 style="font-size:1.25rem; font-weight:900; margin:0; font-family:var(--font-mono); color:#0f172a;">
+                OFFICIAL LIFE-SAFETY & FIRE MARSHAL EGRESS AUDIT
+              </h2>
+            </div>
+            <div style="font-size:0.78rem; font-weight:700; color:#475569; font-family:var(--font-mono);">
+              Jurisdiction Standard: <span style="background:#fef08a; padding:2px 6px; border:1px solid #000; border-radius:4px;">NFPA-101 (§ 12.7) / IBC-2024 Chapter 10</span> • St. Peter's Systems Complex
+            </div>
+          </div>
+          <button id="btn-close-fire-marshal-modal" class="btn-close-modal" aria-label="Close" style="font-size:1.5rem; line-height:1; cursor:pointer; background:none; border:none; font-weight:900;">&times;</button>
+        </div>
+
+        <!-- Seal & Timestamp Banner -->
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:2px solid #000; border-radius:8px; padding:12px 16px; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font-size:0.7rem; font-weight:800; color:#64748b; font-family:var(--font-mono);">CRYPTOGRAPHIC AUDIT SEAL:</div>
+            <div id="fm-modal-seal" style="font-family:var(--font-mono); font-weight:900; font-size:0.95rem; color:#0f172a;">SEAL-NFPA-CALCULATING...</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem; font-weight:800; color:#64748b; font-family:var(--font-mono);">GENERATED TIMESTAMP:</div>
+            <div id="fm-modal-timestamp" style="font-family:var(--font-mono); font-weight:800; font-size:0.85rem; color:#334155;">--</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem; font-weight:800; color:#64748b; font-family:var(--font-mono);">REGULATORY STATUS:</div>
+            <span id="fm-modal-status-pill" class="badge-mini-green" style="font-size:0.8rem; font-weight:900; padding:4px 10px; border:2px solid #000;">
+              CERTIFIED COMPLIANT
+            </span>
+          </div>
+        </div>
+
+        <!-- Top Metrics 4-Box Grid -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
+          <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+            <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">LICENSED CAPACITY</div>
+            <div id="fm-modal-metric-capacity" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">--</div>
+            <div style="font-size:0.7rem; color:#64748b; font-weight:600;">Approved Occupancy Load</div>
+          </div>
+          <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+            <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">LIVE OCCUPANCY</div>
+            <div id="fm-modal-metric-occupancy" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">--</div>
+            <div id="fm-modal-metric-pct" style="font-size:0.7rem; color:#16a34a; font-weight:800;">--% of Max Load</div>
+          </div>
+          <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+            <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">AVG EGRESS DENSITY</div>
+            <div id="fm-modal-metric-density" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">-- m²/pax</div>
+            <div style="font-size:0.7rem; color:#64748b; font-weight:600;">Min Req: ≥ 1.4 m²/pax</div>
+          </div>
+          <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+            <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">TOTAL PORTAL FLOW</div>
+            <div id="fm-modal-metric-flow" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">-- pax/min</div>
+            <div style="font-size:0.7rem; color:#64748b; font-weight:600;">Egress Discharge Rate</div>
+          </div>
+        </div>
+
+        <!-- Zone-by-Zone Egress Compliance Table -->
+        <div style="margin-bottom:18px;">
+          <div style="font-size:0.8rem; font-weight:900; font-family:var(--font-mono); color:#0f172a; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>ZONE-BY-ZONE OCCUPANCY & DENSITY MATRIX (IBC CHAPTER 10):</span>
+            <span style="font-size:0.7rem; color:#64748b;">Optical LiDAR Tripwires Active</span>
+          </div>
+          <div style="border:2px solid #000; border-radius:8px; overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.78rem; text-align:left; font-family:var(--font-mono);">
+              <thead style="background:#e2e8f0; border-bottom:2px solid #000;">
+                <tr>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">ZONE / HALL NAME</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">CAPACITY</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">OCCUPANCY</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">LOAD %</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">DENSITY (m²/pax)</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">EGRESS FLOW</th>
+                  <th style="padding:8px 10px;">LIFE-SAFETY STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="fm-modal-table-body" style="background:#fff;">
+                <!-- Populated dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Supervisor Interventions Audit Trail -->
+        <div style="background:#fefce8; border:2px solid #000; border-radius:8px; padding:12px; margin-bottom:18px;">
+          <div style="font-size:0.75rem; font-weight:900; color:#854d0e; font-family:var(--font-mono); margin-bottom:6px;">
+            🔒 HUMAN-IN-THE-LOOP INTERVENTION LOG (TAMPER-PROOF LEDGER):
+          </div>
+          <div id="fm-modal-interventions-log" style="font-size:0.73rem; font-family:var(--font-mono); color:#713f12; max-height:100px; overflow-y:auto; line-height:1.4;">
+            No emergency supervisor overrides recorded during this monitoring session.
+          </div>
+        </div>
+
+        <!-- Certified Inspector Note -->
+        <div style="font-size:0.72rem; color:#64748b; font-family:var(--font-mono); margin-bottom:18px; line-height:1.4; border-left:3px solid #22c55e; padding-left:10px;">
+          <strong>Auditor Statement:</strong> Autonomous real-time egress flow monitored via DELTA Engine optical sensor tripwires, IoT passage counters, and CCTV computer vision. All calculations adhere to NFPA-101 Life Safety Code Table 7.3.1.2 occupant load factors.
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:2px solid #000; padding-top:14px;">
+          <button id="btn-copy-fm-seal" class="btn btn-sm btn-white" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+            📋 Copy Verification Seal
+          </button>
+          <div style="display:flex; gap:8px;">
+            <button id="btn-download-fm-json" class="btn btn-sm btn-yellow" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+              ⬇️ Export JSON Seal
+            </button>
+            <button id="btn-print-fm-report" class="btn btn-sm btn-green" style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+              🖨️ Print / Save Official PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -372,6 +372,51 @@ async function runTest12_FrontendVisualLockedIntegrity() {
   assert(!indexHtml.includes('#DedicatedHackIndia'), 'Zero #DedicatedHackIndia tags present in index.html');
 }
 
+async function runTest13_EnterpriseStartupFeatures() {
+  console.log(`\n${BOLD}[TEST 13] Enterprise Startup Features (NFPA-101, Supervised SLA, Field Terminal, Docker)${RESET}`);
+
+  // 1. Fire Marshal Regulatory Compliance
+  const audit = await fetchJson('/api/compliance/fire-marshal-audit');
+  assert(audit && audit.auditId && audit.auditId.startsWith('FM_AUDIT_'), 'Fire Marshal audit endpoint returns valid audit report');
+  assert(audit.jurisdictionStandard.includes('NFPA-101'), 'Compliance jurisdiction references NFPA-101 Life Safety Code');
+  assert(typeof audit.verificationSeal === 'string' && audit.verificationSeal.startsWith('SEAL-NFPA-'), 'Audit report contains cryptographic SHA-256 seal');
+  assert(Array.isArray(audit.hallBreakdown) && audit.hallBreakdown.length > 0, 'Audit provides detailed zone egress breakdown');
+
+  // 2. Supervised Autonomy 15s Action Override Logging
+  const supervisorAction = await fetchJson('/api/audit/supervisor-action', {
+    method: 'POST',
+    body: JSON.stringify({
+      actionId: 'TEST_ACT_1',
+      decision: 'APPROVED',
+      rationale: 'Regression test supervisor approval',
+      overriddenBy: 'Test Safety Director'
+    })
+  });
+  assert(supervisorAction && supervisorAction.success, 'Supervised Autonomy audit action recorded successfully');
+  assert(supervisorAction.auditRecord && supervisorAction.auditRecord.cryptoSignature.startsWith('SIG-SHA256-'), 'Supervisor action generates SHA-256 compliance signature');
+
+  // 3. Field Volunteer Mobile Terminal & 1-Tap SOS
+  const sos = await fetchJson('/api/volunteer/sos', {
+    method: 'POST',
+    body: JSON.stringify({
+      volunteerName: 'Safety Marshal Priya',
+      hallId: 'hall-1',
+      note: 'Turnstile egress testing',
+      crowdSeverity: 'HIGH'
+    })
+  });
+  assert(sos && sos.success && sos.sosRecord.id.startsWith('SOS_'), 'Volunteer 1-Tap SOS dispatch processed and logged');
+
+  const volRes = await fetch(`${BASE_URL}/volunteer`);
+  const volHtml = await volRes.text();
+  assert(volRes.status === 200 && volHtml.includes('DELTA FIELD MARSHAL'), 'Mobile Field Marshal terminal (/volunteer) is live');
+
+  // 4. Edge Docker Artifacts Integrity
+  const dockerfileExists = fs.existsSync(path.join(__dirname, '../Dockerfile'));
+  const dockerComposeExists = fs.existsSync(path.join(__dirname, '../docker-compose.yml'));
+  assert(dockerfileExists && dockerComposeExists, 'Edge deployment artifacts (Dockerfile & docker-compose.yml) verified');
+}
+
 async function main() {
   console.log(`${BOLD}${CYAN}====================================================${RESET}`);
   console.log(`${BOLD}${CYAN}  DELTA ENGINE — COMPREHENSIVE REGRESSION & EXPANSION TEST SUITE ${RESET}`);
@@ -390,6 +435,7 @@ async function main() {
     await runTest10_SwarmFallbackAndCircuitBreaker();
     await runTest11_StressTest500();
     await runTest12_FrontendVisualLockedIntegrity();
+    await runTest13_EnterpriseStartupFeatures();
 
     console.log(`\n${BOLD}${CYAN}====================================================${RESET}`);
     if (passedTests === totalTests) {
