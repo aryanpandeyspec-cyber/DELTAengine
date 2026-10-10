@@ -715,9 +715,11 @@ body {
   pointer-events: none !important;
   z-index: 1 !important;
   mix-blend-mode: multiply !important;
-  opacity: 0.22 !important;
+  opacity: 0.14 !important;
+  will-change: transform !important;
+  transform: translateZ(0) !important;
+  backface-visibility: hidden !important;
   filter: grayscale(15%) contrast(1.05) !important;
-  transition: transform 0.3s ease !important;
 }
 
 /* Specific doodle positions & sizes around viewport edges */
@@ -5007,6 +5009,160 @@ input:checked + .slider:before {
   font-size: 1rem;
   font-weight: 900;
   color: #0f172a;
+}
+
+/* ==========================================================================
+   UI DECLUTTER & CLEAN LAYOUT REFINEMENTS
+   ========================================================================== */
+
+/* 1. CCTV Header Segmented Clusters */
+.cctv-header-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.04);
+  padding: 3px 6px;
+  border-radius: 8px;
+  border: 1.5px solid rgba(0, 0, 0, 0.15);
+}
+
+.cctv-header-cluster select {
+  margin: 0;
+}
+
+/* 2. Ingress & Tripwire KPI Widget Clean Layout */
+.widget-ingress-body {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ingress-kpi-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.ingress-kpi-headline {
+  display: flex;
+  flex-direction: column;
+}
+
+.ingress-kpi-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #555;
+  font-family: var(--font-mono, monospace);
+}
+
+.ingress-kpi-val {
+  font-size: 1.05rem;
+  font-weight: 900;
+  font-family: var(--font-mono, monospace);
+  color: #1e293b;
+}
+
+.ingress-kpi-status-tag {
+  font-size: 0.7rem;
+  color: #16a34a;
+  font-weight: 800;
+}
+
+.ingress-kpi-subbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1.5px solid #000;
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+
+.ingress-kpi-sublabel {
+  font-size: 0.7rem;
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  color: #475569;
+}
+
+.ingress-stepper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.ingress-kpi-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+/* 3. 3D Spatial Reconstruction Toolbars */
+.spatial-actions-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 12px;
+}
+
+.spatial-sample-btn-lab {
+  font-size: 0.75rem !important;
+  padding: 5px 12px !important;
+  background: #eff6ff !important;
+  border: 2px solid #0284c7 !important;
+  color: #0369a1 !important;
+  font-weight: 800 !important;
+  border-radius: 6px !important;
+  box-shadow: 2px 2px 0px #000 !important;
+  cursor: pointer;
+}
+
+.spatial-sample-btn-hall {
+  font-size: 0.75rem !important;
+  padding: 5px 12px !important;
+  background: #f0fdf4 !important;
+  border: 2px solid #16a34a !important;
+  color: #15803d !important;
+  font-weight: 800 !important;
+  border-radius: 6px !important;
+  box-shadow: 2px 2px 0px #000 !important;
+  cursor: pointer;
+}
+
+.spatial-config-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f1f5f9;
+  border: 2px solid #000;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+
+.spatial-select-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.spatial-select-field {
+  padding: 5px 10px;
+  border: 2px solid #000;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.8rem;
+  background: #fff;
+  font-family: var(--font-mono, monospace);
 }
 
 /* FINAL UNIVERSAL CURSOR OVERRIDE - ABSOLUTE NATIVE CURSOR KILLER */

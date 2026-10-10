@@ -2025,22 +2025,26 @@ Email: ${fromEmail}`;
     // Draw HUD overlays
     drawCanvasHud(ctx, w, h, effectiveCount, currentCapacity, detectedBoxes);
 
-    // Update UI detection tag
+    // Update UI detection tag (only if changed to eliminate 60fps layout churn)
     const tagEl = document.getElementById('cctv-optical-detection-tag');
     if (tagEl) {
+      let nextClass = '';
+      let nextText = '';
       if (isCameraBlocked) {
-        tagEl.className = 'badge-mini-red';
-        tagEl.textContent = '⚠️ Lens Obstructed / Dark';
+        nextClass = 'badge-mini-red';
+        nextText = '⚠️ Lens Obstructed / Dark';
       } else if (megaCrowdState.active && ((crowdPerceptionMode === 'mega-crowd') || (currentCapacity >= 1000))) {
-        tagEl.className = megaCrowdState.stampedeRisk >= 75 ? 'badge-mini-red' : (megaCrowdState.stampedeRisk >= 50 ? 'badge-mini-yellow' : 'badge-mini-green');
-        tagEl.textContent = `🌊 MEGA-CROWD: ${effectiveCount} Pax • Flux ${megaCrowdState.averageVelocity} m/s • Risk ${megaCrowdState.stampedeRisk}%`;
+        nextClass = megaCrowdState.stampedeRisk >= 75 ? 'badge-mini-red' : (megaCrowdState.stampedeRisk >= 50 ? 'badge-mini-yellow' : 'badge-mini-green');
+        nextText = `🌊 MEGA-CROWD: ${effectiveCount} Pax • Flux ${megaCrowdState.averageVelocity} m/s • Risk ${megaCrowdState.stampedeRisk}%`;
       } else {
         const isScanActive = now < sensorActiveWindowUntil;
-        tagEl.className = isScanActive ? 'badge-mini-yellow' : (effectiveCount > 0 ? 'badge-mini-green' : 'badge-mini-blue');
-        tagEl.textContent = isScanActive
+        nextClass = isScanActive ? 'badge-mini-yellow' : (effectiveCount > 0 ? 'badge-mini-green' : 'badge-mini-blue');
+        nextText = isScanActive
           ? `⚡ SCANNING FACE (${lastTriggerDist}mm)`
           : `${effectiveCount} Inside • ${detectedBoxes.length} Head${detectedBoxes.length === 1 ? '' : 's'} Detected`;
       }
+      if (tagEl.textContent !== nextText) tagEl.textContent = nextText;
+      if (tagEl.className !== nextClass) tagEl.className = nextClass;
     }
 
     // Mirror to perception modal canvas ONLY if modal is currently open
@@ -2355,10 +2359,45 @@ Email: ${fromEmail}`;
   c.stroke();
 }
 
+  let lastCachedMetrics = {
+    totalCount: -1,
+    occupiedPct: -1,
+    emptyPct: -1,
+    totalEntries: -1,
+    totalExits: -1,
+    totalReEntries: -1,
+    currentCapacity: -1,
+    attendeeCount: -1
+  };
+
   function updateDensityMetrics(forcePost = false) {
     const totalCount = Math.max(currentNetOccupancy, doorSensorNetCount, manualCount);
     const occupiedPct = Math.min(100, Math.round((totalCount / currentCapacity) * 100));
     const emptyPct = Math.max(0, 100 - occupiedPct);
+
+    const hasChanged = (
+      totalCount !== lastCachedMetrics.totalCount ||
+      occupiedPct !== lastCachedMetrics.occupiedPct ||
+      emptyPct !== lastCachedMetrics.emptyPct ||
+      totalEntries !== lastCachedMetrics.totalEntries ||
+      totalExits !== lastCachedMetrics.totalExits ||
+      totalReEntries !== lastCachedMetrics.totalReEntries ||
+      currentCapacity !== lastCachedMetrics.currentCapacity ||
+      attendeeDb.size !== lastCachedMetrics.attendeeCount
+    );
+
+    if (!hasChanged && !forcePost) {
+      return;
+    }
+
+    lastCachedMetrics.totalCount = totalCount;
+    lastCachedMetrics.occupiedPct = occupiedPct;
+    lastCachedMetrics.emptyPct = emptyPct;
+    lastCachedMetrics.totalEntries = totalEntries;
+    lastCachedMetrics.totalExits = totalExits;
+    lastCachedMetrics.totalReEntries = totalReEntries;
+    lastCachedMetrics.currentCapacity = currentCapacity;
+    lastCachedMetrics.attendeeCount = attendeeDb.size;
 
     // Update DOM indicators (Both Top Hub and Modal)
     const occupiedEls = document.querySelectorAll('#cctv-metric-occupied-pct');

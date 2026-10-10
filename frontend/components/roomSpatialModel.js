@@ -543,6 +543,16 @@ class RoomSpatialModelRenderer {
 
   animate() {
     if (!this.isAnimating) return;
+
+    // Zero-lag GPU saver: Pause rendering loop when canvas is hidden, off-DOM, or tab is in background
+    const isVisible = this.canvas && this.canvas.isConnected && this.canvas.offsetParent !== null && !document.hidden;
+    if (!isVisible) {
+      setTimeout(() => {
+        if (this.isAnimating) requestAnimationFrame(this.animate);
+      }, 300);
+      return;
+    }
+
     requestAnimationFrame(this.animate);
 
     if (this.controls) {
@@ -690,6 +700,16 @@ class RoomSpatialModelRenderer {
     const ch = this.cssHeight || 320;
     ctx.fillStyle = '#0f172a';
     ctx.fillRect(0, 0, cw, ch);
+  }
+
+  destroy() {
+    this.isAnimating = false;
+    if (this.controls) {
+      try { this.controls.dispose(); } catch (e) {}
+    }
+    if (this.renderer) {
+      try { this.renderer.dispose(); } catch (e) {}
+    }
   }
 }
 
