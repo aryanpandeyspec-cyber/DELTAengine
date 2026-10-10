@@ -372,6 +372,25 @@ function initWebSockets() {
           createToast(`🤖 Autonomous Vision: ${payload.data.hall || 'Venue'} verified at ${payload.data.count || 0} Pax${occText}. Self-healing active!`, 'info');
         }
         break;
+
+      case 'SCENARIO_CHANGED':
+        if (payload.data && payload.data.graph) graphState = payload.data.graph;
+        safeSyncUI(selectedNodeId);
+        if (typeof createToast === 'function') {
+          createToast(`🌐 Operational Domain Switched: ${payload.data.scenarioName || payload.data.activeScenario}`, 'info');
+        }
+        break;
+
+      case 'OPERATIONAL_INCIDENT_RESOLVED':
+        if (payload.data && payload.data.notifications && payload.data.notifications.length > 0) {
+          payload.data.notifications.forEach(n => {
+            if (typeof createToast === 'function') createToast(n.message, n.type || 'warning');
+          });
+        }
+        if (payload.data && payload.data.swarmChat && typeof renderSwarmChat === 'function') {
+          renderSwarmChat(payload.data.swarmChat);
+        }
+        break;
     }
   };
 

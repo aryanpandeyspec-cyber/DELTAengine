@@ -6,35 +6,43 @@ function escapeHtml(str) {
 }
 
 function removeLogoBackground() {
-  const logoImgs = document.querySelectorAll('.delta-polymorphic-logo');
-  logoImgs.forEach(img => {
-    const rawImg = new Image();
-    rawImg.crossOrigin = 'Anonymous';
-    rawImg.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = rawImg.width;
-      canvas.height = rawImg.height;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(rawImg, 0, 0);
-      
-      const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const data = imgData.data;
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-        const maxC = Math.max(r, g, b);
-        const minC = Math.min(r, g, b);
-        // Eliminate all light off-white / beige / grey background pixels
-        if (minC > 170 && (maxC - minC) < 40) {
-          data[i + 3] = 0; // 100% transparent
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-      img.src = canvas.toDataURL('image/png');
-    };
-    rawImg.src = img.src;
-  });
+  try {
+    const logoImgs = document.querySelectorAll('.delta-polymorphic-logo');
+    logoImgs.forEach(img => {
+      try {
+        const rawImg = new Image();
+        rawImg.crossOrigin = 'Anonymous';
+        rawImg.onload = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = rawImg.width;
+            canvas.height = rawImg.height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(rawImg, 0, 0);
+            
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i + 1];
+              const b = data[i + 2];
+              const maxC = Math.max(r, g, b);
+              const minC = Math.min(r, g, b);
+              // Eliminate all light off-white / beige / grey background pixels
+              if (minC > 170 && (maxC - minC) < 40) {
+                data[i + 3] = 0; // 100% transparent
+              }
+            }
+            ctx.putImageData(imgData, 0, 0);
+            img.src = canvas.toDataURL('image/png');
+          } catch (e) {
+            // Silently fallback to original image if canvas is tainted
+          }
+        };
+        rawImg.src = img.src;
+      } catch (e) {}
+    });
+  } catch (err) {}
 }
 
 let ws;

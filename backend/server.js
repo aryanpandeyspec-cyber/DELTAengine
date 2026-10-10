@@ -1336,6 +1336,7 @@ app.post('/api/simulate/delay', async (req, res) => {
   const eventDesc = `Simulated event: Speaker "${speakerName}" flight delayed by ${delayMinutes} minutes.`;
 
   const healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+  if (typeof db.persist === 'function') db.persist();
   res.json({
     success: true,
     ...healingReport
@@ -1354,6 +1355,7 @@ app.post('/api/simulate/capacity', async (req, res) => {
   const eventDesc = `Simulated surge: Interest for "${topicTitle}" increased from ${oldInterest} to ${interestCount} attendees.`;
 
   const healingReport = await runSelfHealingAgent(eventDesc, db, broadcast);
+  if (typeof db.persist === 'function') db.persist();
   res.json({
     success: true,
     ...healingReport
@@ -2134,7 +2136,9 @@ app.get('/api/scenarios/active', (req, res) => {
 app.post('/api/scenarios/select', (req, res) => {
   const { scenarioId } = req.body;
   const updated = setActiveScenario(scenarioId);
+  db.currentScenario = updated.id;
   db.applyScenario(updated);
+  if (typeof db.persist === 'function') db.persist();
 
   broadcast({
     type: 'SCENARIO_CHANGED',
@@ -2143,6 +2147,7 @@ app.post('/api/scenarios/select', (req, res) => {
       scenarioName: updated.name,
       category: updated.category,
       venue: updated.venue,
+      graph: db.graph,
       timestamp: new Date().toLocaleTimeString()
     }
   });
@@ -2150,7 +2155,8 @@ app.post('/api/scenarios/select', (req, res) => {
   res.json({
     success: true,
     message: `Active operational scenario switched to: ${updated.name}`,
-    scenario: updated
+    scenario: updated,
+    graph: db.graph
   });
 });
 

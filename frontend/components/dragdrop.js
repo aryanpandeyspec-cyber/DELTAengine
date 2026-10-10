@@ -7,13 +7,20 @@ function renderScheduleGrid() {
 
   if (!graphState || !scheduleState) return;
 
-  for (const slotId in graphState.slots) {
-    const th = document.getElementById(`th-${slotId}`);
-    if (th) th.textContent = graphState.slots[slotId].time;
+  // Dynamically sync table header row to match active timetable slots
+  const theadTr = document.querySelector('#schedule-table thead tr');
+  if (theadTr && graphState.slots) {
+    theadTr.innerHTML = '<th>Venue Hall</th>';
+    for (const slotId in graphState.slots) {
+      const th = document.createElement('th');
+      th.id = `th-${slotId}`;
+      th.textContent = graphState.slots[slotId]?.time || slotId;
+      theadTr.appendChild(th);
+    }
   }
 
   for (const hallId in graphState.halls) {
-    const hall = graphState.halls[hallId];
+    const hall = graphState.halls[hallId] || { name: hallId, capacity: 250 };
     const tr = document.createElement('tr');
     
     // Hall cell
@@ -42,8 +49,8 @@ function renderScheduleGrid() {
       const topicId = (scheduleState[slotId] && scheduleState[slotId][hallId]) ? scheduleState[slotId][hallId] : null;
       
       if (topicId) {
-        const topic = graphState.topics[topicId];
-        const speaker = graphState.speakers[topic.speakerId];
+        const topic = (graphState.topics && graphState.topics[topicId]) || { id: topicId, title: 'Conference Session', interest: 0, speakerId: null };
+        const speaker = (graphState.speakers && graphState.speakers[topic.speakerId]) || { name: 'Featured Speaker', role: 'Keynote Presenter', avatar: '🎙️', delay: 0 };
         
         const isConflict = topic.interest > hall.capacity;
         if (isConflict) {
@@ -61,13 +68,13 @@ function renderScheduleGrid() {
         block.className = 'schedule-block';
         block.setAttribute('draggable', 'true');
         block.setAttribute('data-topic-id', topicId);
-        block.title = `${topic.title}\nSpeaker: ${speaker.name} (${speaker.role})\nAttendees: ${topic.interest} pax | Hall Limit: ${hall.capacity} pax\nStatus: ${isConflict ? '⚠️ ROOM CAPACITY EXCEEDED' : '✅ Optimal Capacity'}`;
+        block.title = `${topic.title}\nSpeaker: ${speaker.name} (${speaker.role || 'Speaker'})\nAttendees: ${topic.interest} pax | Hall Limit: ${hall.capacity} pax\nStatus: ${isConflict ? '⚠️ ROOM CAPACITY EXCEEDED' : '✅ Optimal Capacity'}`;
         
         block.innerHTML = `
           <div class="block-title">${typeof escapeHtml === 'function' ? escapeHtml(topic.title) : topic.title}</div>
           <div class="block-meta">
             <span class="speaker-badge">
-              <span>${speaker.avatar}</span>
+              <span>${speaker.avatar || '👤'}</span>
               <span>${speaker.name}</span>
             </span>
             <span class="interest-badge" style="${isConflict ? 'background:#ea4335; color:#fff; font-weight:800;' : ''}">

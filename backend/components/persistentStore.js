@@ -36,8 +36,12 @@ function hydrateStateFromDisk(db) {
     if (snapshot.graph.topics) db.graph.topics = { ...db.graph.topics, ...snapshot.graph.topics };
     if (snapshot.graph.speakers) db.graph.speakers = { ...db.graph.speakers, ...snapshot.graph.speakers };
     if (snapshot.graph.halls) db.graph.halls = { ...db.graph.halls, ...snapshot.graph.halls };
+    if (snapshot.graph.slots) db.graph.slots = { ...db.graph.slots, ...snapshot.graph.slots };
+    if (snapshot.graph.zones) db.graph.zones = { ...db.graph.zones, ...snapshot.graph.zones };
+    if (snapshot.graph.venues) db.graph.venues = { ...db.graph.venues, ...snapshot.graph.venues };
     if (snapshot.schedulesByDate) db.schedulesByDate = { ...db.schedulesByDate, ...snapshot.schedulesByDate };
     if (snapshot.activeDate) db.activeDate = snapshot.activeDate;
+    if (snapshot.currentScenario) db.currentScenario = snapshot.currentScenario;
     if (snapshot.contacts) db.contacts = snapshot.contacts;
     if (snapshot.volunteers) db.volunteers = snapshot.volunteers;
     if (snapshot.autopilotEnabled !== undefined) db.autopilotEnabled = snapshot.autopilotEnabled;
@@ -65,11 +69,13 @@ function persistStateDebounced(db, delayMs = 600) {
       const snapshot = {
         updatedAt: new Date().toISOString(),
         activeDate: db.activeDate,
+        currentScenario: db.currentScenario || 'CONFERENCE',
         autopilotEnabled: db.autopilotEnabled,
         graph: {
           speakers: db.graph.speakers,
           topics: db.graph.topics,
           halls: db.graph.halls,
+          slots: db.graph.slots,
           zones: db.graph.zones,
           venues: db.graph.venues
         },

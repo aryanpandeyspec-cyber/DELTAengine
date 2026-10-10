@@ -1002,30 +1002,34 @@
       }
     }
 
-    // Emergency Reallocation Flip Detector
+    // Emergency Reallocation Flip Detector (Audits all slots dynamically)
     function checkReallocationFlip(prevSched, newSched) {
       if (!prevSched || !newSched || !graphData) return;
 
-      const prevTopicId = prevSched['slot-1']?.[activeHallId];
-      if (!prevTopicId) return;
+      for (const sId in prevSched) {
+        const prevTopicId = prevSched[sId]?.[activeHallId];
+        if (!prevTopicId) continue;
 
-      // Find where that topic was relocated to
-      let newLocationHallId = null;
-      let newLocationSlotId = null;
+        // Find where that topic was relocated to in newSched
+        let newLocationHallId = null;
+        let newLocationSlotId = null;
 
-      for (const sId in newSched) {
-        for (const hId in newSched[sId]) {
-          if (newSched[sId][hId] === prevTopicId) {
-            newLocationSlotId = sId;
-            newLocationHallId = hId;
-            break;
+        for (const targetSlot in newSched) {
+          for (const hId in newSched[targetSlot]) {
+            if (newSched[targetSlot][hId] === prevTopicId) {
+              newLocationSlotId = targetSlot;
+              newLocationHallId = hId;
+              break;
+            }
           }
+          if (newLocationHallId) break;
         }
-      }
 
-      // If moved away from this hall, trigger emergency wayfinding overlay!
-      if (newLocationHallId && newLocationHallId !== activeHallId) {
-        triggerEmergencyOverlay(prevTopicId, newLocationHallId, newLocationSlotId);
+        // If moved away from this hall, trigger emergency wayfinding overlay!
+        if (newLocationHallId && newLocationHallId !== activeHallId) {
+          triggerEmergencyOverlay(prevTopicId, newLocationHallId, newLocationSlotId);
+          break;
+        }
       }
     }
 
