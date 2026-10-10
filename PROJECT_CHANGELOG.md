@@ -10,6 +10,7 @@
 1. [Overview & Change Policy](#1-overview--change-policy)
 2. [Component-by-Component Change Ledger](#2-component-by-component-change-ledger)
 3. [Chronological Release History](#3-chronological-release-history)
+   - [v3.6.6 (October 2026) — Comprehensive Logical Errors Resolution & Architectural Resilience](#v366-october-2026--comprehensive-logical-errors-resolution--architectural-resilience)
    - [v3.6.5 (October 2026) — Exhaustive System Feature Audit, Browser Load Syntax Fix & IoT Door Telemetry Resiliency](#v365-october-2026--exhaustive-system-feature-audit-browser-load-syntax-fix--iot-door-telemetry-resiliency)
    - [v3.6.4 (October 2026) — High-Speed CCTV Optical Perception, Zero-Lag Cascade Optimization & Auto-Expanding Feed HUD](#v364-october-2026--high-speed-cctv-optical-perception-zero-lag-cascade-optimization--auto-expanding-feed-hud)
    - [v3.6.3 (October 2026) — Unified Sequential Alert Coordinator, Instant Voice Muting & 2-Second Announcement Pacing](#v363-october-2026--unified-sequential-alert-coordinator-instant-voice-muting--2-second-announcement-pacing)
@@ -63,6 +64,20 @@ This ledger provides an unabridged audit trail for all engineering work on DELTA
 ---
 
 ## 3. Chronological Release History
+
+### v3.6.6 (October 2026) — Comprehensive Logical Errors Resolution & Architectural Resilience
+- **Objective**: Fix logical inconsistencies, silent assignment failures, hardcoded time assumptions, missing setters, and parameter propagation dropouts across backend graph state, self-healing solvers, schedule importing/reverting, spatial twin calibration, and LLM agent models.
+- **Key Deliverables**:
+  1. **Graph Database `schedule` Property Setter & Dynamic Edge Sync**: Implemented missing `set schedule(newSched)` on `db` in `backend/components/graphDb.js`. Previously, `db` only had a getter, which caused all assignments (`db.schedule = importedSchedule` and snapshot restoration) in `backend/server.js` to silently fail. The setter now persists the schedule for the active date and synchronizes edges via `this.syncScheduleEdges()`.
+  2. **Dynamic Hall Population for Unvisited Calendar Dates**: Updated `get schedule()` in `backend/components/graphDb.js` to dynamically query and seed all active halls from `Object.keys(this.graph.halls)` instead of hardcoded `hall-1`, `hall-2`, `hall-3`, preserving dynamically imported halls and arena zones when dates are switched.
+  3. **Multi-Entity Snapshot Revert Preservation**: In `backend/server.js` (`/api/schedule/import` and `/api/schedule/revert`), saved `db.lastPreImportGraph` alongside `db.lastPreImportSchedule`. On rollback, both the schedule matrix and the graph database nodes (halls, slots, speakers, topics) are completely restored to their pre-import state.
+  4. **Dynamic Speaker Availability & Multi-Slot Conflict Detection**: In `backend/components/selfHealing.js`, replaced hardcoded `9.5` and `9.0` morning-hour offsets with dynamic talk slot baseline calculations (`baselineHour + speaker.delay / 60`). Speakers scheduled in afternoon or evening sessions who experience travel delays are now accurately flagged and rescheduled. Added safe optional chaining and default fallbacks for `targetTopic` and `speaker` properties.
+  5. **Bidirectional Spatial 3D Calibration Ingestion**: Updated `reconstructRoom3DFromImages` in `backend/components/spatial3dEngine.js` and `/api/spatial/reconstruct-3d` in `backend/server.js` to accept `width`, `length`, `height`, `doorsCount`, and `calculatedCapacity` parameter overrides. User adjustments from the UI calibration slider panel are now faithfully applied to the 3D twin, saved to `db.graph.halls[normHallId].capacity`, and broadcast via WebSocket to the live self-healing loop.
+  6. **Combined Hall & Zone Graph Alternative Search**: In `backend/components/graphDb.js` (`findAlternativeZone`), merged `this.graph.halls` and `this.graph.zones` so fallback capacity queries can explore all venue envelopes (including `hall-4`, `hall-stadium`, etc.) instead of short-circuiting on empty zone subsets.
+  7. **Self-Referential Hall Overflow Guard**: In `backend/components/operationsEngine.js`, guarded fallback hall allocation so that an overflowing hall cannot be reallocated back into itself.
+  8. **Production Groq & Gemini Model Alignment**: In `backend/components/agentSwarm.js` and `backend/components/geminiAuditor.js`, aligned model candidate arrays with real production endpoints (`llama-3.3-70b-versatile`, `llama-3.1-8b-instant`, `gemma2-9b-it`, `gemini-2.5-flash`, `gemini-2.0-flash`, `gemini-1.5-flash`), eliminating 404 model errors when external API keys are configured.
+  9. **Defensive `db.reset()` Topic Guards**: Added conditional checks in `db.reset()` (`if (this.graph.topics['topic-1'])`) preventing TypeErrors when resetting custom imported schedules.
+  10. **100% Comprehensive Audit Pass**: Verified 120/120 tests pass in `tests/comprehensive_system_audit.js` and 82/82 tests pass in `tests/runAllTests.js`.
 
 ### v3.6.5 (October 2026) — Exhaustive System Feature Audit, Browser Load Syntax Fix & IoT Door Telemetry Resiliency
 - **Objective**: Conduct comprehensive, in-depth feature audit across all 61 HTTP routes, static entry points, WebSocket feeds, DOM control IDs, self-healing engines, perception subsystems, alert coordinators, and compliance auditors; fix frontend browser load failure caused by merge syntax error in `app.js`; fix backend IoT door sensor hang caused by undeclared variable in `server.js`.

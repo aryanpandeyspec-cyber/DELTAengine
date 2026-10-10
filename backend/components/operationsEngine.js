@@ -165,7 +165,9 @@ function solveOperationalAction(incident, db, scenario = null) {
 
   if (incident.eventType === 'CONFERENCE' && incident.incidentType === COMMON_INCIDENT_TYPES.OVER_CAPACITY) {
     // Conference overflow: Reallocate talk to larger hall
-    const targetHall = alternativeZone || { id: 'hall-1', name: 'Turing Hall', capacity: 250 };
+    const targetHall = alternativeZone || (zoneId === 'hall-1'
+      ? { id: 'hall-4', name: 'Keynote Arena', capacity: 500 }
+      : { id: 'hall-1', name: 'Turing Hall', capacity: 250 });
     recommendedAction = {
       id: 'act_' + Date.now(),
       type: 'REALLOCATE_VENUE',

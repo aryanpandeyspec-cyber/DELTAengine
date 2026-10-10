@@ -32,7 +32,7 @@ const NVIDIA_MODELS = [
  * @param {Object} params.db - In-memory graph database
  * @param {Function} params.broadcast - WebSocket broadcast function
  */
-async function reconstructRoom3DFromImages({ images = [], hallId = 'hall-1', hallName = 'Turing Hall', engine = 'auto', db, broadcast }) {
+async function reconstructRoom3DFromImages({ images = [], hallId = 'hall-1', hallName = 'Turing Hall', engine = 'auto', db, broadcast, width, length, height, doorsCount, calculatedCapacity }) {
   const normHallId = hallId || 'hall-1';
   const normHallName = hallName || (db?.graph?.halls?.[normHallId]?.name || 'Turing Hall');
   const preferredEngine = (engine || 'auto').toLowerCase();
@@ -68,9 +68,33 @@ async function reconstructRoom3DFromImages({ images = [], hallId = 'hall-1', hal
     spatialResult = await callGeminiMultimodalSpatialAI(cleanedImages, normHallName, normHallId, process.env.GEMINI_API_KEY || GEMINI_API_KEY);
   }
 
-  // 3. Fallback to dynamic context-aware spatial engine (Zero-Fail Guarantee)
+  // 4. Fallback to dynamic context-aware spatial engine (Zero-Fail Guarantee)
   if (!spatialResult) {
     spatialResult = generateContextualSpatialModel(cleanedImages.length, normHallName, normHallId);
+  }
+
+  // Apply manual calibration overrides if provided (e.g. from UI sliders or deployment requests)
+  if (width !== undefined && !isNaN(Number(width)) && Number(width) > 0) {
+    spatialResult.dimensions.width = Number(width);
+  }
+  if (length !== undefined && !isNaN(Number(length)) && Number(length) > 0) {
+    spatialResult.dimensions.length = Number(length);
+  }
+  if (height !== undefined && !isNaN(Number(height)) && Number(height) > 0) {
+    spatialResult.dimensions.height = Number(height);
+  }
+  if (spatialResult.dimensions.width && spatialResult.dimensions.length) {
+    spatialResult.dimensions.areaM2 = Math.round(spatialResult.dimensions.width * spatialResult.dimensions.length);
+  }
+  if (doorsCount !== undefined && !isNaN(Number(doorsCount)) && Number(doorsCount) > 0) {
+    spatialResult.doorsCount = Math.max(1, parseInt(doorsCount, 10));
+  }
+  if (calculatedCapacity !== undefined && !isNaN(Number(calculatedCapacity)) && Number(calculatedCapacity) > 0) {
+    const cap = Math.max(1, parseInt(calculatedCapacity, 10));
+    spatialResult.capacityMetrics.capacity = cap;
+    spatialResult.capacityMetrics.safeEgressCap = cap;
+    spatialResult.capacityMetrics.highDensityCap = Math.round(cap * 1.3);
+    spatialResult.capacityMetrics.standingCap = Math.round(cap * 1.6);
   }
 
   // 4. Assemble complete 3D digital twin object

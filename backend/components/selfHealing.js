@@ -24,6 +24,7 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
 
     for (const slotId in schedule) {
       const slot = graph.slots[slotId];
+      if (!slot) continue;
       for (const hallId in schedule[slotId]) {
         const topicId = schedule[slotId][hallId];
         if (!topicId) continue;
@@ -34,7 +35,8 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
         const hall = (graph.halls && graph.halls[hallId]) || { name: 'Hall Venue', capacity: 250 };
 
         if (speaker && speaker.delay > 0) {
-          const availabilityStartHour = 9.5 + (speaker.delay / 60);
+          const baselineHour = (speaker.startHour !== undefined) ? speaker.startHour : (initialSchedule[slotId] && initialSchedule[slotId][hallId] === topicId ? slot.startHour : (slot.startHour || 9.5));
+          const availabilityStartHour = baselineHour + (speaker.delay / 60);
           if (slot.startHour < availabilityStartHour) {
             logs.push(`[CONFLICT] Speaker "${speaker.name}" is delayed by ${speaker.delay} mins. Available at ${formatHour(availabilityStartHour)}, but talk "${topic.title}" is scheduled at ${slot.time} in ${hall.name}.`);
             conflictFoundThisPass = true;
@@ -265,10 +267,12 @@ function resolveSpeakerDelay(topicId, slotId, hallId, availabilityStartHour, log
           return;
         } else {
           const targetTopic = graph.topics[currentTopicIdInTarget];
-          const targetSpeaker = graph.speakers[targetTopic.speakerId];
-          const targetSpeakerAvailability = 9.0 + (targetSpeaker.delay / 60);
+          if (!targetTopic) continue;
+          const targetSpeaker = graph.speakers && graph.speakers[targetTopic.speakerId || targetTopic.speaker_id];
+          const targetDelay = (targetSpeaker && targetSpeaker.delay) || 0;
+          const targetSpeakerAvailability = targetDelay > 0 ? (targetSlot.startHour + (targetDelay / 60)) : 0;
           const isTargetSpeakerAvailableInOriginal = originalSlot.startHour >= targetSpeakerAvailability;
-          const targetHall = graph.halls[targetHallId];
+          const targetHall = graph.halls[targetHallId] || { name: 'Target Hall', capacity: 250 };
           const doesTargetTopicFitOriginalHall = targetTopic.interest <= originalHall.capacity;
           const doesDelayedTopicFitTargetHall = graph.topics[topicId].interest <= targetHall.capacity;
 
@@ -376,13 +380,14 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
         const topicIdInTarget = schedule[targetSlotId][targetHallId];
 
         if (!topicIdInTarget) {
-          const speaker = graph.speakers[topic.speakerId];
-          const speakerAvailability = 9.0 + (speaker.delay / 60);
+          const speaker = graph.speakers && graph.speakers[topic.speakerId || topic.speaker_id];
+          const speakerDelay = (speaker && speaker.delay) || 0;
+          const speakerAvailability = speakerDelay > 0 ? (targetSlot.startHour + (speakerDelay / 60)) : 0;
 
           let isSpeakerBusy = false;
           for (const hId in schedule[targetSlotId]) {
             const tId = schedule[targetSlotId][hId];
-            if (tId && graph.topics[tId].speakerId === topic.speakerId) {
+            if (tId && graph.topics[tId] && (graph.topics[tId].speakerId === topic.speakerId || graph.topics[tId].speaker_id === topic.speakerId)) {
               isSpeakerBusy = true;
             }
           }

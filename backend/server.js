@@ -1160,6 +1160,7 @@ app.post('/api/schedule/import', (req, res) => {
     if (Object.keys(importedHalls).length > 0) {
       // Save snapshot for rollback
       db.lastPreImportSchedule = JSON.parse(JSON.stringify(db.schedule));
+      db.lastPreImportGraph = JSON.parse(JSON.stringify(db.graph));
 
       db.graph.halls = { ...db.graph.halls, ...importedHalls };
       db.graph.slots = { ...db.graph.slots, ...importedSlots };
@@ -1213,6 +1214,9 @@ app.post('/api/schedule/import', (req, res) => {
 app.post('/api/schedule/revert', (req, res) => {
   if (db.lastPreImportSchedule) {
     db.schedule = JSON.parse(JSON.stringify(db.lastPreImportSchedule));
+    if (db.lastPreImportGraph) {
+      db.graph = JSON.parse(JSON.stringify(db.lastPreImportGraph));
+    }
     if (typeof db.syncScheduleEdges === 'function') db.syncScheduleEdges();
     broadcast({
       type: 'INIT_STATE',
@@ -1643,7 +1647,12 @@ app.post('/api/spatial/reconstruct-3d', upload.array('images', 12), async (req, 
       hallName,
       engine,
       db,
-      broadcast
+      broadcast,
+      width: req.body.width,
+      length: req.body.length,
+      height: req.body.height,
+      doorsCount: req.body.doorsCount,
+      calculatedCapacity: req.body.calculatedCapacity || req.body.capacity
     });
 
     res.json({

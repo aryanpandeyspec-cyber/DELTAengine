@@ -116,15 +116,27 @@ const db = {
       const dateNum = Array.from(this.activeDate).reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const shift = dateNum % 3;
       const topicIds = Object.keys(this.graph.topics);
+      const hallIds = Object.keys(this.graph.halls);
+      const slotIds = Object.keys(this.graph.slots);
 
-      this.schedulesByDate[this.activeDate] = {
-        'slot-1': { 'hall-1': topicIds[shift % topicIds.length] || null, 'hall-2': null, 'hall-3': null },
-        'slot-2': { 'hall-1': topicIds[(shift + 1) % topicIds.length] || null, 'hall-2': null, 'hall-3': null },
-        'slot-3': { 'hall-1': topicIds[(shift + 2) % topicIds.length] || null, 'hall-2': null, 'hall-3': null },
-        'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
-      };
+      const newSched = {};
+      slotIds.forEach((slotId, sIdx) => {
+        newSched[slotId] = {};
+        hallIds.forEach(hallId => {
+          newSched[slotId][hallId] = null;
+        });
+        if (sIdx < 3 && hallIds.length > 0 && topicIds.length > 0) {
+          const primaryHall = hallIds[0];
+          newSched[slotId][primaryHall] = topicIds[(shift + sIdx) % topicIds.length] || null;
+        }
+      });
+      this.schedulesByDate[this.activeDate] = newSched;
     }
     return this.schedulesByDate[this.activeDate];
+  },
+  set schedule(newSched) {
+    this.schedulesByDate[this.activeDate] = newSched;
+    this.syncScheduleEdges();
   },
   setDate(dateStr) {
     this.activeDate = dateStr;
@@ -209,7 +221,8 @@ const db = {
       return viable.sort((a, b) => b.capacity - a.capacity)[0];
     }
     // If no direct connected zone fits, search all other zones in graph
-    const allZones = Object.values(this.graph.zones || this.graph.halls || {});
+    const combinedZones = { ...(this.graph.halls || {}), ...(this.graph.zones || {}) };
+    const allZones = Object.values(combinedZones);
     const fallbackViable = allZones.filter(z => z.id !== currentZoneId && (neededCapacity <= 0 || z.capacity >= neededCapacity));
     return fallbackViable.length > 0 ? fallbackViable.sort((a, b) => b.capacity - a.capacity)[0] : null;
   },
@@ -274,21 +287,32 @@ const db = {
     for (const id in this.graph.speakers) {
       this.graph.speakers[id].delay = 0;
     }
-    this.graph.topics['topic-1'].interest = 210;
-    this.graph.topics['topic-2'].interest = 140;
-    this.graph.topics['topic-3'].interest = 180;
+    if (this.graph.topics['topic-1']) this.graph.topics['topic-1'].interest = 210;
+    if (this.graph.topics['topic-2']) this.graph.topics['topic-2'].interest = 140;
+    if (this.graph.topics['topic-3']) this.graph.topics['topic-3'].interest = 180;
 
     if (this.graph.halls['hall-1']) this.graph.halls['hall-1'].capacity = 250;
     if (this.graph.halls['hall-2']) this.graph.halls['hall-2'].capacity = 120;
     if (this.graph.halls['hall-3']) this.graph.halls['hall-3'].capacity = 60;
     if (this.graph.halls['hall-4']) this.graph.halls['hall-4'].capacity = 500;
 
-    this.schedulesByDate[todayStr] = {
-      'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
-      'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
-      'slot-3': { 'hall-1': 'topic-3', 'hall-2': null, 'hall-3': null },
-      'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
+    const resetHalls = Object.keys(this.graph.halls);
+    const resetSched = {
+      'slot-1': {},
+      'slot-2': {},
+      'slot-3': {},
+      'slot-4': {}
     };
+    ['slot-1', 'slot-2', 'slot-3', 'slot-4'].forEach(sId => {
+      resetHalls.forEach(hId => {
+        resetSched[sId][hId] = null;
+      });
+    });
+    if (this.graph.topics['topic-1']) resetSched['slot-1']['hall-1'] = 'topic-1';
+    if (this.graph.topics['topic-2']) resetSched['slot-2']['hall-1'] = 'topic-2';
+    if (this.graph.topics['topic-3']) resetSched['slot-3']['hall-1'] = 'topic-3';
+
+    this.schedulesByDate[todayStr] = resetSched;
     this.syncScheduleEdges();
   }
 };
