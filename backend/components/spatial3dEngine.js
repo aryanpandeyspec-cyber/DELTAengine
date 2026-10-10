@@ -53,13 +53,18 @@ async function reconstructRoom3DFromImages({ images = [], hallId = 'hall-1', hal
 
   let spatialResult = null;
 
-  // 1. Try NVIDIA Nemotron / NIM Vision if explicitly selected or if NVIDIA_API_KEY is present
-  if ((preferredEngine === 'nvidia' || preferredEngine === 'auto') && (process.env.NVIDIA_API_KEY || NVIDIA_API_KEY) && cleanedImages.length > 0) {
+  // 1. Try Google Gemma / PaliGemma if explicitly selected
+  if ((preferredEngine === 'gemma' || preferredEngine === 'paligemma') && cleanedImages.length > 0) {
+    spatialResult = await callGoogleGemmaVisionAI(cleanedImages, normHallName, normHallId);
+  }
+
+  // 2. Try NVIDIA Nemotron / NIM Vision if explicitly selected or if NVIDIA_API_KEY is present
+  if (!spatialResult && (preferredEngine === 'nvidia' || preferredEngine === 'auto') && (process.env.NVIDIA_API_KEY || NVIDIA_API_KEY) && cleanedImages.length > 0) {
     spatialResult = await callNvidiaNemotronVisionAI(cleanedImages, normHallName, normHallId, process.env.NVIDIA_API_KEY || NVIDIA_API_KEY);
   }
 
-  // 2. Try Google Gemini Vision if NVIDIA was not used or did not produce output
-  if (!spatialResult && (preferredEngine === 'gemini' || preferredEngine === 'auto') && (process.env.GEMINI_API_KEY || GEMINI_API_KEY) && cleanedImages.length > 0) {
+  // 3. Try Google Gemini Vision if previous engines were not used or did not produce output
+  if (!spatialResult && (preferredEngine === 'gemini' || preferredEngine === 'auto' || preferredEngine === 'gemma') && (process.env.GEMINI_API_KEY || GEMINI_API_KEY) && cleanedImages.length > 0) {
     spatialResult = await callGeminiMultimodalSpatialAI(cleanedImages, normHallName, normHallId, process.env.GEMINI_API_KEY || GEMINI_API_KEY);
   }
 
@@ -265,6 +270,99 @@ Respond STRICTLY with valid JSON matching this schema:
   "confidenceScore": <number between 0.90 and 0.99>
 }
 `;
+}
+
+/**
+ * Calls Google Gemma / PaliGemma open-weights vision models
+ * Supports local edge Ollama (http://localhost:11434) and NIM microservices (google/paligemma-3b-pt-448)
+ */
+async function callGoogleGemmaVisionAI(cleanedImages, hallName, hallId) {
+  const prompt = buildSpatialExtractionPrompt(hallName, hallId);
+  const ollamaHost = process.env.OLLAMA_HOST || 'http://localhost:11434';
+
+  // 1. Check local Ollama endpoint for on-device/edge PaliGemma
+  try {
+    console.log(`[Google Gemma AI] Checking local Ollama endpoint (${ollamaHost}) for PaliGemma / Gemma Vision...`);
+    const ollamaRes = await fetch(`${ollamaHost}/api/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'paligemma',
+        prompt: prompt + '\nStrictly respond with raw JSON only.',
+        images: cleanedImages.slice(0, 3).map(img => img.base64),
+        stream: false
+      }),
+      signal: AbortSignal.timeout(3500)
+    });
+
+    if (ollamaRes.ok) {
+      const data = await ollamaRes.json();
+      if (data && data.response) {
+        let cleanedJson = data.response;
+        const jsonMatch = cleanedJson.match(/\{[\s\S]*\}/);
+        if (jsonMatch) cleanedJson = jsonMatch[0];
+        cleanedJson = cleanedJson.replace(/,\s*([}\]])/g, '$1');
+        const parsed = JSON.parse(cleanedJson);
+        parsed.source = 'Google PaliGemma 2 (Edge/On-Device VLM via Ollama)';
+        parsed.modelEngine = 'Google PaliGemma 2 (Edge VLM)';
+        console.log(`[Google Gemma AI] 🎯 Successful local 3D reconstruction from PaliGemma!`);
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.log(`[Google Gemma AI] Local Ollama not reachable (${err.message}). Trying hosted Google Gemma NIM microservice...`);
+  }
+
+  // 2. Try hosted Google Gemma on NVIDIA NIM if API key present
+  const apiKey = process.env.NVIDIA_API_KEY || NVIDIA_API_KEY;
+  if (apiKey) {
+    const nimGemmaModels = ['google/paligemma-3b-pt-448', 'google/gemma-2-27b-it'];
+    for (const model of nimGemmaModels) {
+      try {
+        console.log(`[Google Gemma AI] Querying ${model} via NIM...`);
+        const content = [{ type: 'text', text: prompt }];
+        cleanedImages.slice(0, 3).forEach(img => {
+          content.push({
+            type: 'image_url',
+            image_url: { url: `data:${img.mimeType || 'image/jpeg'};base64,${img.base64}` }
+          });
+        });
+
+        const res = await fetch('https://integrate.api.nvidia.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model,
+            messages: [{ role: 'user', content }],
+            temperature: 0.15,
+            max_tokens: 2048
+          }),
+          signal: AbortSignal.timeout(6000)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.choices && data.choices[0] && data.choices[0].message) {
+          const rawText = data.choices[0].message.content || '';
+          let cleanedJson = rawText;
+          const jsonMatch = cleanedJson.match(/\{[\s\S]*\}/);
+          if (jsonMatch) cleanedJson = jsonMatch[0];
+          cleanedJson = cleanedJson.replace(/,\s*([}\]])/g, '$1');
+          const parsed = JSON.parse(cleanedJson);
+          parsed.source = `Google Gemma Family (${model})`;
+          parsed.modelEngine = `Google Gemma (${model.split('/').pop()})`;
+          console.log(`[Google Gemma AI] 🎯 Successful 3D reconstruction from ${model}!`);
+          return parsed;
+        }
+      } catch (err) {
+        console.warn(`[Google Gemma AI] ${model} NIM error:`, err.message);
+      }
+    }
+  }
+
+  return null;
 }
 
 /**
