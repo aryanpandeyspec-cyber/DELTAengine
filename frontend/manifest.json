@@ -1,0 +1,37 @@
+{
+  "name": "DELTA ENGINE - Mobile Operations App",
+  "short_name": "DELTA",
+  "description": "Agentic & Self-Healing Event Operating System Mobile Coordinator Portal",
+  "start_url": "/app",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f5f0",
+  "theme_color": "#ffd84d",
+  "icons": [
+    {
+      "src": "/logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["utilities", "business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Open Messages",
+      "url": "/app#messages",
+      "description": "Quick message coordinator"
+    },
+    {
+      "name": "Room Status",
+      "url": "/app#rooms",
+      "description": "Check event rooms"
+    }
+  ]
+}

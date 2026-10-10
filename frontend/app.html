@@ -5,6 +5,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>DELTA ENGINE - Mobile Operations App</title>
+  
+  <!-- Play Store / PWA Meta Tags -->
+  <meta name="description" content="DELTA ENGINE - Agentic & Self-Healing Event Operating System Mobile Coordinator Portal">
+  <meta name="theme-color" content="#ffd84d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/jpeg" href="logo.jpeg">
+  <link rel="apple-touch-icon" href="logo.jpeg">
 
   <!-- Google Fonts matching DELTA Engine -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -42,11 +52,49 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
+    /* Dark Mode Variables */
+    body.dark-mode {
+      --bg-primary: #12141a;
+      --bg-card: #1c1f26;
+      --border-color: #ffd84d;
+      color: #f1f5f9;
+    }
+    body.dark-mode .desktop-utility-bar,
+    body.dark-mode .delta-brand-box,
+    body.dark-mode .rooms-card-container,
+    body.dark-mode .contact-card-container,
+    body.dark-mode .messenger-top-bar,
+    body.dark-mode .messenger-input-bar,
+    body.dark-mode .app-bottom-nav,
+    body.dark-mode .notif-sheet-content,
+    body.dark-mode .cctv-card-container,
+    body.dark-mode .settings-card-container,
+    body.dark-mode .modal-card-box {
+      background: #1c1f26 !important;
+      color: #f1f5f9 !important;
+      border-color: #ffd84d !important;
+      box-shadow: 4px 4px 0px #ffd84d !important;
+    }
+    body.dark-mode .room-line-input {
+      color: #f1f5f9 !important;
+      border-bottom-color: #94a3b8 !important;
+    }
+    body.dark-mode .contact-item,
+    body.dark-mode .notif-item {
+      background: #252a34 !important;
+      border-color: #ffd84d !important;
+      color: #f1f5f9 !important;
+    }
+    body.dark-mode .delta-brand-title {
+      color: #f1f5f9 !important;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
       -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
     }
 
     body {
@@ -54,6 +102,7 @@
       font-family: var(--font-main);
       color: #000000;
       min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -61,6 +110,7 @@
       padding: 0;
       overflow-x: hidden;
       position: relative;
+      overscroll-behavior-y: contain;
     }
 
     /* Dot Blueprint Grid Overlay */
@@ -78,7 +128,7 @@
       pointer-events: none;
     }
 
-    /* Top Desktop Bar */
+    /* Top Desktop Utility Bar */
     .desktop-utility-bar {
       width: 100%;
       max-width: 1100px;
@@ -147,7 +197,7 @@
       background: #ffd84d;
     }
 
-    /* Device Wrapper (Smartphone Simulator on Desktop / Native on Mobile) */
+    /* Device Wrapper (Smartphone Simulator on Desktop / Native Fullscreen on Mobile) */
     .app-viewport-wrapper {
       width: 100%;
       max-width: 440px;
@@ -199,6 +249,7 @@
       box-sizing: border-box;
       scrollbar-width: thin;
       scrollbar-color: #cbd5e1 transparent;
+      -webkit-overflow-scrolling: touch;
     }
 
     .app-viewport-wrapper.fullscreen-mode .phone-screen {
@@ -215,7 +266,7 @@
       border-radius: 10px;
     }
 
-    /* Top Hardware Notch / Dynamic Island */
+    /* Hardware Notch / Dynamic Island */
     .phone-dynamic-island {
       width: 120px;
       height: 26px;
@@ -252,7 +303,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 4px 18px 2px;
+      padding: 6px 18px 2px;
       font-size: 0.75rem;
       font-weight: 800;
       font-family: var(--font-mono);
@@ -270,15 +321,63 @@
     /* Main Scrollable App Content Area */
     .app-main-content {
       flex: 1;
-      padding: 10px 14px 80px;
+      padding: 10px 14px 84px;
       display: flex;
       flex-direction: column;
       gap: 12px;
       position: relative;
     }
 
+    /* ==========================================================================
+       MOBILE RESPONSIVE & PLAY STORE FULLSCREEN MODES
+       When on mobile screen (<= 768px) or in standalone PWA app:
+       Expands to true 100% full screen with zero fake borders!
+       ========================================================================== */
+    @media (max-width: 768px), (display-mode: standalone) {
+      body {
+        background-color: var(--bg-primary);
+        padding: 0;
+        overflow: hidden;
+        height: 100vh;
+        height: 100dvh;
+      }
+      .desktop-utility-bar {
+        display: none !important;
+      }
+      .app-viewport-wrapper {
+        max-width: 100% !important;
+        width: 100% !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        min-height: 100% !important;
+        margin: 0 !important;
+      }
+      .phone-chassis {
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        background: var(--bg-primary) !important;
+      }
+      .phone-screen {
+        border: none !important;
+        border-radius: 0 !important;
+        max-height: 100% !important;
+        height: 100% !important;
+        padding-top: var(--safe-top);
+      }
+      .phone-dynamic-island {
+        display: none !important; /* Mobile hardware has native notch */
+      }
+      .phone-status-bar {
+        padding-top: 8px;
+      }
+    }
+
     /* --------------------------------------------------------------------------
-       TOP BRAND HEADER BOX (Exactly as in User Wireframe Image: Box with DELTA)
+       TOP BRAND HEADER BOX (Direct from Wireframe: Box with DELTA)
        -------------------------------------------------------------------------- */
     .delta-brand-box {
       width: 100%;
@@ -341,9 +440,17 @@
       background: #ffd84d;
       border: 1.5px solid #000000;
       border-radius: 20px;
-      padding: 2px 10px;
-      font-size: 0.65rem;
+      padding: 3px 12px;
+      font-size: 0.68rem;
       font-weight: 800;
+      cursor: pointer;
+      box-shadow: 1.5px 1.5px 0px #000000;
+      transition: transform 0.1s;
+    }
+
+    .delta-brand-meta-bar:active {
+      transform: translate(1px, 1px);
+      box-shadow: 0 0 0 #000;
     }
 
     .delta-brand-meta-bar .dot-pulse {
@@ -359,11 +466,21 @@
        -------------------------------------------------------------------------- */
     .notification-bar-row {
       display: flex;
-      justify-content: flex-end;
+      justify-content: space-between;
       align-items: center;
       margin-top: -2px;
       margin-bottom: 2px;
       position: relative;
+    }
+
+    .live-status-pill-sub {
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .btn-notification {
@@ -409,7 +526,7 @@
     }
 
     /* --------------------------------------------------------------------------
-       ROOMS SECTION (ROOM 1 to ROOM 5 with Line next to each room)
+       ROOMS SECTION (ROOM 1 to ROOM 5 with Lines from Wireframe)
        -------------------------------------------------------------------------- */
     .rooms-card-container {
       background: #ffffff;
@@ -440,8 +557,15 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      padding: 4px 0;
+      padding: 6px 0;
       position: relative;
+      border-bottom: 1px solid #f1f5f9;
+      transition: background-color 0.15s;
+      border-radius: 8px;
+    }
+
+    .room-row:last-child {
+      border-bottom: none;
     }
 
     .room-header-line {
@@ -458,6 +582,7 @@
       letter-spacing: 0.5px;
       color: #000000;
       min-width: 72px;
+      cursor: pointer;
     }
 
     /* The Editable Input / Line as sketched in wireframe */
@@ -491,12 +616,19 @@
     .room-status-badge {
       font-size: 0.65rem;
       font-weight: 800;
-      padding: 2px 8px;
+      padding: 3px 8px;
       border-radius: 6px;
       border: 1.5px solid #000000;
       box-shadow: 1.5px 1.5px 0px #000000;
       white-space: nowrap;
       cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease;
+    }
+
+    .room-status-badge:active {
+      transform: translate(1px, 1px);
+      box-shadow: 0 0 0 #000;
     }
 
     .badge-nominal {
@@ -523,25 +655,30 @@
       font-size: 0.68rem;
       color: #64748b;
       font-weight: 600;
+      gap: 6px;
     }
 
     .room-sub-row .venue-name {
       color: #0f172a;
       font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .room-sub-actions {
       display: flex;
       gap: 5px;
+      flex-shrink: 0;
     }
 
     .btn-room-mini {
       background: #ffffff;
       border: 1.5px solid #000000;
-      border-radius: 4px;
-      padding: 1px 5px;
-      font-size: 0.62rem;
-      font-weight: 700;
+      border-radius: 5px;
+      padding: 2px 6px;
+      font-size: 0.65rem;
+      font-weight: 800;
       cursor: pointer;
       box-shadow: 1px 1px 0px #000000;
       transition: transform 0.1s;
@@ -550,6 +687,10 @@
     .btn-room-mini:active {
       transform: translate(1px, 1px);
       box-shadow: 0 0 0 #000;
+    }
+
+    .btn-room-mini.btn-room-details {
+      background: #e0f2fe;
     }
 
     /* --------------------------------------------------------------------------
@@ -592,10 +733,10 @@
       align-items: center;
       justify-content: space-between;
       gap: 8px;
-      padding: 8px 10px;
+      padding: 10px 12px;
       background: #f8fafc;
       border: 2px solid #000000;
-      border-radius: 10px;
+      border-radius: 12px;
       box-shadow: 2px 2px 0px #000000;
       transition: transform 0.1s ease;
     }
@@ -608,18 +749,19 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      cursor: pointer;
     }
 
     .contact-avatar {
-      width: 36px;
-      height: 36px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: #ffd84d;
       border: 2px solid #000000;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       box-shadow: 1.5px 1.5px 0px #000000;
       flex-shrink: 0;
     }
@@ -645,7 +787,7 @@
 
     .contact-name {
       font-family: var(--font-mono);
-      font-size: 0.92rem;
+      font-size: 0.94rem;
       font-weight: 800;
       text-transform: uppercase;
       color: #000000;
@@ -661,8 +803,8 @@
 
     .contact-phone {
       font-family: var(--font-mono);
-      font-size: 0.8rem;
-      font-weight: 700;
+      font-size: 0.82rem;
+      font-weight: 800;
       color: #2563eb;
       letter-spacing: 0.5px;
     }
@@ -680,17 +822,17 @@
     }
 
     .btn-action-icon {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       background: #ffffff;
       border: 2px solid #000000;
-      border-radius: 8px;
+      border-radius: 9px;
       box-shadow: 2px 2px 0px #000000;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 1rem;
       text-decoration: none;
       color: #000000;
       transition: transform 0.1s ease, box-shadow 0.1s ease;
@@ -715,7 +857,7 @@
     }
 
     /* --------------------------------------------------------------------------
-       BOTTOM NAVIGATION BAR & FLOATING MESSAGE BUTTON
+       BOTTOM NAVIGATION BAR (5 Fully Functional Tabs)
        -------------------------------------------------------------------------- */
     .app-bottom-nav {
       position: sticky;
@@ -727,7 +869,7 @@
       display: flex;
       align-items: center;
       justify-content: space-around;
-      padding: 8px 10px calc(8px + var(--safe-bottom));
+      padding: 8px 6px calc(8px + var(--safe-bottom));
       box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
       z-index: 100;
     }
@@ -746,6 +888,8 @@
       border-radius: 8px;
       transition: all 0.15s ease;
       text-decoration: none;
+      flex: 1;
+      text-align: center;
     }
 
     .nav-tab-item.active {
@@ -763,7 +907,7 @@
     .nav-tab-badge {
       position: absolute;
       top: 0px;
-      right: 2px;
+      right: 6px;
       background: #ef4444;
       color: #ffffff;
       font-size: 0.6rem;
@@ -784,8 +928,8 @@
       position: absolute;
       bottom: 74px;
       right: 18px;
-      width: 54px;
-      height: 54px;
+      width: 56px;
+      height: 56px;
       background: #2563eb;
       color: #ffffff;
       border: var(--border-w) solid #000000;
@@ -829,7 +973,7 @@
     }
 
     /* --------------------------------------------------------------------------
-       THE MESSENGER SCREEN / MODAL VIEW ("LIKE OTHER APP")
+       THE MESSENGER SCREEN / OVERLAY VIEW ("LIKE OTHER APP")
        Slides smoothly over the screen when message icon is tapped!
        -------------------------------------------------------------------------- */
     .messenger-overlay-view {
@@ -876,7 +1020,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 1.1rem;
+      font-size: 1.15rem;
       font-weight: 900;
       color: #000000;
       transition: transform 0.1s ease;
@@ -894,6 +1038,7 @@
       gap: 10px;
       flex: 1;
       overflow: hidden;
+      cursor: pointer;
     }
 
     .msg-header-avatar {
@@ -950,8 +1095,8 @@
     }
 
     .btn-msg-top-action {
-      width: 34px;
-      height: 34px;
+      width: 36px;
+      height: 36px;
       background: #ffffff;
       border: 2px solid #000000;
       border-radius: 8px;
@@ -960,7 +1105,7 @@
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      font-size: 0.95rem;
+      font-size: 1rem;
       transition: transform 0.1s ease;
     }
 
@@ -969,7 +1114,7 @@
       box-shadow: 0 0 0 #000;
     }
 
-    /* Contact Switcher Horizontal Scroll */
+    /* Channel Switcher Horizontal Scroll */
     .msg-channel-switcher {
       background: #ffffff;
       border-bottom: 2px solid #000000;
@@ -1118,6 +1263,42 @@
       font-weight: 900;
     }
 
+    /* Voice Note Bubble in Chat */
+    .voice-note-bubble {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 4px 0;
+    }
+
+    .btn-play-voice {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #ffd84d;
+      border: 1.5px solid #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.8rem;
+      box-shadow: 1px 1px 0px #000000;
+    }
+
+    .voice-wave-bars {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      height: 20px;
+    }
+
+    .voice-bar {
+      width: 3px;
+      height: 12px;
+      background: currentColor;
+      border-radius: 2px;
+    }
+
     /* Typing Indicator */
     .typing-indicator-row {
       display: none;
@@ -1227,7 +1408,7 @@
 
     .msg-input-field {
       flex: 1;
-      height: 38px;
+      height: 40px;
       background: #ffffff;
       border: 2px solid #000000;
       border-radius: 10px;
@@ -1245,8 +1426,8 @@
     }
 
     .btn-msg-send {
-      width: 40px;
-      height: 38px;
+      width: 42px;
+      height: 40px;
       background: #2563eb;
       color: #ffffff;
       border: 2px solid #000000;
@@ -1271,7 +1452,7 @@
     }
 
     /* --------------------------------------------------------------------------
-       NOTIFICATIONS SHEET / DRAWER (Triggered by "NOTIFICAION" Button)
+       NOTIFICATIONS SHEET / DRAWER (Triggered by "NOTIFICAION" Button & Alerts Tab)
        -------------------------------------------------------------------------- */
     .notif-drawer-modal {
       position: absolute;
@@ -1292,11 +1473,11 @@
 
     .notif-sheet-content {
       width: 100%;
-      max-height: 75%;
+      max-height: 85%;
       background: #ffffff;
       border-top: 4px solid #000000;
       border-radius: 24px 24px 0 0;
-      padding: 18px 16px 24px;
+      padding: 18px 16px calc(24px + var(--safe-bottom));
       box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.25);
       display: flex;
       flex-direction: column;
@@ -1327,9 +1508,25 @@
       gap: 8px;
     }
 
+    .notif-header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-clear-all-notifs {
+      background: #f1f5f9;
+      border: 1.5px solid #000000;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
     .btn-sheet-close {
-      width: 30px;
-      height: 30px;
+      width: 32px;
+      height: 32px;
       background: #f1f5f9;
       border: 2px solid #000000;
       border-radius: 8px;
@@ -1339,6 +1536,28 @@
       display: flex;
       align-items: center;
       justify-content: center;
+    }
+
+    .notif-filter-pills {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .notif-filter-pill {
+      background: #f8fafc;
+      border: 1.5px solid #000000;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .notif-filter-pill.active {
+      background: #ffd84d;
     }
 
     .notif-sheet-list {
@@ -1356,6 +1575,7 @@
       display: flex;
       gap: 10px;
       align-items: flex-start;
+      position: relative;
     }
 
     .notif-icon-box {
@@ -1368,7 +1588,7 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 3px;
     }
 
     .notif-title {
@@ -1384,6 +1604,23 @@
       font-weight: 600;
     }
 
+    .notif-action-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+
+    .btn-notif-action {
+      background: #ffd84d;
+      border: 1.5px solid #000000;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 0.65rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 1px 1px 0px #000000;
+    }
+
     .notif-time {
       font-size: 0.65rem;
       color: #94a3b8;
@@ -1391,7 +1628,79 @@
       margin-top: 2px;
     }
 
-    /* Simulated Phone Call Modal */
+    /* --------------------------------------------------------------------------
+       ROOM INSPECTOR & TELEMETRY DETAIL MODAL
+       -------------------------------------------------------------------------- */
+    .room-detail-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 310;
+      display: none;
+      align-items: flex-end;
+      backdrop-filter: blur(2px);
+    }
+
+    .room-detail-modal.open {
+      display: flex;
+    }
+
+    .room-detail-content {
+      width: 100%;
+      max-height: 85%;
+      background: #ffffff;
+      border-top: 4px solid #000000;
+      border-radius: 24px 24px 0 0;
+      padding: 18px 16px calc(24px + var(--safe-bottom));
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.25);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+      animation: sheet-slide-up 0.25s ease-out;
+    }
+
+    .room-gauge-progress {
+      width: 100%;
+      height: 12px;
+      background: #e2e8f0;
+      border: 1.5px solid #000000;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .room-gauge-fill {
+      height: 100%;
+      background: #22c55e;
+      transition: width 0.3s ease;
+    }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .telemetry-pill {
+      background: #f8fafc;
+      border: 1.5px solid #000000;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* --------------------------------------------------------------------------
+       SIMULATED REAL PHONE CALL HUD OVERLAY
+       -------------------------------------------------------------------------- */
     .call-modal-overlay {
       position: absolute;
       top: 0;
@@ -1455,9 +1764,10 @@
     }
 
     .call-status-label {
-      font-size: 0.8rem;
+      font-size: 0.85rem;
       color: #cbd5e1;
-      font-weight: 600;
+      font-weight: 700;
+      font-family: var(--font-mono);
     }
 
     .call-controls-grid {
@@ -1483,12 +1793,241 @@
       font-size: 1.25rem;
       cursor: pointer;
       margin: 0 auto;
+      transition: transform 0.1s;
+    }
+
+    .call-btn-circle:active {
+      transform: scale(0.92);
+    }
+
+    .call-btn-circle.active {
+      background: #2563eb;
+      border-color: #ffd84d;
     }
 
     .call-btn-circle.hangup {
       background: #ef4444;
       border-color: #ef4444;
       grid-column: 2;
+    }
+
+    /* --------------------------------------------------------------------------
+       IN-APP LIVE CCTV PERCEPTION HUB (TAB 4)
+       -------------------------------------------------------------------------- */
+    .cctv-overlay-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #f8fafc;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+      border-radius: inherit;
+    }
+
+    .cctv-overlay-screen.open {
+      transform: translateX(0%);
+    }
+
+    .cctv-card-container {
+      flex: 1;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .cctv-canvas-box {
+      width: 100%;
+      height: 240px;
+      background: #000000;
+      border: 3px solid #000000;
+      border-radius: 14px;
+      box-shadow: 4px 4px 0px #000000;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .cctv-canvas-el {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .cctv-hud-tag {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(0, 0, 0, 0.75);
+      border: 1px solid #22c55e;
+      border-radius: 6px;
+      color: #22c55e;
+      font-size: 0.65rem;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      padding: 2px 8px;
+    }
+
+    .cctv-control-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cctv-select-hall {
+      flex: 1;
+      height: 38px;
+      background: #ffffff;
+      border: 2px solid #000000;
+      border-radius: 8px;
+      padding: 4px 10px;
+      font-family: var(--font-main);
+      font-weight: 800;
+      font-size: 0.85rem;
+      box-shadow: 2px 2px 0px #000000;
+    }
+
+    /* --------------------------------------------------------------------------
+       SETTINGS SCREEN (TAB 5)
+       -------------------------------------------------------------------------- */
+    .settings-overlay-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #f8fafc;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      transform: translateX(100%);
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+      box-sizing: border-box;
+      border-radius: inherit;
+    }
+
+    .settings-overlay-screen.open {
+      transform: translateX(0%);
+    }
+
+    .settings-list-wrap {
+      flex: 1;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto;
+    }
+
+    .settings-group {
+      background: #ffffff;
+      border: 2px solid #000000;
+      border-radius: 14px;
+      box-shadow: 3px 3px 0px #000000;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .settings-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    /* iOS Neubrutalist Toggle Switch */
+    .switch-ui {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+
+    .switch-ui input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-round {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #cbd5e1;
+      border: 2px solid #000000;
+      border-radius: 26px;
+      transition: .2s;
+    }
+
+    .slider-round:before {
+      position: absolute;
+      content: "";
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border: 1.5px solid #000000;
+      border-radius: 50%;
+      transition: .2s;
+    }
+
+    input:checked + .slider-round {
+      background-color: #ffd84d;
+    }
+
+    input:checked + .slider-round:before {
+      transform: translateX(20px);
+      background-color: #000000;
+    }
+
+    /* Coordinator Profile Modal */
+    .profile-modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 320;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .profile-modal-overlay.open {
+      display: flex;
+    }
+
+    .modal-card-box {
+      width: 100%;
+      max-width: 360px;
+      background: #ffffff;
+      border: 3px solid #000000;
+      border-radius: 20px;
+      box-shadow: 6px 6px 0px #000000;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     /* Toast Notifications */
@@ -1527,7 +2066,7 @@
   <!-- Dot Blueprint Grid Overlay -->
   <div class="grid-overlay"></div>
 
-  <!-- Desktop Top Utility Bar -->
+  <!-- Desktop Top Utility Bar (Hidden on Mobile Devices) -->
   <header class="desktop-utility-bar">
     <div class="brand-badge">
       <img src="logo.jpeg" alt="DELTA ENGINE Logo">
@@ -1537,6 +2076,9 @@
       </span>
     </div>
     <div class="controls-group">
+      <button id="btn-desktop-install" class="btn-top" title="Install PWA to Desktop or Mobile">
+        📲 Install App
+      </button>
       <button id="btn-toggle-frame" class="btn-top active" title="Toggle Smartphone Bezel">
         📱 Phone Frame
       </button>
@@ -1562,7 +2104,7 @@
       <!-- Phone Screen Surface -->
       <div class="phone-screen" id="phone-screen">
 
-        <!-- Top Dynamic Island / Camera Punch Hole -->
+        <!-- Top Hardware Notch / Dynamic Island -->
         <div class="phone-dynamic-island">
           <span style="font-weight:800; font-size:0.65rem;">DELTA</span>
           <span class="island-dot" title="Autonomous Mesh Active"></span>
@@ -1573,14 +2115,16 @@
         <div class="phone-status-bar">
           <span id="phone-clock">09:41</span>
           <div class="status-icons">
-            <span>📶</span>
+            <span id="mesh-signal-indicator">📶</span>
             <span>⚡</span>
-            <span>98%</span>
+            <span id="phone-battery-level">98%</span>
           </div>
         </div>
 
-        <!-- Main Scrollable App Content -->
-        <div class="app-main-content">
+        <!-- ====================================================================
+             TAB 1: ROOMS / OPERATIONS SCREEN (Main Wireframe View)
+             ==================================================================== -->
+        <div class="app-main-content" id="tab-screen-rooms">
 
           <!-- 1. TOP BRAND HEADER BOX (Direct from Wireframe: Box with DELTA) -->
           <div class="delta-brand-box">
@@ -1589,16 +2133,19 @@
               <h1 class="delta-brand-title">DELTA <span>ENGINE</span></h1>
             </div>
             <div class="delta-brand-subtitle">The Self-Healing & Agentic Conference OS</div>
-            <div class="delta-brand-meta-bar">
+            <div class="delta-brand-meta-bar" id="pill-coordinator-profile" title="View Coordinator Profile & Mesh Status">
               <span class="dot-pulse"></span>
-              <span>VOLUNTEER MESH • DISPATCH RUNTIME</span>
+              <span id="label-active-coordinator">SURYANSH • VOLUNTEER MESH</span>
             </div>
           </div>
 
           <!-- 2. NOTIFICATION BUTTON ROW (Direct from Wireframe: "NOTIFICAION" Button in Top Right) -->
           <div class="notification-bar-row">
+            <span class="live-status-pill-sub">
+              <span>⚡</span> Mesh Ch. 4 Active
+            </span>
             <button id="btn-open-notifications" class="btn-notification" title="View Real-Time System & Room Notifications">
-              🔔 NOTIFICAION <span class="notif-badge" id="notif-count-badge">3</span>
+              🔔 NOTIFICAION <span class="notif-badge" id="notif-count-badge">4</span>
             </button>
           </div>
 
@@ -1610,9 +2157,9 @@
             </div>
 
             <!-- ROOM 1 -->
-            <div class="room-row" data-room="1">
+            <div class="room-row" data-room="1" data-name="Turing Hall" data-capacity="250" data-speaker="Dr. Aditi Sharma" data-topic="Autonomous Agent Swarms">
               <div class="room-header-line">
-                <span class="room-title-tag">ROOM 1</span>
+                <span class="room-title-tag" title="Click to view full room telemetry">ROOM 1</span>
                 <div class="room-line-input-wrap">
                   <input type="text" class="room-line-input" id="input-room-1"
                     value="Keynote in progress; front gate A clear" placeholder="Enter status note..."
@@ -1623,18 +2170,19 @@
                 </span>
               </div>
               <div class="room-sub-row">
-                <span class="venue-name">Turing Hall (Cap: 250) • Dr. Aditi Sharma</span>
+                <span class="venue-name">Turing Hall (250) • Dr. Aditi</span>
                 <div class="room-sub-actions">
-                  <button class="btn-room-mini btn-room-pa" data-room="1" title="Trigger PA Announcement">🎙️ PA</button>
-                  <button class="btn-room-mini btn-room-msg" data-room="1" title="Message Room Lead">💬 Msg</button>
+                  <button class="btn-room-mini btn-room-details" data-room="1">📊 Details</button>
+                  <button class="btn-room-mini btn-room-pa" data-room="1">🎙️ PA</button>
+                  <button class="btn-room-mini btn-room-msg" data-room="1">💬 Msg</button>
                 </div>
               </div>
             </div>
 
             <!-- ROOM 2 -->
-            <div class="room-row" data-room="2">
+            <div class="room-row" data-room="2" data-name="Lovelace Suite" data-capacity="120" data-speaker="Vikramaditya Verma" data-topic="WebGPU Raytracing in Browser">
               <div class="room-header-line">
-                <span class="room-title-tag">ROOM 2</span>
+                <span class="room-title-tag" title="Click to view full room telemetry">ROOM 2</span>
                 <div class="room-line-input-wrap">
                   <input type="text" class="room-line-input" id="input-room-2"
                     value="Mic check nominal; WebGPU slides loaded" placeholder="Enter status note..."
@@ -1645,18 +2193,19 @@
                 </span>
               </div>
               <div class="room-sub-row">
-                <span class="venue-name">Lovelace Suite (Cap: 120) • Vikramaditya</span>
+                <span class="venue-name">Lovelace Suite (120) • Vikram</span>
                 <div class="room-sub-actions">
-                  <button class="btn-room-mini btn-room-pa" data-room="2" title="Trigger PA Announcement">🎙️ PA</button>
-                  <button class="btn-room-mini btn-room-msg" data-room="2" title="Message Room Lead">💬 Msg</button>
+                  <button class="btn-room-mini btn-room-details" data-room="2">📊 Details</button>
+                  <button class="btn-room-mini btn-room-pa" data-room="2">🎙️ PA</button>
+                  <button class="btn-room-mini btn-room-msg" data-room="2">💬 Msg</button>
                 </div>
               </div>
             </div>
 
             <!-- ROOM 3 -->
-            <div class="room-row" data-room="3">
+            <div class="room-row" data-room="3" data-name="Hopper Room" data-capacity="60" data-speaker="Priya Nair" data-topic="Kubernetes Auto-Healing Runtimes">
               <div class="room-header-line">
-                <span class="room-title-tag">ROOM 3</span>
+                <span class="room-title-tag" title="Click to view full room telemetry">ROOM 3</span>
                 <div class="room-line-input-wrap">
                   <input type="text" class="room-line-input" id="input-room-3"
                     value="Speaker setup ready; AC cooling adjusted" placeholder="Enter status note..."
@@ -1667,18 +2216,19 @@
                 </span>
               </div>
               <div class="room-sub-row">
-                <span class="venue-name">Hopper Room (Cap: 60) • Priya Nair</span>
+                <span class="venue-name">Hopper Room (60) • Priya</span>
                 <div class="room-sub-actions">
-                  <button class="btn-room-mini btn-room-pa" data-room="3" title="Trigger PA Announcement">🎙️ PA</button>
-                  <button class="btn-room-mini btn-room-msg" data-room="3" title="Message Room Lead">💬 Msg</button>
+                  <button class="btn-room-mini btn-room-details" data-room="3">📊 Details</button>
+                  <button class="btn-room-mini btn-room-pa" data-room="3">🎙️ PA</button>
+                  <button class="btn-room-mini btn-room-msg" data-room="3">💬 Msg</button>
                 </div>
               </div>
             </div>
 
             <!-- ROOM 4 -->
-            <div class="room-row" data-room="4">
+            <div class="room-row" data-room="4" data-name="Keynote Arena" data-capacity="500" data-speaker="DELTA Swarm" data-topic="Zero-Touch Self-Healing OS">
               <div class="room-header-line">
-                <span class="room-title-tag">ROOM 4</span>
+                <span class="room-title-tag" title="Click to view full room telemetry">ROOM 4</span>
                 <div class="room-line-input-wrap">
                   <input type="text" class="room-line-input" id="input-room-4"
                     value="Overflow door standby active; crowd steady" placeholder="Enter status note..."
@@ -1689,18 +2239,19 @@
                 </span>
               </div>
               <div class="room-sub-row">
-                <span class="venue-name">Keynote Arena (Cap: 500) • Swarm Demo</span>
+                <span class="venue-name">Keynote Arena (500) • Swarm</span>
                 <div class="room-sub-actions">
-                  <button class="btn-room-mini btn-room-pa" data-room="4" title="Trigger PA Announcement">🎙️ PA</button>
-                  <button class="btn-room-mini btn-room-msg" data-room="4" title="Message Room Lead">💬 Msg</button>
+                  <button class="btn-room-mini btn-room-details" data-room="4">📊 Details</button>
+                  <button class="btn-room-mini btn-room-pa" data-room="4">🎙️ PA</button>
+                  <button class="btn-room-mini btn-room-msg" data-room="4">💬 Msg</button>
                 </div>
               </div>
             </div>
 
             <!-- ROOM 5 -->
-            <div class="room-row" data-room="5">
+            <div class="room-row" data-room="5" data-name="Innovation Lab" data-capacity="1200" data-speaker="Hackathon Track" data-topic="Live Pitching Stage">
               <div class="room-header-line">
-                <span class="room-title-tag">ROOM 5</span>
+                <span class="room-title-tag" title="Click to view full room telemetry">ROOM 5</span>
                 <div class="room-line-input-wrap">
                   <input type="text" class="room-line-input" id="input-room-5"
                     value="Hackathon pitching underway; wifi nominal" placeholder="Enter status note..."
@@ -1711,10 +2262,11 @@
                 </span>
               </div>
               <div class="room-sub-row">
-                <span class="venue-name">Innovation Lab (Cap: 1,200) • Open Track</span>
+                <span class="venue-name">Innovation Lab (1,200) • Hack</span>
                 <div class="room-sub-actions">
-                  <button class="btn-room-mini btn-room-pa" data-room="5" title="Trigger PA Announcement">🎙️ PA</button>
-                  <button class="btn-room-mini btn-room-msg" data-room="5" title="Message Room Lead">💬 Msg</button>
+                  <button class="btn-room-mini btn-room-details" data-room="5">📊 Details</button>
+                  <button class="btn-room-mini btn-room-pa" data-room="5">🎙️ PA</button>
+                  <button class="btn-room-mini btn-room-msg" data-room="5">💬 Msg</button>
                 </div>
               </div>
             </div>
@@ -1727,7 +2279,7 @@
             <div class="contact-list">
               <!-- ARYAN -->
               <div class="contact-item" id="contact-aryan">
-                <div class="contact-profile">
+                <div class="contact-profile chat-trigger" data-target="Aryan Pandey" data-phone="888777666">
                   <div class="contact-avatar">🧑‍💻</div>
                   <div class="contact-details">
                     <div class="contact-name-line">
@@ -1747,7 +2299,7 @@
                     title="Voice Call Aryan">
                     📞
                   </button>
-                  <a href="https://wa.me/919154276178" target="_blank" class="btn-action-icon"
+                  <a href="https://wa.me/919154276178?text=DELTA%20Radio%20Check%20from%20Suryansh" target="_blank" class="btn-action-icon"
                     title="Direct WhatsApp" style="color:#16a34a;">
                     🟢
                   </a>
@@ -1756,7 +2308,7 @@
 
               <!-- SHAHID -->
               <div class="contact-item" id="contact-shahid">
-                <div class="contact-profile">
+                <div class="contact-profile chat-trigger" data-target="Shahid" data-phone="999777666">
                   <div class="contact-avatar shahid">🎧</div>
                   <div class="contact-details">
                     <div class="contact-name-line">
@@ -1776,7 +2328,7 @@
                     title="Voice Call Shahid">
                     📞
                   </button>
-                  <a href="https://wa.me/916303570916" target="_blank" class="btn-action-icon"
+                  <a href="https://wa.me/916303570916?text=DELTA%20Stage%20Check%20from%20Suryansh" target="_blank" class="btn-action-icon"
                     title="Direct WhatsApp" style="color:#16a34a;">
                     🟢
                   </a>
@@ -1785,7 +2337,7 @@
 
               <!-- SURYANSH (CURRENT USER / ON DUTY) -->
               <div class="contact-item" id="contact-suryansh" style="background:#f0fdf4;">
-                <div class="contact-profile">
+                <div class="contact-profile" id="profile-suryansh-trigger">
                   <div class="contact-avatar suryansh">🛡️</div>
                   <div class="contact-details">
                     <div class="contact-name-line">
@@ -1806,7 +2358,7 @@
             </div>
           </section>
 
-        </div> <!-- /app-main-content -->
+        </div> <!-- /app-main-content (Tab 1 Rooms) -->
 
         <!-- Floating Message Button (FAB) -->
         <button id="floating-msg-fab" class="floating-message-fab" title="Open Instant Messenger">
@@ -1814,29 +2366,8 @@
           <span class="floating-fab-badge" id="floating-unread-badge">2</span>
         </button>
 
-        <!-- Bottom Navigation Bar -->
-        <nav class="app-bottom-nav">
-          <div class="nav-tab-item active" id="nav-tab-rooms">
-            <span class="nav-tab-icon">🏛️</span>
-            <span>Rooms</span>
-          </div>
-          <div class="nav-tab-item" id="nav-tab-messages">
-            <span class="nav-tab-icon">💬</span>
-            <span>Messages</span>
-            <span class="nav-tab-badge" id="nav-msg-unread-badge">2</span>
-          </div>
-          <div class="nav-tab-item" id="nav-tab-alerts">
-            <span class="nav-tab-icon">🔔</span>
-            <span>Alerts</span>
-          </div>
-          <div class="nav-tab-item" id="nav-tab-cctv">
-            <span class="nav-tab-icon">📹</span>
-            <span>CCTV</span>
-          </div>
-        </nav>
-
         <!-- ====================================================================
-             5. THE MESSENGER SCREEN / OVERLAY VIEW ("LIKE OTHER APP")
+             TAB 2: THE MESSENGER SCREEN ("LIKE OTHER APP")
              Slides into view when message icon is tapped!
              ==================================================================== -->
         <div class="messenger-overlay-view" id="messenger-overlay-view">
@@ -1845,7 +2376,7 @@
             <button id="btn-close-messenger" class="btn-msg-back" title="Back to Rooms Dashboard">
               ←
             </button>
-            <div class="msg-contact-header-info">
+            <div class="msg-contact-header-info" id="active-chat-header-info">
               <div class="msg-header-avatar" id="active-chat-avatar">🧑‍💻</div>
               <div class="msg-header-text">
                 <span class="msg-header-name" id="active-chat-name">Aryan Pandey</span>
@@ -1857,6 +2388,7 @@
             </div>
             <div class="msg-top-actions">
               <button class="btn-msg-top-action" id="btn-msg-top-call" title="Voice Call">📞</button>
+              <button class="btn-msg-top-action" id="btn-msg-top-cctv" title="View CCTV Camera">📹</button>
               <button class="btn-msg-top-action" id="btn-msg-top-pa" title="Emergency Broadcast to Room">📢</button>
             </div>
           </div>
@@ -1938,7 +2470,7 @@
           <!-- Bottom Message Input Bar -->
           <div class="messenger-input-bar">
             <button class="btn-msg-tool" id="btn-msg-attach" title="Attach snapshot/file">📎</button>
-            <button class="btn-msg-tool" id="btn-msg-mic" title="Hold to record audio note">🎙️</button>
+            <button class="btn-msg-tool" id="btn-msg-mic" title="Tap to record audio note">🎙️</button>
             <input type="text" id="msg-input-field" class="msg-input-field"
               placeholder="Message Aryan (888777666)..." autocomplete="off">
             <button class="btn-msg-send" id="btn-msg-send" title="Send message">
@@ -1948,7 +2480,165 @@
         </div> <!-- /messenger-overlay-view -->
 
         <!-- ====================================================================
-             6. NOTIFICATIONS DRAWER / SHEET
+             TAB 4: IN-APP LIVE CCTV PERCEPTION HUB
+             ==================================================================== -->
+        <div class="cctv-overlay-screen" id="cctv-overlay-screen">
+          <div class="messenger-top-bar">
+            <button id="btn-close-cctv" class="btn-msg-back" title="Back to Rooms Dashboard">←</button>
+            <div class="msg-contact-header-info">
+              <div class="msg-header-avatar" style="background:#bbf7d0;">📹</div>
+              <div class="msg-header-text">
+                <span class="msg-header-name">Optical CCTV Perception</span>
+                <span class="msg-header-status">
+                  <span class="live-pulse-dot"></span>
+                  <span>AI HEAD & DENSITY MESH</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="cctv-card-container">
+            <!-- Simulated CCTV HUD Screen -->
+            <div class="cctv-canvas-box">
+              <canvas id="mobile-cctv-canvas" class="cctv-canvas-el" width="400" height="240"></canvas>
+              <div class="cctv-hud-tag" id="cctv-hall-tag">🏛️ ROOM 1 (TURING HALL) • 82% DENSITY</div>
+            </div>
+
+            <!-- Hall Selector -->
+            <div class="cctv-control-row">
+              <select id="cctv-hall-selector" class="cctv-select-hall">
+                <option value="1">Room 1: Turing Hall (Cap: 250)</option>
+                <option value="2">Room 2: Lovelace Suite (Cap: 120)</option>
+                <option value="3">Room 3: Hopper Room (Cap: 60)</option>
+                <option value="4">Room 4: Keynote Arena (Cap: 500)</option>
+                <option value="5">Room 5: Innovation Lab (Cap: 1,200)</option>
+              </select>
+            </div>
+
+            <div class="telemetry-grid">
+              <div class="telemetry-pill">👥 Persons: <span id="cctv-person-count" style="color:#2563eb; font-weight:800;">148 Heads</span></div>
+              <div class="telemetry-pill">🌡️ Density: <span id="cctv-density-val" style="color:#f59e0b; font-weight:800;">Medium-High</span></div>
+              <div class="telemetry-pill">🚪 Chokepoints: <span style="color:#16a34a; font-weight:800;">Clear</span></div>
+              <div class="telemetry-pill">⚡ Perception: <span style="color:#16a34a; font-weight:800;">30 FPS Active</span></div>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button class="btn-top" id="btn-cctv-capture-snap" style="flex:1; justify-content:center;">
+                📸 Snap to Chat
+              </button>
+              <button class="btn-top" id="btn-cctv-pa-hall" style="flex:1; justify-content:center; background:#ffd84d;">
+                🎙️ Broadcast Hall
+              </button>
+            </div>
+          </div>
+        </div> <!-- /cctv-overlay-screen -->
+
+        <!-- ====================================================================
+             TAB 5: SETTINGS SCREEN
+             ==================================================================== -->
+        <div class="settings-overlay-screen" id="settings-overlay-screen">
+          <div class="messenger-top-bar">
+            <button id="btn-close-settings" class="btn-msg-back" title="Back to Rooms Dashboard">←</button>
+            <div class="msg-contact-header-info">
+              <div class="msg-header-avatar" style="background:#fed7aa;">⚙️</div>
+              <div class="msg-header-text">
+                <span class="msg-header-name">Mobile OS Settings</span>
+                <span class="msg-header-status">
+                  <span class="live-pulse-dot"></span>
+                  <span>DELTA ENGINE v1.0.0</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-list-wrap">
+            <div class="settings-group">
+              <div style="font-size:0.75rem; text-transform:uppercase; color:#64748b; font-weight:800;">System Autonomous Controls</div>
+              
+              <div class="settings-item">
+                <div>
+                  <div>⚡ Tesla Autopilot (Zero-Touch)</div>
+                  <div style="font-size:0.68rem; color:#64748b;">Autonomous crowd mitigation & schedule balance</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="setting-autopilot" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+
+              <div class="settings-item">
+                <div>
+                  <div>🔊 Synthesizer Audio SFX</div>
+                  <div style="font-size:0.68rem; color:#64748b;">Haptic and UI sound confirmation</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="setting-sfx" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+
+              <div class="settings-item">
+                <div>
+                  <div>📳 Mobile Haptic Vibration</div>
+                  <div style="font-size:0.68rem; color:#64748b;">Tactile alert feedback on physical mobile device</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="setting-haptic" checked>
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+
+              <div class="settings-item">
+                <div>
+                  <div>🌓 Neubrutalist Dark Theme</div>
+                  <div style="font-size:0.68rem; color:#64748b;">High-contrast night operations mode</div>
+                </div>
+                <label class="switch-ui">
+                  <input type="checkbox" id="setting-darkmode">
+                  <span class="slider-round"></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="settings-group">
+              <div style="font-size:0.75rem; text-transform:uppercase; color:#64748b; font-weight:800;">App Deployment & Play Store</div>
+              <button class="btn-top" id="btn-install-pwa-app" style="justify-content:center; background:#ffd84d; font-weight:800; padding:10px;">
+                📲 Install App to Home Screen (PWA / APK)
+              </button>
+              <div style="font-size:0.7rem; color:#64748b; text-align:center;">
+                Ready for Google Play Store Trusted Web Activity (TWA) deployment
+              </div>
+            </div>
+          </div>
+        </div> <!-- /settings-overlay-screen -->
+
+        <!-- Bottom Navigation Bar (5 Tabs) -->
+        <nav class="app-bottom-nav">
+          <div class="nav-tab-item active" id="nav-tab-rooms">
+            <span class="nav-tab-icon">🏛️</span>
+            <span>Rooms</span>
+          </div>
+          <div class="nav-tab-item" id="nav-tab-messages">
+            <span class="nav-tab-icon">💬</span>
+            <span>Messages</span>
+            <span class="nav-tab-badge" id="nav-msg-unread-badge">2</span>
+          </div>
+          <div class="nav-tab-item" id="nav-tab-alerts">
+            <span class="nav-tab-icon">🔔</span>
+            <span>Alerts</span>
+          </div>
+          <div class="nav-tab-item" id="nav-tab-cctv">
+            <span class="nav-tab-icon">📹</span>
+            <span>CCTV</span>
+          </div>
+          <div class="nav-tab-item" id="nav-tab-settings">
+            <span class="nav-tab-icon">⚙️</span>
+            <span>Settings</span>
+          </div>
+        </nav>
+
+        <!-- ====================================================================
+             NOTIFICATIONS DRAWER / SHEET
              ==================================================================== -->
         <div class="notif-drawer-modal" id="notif-drawer-modal">
           <div class="notif-sheet-content">
@@ -1956,28 +2646,46 @@
               <div class="notif-sheet-title">
                 <span>🔔</span> Event Notifications
               </div>
-              <button class="btn-sheet-close" id="btn-close-notif-sheet">✕</button>
+              <div class="notif-header-actions">
+                <button class="btn-clear-all-notifs" id="btn-clear-notifs">Clear All</button>
+                <button class="btn-sheet-close" id="btn-close-notif-sheet">✕</button>
+              </div>
             </div>
-            <div class="notif-sheet-list">
-              <div class="notif-item">
+
+            <!-- Filter Pills -->
+            <div class="notif-filter-pills">
+              <button class="notif-filter-pill active" data-filter="all">All (4)</button>
+              <button class="notif-filter-pill" data-filter="rooms">Rooms (2)</button>
+              <button class="notif-filter-pill" data-filter="urgent">Urgent (1)</button>
+              <button class="notif-filter-pill" data-filter="agent">AI Agent (1)</button>
+            </div>
+
+            <div class="notif-sheet-list" id="notif-items-list">
+              <div class="notif-item" data-category="rooms urgent">
                 <div class="notif-icon-box">🚨</div>
                 <div class="notif-text-wrap">
                   <div class="notif-title">Room 4 Capacity Alert (91%)</div>
-                  <div class="notif-desc">Keynote Arena density threshold exceeded. Secondary overflow exit unlocked by Swarm.</div>
-                  <div class="notif-time">2 mins ago • Autonomous Mitigation</div>
+                  <div class="notif-desc">Keynote Arena density threshold exceeded. Secondary overflow exit ready for clearance.</div>
+                  <div class="notif-action-row">
+                    <button class="btn-notif-action btn-action-unlock-door" data-room="4">🚪 Unlock Overflow Door</button>
+                  </div>
+                  <div class="notif-time">2 mins ago • Autonomous Perception</div>
                 </div>
               </div>
 
-              <div class="notif-item">
+              <div class="notif-item" data-category="rooms">
                 <div class="notif-icon-box">🎙️</div>
                 <div class="notif-text-wrap">
                   <div class="notif-title">Autonomous PA Broadcast Deployed</div>
                   <div class="notif-desc">ElevenLabs voice Nico Robin dispatched hall direction guidance in Room 1.</div>
-                  <div class="notif-time">8 mins ago • ElevenLabs Neural Voice</div>
+                  <div class="notif-action-row">
+                    <button class="btn-notif-action btn-replay-voice-pa">🔊 Replay Audio</button>
+                  </div>
+                  <div class="notif-time">8 mins ago • Neural Audio</div>
                 </div>
               </div>
 
-              <div class="notif-item">
+              <div class="notif-item" data-category="urgent">
                 <div class="notif-icon-box">📱</div>
                 <div class="notif-text-wrap">
                   <div class="notif-title">WhatsApp Alert Dispatched</div>
@@ -1986,7 +2694,7 @@
                 </div>
               </div>
 
-              <div class="notif-item">
+              <div class="notif-item" data-category="agent">
                 <div class="notif-icon-box">🤖</div>
                 <div class="notif-text-wrap">
                   <div class="notif-title">Speaker Delay Auto-Healed</div>
@@ -1999,21 +2707,98 @@
         </div>
 
         <!-- ====================================================================
-             7. SIMULATED PHONE CALL OVERLAY
+             ROOM INSPECTOR & TELEMETRY DETAIL SHEET
+             ==================================================================== -->
+        <div class="room-detail-modal" id="room-detail-modal">
+          <div class="room-detail-content">
+            <div class="notif-sheet-header">
+              <div class="notif-sheet-title">
+                <span id="detail-room-icon">🏛️</span> <span id="detail-room-title">Room 1 Telemetry</span>
+              </div>
+              <button class="btn-sheet-close" id="btn-close-room-detail">✕</button>
+            </div>
+
+            <div>
+              <div style="display:flex; justify-content:space-between; font-size:0.8rem; font-weight:800;">
+                <span id="detail-room-hall">Turing Hall (Capacity: 250)</span>
+                <span id="detail-room-pct" style="color:#2563eb;">82% Occupied</span>
+              </div>
+              <div class="room-gauge-progress">
+                <div class="room-gauge-fill" id="detail-gauge-bar" style="width: 82%;"></div>
+              </div>
+            </div>
+
+            <div style="background:#f8fafc; border:1.5px solid #000; border-radius:10px; padding:10px;">
+              <div style="font-size:0.7rem; color:#64748b; font-weight:800; text-transform:uppercase;">Active Session</div>
+              <div id="detail-room-topic" style="font-weight:800; font-size:0.9rem; margin-top:2px;">Autonomous Agent Swarms: Coordination without Controllers</div>
+              <div id="detail-room-speaker" style="font-size:0.75rem; color:#2563eb; font-weight:700; margin-top:2px;">Speaker: Dr. Aditi Sharma • AI Research Director</div>
+            </div>
+
+            <div class="telemetry-grid">
+              <div class="telemetry-pill">🌡️ AC Temp: <strong>21.5°C</strong></div>
+              <div class="telemetry-pill">🔊 Mic Level: <strong>Nominal (-14dB)</strong></div>
+              <div class="telemetry-pill">📽️ HDMI: <strong>Connected (4K)</strong></div>
+              <div class="telemetry-pill">📶 Wi-Fi: <strong>Nominal (240 Mbps)</strong></div>
+            </div>
+
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button class="btn-top" id="btn-room-detail-broadcast" style="flex:1; justify-content:center; background:#ffd84d;">
+                🎙️ Broadcast PA
+              </button>
+              <button class="btn-top" id="btn-room-detail-cctv" style="flex:1; justify-content:center;">
+                📹 Open Cam
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- ====================================================================
+             SIMULATED PHONE CALL OVERLAY (FULL INTERACTIVE CALL)
              ==================================================================== -->
         <div class="call-modal-overlay" id="call-modal-overlay">
           <div class="call-profile-wrap">
             <div class="call-avatar" id="call-profile-avatar">🧑‍💻</div>
             <div class="call-name" id="call-profile-name">Aryan Pandey</div>
             <div class="call-number" id="call-profile-number">+91 888777666</div>
-            <div class="call-status-label" id="call-status-label">Calling via DELTA Radio Mesh...</div>
+            <div class="call-status-label" id="call-status-label">Calling on DELTA Radio Mesh...</div>
           </div>
 
           <div class="call-controls-grid">
-            <div class="call-btn-circle" id="btn-call-mute" title="Mute">🎙️</div>
-            <div class="call-btn-circle" id="btn-call-speaker" title="Speaker">🔊</div>
-            <div class="call-btn-circle" id="btn-call-record" title="Record">⏺️</div>
+            <div class="call-btn-circle" id="btn-call-mute" title="Mute Mic">🎙️</div>
+            <div class="call-btn-circle" id="btn-call-speaker" title="Speaker Mode">🔊</div>
+            <div class="call-btn-circle" id="btn-call-record" title="Record Dispatch">⏺️</div>
             <div class="call-btn-circle hangup" id="btn-call-hangup" title="End Call">✕</div>
+          </div>
+        </div>
+
+        <!-- ====================================================================
+             COORDINATOR PROFILE MODAL
+             ==================================================================== -->
+        <div class="profile-modal-overlay" id="profile-modal-overlay">
+          <div class="modal-card-box">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <h3 style="font-family:var(--font-heading); font-size:1.15rem;">👤 Coordinator Profile</h3>
+              <button class="btn-sheet-close" id="btn-close-profile-modal">✕</button>
+            </div>
+            
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="contact-avatar suryansh" style="width:48px; height:48px; font-size:1.5rem;">🛡️</div>
+              <div>
+                <div style="font-weight:900; font-size:1.05rem;" id="modal-profile-name">SURYANSH</div>
+                <div style="font-size:0.75rem; color:#64748b;">Crowd Safety & Entrance Lead</div>
+              </div>
+            </div>
+
+            <div class="telemetry-grid">
+              <div class="telemetry-pill">📻 Radio: <strong>Channel 4</strong></div>
+              <div class="telemetry-pill">🔋 Device: <strong>98%</strong></div>
+              <div class="telemetry-pill">📍 Venue: <strong>Turing Gate A</strong></div>
+              <div class="telemetry-pill">🟢 Status: <strong>ON DUTY</strong></div>
+            </div>
+
+            <button class="btn-top" id="btn-test-radio-dispatch" style="justify-content:center; background:#ffd84d; font-weight:800;">
+              📻 Test Radio Sound Dispatch
+            </button>
           </div>
         </div>
 
@@ -2025,12 +2810,13 @@
   </main>
 
   <!-- ==========================================================================
-       CLIENT APPLICATION LOGIC (NEUBRUTALIST DELTA APP)
+       CLIENT APPLICATION LOGIC (PLAY STORE PRODUCTION GRADE)
        ========================================================================== -->
   <script>
-    (function initDeltaApp() {
-      // --- AUDIO SFX ENGINE (Web Audio API) ---
+    (function initDeltaAppProduction() {
+      // --- AUDIO & SPEECH SYNTHESIS ENGINE ---
       let sfxEnabled = true;
+      let hapticEnabled = true;
       let audioCtx = null;
 
       function getAudioContext() {
@@ -2042,6 +2828,13 @@
           audioCtx.resume();
         }
         return audioCtx;
+      }
+
+      function triggerHaptic(pattern = 35) {
+        if (!hapticEnabled) return;
+        if ('vibrate' in navigator) {
+          try { navigator.vibrate(pattern); } catch (e) {}
+        }
       }
 
       function playSound(type) {
@@ -2084,11 +2877,30 @@
             gain.gain.linearRampToValueAtTime(0.01, now + 0.22);
             osc.start(now);
             osc.stop(now + 0.22);
+          } else if (type === 'ring') {
+            osc.frequency.setValueAtTime(440, now);
+            osc.frequency.setValueAtTime(480, now + 0.05);
+            gain.gain.setValueAtTime(0.15, now);
+            gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+            osc.start(now);
+            osc.stop(now + 0.4);
           }
         } catch (e) {}
       }
 
-      // --- TOAST HELPER ---
+      function speakVoiceText(text) {
+        if ('speechSynthesis' in window) {
+          try {
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.05;
+            window.speechSynthesis.speak(utterance);
+          } catch (e) {}
+        }
+      }
+
+      // --- TOAST NOTIFICATIONS ---
       const toastEl = document.getElementById('app-toast');
       let toastTimer = null;
       function showToast(msg) {
@@ -2098,10 +2910,10 @@
         if (toastTimer) clearTimeout(toastTimer);
         toastTimer = setTimeout(() => {
           toastEl.classList.remove('show');
-        }, 2400);
+        }, 2500);
       }
 
-      // --- STATUS BAR CLOCK ---
+      // --- LIVE PHONE CLOCK ---
       const phoneClockEl = document.getElementById('phone-clock');
       function updatePhoneClock() {
         if (!phoneClockEl) return;
@@ -2111,7 +2923,37 @@
       setInterval(updatePhoneClock, 1000);
       updatePhoneClock();
 
-      // --- DESKTOP CONTROLS ---
+      // --- ANDROID PWA INSTALLATION PROMPT ---
+      let deferredPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const btnDesktopInstall = document.getElementById('btn-desktop-install');
+        const btnInstallPwa = document.getElementById('btn-install-pwa-app');
+        if (btnDesktopInstall) btnDesktopInstall.style.display = 'inline-flex';
+        if (btnInstallPwa) btnInstallPwa.textContent = '📲 Install DELTA to Device Now';
+      });
+
+      function handleAppInstall() {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.then((choiceResult) => {
+            if (choiceResult.outcome === 'accepted') {
+              showToast('✅ DELTA Engine installed to home screen!');
+            }
+            deferredPrompt = null;
+          });
+        } else {
+          showToast('📲 PWA is ready! On Chrome, tap "Add to Home Screen"');
+        }
+      }
+
+      const btnDesktopInstall = document.getElementById('btn-desktop-install');
+      const btnInstallPwa = document.getElementById('btn-install-pwa-app');
+      if (btnDesktopInstall) btnDesktopInstall.addEventListener('click', handleAppInstall);
+      if (btnInstallPwa) btnInstallPwa.addEventListener('click', handleAppInstall);
+
+      // --- DESKTOP VIEW CONTROLS ---
       const btnToggleFrame = document.getElementById('btn-toggle-frame');
       const appViewportWrapper = document.getElementById('app-viewport-wrapper');
       const btnToggleSfx = document.getElementById('btn-toggle-sfx');
@@ -2134,17 +2976,75 @@
         });
       }
 
-      // --- NOTIFICATIONS SHEET ---
-      const btnOpenNotif = document.getElementById('btn-open-notifications');
+      // --- SCREEN NAVIGATION CONTROLLER (5 TABS) ---
+      const navTabRooms = document.getElementById('nav-tab-rooms');
+      const navTabMessages = document.getElementById('nav-tab-messages');
+      const navTabAlerts = document.getElementById('nav-tab-alerts');
+      const navTabCctv = document.getElementById('nav-tab-cctv');
+      const navTabSettings = document.getElementById('nav-tab-settings');
+
+      const messengerOverlayView = document.getElementById('messenger-overlay-view');
+      const cctvOverlayScreen = document.getElementById('cctv-overlay-screen');
+      const settingsOverlayScreen = document.getElementById('settings-overlay-screen');
       const notifDrawerModal = document.getElementById('notif-drawer-modal');
+
+      function setActiveNavTab(tabEl) {
+        document.querySelectorAll('.nav-tab-item').forEach(t => t.classList.remove('active'));
+        if (tabEl) tabEl.classList.add('active');
+      }
+
+      function closeAllOverlayScreens() {
+        messengerOverlayView.classList.remove('open');
+        cctvOverlayScreen.classList.remove('open');
+        settingsOverlayScreen.classList.remove('open');
+        notifDrawerModal.classList.remove('open');
+      }
+
+      if (navTabRooms) {
+        navTabRooms.addEventListener('click', () => {
+          playSound('click');
+          triggerHaptic();
+          closeAllOverlayScreens();
+          setActiveNavTab(navTabRooms);
+        });
+      }
+
+      if (navTabMessages) {
+        navTabMessages.addEventListener('click', () => {
+          openMessenger();
+        });
+      }
+
+      if (navTabAlerts) {
+        navTabAlerts.addEventListener('click', () => {
+          openNotifications();
+        });
+      }
+
+      if (navTabCctv) {
+        navTabCctv.addEventListener('click', () => {
+          openCctvScreen();
+        });
+      }
+
+      if (navTabSettings) {
+        navTabSettings.addEventListener('click', () => {
+          openSettingsScreen();
+        });
+      }
+
+      // --- NOTIFICATIONS DRAWER ---
+      const btnOpenNotif = document.getElementById('btn-open-notifications');
       const btnCloseNotifSheet = document.getElementById('btn-close-notif-sheet');
       const notifCountBadge = document.getElementById('notif-count-badge');
-      const navTabAlerts = document.getElementById('nav-tab-alerts');
+      const btnClearNotifs = document.getElementById('btn-clear-notifs');
 
       function openNotifications() {
         playSound('alert');
+        triggerHaptic([60, 40, 60]);
         notifDrawerModal.classList.add('open');
         if (notifCountBadge) notifCountBadge.textContent = '0';
+        history.pushState({ modal: 'notif' }, '');
       }
 
       function closeNotifications() {
@@ -2153,7 +3053,6 @@
       }
 
       if (btnOpenNotif) btnOpenNotif.addEventListener('click', openNotifications);
-      if (navTabAlerts) navTabAlerts.addEventListener('click', openNotifications);
       if (btnCloseNotifSheet) btnCloseNotifSheet.addEventListener('click', closeNotifications);
       if (notifDrawerModal) {
         notifDrawerModal.addEventListener('click', (e) => {
@@ -2161,7 +3060,58 @@
         });
       }
 
-      // --- ROOMS PERSISTENCE & STATUS TOGGLES ---
+      if (btnClearNotifs) {
+        btnClearNotifs.addEventListener('click', () => {
+          playSound('click');
+          const list = document.getElementById('notif-items-list');
+          if (list) list.innerHTML = '<div style="padding:20px; text-align:center; color:#64748b; font-weight:800;">✅ All alerts cleared! System is nominal.</div>';
+          showToast('All notifications cleared');
+        });
+      }
+
+      // Notification Category Filtering
+      const notifFilterPills = document.querySelectorAll('.notif-filter-pill');
+      notifFilterPills.forEach(pill => {
+        pill.addEventListener('click', () => {
+          playSound('click');
+          notifFilterPills.forEach(p => p.classList.remove('active'));
+          pill.classList.add('active');
+          const filter = pill.dataset.filter;
+          const items = document.querySelectorAll('#notif-items-list .notif-item');
+          items.forEach(item => {
+            if (filter === 'all' || item.dataset.category.includes(filter)) {
+              item.style.display = 'flex';
+            } else {
+              item.style.display = 'none';
+            }
+          });
+        });
+      });
+
+      // Action buttons in notifications
+      document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('btn-action-unlock-door')) {
+          e.stopPropagation();
+          playSound('alert');
+          triggerHaptic([100, 50, 100]);
+          const roomNum = e.target.dataset.room;
+          const badge = document.getElementById(`badge-room-${roomNum}`);
+          if (badge) {
+            badge.className = 'room-status-badge badge-nominal';
+            badge.textContent = '65% • Nominal';
+          }
+          e.target.textContent = '✅ Door Unlocked';
+          e.target.style.background = '#bbf7d0';
+          showToast(`Room ${roomNum} overflow door unlocked! Volunteers deployed.`);
+        } else if (e.target.classList.contains('btn-replay-voice-pa')) {
+          e.stopPropagation();
+          playSound('click');
+          speakVoiceText('Attention attendees. Autonomous perception system active. Please keep the main hallway clear.');
+          showToast('🔊 Replaying ElevenLabs voice announcement...');
+        }
+      });
+
+      // --- ROOMS PERSISTENCE & ACTIONS ---
       const roomInputs = document.querySelectorAll('.room-line-input');
       roomInputs.forEach(input => {
         const key = 'delta_room_note_' + input.id;
@@ -2171,11 +3121,12 @@
         input.addEventListener('change', () => {
           localStorage.setItem(key, input.value);
           playSound('click');
+          triggerHaptic(20);
           showToast(`Saved note for ${input.id.replace('input-', '').toUpperCase()}`);
         });
       });
 
-      // Cycle status badges
+      // Status badge cycling
       const statusBadges = document.querySelectorAll('.room-status-badge');
       const statusStates = [
         { label: 'Nominal', cls: 'badge-nominal' },
@@ -2186,6 +3137,7 @@
       statusBadges.forEach(badge => {
         badge.addEventListener('click', () => {
           playSound('click');
+          triggerHaptic(25);
           let currentIdx = 0;
           if (badge.classList.contains('badge-busy')) currentIdx = 1;
           else if (badge.classList.contains('badge-alert')) currentIdx = 2;
@@ -2197,25 +3149,83 @@
         });
       });
 
-      // Mini PA announcement trigger
+      // Mini PA Announcement buttons
       const btnsRoomPA = document.querySelectorAll('.btn-room-pa');
       btnsRoomPA.forEach(btn => {
         btn.addEventListener('click', (e) => {
           e.stopPropagation();
           playSound('alert');
+          triggerHaptic(40);
           const roomNum = btn.dataset.room;
+          speakVoiceText(`Attention attendees in Room ${roomNum}. Please observe hall guidelines.`);
           showToast(`🎙️ PA Broadcast dispatched to Room ${roomNum}!`);
         });
       });
 
+      // Room Detail Inspector Modal
+      const roomDetailModal = document.getElementById('room-detail-modal');
+      const btnCloseRoomDetail = document.getElementById('btn-close-room-detail');
+      let currentInspectRoom = 1;
+
+      function openRoomDetail(roomRow) {
+        playSound('click');
+        triggerHaptic(30);
+        currentInspectRoom = roomRow.dataset.room;
+        const name = roomRow.dataset.name;
+        const cap = roomRow.dataset.capacity;
+        const speaker = roomRow.dataset.speaker;
+        const topic = roomRow.dataset.topic;
+
+        document.getElementById('detail-room-title').textContent = `Room ${currentInspectRoom} Telemetry`;
+        document.getElementById('detail-room-hall').textContent = `${name} (Capacity: ${cap})`;
+        document.getElementById('detail-room-speaker').textContent = `Speaker: ${speaker}`;
+        document.getElementById('detail-room-topic').textContent = topic;
+
+        const badge = roomRow.querySelector('.room-status-badge');
+        const pct = badge ? badge.textContent : '75% Nominal';
+        document.getElementById('detail-room-pct').textContent = pct;
+
+        roomDetailModal.classList.add('open');
+        history.pushState({ modal: 'room-detail' }, '');
+      }
+
+      document.querySelectorAll('.btn-room-details, .room-title-tag').forEach(el => {
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const row = el.closest('.room-row');
+          if (row) openRoomDetail(row);
+        });
+      });
+
+      if (btnCloseRoomDetail) {
+        btnCloseRoomDetail.addEventListener('click', () => {
+          playSound('click');
+          roomDetailModal.classList.remove('open');
+        });
+      }
+
+      const btnRoomDetailBroadcast = document.getElementById('btn-room-detail-broadcast');
+      if (btnRoomDetailBroadcast) {
+        btnRoomDetailBroadcast.addEventListener('click', () => {
+          playSound('alert');
+          speakVoiceText(`Attention attendees in Room ${currentInspectRoom}. Welcome to DELTA Engine session.`);
+          showToast(`🎙️ Broadcasted to Room ${currentInspectRoom}!`);
+        });
+      }
+
+      const btnRoomDetailCctv = document.getElementById('btn-room-detail-cctv');
+      if (btnRoomDetailCctv) {
+        btnRoomDetailCctv.addEventListener('click', () => {
+          roomDetailModal.classList.remove('open');
+          openCctvScreen(currentInspectRoom);
+        });
+      }
+
       // ========================================================================
-      // THE MESSENGER LOGIC ("WHEN I CLICK ON MESSAGE ICON THE MESSAGE PAGE WAS OPEN LIKE OTHER APP")
+      // THE MESSENGER LOGIC ("LIKE OTHER APP")
       // ========================================================================
-      const messengerOverlayView = document.getElementById('messenger-overlay-view');
       const btnCloseMessenger = document.getElementById('btn-close-messenger');
       const floatingMsgFab = document.getElementById('floating-msg-fab');
-      const navTabMessages = document.getElementById('nav-tab-messages');
-      const navTabRooms = document.getElementById('nav-tab-rooms');
       const chatTriggers = document.querySelectorAll('.chat-trigger, .btn-room-msg');
 
       const activeChatNameEl = document.getElementById('active-chat-name');
@@ -2235,39 +3245,34 @@
         avatar: '🧑‍💻'
       };
 
-      // Open Messenger Function
       function openMessenger(contactName, contactPhone, contactAvatar) {
         playSound('click');
+        triggerHaptic(30);
+        closeAllOverlayScreens();
         if (contactName) {
           switchChatContact(contactName, contactPhone || 'Direct', contactAvatar || '👤');
         }
         messengerOverlayView.classList.add('open');
-        if (navTabMessages) navTabMessages.classList.add('active');
-        if (navTabRooms) navTabRooms.classList.remove('active');
+        setActiveNavTab(navTabMessages);
 
-        // Clear unread badges
         if (navMsgUnreadBadge) navMsgUnreadBadge.style.display = 'none';
         if (floatingUnreadBadge) floatingUnreadBadge.style.display = 'none';
 
-        // Auto-scroll chat to bottom
+        history.pushState({ modal: 'messenger' }, '');
         setTimeout(() => {
           scrollChatToBottom();
           if (msgInputField) msgInputField.focus();
         }, 150);
       }
 
-      // Close Messenger Function
       function closeMessenger() {
         playSound('click');
         messengerOverlayView.classList.remove('open');
-        if (navTabMessages) navTabMessages.classList.remove('active');
-        if (navTabRooms) navTabRooms.classList.add('active');
+        setActiveNavTab(navTabRooms);
       }
 
       if (floatingMsgFab) floatingMsgFab.addEventListener('click', () => openMessenger());
-      if (navTabMessages) navTabMessages.addEventListener('click', () => openMessenger());
       if (btnCloseMessenger) btnCloseMessenger.addEventListener('click', closeMessenger);
-      if (navTabRooms) navTabRooms.addEventListener('click', closeMessenger);
 
       chatTriggers.forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -2279,7 +3284,6 @@
         });
       });
 
-      // Switch Contact Tabs
       function switchChatContact(name, phone, avatar) {
         currentChatContact = { name, phone, avatar };
         if (activeChatNameEl) activeChatNameEl.textContent = name;
@@ -2287,7 +3291,6 @@
         if (activeChatAvatarEl) activeChatAvatarEl.textContent = avatar;
         if (msgInputField) msgInputField.placeholder = `Message ${name.split(' ')[0]} (${phone})...`;
 
-        // Update Channel Tab styling
         const channelTabs = document.querySelectorAll('.channel-tab');
         channelTabs.forEach(tab => {
           const isMatch = tab.dataset.name.toLowerCase().includes(name.split(' ')[0].toLowerCase());
@@ -2299,6 +3302,7 @@
       channelTabs.forEach(tab => {
         tab.addEventListener('click', () => {
           playSound('click');
+          triggerHaptic(20);
           switchChatContact(tab.dataset.name, tab.dataset.phone, tab.dataset.avatar);
         });
       });
@@ -2309,17 +3313,16 @@
         }
       }
 
-      // Send Message Function
       async function sendMessage(text) {
         const msgText = (text || (msgInputField ? msgInputField.value : '')).trim();
         if (!msgText) return;
 
         playSound('send');
+        triggerHaptic(30);
         if (msgInputField) msgInputField.value = '';
 
         const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        // Append outgoing message bubble
         const outgoingRow = document.createElement('div');
         outgoingRow.className = 'chat-bubble-row outgoing';
         outgoingRow.innerHTML = `
@@ -2340,7 +3343,7 @@
         }
         scrollChatToBottom();
 
-        // Also sync with backend API
+        // Sync with backend API
         try {
           fetch('/api/messages/send', {
             method: 'POST',
@@ -2354,14 +3357,10 @@
           }).catch(() => {});
         } catch (e) {}
 
-        // Trigger Contextual Automatic Reply from Coordinator / AI
         triggerCoordinatorReply(msgText);
       }
 
-      if (btnMsgSend) {
-        btnMsgSend.addEventListener('click', () => sendMessage());
-      }
-
+      if (btnMsgSend) btnMsgSend.addEventListener('click', () => sendMessage());
       if (msgInputField) {
         msgInputField.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') {
@@ -2375,12 +3374,11 @@
       const quickChips = document.querySelectorAll('.chip-btn');
       quickChips.forEach(chip => {
         chip.addEventListener('click', () => {
-          const text = chip.dataset.text;
-          sendMessage(text);
+          sendMessage(chip.dataset.text);
         });
       });
 
-      // Simulated Real-Time Coordinator Reply
+      // Context-aware auto-replies
       function triggerCoordinatorReply(userText) {
         const recipientName = currentChatContact.name;
         const senderFirst = recipientName.split(' ')[0];
@@ -2430,6 +3428,7 @@
             messengerChatBody.appendChild(incomingRow);
           }
           playSound('receive');
+          triggerHaptic([40, 30]);
           scrollChatToBottom();
         }, 1300);
       }
@@ -2438,17 +3437,18 @@
         return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
 
-      // Simulated Voice Note Record
+      // Voice Audio Note Dispatch
       const btnMsgMic = document.getElementById('btn-msg-mic');
       let isRecording = false;
       if (btnMsgMic) {
         btnMsgMic.addEventListener('click', () => {
           playSound('alert');
+          triggerHaptic(50);
           isRecording = !isRecording;
           if (isRecording) {
             btnMsgMic.style.background = '#ef4444';
             btnMsgMic.style.color = '#ffffff';
-            showToast('🎙️ Recording voice dispatch... (Click again to send)');
+            showToast('🎙️ Recording voice note... (Tap again to send)');
           } else {
             btnMsgMic.style.background = '';
             btnMsgMic.style.color = '';
@@ -2457,7 +3457,7 @@
         });
       }
 
-      // Simulated Attachment
+      // Attachment Picker
       const btnMsgAttach = document.getElementById('btn-msg-attach');
       if (btnMsgAttach) {
         btnMsgAttach.addEventListener('click', () => {
@@ -2468,22 +3468,218 @@
       }
 
       // ========================================================================
-      // SIMULATED PHONE CALL MODAL
+      // IN-APP CCTV HUB (TAB 4)
+      // ========================================================================
+      const btnCloseCctv = document.getElementById('btn-close-cctv');
+      const cctvCanvas = document.getElementById('mobile-cctv-canvas');
+      const cctvHallSelector = document.getElementById('cctv-hall-selector');
+      const cctvHallTag = document.getElementById('cctv-hall-tag');
+      const cctvPersonCount = document.getElementById('cctv-person-count');
+      let cctvAnimId = null;
+
+      function openCctvScreen(hallNum = 1) {
+        playSound('click');
+        triggerHaptic(30);
+        closeAllOverlayScreens();
+        cctvOverlayScreen.classList.add('open');
+        setActiveNavTab(navTabCctv);
+        if (cctvHallSelector) cctvHallSelector.value = hallNum;
+        startCctvSimulation();
+        history.pushState({ modal: 'cctv' }, '');
+      }
+
+      function closeCctvScreen() {
+        playSound('click');
+        cctvOverlayScreen.classList.remove('open');
+        setActiveNavTab(navTabRooms);
+        if (cctvAnimId) cancelAnimationFrame(cctvAnimId);
+      }
+
+      if (btnCloseCctv) btnCloseCctv.addEventListener('click', closeCctvScreen);
+
+      const btnMsgTopCctv = document.getElementById('btn-msg-top-cctv');
+      if (btnMsgTopCctv) {
+        btnMsgTopCctv.addEventListener('click', () => {
+          openCctvScreen(1);
+        });
+      }
+
+      // Simulated Canvas Rendering with Heads
+      function startCctvSimulation() {
+        if (!cctvCanvas) return;
+        const ctx = cctvCanvas.getContext('2d');
+        let frame = 0;
+
+        function renderFrame() {
+          frame++;
+          ctx.fillStyle = '#0a0f1d';
+          ctx.fillRect(0, 0, cctvCanvas.width, cctvCanvas.height);
+
+          // Grid
+          ctx.strokeStyle = '#1e293b';
+          ctx.lineWidth = 1;
+          for (let x = 0; x < cctvCanvas.width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, cctvCanvas.height); ctx.stroke();
+          }
+          for (let y = 0; y < cctvCanvas.height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(cctvCanvas.width, y); ctx.stroke();
+          }
+
+          // Simulated Attendees Bounding Boxes
+          const count = 12;
+          for (let i = 0; i < count; i++) {
+            const bx = 40 + (i * 28) + Math.sin(frame * 0.05 + i) * 6;
+            const by = 80 + Math.cos(frame * 0.04 + i) * 20;
+            ctx.strokeStyle = '#22c55e';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(bx, by, 22, 28);
+            ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
+            ctx.fillRect(bx, by, 22, 28);
+
+            ctx.fillStyle = '#22c55e';
+            ctx.font = '8px monospace';
+            ctx.fillText(`9${(80 + i) % 10}%`, bx, by - 3);
+          }
+
+          // Scanline
+          const scanY = (frame * 2) % cctvCanvas.height;
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.6)';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, scanY);
+          ctx.lineTo(cctvCanvas.width, scanY);
+          ctx.stroke();
+
+          cctvAnimId = requestAnimationFrame(renderFrame);
+        }
+        renderFrame();
+      }
+
+      if (cctvHallSelector) {
+        cctvHallSelector.addEventListener('change', () => {
+          playSound('click');
+          const val = cctvHallSelector.value;
+          const hallName = cctvHallSelector.options[cctvHallSelector.selectedIndex].text;
+          if (cctvHallTag) cctvHallTag.textContent = `🏛️ ${hallName.toUpperCase()} • ACTIVE`;
+          if (cctvPersonCount) cctvPersonCount.textContent = `${Math.floor(Math.random() * 80 + 90)} Heads`;
+        });
+      }
+
+      const btnCctvCaptureSnap = document.getElementById('btn-cctv-capture-snap');
+      if (btnCctvCaptureSnap) {
+        btnCctvCaptureSnap.addEventListener('click', () => {
+          playSound('click');
+          openMessenger();
+          sendMessage(`📸 [Real-Time CCTV Snapshot: ${cctvHallSelector ? cctvHallSelector.options[cctvHallSelector.selectedIndex].text : 'Room 1'}]`);
+          showToast('📸 Snapshot sent to Aryan!');
+        });
+      }
+
+      const btnCctvPaHall = document.getElementById('btn-cctv-pa-hall');
+      if (btnCctvPaHall) {
+        btnCctvPaHall.addEventListener('click', () => {
+          playSound('alert');
+          speakVoiceText('Attention attendees. Autonomous crowd management active.');
+          showToast('🎙️ Live PA broadcast dispatched to venue!');
+        });
+      }
+
+      // ========================================================================
+      // SETTINGS SCREEN (TAB 5)
+      // ========================================================================
+      const btnCloseSettings = document.getElementById('btn-close-settings');
+
+      function openSettingsScreen() {
+        playSound('click');
+        triggerHaptic(30);
+        closeAllOverlayScreens();
+        settingsOverlayScreen.classList.add('open');
+        setActiveNavTab(navTabSettings);
+        history.pushState({ modal: 'settings' }, '');
+      }
+
+      function closeSettingsScreen() {
+        playSound('click');
+        settingsOverlayScreen.classList.remove('open');
+        setActiveNavTab(navTabRooms);
+      }
+
+      if (btnCloseSettings) btnCloseSettings.addEventListener('click', closeSettingsScreen);
+
+      // Settings toggles
+      const settingAutopilot = document.getElementById('setting-autopilot');
+      if (settingAutopilot) {
+        settingAutopilot.addEventListener('change', () => {
+          playSound('click');
+          triggerHaptic(20);
+          showToast(`Tesla Autopilot: ${settingAutopilot.checked ? 'ENGAGED' : 'MANUAL'}`);
+        });
+      }
+
+      const settingSfx = document.getElementById('setting-sfx');
+      if (settingSfx) {
+        settingSfx.addEventListener('change', () => {
+          sfxEnabled = settingSfx.checked;
+          if (sfxEnabled) playSound('click');
+        });
+      }
+
+      const settingHaptic = document.getElementById('setting-haptic');
+      if (settingHaptic) {
+        settingHaptic.addEventListener('change', () => {
+          hapticEnabled = settingHaptic.checked;
+          if (hapticEnabled) triggerHaptic(50);
+        });
+      }
+
+      const settingDarkmode = document.getElementById('setting-darkmode');
+      if (settingDarkmode) {
+        settingDarkmode.addEventListener('change', () => {
+          playSound('click');
+          document.body.classList.toggle('dark-mode', settingDarkmode.checked);
+          showToast(`Theme: ${settingDarkmode.checked ? 'Dark Cyberpunk' : 'Light Neubrutalist'}`);
+        });
+      }
+
+      // ========================================================================
+      // FULL INTERACTIVE PHONE CALL SIMULATOR
       // ========================================================================
       const callModalOverlay = document.getElementById('call-modal-overlay');
       const btnCallHangup = document.getElementById('btn-call-hangup');
       const callProfileName = document.getElementById('call-profile-name');
       const callProfileNumber = document.getElementById('call-profile-number');
       const callProfileAvatar = document.getElementById('call-profile-avatar');
+      const callStatusLabel = document.getElementById('call-status-label');
       const btnCallTriggers = document.querySelectorAll('.btn-call-trigger');
       const btnMsgTopCall = document.getElementById('btn-msg-top-call');
+      let callTimerInterval = null;
+      let callSeconds = 0;
 
       function initiateCall(name, phone, avatar) {
-        playSound('alert');
+        playSound('ring');
+        triggerHaptic([80, 50, 80]);
         if (callProfileName) callProfileName.textContent = name;
         if (callProfileNumber) callProfileNumber.textContent = phone;
         if (callProfileAvatar) callProfileAvatar.textContent = avatar || '👤';
-        if (callModalOverlay) callModalOverlay.classList.add('open');
+        if (callStatusLabel) callStatusLabel.textContent = 'Calling on DELTA Radio Mesh...';
+        callModalOverlay.classList.add('open');
+        history.pushState({ modal: 'call' }, '');
+
+        // Simulated Pickup after 2 seconds
+        callSeconds = 0;
+        setTimeout(() => {
+          if (callStatusLabel && callModalOverlay.classList.contains('open')) {
+            callStatusLabel.textContent = 'Connected (00:00)';
+            playSound('alert');
+            speakVoiceText(`Hello Suryansh. ${name.split(' ')[0]} here. Standing by on channel.`);
+            callTimerInterval = setInterval(() => {
+              callSeconds++;
+              const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+              const secs = String(callSeconds % 60).padStart(2, '0');
+              if (callStatusLabel) callStatusLabel.textContent = `Connected (${mins}:${secs})`;
+            }, 1000);
+          }
+        }, 2200);
       }
 
       btnCallTriggers.forEach(btn => {
@@ -2502,26 +3698,96 @@
       if (btnCallHangup && callModalOverlay) {
         btnCallHangup.addEventListener('click', () => {
           playSound('click');
+          triggerHaptic(40);
+          if (callTimerInterval) clearInterval(callTimerInterval);
           callModalOverlay.classList.remove('open');
-          showToast('Call ended');
+          showToast(`Call ended (${callSeconds}s duration)`);
         });
       }
 
-      // CCTV Tab Click
-      const navTabCctv = document.getElementById('nav-tab-cctv');
-      if (navTabCctv) {
-        navTabCctv.addEventListener('click', () => {
+      // Call controls
+      const btnCallMute = document.getElementById('btn-call-mute');
+      if (btnCallMute) {
+        btnCallMute.addEventListener('click', () => {
           playSound('click');
-          window.location.href = 'index.html#cctv-top-hub';
+          const isMuted = btnCallMute.classList.toggle('active');
+          showToast(isMuted ? 'Mic Muted' : 'Mic Live');
         });
       }
 
-      // Top PA Action in Messenger
-      const btnMsgTopPa = document.getElementById('btn-msg-top-pa');
-      if (btnMsgTopPa) {
-        btnMsgTopPa.addEventListener('click', () => {
+      const btnCallSpeaker = document.getElementById('btn-call-speaker');
+      if (btnCallSpeaker) {
+        btnCallSpeaker.addEventListener('click', () => {
+          playSound('click');
+          const isSpeaker = btnCallSpeaker.classList.toggle('active');
+          showToast(isSpeaker ? 'Speaker Active' : 'Earpiece Active');
+        });
+      }
+
+      // ========================================================================
+      // COORDINATOR PROFILE MODAL
+      // ========================================================================
+      const pillCoordinatorProfile = document.getElementById('pill-coordinator-profile');
+      const profileSuryanshTrigger = document.getElementById('profile-suryansh-trigger');
+      const profileModalOverlay = document.getElementById('profile-modal-overlay');
+      const btnCloseProfileModal = document.getElementById('btn-close-profile-modal');
+      const btnTestRadioDispatch = document.getElementById('btn-test-radio-dispatch');
+
+      function openProfileModal() {
+        playSound('click');
+        triggerHaptic(30);
+        profileModalOverlay.classList.add('open');
+        history.pushState({ modal: 'profile' }, '');
+      }
+
+      if (pillCoordinatorProfile) pillCoordinatorProfile.addEventListener('click', openProfileModal);
+      if (profileSuryanshTrigger) profileSuryanshTrigger.addEventListener('click', openProfileModal);
+      if (btnCloseProfileModal) {
+        btnCloseProfileModal.addEventListener('click', () => {
+          playSound('click');
+          profileModalOverlay.classList.remove('open');
+        });
+      }
+
+      if (btnTestRadioDispatch) {
+        btnTestRadioDispatch.addEventListener('click', () => {
           playSound('alert');
-          showToast('🎙️ Live PA Broadcast Triggered for ' + currentChatContact.name);
+          triggerHaptic([60, 40, 60]);
+          speakVoiceText('Radio test nominal. Channel 4 verified.');
+          showToast('📻 Radio Dispatch Sound Verified!');
+        });
+      }
+
+      // ========================================================================
+      // ANDROID HARDWARE BACK BUTTON & GESTURE NAVIGATION
+      // ========================================================================
+      window.addEventListener('popstate', (e) => {
+        if (callModalOverlay.classList.contains('open')) {
+          if (callTimerInterval) clearInterval(callTimerInterval);
+          callModalOverlay.classList.remove('open');
+        } else if (profileModalOverlay.classList.contains('open')) {
+          profileModalOverlay.classList.remove('open');
+        } else if (roomDetailModal.classList.contains('open')) {
+          roomDetailModal.classList.remove('open');
+        } else if (notifDrawerModal.classList.contains('open')) {
+          notifDrawerModal.classList.remove('open');
+        } else if (messengerOverlayView.classList.contains('open')) {
+          closeMessenger();
+        } else if (cctvOverlayScreen.classList.contains('open')) {
+          closeCctvScreen();
+        } else if (settingsOverlayScreen.classList.contains('open')) {
+          closeSettingsScreen();
+        }
+      });
+
+      // Register PWA Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then((reg) => {
+            console.log('[DELTA PWA] Service Worker registered:', reg.scope);
+          }).catch((err) => {
+            console.warn('[DELTA PWA] Service Worker failed:', err);
+          });
         });
       }
 
