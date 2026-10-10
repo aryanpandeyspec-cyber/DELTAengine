@@ -716,8 +716,109 @@
       border-top: 1px dashed rgba(56, 189, 248, 0.3);
       padding-top: 4px;
     }
-    .hud-tag {
-      letter-spacing: 0.5px;
+    /* Point 6: Live Event Phase Ticker */
+    .event-phase-ticker {
+      background: #ffffff;
+      border: var(--border-outline);
+      border-radius: 10px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.68rem;
+      font-family: var(--font-mono);
+      overflow: hidden;
+      white-space: nowrap;
+    }
+    .ticker-pulse-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #16a34a;
+      box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7);
+      animation: tickerGlow 2s infinite;
+      flex-shrink: 0;
+    }
+    @keyframes tickerGlow {
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(22, 163, 74, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+    }
+    .ticker-content {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      width: 100%;
+      overflow: hidden;
+    }
+    .ticker-highlight {
+      font-weight: 800;
+      color: #2563eb;
+      flex-shrink: 0;
+    }
+    .ticker-timer {
+      margin-left: auto;
+      font-weight: 800;
+      color: #b91c1c;
+      background: #fef2f2;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 1px solid #fecaca;
+      flex-shrink: 0;
+    }
+    body.dark-mode .event-phase-ticker {
+      background: #131926;
+      border-color: #38bdf8;
+    }
+    body.dark-mode .ticker-highlight {
+      color: #38bdf8;
+    }
+    body.dark-mode .ticker-timer {
+      background: #450a0a;
+      color: #f87171;
+      border-color: #7f1d1d;
+    }
+
+    /* Point 5: Venue Blueprint Section & SVG Interactive Map */
+    .venue-blueprint-section {
+      background: #ffffff;
+      border: var(--border-outline-bold);
+      border-radius: 14px;
+      padding: 12px 14px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .blueprint-map-container {
+      width: 100%;
+      border: var(--border-outline);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #f8fafc;
+    }
+    .blueprint-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .map-room {
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .map-room:hover rect {
+      stroke-width: 2.2;
+      filter: brightness(0.96);
+    }
+    .map-room:active {
+      transform: scale(0.99);
+    }
+    body.dark-mode .venue-blueprint-section {
+      background: #131926;
+      border-color: #38bdf8;
+    }
+    body.dark-mode .blueprint-map-container {
+      background: #090d16;
+      border-color: #38bdf8;
     }
 
     /* ROOMS SECTION (ROOM 1 to ROOM 5 with Lines) */
@@ -1576,6 +1677,16 @@
                 <div class="delta-brand-subtitle">The Self-Healing & Agentic Conference OS</div>
               </div>
 
+              <!-- Point 6: Live Event Phase Ticker -->
+              <div class="event-phase-ticker" id="event-phase-ticker">
+                <div class="ticker-pulse-dot"></div>
+                <div class="ticker-content">
+                  <span class="ticker-highlight">STAGE 2 / KEYNOTE:</span>
+                  <span id="ticker-event-title">"Autonomous AI Swarms"</span>
+                  <span class="ticker-timer" id="ticker-countdown">⏱️ 14:28</span>
+                </div>
+              </div>
+
               <!-- Feature 1: Role Switcher Pill (Coordinator / Volunteer / Attendee) -->
               <div class="role-switcher-row" id="role-switcher-row">
                 <button class="role-btn active" data-role="coordinator">👑 Coordinator</button>
@@ -1758,6 +1869,93 @@
                       <button class="btn-room-mini btn-room-msg" data-room="5">💬 Msg</button>
                     </div>
                   </div>
+                </div>
+              </section>
+
+              <!-- Point 5: Mini Interactive Venue Blueprint Floorplan -->
+              <section class="venue-blueprint-section" id="venue-blueprint-section">
+                <div class="section-eyebrow">
+                  <span>🗺️ Interactive Venue Blueprint</span>
+                  <span style="color:#2563eb; font-weight:700;">● 5 Chambers Active</span>
+                </div>
+
+                <div class="blueprint-map-container">
+                  <svg viewBox="0 0 340 180" class="blueprint-svg" id="blueprint-svg">
+                    <defs>
+                      <pattern id="blueprint-grid" width="16" height="16" patternUnits="userSpaceOnUse">
+                        <path d="M 16 0 L 0 0 0 16" fill="none" stroke="rgba(15, 23, 42, 0.08)" stroke-width="0.8"/>
+                      </pattern>
+                    </defs>
+                    <rect width="340" height="180" fill="url(#blueprint-grid)" rx="8" />
+
+                    <!-- Central Corridor -->
+                    <rect x="20" y="75" width="300" height="30" fill="#f8fafc" stroke="#0f172a" stroke-width="1.2" stroke-dasharray="3,3" rx="4"/>
+                    <text x="170" y="93" font-family="'Space Grotesk', monospace" font-size="7" font-weight="700" fill="#64748b" text-anchor="middle">CENTRAL CORRIDOR CONCOURSE</text>
+
+                    <!-- Gate A Entrance -->
+                    <g class="map-gate" id="map-gate-a">
+                      <rect x="5" y="77" width="15" height="26" fill="#eff6ff" stroke="#2563eb" stroke-width="1.2" rx="2"/>
+                      <text x="12" y="93" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#2563eb" text-anchor="middle">GATE</text>
+                    </g>
+
+                    <!-- Room 1 (Turing Hall - 250) -->
+                    <g class="map-room" data-room="1" id="map-room-1">
+                      <rect x="20" y="10" width="85" height="55" fill="#fffbeb" stroke="#0f172a" stroke-width="1.5" rx="6"/>
+                      <circle cx="30" cy="22" r="3.5" fill="#f59e0b"/>
+                      <text x="38" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 1</text>
+                      <text x="28" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Turing (250)</text>
+                      <rect x="28" y="46" width="69" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
+                      <rect x="28" y="46" width="56" height="4" fill="#f59e0b" rx="2"/>
+                      <text x="28" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#b45309">82% • Active</text>
+                    </g>
+
+                    <!-- Room 2 (Lovelace Suite - 120) -->
+                    <g class="map-room" data-room="2" id="map-room-2">
+                      <rect x="115" y="10" width="85" height="55" fill="#f0fdf4" stroke="#0f172a" stroke-width="1.5" rx="6"/>
+                      <circle cx="125" cy="22" r="3.5" fill="#16a34a"/>
+                      <text x="133" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 2</text>
+                      <text x="123" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Lovelace (120)</text>
+                      <rect x="123" y="46" width="69" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
+                      <rect x="123" y="46" width="31" height="4" fill="#16a34a" rx="2"/>
+                      <text x="123" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#15803d">45% • Nominal</text>
+                    </g>
+
+                    <!-- Room 3 (Hopper - 60) -->
+                    <g class="map-room" data-room="3" id="map-room-3">
+                      <rect x="210" y="10" width="110" height="55" fill="#f0fdf4" stroke="#0f172a" stroke-width="1.5" rx="6"/>
+                      <circle cx="220" cy="22" r="3.5" fill="#16a34a"/>
+                      <text x="228" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 3</text>
+                      <text x="218" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Hopper (60)</text>
+                      <rect x="218" y="46" width="94" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
+                      <rect x="218" y="46" width="56" height="4" fill="#16a34a" rx="2"/>
+                      <text x="218" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#15803d">60% • Nominal</text>
+                    </g>
+
+                    <!-- Room 4 (Keynote Arena - 500) -->
+                    <g class="map-room" data-room="4" id="map-room-4">
+                      <rect x="20" y="115" width="140" height="55" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" rx="6"/>
+                      <circle cx="30" cy="127" r="3.5" fill="#ef4444"/>
+                      <text x="38" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 4 (ARENA)</text>
+                      <text x="28" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Keynote Arena (500)</text>
+                      <rect x="28" y="151" width="124" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
+                      <rect x="28" y="151" width="112" height="4" fill="#ef4444" rx="2"/>
+                      <text x="28" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#b91c1c">91% • HIGH SURGE</text>
+                    </g>
+
+                    <!-- Room 5 (Innovation Lab - 1200) -->
+                    <g class="map-room" data-room="5" id="map-room-5">
+                      <rect x="170" y="115" width="150" height="55" fill="#f0fdf4" stroke="#0f172a" stroke-width="1.5" rx="6"/>
+                      <circle cx="180" cy="127" r="3.5" fill="#16a34a"/>
+                      <text x="188" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#0f172a">ROOM 5 (LAB)</text>
+                      <text x="178" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#64748b">Innovation Lab (1,200)</text>
+                      <rect x="178" y="151" width="134" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
+                      <rect x="178" y="151" width="46" height="4" fill="#16a34a" rx="2"/>
+                      <text x="178" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#15803d">35% • Nominal</text>
+                    </g>
+                  </svg>
+                </div>
+                <div style="font-size:0.65rem; color:#64748b; font-weight:600; text-align:center;">
+                  💡 Tap any chamber to open direct coordinator channel
                 </div>
               </section>
 
@@ -2763,6 +2961,62 @@
       }
 
       drawWaveform();
+
+      // ========================================================================
+      // POINT 6: LIVE EVENT PHASE TICKER LOGIC (COUNTDOWN & ROTATION)
+      // ========================================================================
+      let tickerSeconds = 868; // 14 mins 28s
+      const tickerCountdownEl = document.getElementById('ticker-countdown');
+      const tickerTitleEl = document.getElementById('ticker-event-title');
+
+      const eventScheduleStages = [
+        { title: '"Autonomous AI Swarms"', timer: 868 },
+        { title: '"Self-Healing Mesh Recovery"', timer: 1200 },
+        { title: '"Live Multi-Agent Hack Demo"', timer: 900 }
+      ];
+      let currentStageIdx = 0;
+
+      setInterval(() => {
+        if (tickerSeconds > 0) {
+          tickerSeconds--;
+        } else {
+          currentStageIdx = (currentStageIdx + 1) % eventScheduleStages.length;
+          tickerSeconds = eventScheduleStages[currentStageIdx].timer;
+          if (tickerTitleEl) tickerTitleEl.textContent = eventScheduleStages[currentStageIdx].title;
+          showToast(`⚡ Event Phase Advanced: ${eventScheduleStages[currentStageIdx].title}`);
+        }
+        if (tickerCountdownEl) {
+          const m = Math.floor(tickerSeconds / 60);
+          const s = tickerSeconds % 60;
+          tickerCountdownEl.textContent = `⏱️ ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+      }, 1000);
+
+      // ========================================================================
+      // POINT 5: MINI INTERACTIVE VENUE BLUEPRINT FLOORPLAN LOGIC
+      // ========================================================================
+      document.querySelectorAll('.map-room').forEach(roomGroup => {
+        roomGroup.addEventListener('click', () => {
+          playSound('click');
+          const roomNum = roomGroup.dataset.room;
+          let targetName = `Room ${roomNum} Lead`;
+          let targetPhone = '888777666';
+          let avatar = '🧑‍💻';
+
+          if (roomNum === '2') {
+            targetName = 'Shahid';
+            targetPhone = '999777666';
+            avatar = '🎧';
+          } else if (roomNum === '4') {
+            targetName = 'Swarm Agent Coordinator';
+            targetPhone = 'Swarm-Agent';
+            avatar = '🤖';
+          }
+
+          showToast(`📍 Selected Room ${roomNum} on blueprint!`);
+          openChatWithContact(targetName, targetPhone, avatar);
+        });
+      });
 
       // ========================================================================
       // OPTION 1: LOCAL HOTSPOT & TWO-AREA STORE-AND-FORWARD MESH ENGINE
