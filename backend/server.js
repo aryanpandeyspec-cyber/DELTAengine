@@ -928,8 +928,17 @@ app.post('/api/admin/stress-test-500', async (req, res) => {
         db.graph.speakers[speakerKey].delay = (i % 60) + 15;
         passedCount++;
       } else if (testType === 1) {
-        // Test case 2: WhatsApp AI Liaison alert dispatch
-        sendWhatsAppNotification(`Coordinator #${i}`, `+1 (555) 000-${1000 + i}`, `⚠️ High-Stress Test Event #${i}: Venue load surge detected.`);
+        // Test case 2: WhatsApp AI Liaison alert dispatch (in-memory simulation benchmark)
+        if (!db.whatsappLogs) db.whatsappLogs = [];
+        db.whatsappLogs.unshift({
+          id: `wa_stress_${i}`,
+          recipientName: `Coordinator #${i}`,
+          phoneNumber: `+1 (555) 000-${1000 + i}`,
+          messageText: `⚠️ High-Stress Test Event #${i}: Venue load surge detected.`,
+          status: 'DELIVERED (Stress Sim)',
+          timestamp: timeStr
+        });
+        if (db.whatsappLogs.length > 50) db.whatsappLogs.pop();
         passedCount++;
       } else if (testType === 2) {
         // Test case 3: LLM circuit breaker limiter evaluation
@@ -1432,6 +1441,7 @@ app.post('/api/sensors/door', async (req, res) => {
   }
   currentGate.lastUpdated = timeStr;
 
+  const occupancy = (netOccupancy !== undefined && netOccupancy >= 0) ? netOccupancy : doorSensorNetOccupancy;
   const nowDoor = Date.now();
   const isHighOccupancy = occupancy >= (hall.capacity * 0.8);
   if (isHighOccupancy || (nowDoor - lastLoggedDoorTick > TELEMETRY_LOG_COOLDOWN_MS)) {
