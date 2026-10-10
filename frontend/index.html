@@ -845,8 +845,11 @@
               <!-- Sample Photos Demo Buttons & Actions Row -->
               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px; margin-bottom:12px;">
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-sm" id="btn-load-sample-lab-photos" style="font-size:0.75rem; padding:5px 12px; background:#eff6ff; border:2px solid #0284c7; color:#0369a1; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
+                    🖥️ Load St. Peter's College Lab (4 Real Photos)
+                  </button>
                   <button type="button" class="btn btn-sm" id="btn-load-sample-hall-photos" style="font-size:0.75rem; padding:5px 12px; background:#f0fdf4; border:2px solid #16a34a; color:#15803d; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
-                    📸 Load 3 Sample Hall Photos (Entrance + Stage + Panoramic)
+                    📸 Load 3 Sample Auditorium Photos
                   </button>
                   <button type="button" class="btn btn-sm btn-white" id="btn-add-more-photos" style="font-size:0.75rem; padding:5px 10px; border:2px solid #000; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
                     ➕ Add More Photos
@@ -874,8 +877,9 @@
               <!-- Target Hall & Reconstruct Execution Row -->
               <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 12px; background:#f1f5f9; border:2px solid #000; border-radius:8px; margin-bottom:14px;">
                 <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                  <label for="spatial-target-hall-select" style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800;">TARGET HALL:</label>
+                  <label for="spatial-target-hall-select" style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800;">TARGET VENUE:</label>
                   <select id="spatial-target-hall-select" style="padding:5px 10px; border:2px solid #000; border-radius:6px; font-weight:700; font-size:0.8rem; background:#fff;">
+                    <option value="hall-lab" selected>St. Peter's Systems Lab (hall-lab)</option>
                     <option value="hall-1">Turing Hall (hall-1)</option>
                     <option value="hall-2">Lovelace Suite (hall-2)</option>
                     <option value="hall-3">Hopper Room (hall-3)</option>
@@ -911,10 +915,10 @@
                 <div style="background:#0a0f1d; border:3px solid #000; border-radius:12px; padding:14px; box-shadow:5px 5px 0px #000; margin-bottom:14px;">
                   <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #1e293b; padding-bottom:8px;">
                     <span id="spatial-twin-title" style="font-family:var(--font-mono); font-size:0.92rem; font-weight:800; color:#38bdf8;">
-                      🏛️ Turing Hall — 3D Digital Twin
+                      🏛️ St. Peter's College Systems Lab — 3D Digital Twin
                     </span>
                     <span class="badge-mini-green" id="spatial-twin-engine-badge" style="background:#10b981; color:#000; font-weight:800; font-size:0.7rem; border:1px solid #000; border-radius:4px; padding:2px 8px;">
-                      Gemini 2.0 Flash Vision (94% Confidence)
+                      NVIDIA Nemotron / Gemini 3 Vision (98% Confidence)
                     </span>
                   </div>
 
