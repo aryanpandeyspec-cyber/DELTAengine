@@ -1370,8 +1370,8 @@
 
               <!-- 2. NOTIFICAION Row -->
               <div class="notification-bar-row">
-                <span class="live-status-pill-sub">
-                  <span>🎙️</span> Voice Mesh Online
+                <span class="live-status-pill-sub" id="mesh-network-pill">
+                  <span id="mesh-pill-icon">🎙️</span> <span id="mesh-pill-text">Voice Mesh Online</span>
                 </span>
                 <button id="btn-open-notifications" class="btn-notification" title="Open Notifications">
                   🔔 NOTIFICAION <span class="notif-badge">3</span>
@@ -1763,6 +1763,39 @@
                   </label>
                 </div>
               </div>
+
+              <!-- OPTION 1: LOCAL HOTSPOT & TWO-AREA MESH RELAY -->
+              <div class="settings-group" style="margin-top: 4px;">
+                <div style="font-family:var(--font-mono); font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">
+                  🌐 Local Hotspot & Multi-Area Mesh
+                </div>
+                <div class="settings-item">
+                  <div>
+                    <div>📡 Mesh Hotspot Link</div>
+                    <div id="mesh-status-label" style="font-size:0.7rem; color:#16a34a; font-weight:700;">● Online (Local Area Link)</div>
+                  </div>
+                  <span id="mesh-ping-badge" style="font-size:0.68rem; font-family:var(--font-mono); padding:2px 8px; border:1px solid #16a34a; border-radius:12px; color:#16a34a; font-weight:700;">CONNECTED</span>
+                </div>
+                <div class="settings-item">
+                  <div>
+                    <div>🔄 Store-and-Forward Relay</div>
+                    <div style="font-size:0.7rem; color:#64748b;">Auto-syncs across Area 1 & Area 2 when roaming</div>
+                  </div>
+                  <label class="switch-ui">
+                    <input type="checkbox" id="setting-relay-sync" checked>
+                    <span class="slider-round"></span>
+                  </label>
+                </div>
+                <div class="settings-item">
+                  <div>
+                    <div>📦 Outgoing Sync Queue</div>
+                    <div id="mesh-queue-count" style="font-size:0.7rem; color:#64748b;">0 pending messages</div>
+                  </div>
+                  <button id="btn-force-mesh-sync" style="font-size:0.7rem; font-family:var(--font-mono); font-weight:700; padding:4px 10px; background:#f1f5f9; border:var(--border-outline); border-radius:6px; cursor:pointer;">
+                    Sync Now
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2078,6 +2111,7 @@
             <div>${escapeHtml(msgText)}</div>
             <div class="chat-bubble-meta">
               <span>${timeStr}</span>
+              <span class="msg-delivery-tag" style="color:#16a34a; font-weight:700;">✓ Delivered</span>
             </div>
           </div>
         `;
@@ -2089,20 +2123,17 @@
         }
         scrollChatToBottom();
 
-        // Sync with backend API
-        try {
-          fetch('/api/messages/send', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              sender: 'Suryansh',
-              recipient: currentChatContact.name,
-              recipientPhone: currentChatContact.phone,
-              text: msgText
-            })
-          }).catch(() => {});
-        } catch (e) {}
+        // Option 1: Mesh Hotspot Dispatch with Store-and-Forward Queue
+        const msgPayload = {
+          id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+          sender: 'Suryansh',
+          recipient: currentChatContact.name,
+          recipientPhone: currentChatContact.phone,
+          text: msgText,
+          timestamp: timeStr
+        };
 
+        dispatchToMesh(msgPayload, outgoingRow);
         triggerCoordinatorReply(msgText);
       }
 
@@ -2267,6 +2298,16 @@
 
         showToast('Voice dispatch transmitted!');
 
+        // Broadcast voice dispatch to Option 1 mesh
+        const voicePayload = {
+          id: 'voice_' + Date.now(),
+          sender: 'Suryansh',
+          recipient: voiceTargetName ? voiceTargetName.textContent : 'All Coordinators',
+          text: '🎙️ [Radio PTT Voice Dispatch on Mesh Frequency 433.10 MHz]',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        };
+        if (typeof dispatchToMesh === 'function') dispatchToMesh(voicePayload, null);
+
         setTimeout(() => {
           speakVoiceText('Loud and clear Suryansh. Channel 1 standing by.');
           showToast('📻 Aryan: "Loud and clear Suryansh"');
@@ -2281,6 +2322,165 @@
         btnPushToTalk.addEventListener('touchend', (e) => { e.preventDefault(); stopTransmitting(); }, { passive: false });
         btnPushToTalk.addEventListener('touchcancel', (e) => { e.preventDefault(); stopTransmitting(); }, { passive: false });
       }
+
+      // ========================================================================
+      // OPTION 1: LOCAL HOTSPOT & TWO-AREA STORE-AND-FORWARD MESH ENGINE
+      // ========================================================================
+      const meshPillText = document.getElementById('mesh-pill-text');
+      const meshPillIcon = document.getElementById('mesh-pill-icon');
+      const meshStatusLabel = document.getElementById('mesh-status-label');
+      const meshPingBadge = document.getElementById('mesh-ping-badge');
+      const meshQueueCount = document.getElementById('mesh-queue-count');
+      const btnForceMeshSync = document.getElementById('btn-force-mesh-sync');
+      const settingRelaySync = document.getElementById('setting-relay-sync');
+
+      let isMeshOnline = navigator.onLine !== false;
+
+      function updateMeshStatus(online) {
+        isMeshOnline = online;
+        if (meshPillText) meshPillText.textContent = online ? 'Voice Mesh Online' : 'Roaming • Queue Active';
+        if (meshPillIcon) meshPillIcon.textContent = online ? '🎙️' : '📡';
+        if (meshStatusLabel) {
+          meshStatusLabel.textContent = online ? '● Online (Local Area Link)' : '○ Roaming / Offline Mode';
+          meshStatusLabel.style.color = online ? '#16a34a' : '#f59e0b';
+        }
+        if (meshPingBadge) {
+          meshPingBadge.textContent = online ? 'CONNECTED' : 'ROAMING';
+          meshPingBadge.style.color = online ? '#16a34a' : '#f59e0b';
+          meshPingBadge.style.borderColor = online ? '#16a34a' : '#f59e0b';
+        }
+      }
+
+      function getOfflineQueue() {
+        try {
+          return JSON.parse(localStorage.getItem('delta_mesh_queue') || '[]');
+        } catch (e) {
+          return [];
+        }
+      }
+
+      function saveOfflineQueue(queue) {
+        try {
+          localStorage.setItem('delta_mesh_queue', JSON.stringify(queue));
+        } catch (e) {}
+        updateQueueDisplay();
+      }
+
+      function updateQueueDisplay() {
+        const count = getOfflineQueue().length;
+        if (meshQueueCount) {
+          meshQueueCount.textContent = `${count} pending message${count === 1 ? '' : 's'}`;
+        }
+      }
+
+      function enqueueOfflineMessage(msg) {
+        const queue = getOfflineQueue();
+        queue.push(msg);
+        saveOfflineQueue(queue);
+      }
+
+      async function dispatchToMesh(payload, rowElement) {
+        const deliveryTag = rowElement ? rowElement.querySelector('.msg-delivery-tag') : null;
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3500);
+
+          const res = await fetch('/api/messages/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+          });
+          clearTimeout(timeoutId);
+
+          if (!res.ok) throw new Error('Mesh response status not OK');
+          updateMeshStatus(true);
+          if (deliveryTag) {
+            deliveryTag.textContent = '✓ Delivered (Mesh)';
+            deliveryTag.style.color = '#16a34a';
+          }
+        } catch (err) {
+          // Temporarily disconnected or moving between Area 1 and Area 2
+          updateMeshStatus(false);
+          enqueueOfflineMessage(payload);
+          if (deliveryTag) {
+            deliveryTag.textContent = '🟡 Queued (Auto-syncing)';
+            deliveryTag.style.color = '#f59e0b';
+          }
+          showToast('📡 Saved in offline queue (Will auto-deliver on mesh reconnect)');
+        }
+      }
+
+      async function flushOfflineQueue() {
+        if (settingRelaySync && !settingRelaySync.checked) return;
+        const queue = getOfflineQueue();
+        if (!queue.length) return;
+
+        const remaining = [];
+        let syncedCount = 0;
+
+        for (const item of queue) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3500);
+            const res = await fetch('/api/messages/send', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(item),
+              signal: controller.signal
+            });
+            clearTimeout(timeoutId);
+
+            if (res.ok) {
+              syncedCount++;
+            } else {
+              remaining.push(item);
+            }
+          } catch (e) {
+            remaining.push(item);
+          }
+        }
+
+        saveOfflineQueue(remaining);
+
+        if (syncedCount > 0) {
+          updateMeshStatus(true);
+          playSound('click');
+          showToast(`⚡ Flushed ${syncedCount} queued message(s) to mesh!`);
+          document.querySelectorAll('.msg-delivery-tag').forEach(tag => {
+            if (tag.textContent.includes('Queued')) {
+              tag.textContent = '✓ Delivered (Mesh)';
+              tag.style.color = '#16a34a';
+            }
+          });
+        }
+      }
+
+      if (btnForceMeshSync) {
+        btnForceMeshSync.addEventListener('click', () => {
+          playSound('click');
+          showToast('Checking mesh hotspots and syncing...');
+          flushOfflineQueue();
+        });
+      }
+
+      window.addEventListener('online', () => {
+        updateMeshStatus(true);
+        flushOfflineQueue();
+      });
+
+      window.addEventListener('offline', () => {
+        updateMeshStatus(false);
+      });
+
+      // Periodic mesh check & roaming queue flush every 6s
+      setInterval(() => {
+        if (getOfflineQueue().length > 0) {
+          flushOfflineQueue();
+        }
+      }, 6000);
+
+      updateQueueDisplay();
 
       // Mobile Audio Context Unlock (prevents silent audio on first touch in mobile browsers)
       const unlockAudio = () => {
