@@ -16,6 +16,7 @@
     const dropZone = document.getElementById('spatial-drop-zone');
     const fileInput = document.getElementById('spatial-file-input');
     const btnAddMore = document.getElementById('btn-add-more-photos');
+    const btnLoadLabSamples = document.getElementById('btn-load-sample-lab-photos');
     const btnLoadSamples = document.getElementById('btn-load-sample-hall-photos');
     const btnClearPhotos = document.getElementById('btn-clear-staged-photos');
     const btnReconstruct = document.getElementById('btn-execute-3d-reconstruction');
@@ -59,7 +60,15 @@
       }
     });
 
-    // Sample Photos Demo Button (Instant 1-Click for evaluators/hackathons)
+    // St. Peter's Real Lab Photos (4 Real Photos)
+    if (btnLoadLabSamples) {
+      btnLoadLabSamples.addEventListener('click', (e) => {
+        e.stopPropagation();
+        loadRealLabSamplePhotos();
+      });
+    }
+
+    // Sample Photos Demo Button (Auditorium)
     if (btnLoadSamples) {
       btnLoadSamples.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -216,6 +225,60 @@
         renderStagedPhotosTray();
       });
     });
+  }
+
+  /**
+   * Loads 4 real-world multi-angle photos of St. Peter's College Computer Systems Lab
+   */
+  async function loadRealLabSamplePhotos() {
+    const photos = [
+      { path: '/sample_lab_photos/photo1_window_workstations.png', name: 'stpeters_lab_window_workstations.png', label: '🖥️ North Window Workstations' },
+      { path: '/sample_lab_photos/photo2_monitors_posters.png', name: 'stpeters_lab_monitors_posters.png', label: '🖥️ East Monitors & Notice Board' },
+      { path: '/sample_lab_photos/photo3_glass_partitions.png', name: 'stpeters_lab_glass_partitions.png', label: '🪟 South Glass Partitions & Desks' },
+      { path: '/sample_lab_photos/photo4_cubicle_cooler_ac.png', name: 'stpeters_lab_cubicle_cooler_ac.png', label: '❄️ West Cubicle, Cooler & AC' }
+    ];
+
+    try {
+      const loaded = [];
+      for (let i = 0; i < photos.length; i++) {
+        const p = photos[i];
+        const res = await fetch(p.path);
+        if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${p.path}`);
+        const blob = await res.blob();
+        const dataUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result);
+          reader.readAsDataURL(blob);
+        });
+        loaded.push({
+          id: `sample_lab_${i + 1}`,
+          name: p.name,
+          sizeKB: Math.round(blob.size / 1024),
+          dataUrl,
+          label: p.label
+        });
+      }
+
+      stagedRoomPhotos = loaded;
+      renderStagedPhotosTray();
+
+      const hallSelect = document.getElementById('spatial-target-hall-select');
+      if (hallSelect) {
+        const labOpt = Array.from(hallSelect.options).find(o => o.value === 'hall-lab' || o.text.toLowerCase().includes('lab'));
+        if (labOpt) {
+          hallSelect.value = labOpt.value;
+        }
+      }
+
+      if (typeof createToast === 'function') {
+        createToast("📸 Staged 4 Real Photos of St. Peter's College Systems Lab! Ready to reconstruct 3D twin.", 'success');
+      }
+    } catch (err) {
+      console.error('Failed to load lab photos:', err);
+      if (typeof createToast === 'function') {
+        createToast(`⚠️ Could not load lab photos: ${err.message}`, 'error');
+      }
+    }
   }
 
   /**
@@ -459,12 +522,18 @@
     const elFeatures = document.getElementById('spatial-features-list');
 
     if (elTitle) elTitle.textContent = `🏛️ ${sm.hallName} — 3D Digital Twin`;
-    if (elEngine) elEngine.textContent = `${sm.modelEngine || 'Gemini 2.0 Flash'} (${Math.round((sm.confidenceScore || 0.94) * 100)}% Confidence)`;
+    if (elEngine) elEngine.textContent = `${sm.modelEngine || 'NVIDIA Nemotron / Gemini 3'} (${Math.round((sm.confidenceScore || 0.95) * 100)}% Confidence)`;
     if (elDim) elDim.textContent = `${sm.dimensions.width}m × ${sm.dimensions.length}m (H: ${sm.dimensions.height}m)`;
     if (elArea) elArea.textContent = `${sm.dimensions.areaM2} m²`;
     if (elCap) elCap.textContent = `${sm.capacityMetrics.capacity} Pax (Safe Egress)`;
     if (elDoors) elDoors.textContent = `${sm.doorsCount} Gates (${sm.capacityMetrics.egressFlowRatePaxPerMin} pax/min)`;
-    if (elStage && sm.stage) elStage.textContent = `${sm.stage.width}m × ${sm.stage.length}m (Raised ${sm.stage.elevatedM}m)`;
+    if (elStage) {
+      if (!sm.stage || sm.stage.exists === false) {
+        elStage.textContent = 'None (Computer Workstation Lab)';
+      } else {
+        elStage.textContent = `${sm.stage.width}m × ${sm.stage.length}m (Raised ${sm.stage.elevatedM}m)`;
+      }
+    }
 
     // Update Slider inputs to match AI detection
     const sWidth = document.getElementById('slider-calib-width');
@@ -495,8 +564,9 @@
         capacity: sm.capacityMetrics.capacity,
         hallName: sm.hallName,
         doorsCount: sm.doorsCount,
-        currentOccupancy: window.cctvNetOccupancy || 45,
+        currentOccupancy: window.cctvNetOccupancy || 8,
         venueType: sm.venueType,
+        furniture: sm.furniture,
         stage: sm.stage,
         seating: sm.seating,
         doors: sm.doors,
@@ -517,13 +587,27 @@
     const canvas = document.getElementById('spatial-reconstruction-canvas');
     if (canvas && typeof RoomSpatialModelRenderer === 'function' && !active3dRenderer) {
       active3dRenderer = new RoomSpatialModelRenderer(canvas, {
-        width: 20,
-        length: 26,
-        height: 5.8,
-        capacity: 250,
-        hallName: 'Turing Hall',
-        doorsCount: 3,
-        currentOccupancy: 68
+        width: 10,
+        length: 13,
+        height: 3.2,
+        capacity: 20,
+        hallName: "St. Peter's College Systems Lab",
+        doorsCount: 1,
+        currentOccupancy: 8,
+        venueType: 'COMPUTER_LAB',
+        stage: { exists: false },
+        furniture: {
+          hasPerimeterComputerDesks: true,
+          desktopMonitorsCount: 16,
+          chairsCount: 18,
+          hasLargeWindowWall: true,
+          windowWall: 'NORTH',
+          hasGlassPartitions: true,
+          hasStorageCupboard: true,
+          hasEvaporativeCooler: true,
+          hasAcUnit: true,
+          deskArrangement: 'PERIMETER_WALLS'
+        }
       });
     }
   }
