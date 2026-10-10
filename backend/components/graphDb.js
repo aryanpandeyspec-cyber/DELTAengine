@@ -1,4 +1,5 @@
 const todayDateStr = new Date().toISOString().split('T')[0];
+const { hydrateStateFromDisk, persistStateDebounced, clearPersistentState } = require('./persistentStore');
 
 const db = {
   activeDate: todayDateStr,
@@ -314,9 +315,12 @@ const db = {
 
     this.schedulesByDate[todayStr] = resetSched;
     this.syncScheduleEdges();
+    clearPersistentState();
   }
 };
 
 db.syncScheduleEdges();
+hydrateStateFromDisk(db);
+db.persist = () => persistStateDebounced(db);
 
 module.exports = db;

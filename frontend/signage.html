@@ -1111,6 +1111,10 @@
               currentOccupancy = payload.data.occupancy ?? (currentOccupancy + 1);
               renderRealCapacityGauge();
             }
+          } else if (payload.type === 'EMERGENCY_EVACUATION' || payload.type === 'MASS_DISRUPTION' || (payload.data && payload.data.isMassDisruption)) {
+            triggerEmergencySignageInversion(payload.data || {});
+          } else if (payload.type === 'EMERGENCY_CLEAR' || payload.type === 'SYSTEM_RESET') {
+            clearEmergencySignageInversion();
           }
         } catch (err) {
           console.warn('[Signage WS]', err);
@@ -1149,6 +1153,67 @@
         console.error('State load error:', err);
         initWebSocket();
       });
+
+    // --- LIFE SAFETY EMERGENCY SIGNAGE INVERSION ENGINE ---
+    function triggerEmergencySignageInversion(data = {}) {
+      let overlay = document.getElementById('signage-emergency-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'signage-emergency-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100vw';
+        overlay.style.height = '100vh';
+        overlay.style.zIndex = '999999';
+        overlay.style.background = '#0a0a0a';
+        overlay.style.color = '#ffffff';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.padding = '40px';
+        overlay.style.boxSizing = 'border-box';
+        overlay.style.border = '12px solid #ef4444';
+        document.body.appendChild(overlay);
+      }
+
+      overlay.innerHTML = `
+        <div style="font-family:'Space Grotesk',sans-serif; text-align:center; max-width:1100px;">
+          <div style="background:#ef4444; color:#000000; font-weight:900; font-size:1.6rem; padding:10px 24px; border-radius:8px; display:inline-block; letter-spacing:2px; margin-bottom:24px;">
+            ⚠️ NFPA LIFE SAFETY: EMERGENCY EGRESS DIVERSION ACTIVE
+          </div>
+          <h1 style="font-size:3.2rem; font-weight:900; margin:0 0 16px 0; color:#ffffff; line-height:1.1;">
+            PROCEED CALMLY TO EAST WING & GATE B
+          </h1>
+          <p style="font-size:1.4rem; color:#9ca3af; margin:0 0 36px 0;">
+            Central corridor congestion threshold exceeded. Follow green illuminated arrows away from hazard zones.
+          </p>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:40px; text-align:left;">
+            <div style="background:#14532d; border:3px solid #22c55e; border-radius:12px; padding:24px;">
+              <div style="font-size:1.1rem; font-weight:800; color:#86efac; margin-bottom:8px;">🟢 CLEAR EGRESS ROUTE</div>
+              <div style="font-size:1.8rem; font-weight:900; color:#ffffff;">GATE B (EAST FOYER)</div>
+              <div style="font-size:1rem; color:#bbf7d0; margin-top:6px;">Flow Capacity: 100 pax/min • Direct Outdoor Access</div>
+            </div>
+            <div style="background:#7f1d1d; border:3px solid #ef4444; border-radius:12px; padding:24px;">
+              <div style="font-size:1.1rem; font-weight:800; color:#fca5a5; margin-bottom:8px;">⛔ CONGESTED / DO NOT ENTER</div>
+              <div style="font-size:1.8rem; font-weight:900; color:#ffffff;">TURING HALL MAIN CORRIDOR</div>
+              <div style="font-size:1rem; color:#fecaca; margin-top:6px;">Choke Point Detected • Marshals Diverting Flow</div>
+            </div>
+          </div>
+
+          <div style="font-size:1.1rem; color:#e5e7eb; background:#1f2937; padding:14px 28px; border-radius:8px; border:2px solid #374151; display:inline-block;">
+            📢 AUDIO RELAY: Automated PA instructions broadcasting on foyer speakers. Do not stop in doorway thresholds.
+          </div>
+        </div>
+      `;
+    }
+
+    function clearEmergencySignageInversion() {
+      const overlay = document.getElementById('signage-emergency-overlay');
+      if (overlay) overlay.remove();
+    }
   </script>
   <script src="components/customCursor.js?v=cursorFix4"></script>
 </body>

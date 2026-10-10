@@ -12,7 +12,18 @@ const db = require('./components/graphDb');
 const { runSelfHealingAgent } = require('./components/selfHealing');
 const { setGroqApiKey, getGroqApiKey } = require('./components/agentSwarm');
 const { loadGraphFromSupabase } = require('./components/supabaseDb');
-const { escapeHtml, rateLimiter, validateSlideFile } = require('./components/security');
+const { 
+  escapeHtml, 
+  rateLimiter, 
+  validateSlideFile, 
+  generateJwt, 
+  verifyJwt, 
+  OPERATOR_CREDENTIALS, 
+  authenticateToken, 
+  requireRole, 
+  appendForensicAuditLog, 
+  getForensicAuditLogs 
+} = require('./components/security');
 const { getScenarios, getScenario, getActiveScenario, setActiveScenario, getScenarioGraph } = require('./components/scenarioManager');
 const { processOperationalTelemetry, detectIncidentsFromTelemetry, assessOperationalImpact, solveOperationalAction, executeOperationalAction } = require('./components/operationsEngine');
 const { evaluateTelemetryRequirements, evaluateActionFeasibility } = require('./components/incidentModel');
@@ -90,6 +101,54 @@ app.get('/volunteer', (req, res) => {
 
 app.get('/download-deck', (req, res) => {
   res.download(path.join(__dirname, '../DELTA_ENGINE_Presentation.pptx'));
+});
+
+// --- ROLE-BASED AUTHENTICATION & JWT ENDPOINTS (DELTA ENGINE v3.6) ---
+app.post('/api/auth/login', (req, res) => {
+  const { username, role } = req.body || {};
+  const targetUsername = username || (role === 'admin' ? 'admin_marcus' : 'Suryansh');
+  const userRecord = OPERATOR_CREDENTIALS[targetUsername] || {
+    id: `usr_${Date.now()}`,
+    name: targetUsername,
+    role: (role === 'admin' ? 'ADMIN' : (role ? String(role).toUpperCase() : 'COORDINATOR')),
+    title: role === 'admin' ? 'Super Admin & Systems Commander' : 'Lead Operations Coordinator'
+  };
+
+  const token = generateJwt({
+    id: userRecord.id,
+    name: userRecord.name,
+    role: userRecord.role,
+    title: userRecord.title
+  });
+
+  appendForensicAuditLog('OPERATOR_LOGIN', userRecord.name, userRecord.role, 'AUTH_PORTAL', {
+    ip: req.ip,
+    role: userRecord.role
+  });
+
+  res.json({
+    success: true,
+    token,
+    user: userRecord,
+    message: `Authenticated as ${userRecord.name} (${userRecord.role})`
+  });
+});
+
+app.get('/api/auth/me', authenticateToken, (req, res) => {
+  res.json({
+    success: true,
+    user: req.user
+  });
+});
+
+app.get('/api/audit/forensic-logs', authenticateToken, (req, res) => {
+  const limit = parseInt(req.query.limit || '50', 10);
+  const logs = getForensicAuditLogs(limit);
+  res.json({
+    success: true,
+    count: logs.length,
+    logs
+  });
 });
 
 // Configure multer with strict file size limits (20MB max)
@@ -1171,6 +1230,7 @@ app.post('/api/schedule/import', (req, res) => {
       if (typeof db.syncScheduleEdges === 'function') {
         db.syncScheduleEdges();
       }
+      if (typeof db.persist === 'function') db.persist();
 
       broadcast({
         type: 'INIT_STATE',
@@ -1218,6 +1278,7 @@ app.post('/api/schedule/revert', (req, res) => {
       db.graph = JSON.parse(JSON.stringify(db.lastPreImportGraph));
     }
     if (typeof db.syncScheduleEdges === 'function') db.syncScheduleEdges();
+    if (typeof db.persist === 'function') db.persist();
     broadcast({
       type: 'INIT_STATE',
       data: { graph: db.graph, schedule: db.schedule, activeDate: db.activeDate }
@@ -2003,6 +2064,7 @@ app.post('/api/schedule/move', async (req, res) => {
   db.schedule[targetSlotId][targetHallId] = topicId;
   db.schedulesByDate[db.activeDate] = db.schedule;
   db.syncScheduleEdges();
+  if (typeof db.persist === 'function') db.persist();
 
   const topicTitle = db.graph.topics[topicId]?.title || topicId;
   const targetHallName = db.graph.halls[targetHallId]?.name || targetHallId;

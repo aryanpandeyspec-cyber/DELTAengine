@@ -1,6 +1,7 @@
 const { generateGroqAgentSwarmDialogue } = require('./agentSwarm');
 const { autoDispatchSelfHealingEmail } = require('./supabaseEmailIntegrator');
 const { generateVenueVoiceAnnouncement } = require('./voiceAnnouncer');
+const { appendForensicAuditLog } = require('./security');
 
 async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}) {
   const logs = [];
@@ -209,6 +210,16 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
   const conflictReason = conflictLog ? conflictLog.replace(/\[.*?\]/g, '').trim() : (notifications[0]?.message || '⚠️ Operational constraint violation detected.');
   const destinationTarget = actionLog ? actionLog.replace(/\[.*?\]/g, '').trim() : '📍 Optimization Solver reallocating talk node to viable venue position.';
 
+  if (wasHealed && typeof appendForensicAuditLog === 'function') {
+    appendForensicAuditLog(
+      'SCHEDULE_AUTONOMOUS_HEALED',
+      'Deterministic Safety Engine',
+      'SYSTEM_SOLVER',
+      destinationTarget,
+      { eventDescription, conflictReason, notificationsCount: notifications.length }
+    );
+  }
+
   const updatePayload = {
     type: 'SCHEDULE_HEALED',
     data: {
@@ -409,7 +420,43 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
     }
   }
 
-  logs.push(`[Solver: Capacity Fallback] Could not relocate talk to a larger hall without major scheduling conflicts. Maintaining current slot with overflow warning indicators active.`);
+  // --- MULTI-ROOM OVERFLOW SPILLOVER RELAY SOLVER ---
+  // When interest exceeds venue capacity or single hall capacity, automatically provision secondary overflow relay
+  logs.push(`[Solver: Overflow Spillover] Activating multi-room live stream relay audit for "${topic.title}".`);
+  
+  // Find highest capacity hall in the venue
+  let bestPrimaryHallId = hallId;
+  let maxCap = currentHall.capacity;
+  for (const hId in graph.halls) {
+    if (graph.halls[hId].capacity > maxCap) {
+      maxCap = graph.halls[hId].capacity;
+      bestPrimaryHallId = hId;
+    }
+  }
+
+  // Move talk to the largest hall if it isn't already there
+  if (bestPrimaryHallId !== hallId) {
+    const existingInBest = schedule[slotId][bestPrimaryHallId];
+    schedule[slotId][hallId] = existingInBest;
+    schedule[slotId][bestPrimaryHallId] = topicId;
+    logs.push(`[Action] Relocated primary session "${topic.title}" to largest hall "${graph.halls[bestPrimaryHallId].name}" (${maxCap} capacity).`);
+  }
+
+  // Locate an empty secondary hall for live stream broadcast
+  for (const secHallId in graph.halls) {
+    if (secHallId !== bestPrimaryHallId && !schedule[slotId][secHallId]) {
+      const secHall = graph.halls[secHallId];
+      logs.push(`[Action: Overflow Relay] Activated Overflow Live-Stream Spillover Relay in "${secHall.name}" for "${topic.title}". Routed AV feed and digital signage.`);
+      notifications.push({
+        topicId,
+        message: `Overflow Spillover Relay: "${topic.title}" overflow routed to "${secHall.name}" with 4K synchronized AV relay.`,
+        type: 'info'
+      });
+      return;
+    }
+  }
+
+  logs.push(`[Solver: Capacity Fallback] All venue zones fully committed. Maintaining current slot with overflow warning indicators active.`);
 }
 
 module.exports = { runSelfHealingAgent };

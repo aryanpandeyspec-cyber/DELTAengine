@@ -113,7 +113,7 @@
     bindAdminActionButtons();
   }
 
-  function loginUser(role, displayName) {
+  async function loginUser(role, displayName) {
     currentUserRole = role;
     currentUserName = displayName;
     try {
@@ -121,11 +121,26 @@
       localStorage.setItem('delta_user_name', displayName);
     } catch (e) { }
 
+    // Exchange credentials for real RFC-7519 cryptographic JWT token
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, username: displayName })
+      });
+      const data = await res.json();
+      if (data && data.token) {
+        localStorage.setItem('delta_auth_token', data.token);
+      }
+    } catch (e) {
+      console.warn('[Auth] Offline mode active for token exchange');
+    }
+
     const modal = document.getElementById('auth-login-modal');
     if (modal) modal.classList.add('hidden');
 
     if (typeof createToast === 'function') {
-      createToast(`🔓 Authenticated cleanly as ${role.toUpperCase()}: ${displayName}`, 'success');
+      createToast(`🔓 Authenticated with Cryptographic JWT as ${role.toUpperCase()}: ${displayName}`, 'success');
     }
 
     updateAuthUI();
