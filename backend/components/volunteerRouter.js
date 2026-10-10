@@ -240,9 +240,7 @@ async function dispatchHallTargetedAlert({ hallId, eventType, details = {}, db, 
   const hallName = getHallDisplayName(normHall, db);
   const { assigned, excludedCount, excludedList } = getAssignedPersonnelForHall(normHall, db);
 
-  console.log(`\n🎯 [Targeted Dispatch] Hall: "${hallName}" (${normHall}) | Alert: ${eventType}`);
-  console.log(`   👥 Targeted Personnel: ${assigned.map(a => `${a.name} (${a.role})`).join(', ') || 'None assigned'}`);
-  console.log(`   🚫 Excluded Staff at other venues: ${excludedCount} personnel (No spam delivered)\n`);
+  console.log(`[Volunteer Router] 🎯 Alert: ${eventType} at "${hallName}" (${normHall}) | Notified: ${assigned.length} assigned (${excludedCount} excluded)`);
 
   const dispatchResults = [];
   const assignedVolunteersPayload = [];

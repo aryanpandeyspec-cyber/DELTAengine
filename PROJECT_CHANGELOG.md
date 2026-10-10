@@ -50,6 +50,17 @@ This ledger provides an unabridged audit trail for all engineering work on DELTA
 
 ## 3. Chronological Release History
 
+### v3.6.1 (October 2026) — Clean Dev Terminal Streamlining & High-Frequency Telemetry Throttling
+- **Objective**: Eliminate high-volume terminal logging clutter produced during `npm run dev` and live sensor execution, creating a clean, professional, and readable developer console while guaranteeing 100% feature preservation and zero regressions.
+- **Key Deliverables**:
+  1. **Clean Dev Startup Screen**: Configured ANSI clear codes (`\x1B[2J\x1B[3J\x1B[H`) and clean ASCII status banner displaying web app, admin console, and digital signage URLs.
+  2. **Silenced Dotenv Injection Banners**: Enforced `process.env.DOTENV_CONFIG_QUIET = 'true'` and `{ quiet: true }` across all entry points, eliminating promotional banner injection noise.
+  3. **High-Frequency Telemetry Throttling**: Implemented `TELEMETRY_LOG_COOLDOWN_MS = 6000` cooldown for routine `/api/sensors/door` and `/api/sensors/face-passage` events while instantly emitting critical state transitions (barricade pressure release $>8.5\text{ PSI}$, occupancy $\ge 80\%$, room full $\ge 95\%$).
+  4. **Twilio WhatsApp Simulation Aggregation**: Aggregated simulated notification logs into compact batch summaries, preventing 100+ line floods during multi-person emergency alerts.
+  5. **Agent Swarm & Mailer Resiliency Logging**: Replaced verbose Groq 429 candidate retry warnings with a single clean fallback transition; silenced local schema cache notices.
+  6. **Compact Module Output**: Streamlined multi-line logs in `volunteerRouter.js` and `spatial3dEngine.js` into concise single-line entries.
+  7. **Full Test Suite Integrity**: Verified 64/64 tests passing (100% pass rate).
+
 ### v3.6 (October 2026) — Autonomous Crowd Operations Engine, Three.js PBR 3D Twin & NVIDIA NIM
 - **Objective**: Merge and unify `aryan` branch updates with `main`: generalized crowd safety operations across 5 event domains, high-precision Three.js PBR 3D venue renderer with directional soft shadows, NVIDIA Nemotron NIM spatial engine, targeted volunteer router, and comprehensive 64-test regression runner.
 - **Key Deliverables**:

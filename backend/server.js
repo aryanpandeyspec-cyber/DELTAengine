@@ -1,6 +1,7 @@
 const dns = require('dns');
 try { dns.setDefaultResultOrder('ipv4first'); } catch (e) {}
-require('dotenv').config();
+process.env.DOTENV_CONFIG_QUIET = 'true';
+require('dotenv').config({ quiet: true });
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
@@ -910,6 +911,11 @@ app.get('/api/sensors/doors/mesh', (req, res) => {
   res.json({ success: true, gates: db.gatesMesh, netOccupancy: doorSensorNetOccupancy });
 });
 
+// Telemetry console log throttling to keep terminal clean during high-frequency sensor ticks
+let lastLoggedDoorTick = 0;
+let lastLoggedFaceTick = 0;
+const TELEMETRY_LOG_COOLDOWN_MS = 6000;
+
 app.post('/api/sensors/door', async (req, res) => {
   const { event, hallId, netOccupancy, entries, exits, dist1, dist2, gateId, gateName } = req.body;
   const targetHallId = hallId || 'hall-1';
@@ -963,7 +969,11 @@ app.post('/api/sensors/door', async (req, res) => {
     currentGate.net++;
     currentGate.lastUpdated = timeStr;
 
-    console.log(`[IoT Door Sensor] 💡 [${targetGateName}] Glow Passage Registered (+1 In) -> Total In: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax`);
+    const nowTrigger = Date.now();
+    if (nowTrigger - lastLoggedDoorTick > TELEMETRY_LOG_COOLDOWN_MS) {
+      lastLoggedDoorTick = nowTrigger;
+      console.log(`[IoT Door Sensor] 💡 [${targetGateName}] Glow Passage Registered (+1 In) -> Total In: ${doorSensorTotalEntries}, Net: ${doorSensorNetOccupancy} Pax`);
+    }
 
     // Update db.cctvState
     if (db.cctvState && db.cctvState[targetHallId]) {
@@ -1030,9 +1040,12 @@ app.post('/api/sensors/door', async (req, res) => {
   }
   currentGate.lastUpdated = timeStr;
 
-  const occupancy = parseInt(netOccupancy, 10) || doorSensorNetOccupancy;
-
-  console.log(`[IoT Door Sensor] ${event} at ${targetGateName}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries || doorSensorTotalEntries}, Out: ${exits || doorSensorTotalExits})`);
+  const nowDoor = Date.now();
+  const isHighOccupancy = occupancy >= (hall.capacity * 0.8);
+  if (isHighOccupancy || (nowDoor - lastLoggedDoorTick > TELEMETRY_LOG_COOLDOWN_MS)) {
+    lastLoggedDoorTick = nowDoor;
+    console.log(`[IoT Door Sensor] ${event} at ${targetGateName}: Hall ${hall.name} | Occupancy: ${occupancy}/${hall.capacity} pax (In: ${entries || doorSensorTotalEntries}, Out: ${exits || doorSensorTotalExits})`);
+  }
 
   // Update db.cctvState
   if (db.cctvState && db.cctvState[targetHallId]) {
@@ -1115,7 +1128,12 @@ app.post('/api/sensors/face-passage', async (req, res) => {
   const emptyPct = Math.max(0, 100 - occupiedPct);
   const status = occupiedPct >= 95 ? 'ROOM_FULL' : occupiedPct >= 80 ? 'NEAR_CAPACITY' : occupiedPct <= 10 ? 'EMPTY' : 'OPTIMAL';
 
-  console.log(`[Face Perception] ${event}: ${attendeeName} (${attendeeId}) | Hall Occupancy: ${occupancy}/${hall.capacity} (${occupiedPct}%)`);
+  const nowFace = Date.now();
+  const isFaceCritical = status === 'ROOM_FULL' || status === 'NEAR_CAPACITY';
+  if (isFaceCritical || (nowFace - lastLoggedFaceTick > TELEMETRY_LOG_COOLDOWN_MS)) {
+    lastLoggedFaceTick = nowFace;
+    console.log(`[Face Perception] ${event}: ${attendeeName} (${attendeeId}) | Hall Occupancy: ${occupancy}/${hall.capacity} (${occupiedPct}%)`);
+  }
 
   const passageData = {
     event,
@@ -2103,7 +2121,26 @@ app.get('/api/sensors/camera/latest', (req, res) => {
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
   server.listen(PORT, async () => {
-    console.log(`[DELTA ENGINE] Running on http://localhost:${PORT}`);
+    if (!process.env.CI) {
+      try {
+        console.clear();
+        process.stdout.write('\x1B[2J\x1B[3J\x1B[H');
+      } catch (e) {}
+    }
+    console.log([
+      '',
+      '  ┌────────────────────────────────────────────────────────────────────────┐',
+      '  │   ⚡ DELTA ENGINE v3.6 — Autonomous Spatial & Crowd Operating System    │',
+      '  ├────────────────────────────────────────────────────────────────────────┤',
+      `  │   ➜ Local Web App:     http://localhost:${PORT}                           │`,
+      `  │   ➜ Admin Console:     http://localhost:${PORT}/admin.html                     │`,
+      `  │   ➜ Digital Signage:   http://localhost:${PORT}/signage.html                   │`,
+      '  │   ➜ Active Domains:    5 Scenarios (Conference, Rally, Mela, ...)      │',
+      '  │   ➜ Telemetry & Twin:  Three.js PBR Engine + IoT Laser Tripwires       │',
+      '  │   ➜ Dev Server:        Live Watcher Active (backend/)                  │',
+      '  └────────────────────────────────────────────────────────────────────────┘',
+      ''
+    ].join('\n'));
     await loadGraphFromSupabase(db);
   });
 }

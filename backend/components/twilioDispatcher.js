@@ -17,6 +17,9 @@ function isTwilioConfigured() {
   return true;
 }
 
+let simAlertBatchCount = 0;
+let lastSimLogTime = 0;
+
 /**
  * Dispatches an automated WhatsApp alert via Twilio REST API.
  * Gracefully falls back to web-intent click-to-chat links if credentials are in sandbox/demo mode.
@@ -28,7 +31,13 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
   const waUrl = `https://wa.me/${formattedPhone.replace('+', '')}?text=${encodeURIComponent(messageText)}`;
 
   if (!isTwilioConfigured()) {
-    console.log(`[Twilio WhatsApp] 💬 Simulation Mode: Alert queued for ${recipientName} (${formattedPhone}). Real credentials not detected.`);
+    simAlertBatchCount++;
+    const now = Date.now();
+    if (now - lastSimLogTime > 3000) {
+      lastSimLogTime = now;
+      console.log(`[Twilio WhatsApp] 💬 Simulation Mode: Alert queued for ${recipientName} (${formattedPhone})${simAlertBatchCount > 1 ? ` [+${simAlertBatchCount - 1} personnel]` : ''}`);
+      simAlertBatchCount = 0;
+    }
     return {
       success: true,
       mode: 'SIMULATED_CLICK_TO_CHAT',

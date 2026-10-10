@@ -56,11 +56,17 @@ async function callSpecializedAgent(agentKey, systemPrompt, userPrompt, apiKey) 
           // Remove Markdown headers or quotes if LLM added them
           return content.replace(/^["'\s]+|["'\s]+$/g, '').replace(/^#+\s*/gm, '');
         }
-      } else {
+      } else if (response.status === 429) {
+        if (model === CANDIDATE_MODELS[0]) {
+          console.warn(`[Groq Swarm] Rate limit (429) reached. Transitioning smoothly to deterministic agent swarm.`);
+        }
+      } else if (process.env.DEBUG_SWARM) {
         console.warn(`[Groq Model ${model}]: Status ${response.status}. Trying next candidate...`);
       }
     } catch (err) {
-      console.warn(`[Groq Model ${model} Error]:`, err.message);
+      if (err.name !== 'AbortError' && process.env.DEBUG_SWARM) {
+        console.warn(`[Groq Model ${model}]:`, err.message);
+      }
     }
   }
 
