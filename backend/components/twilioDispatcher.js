@@ -19,10 +19,15 @@ function isTwilioConfigured() {
 
 let simAlertBatchCount = 0;
 let lastSimLogTime = 0;
+let circuitBreakerUntil = 0;
+let lastTwilioRequestTime = 0;
+let lastLoggedError = '';
+let lastLoggedErrorTime = 0;
 
 /**
  * Dispatches an automated WhatsApp alert via Twilio REST API.
- * Gracefully falls back to web-intent click-to-chat links if credentials are in sandbox/demo mode.
+ * Gracefully falls back to web-intent click-to-chat links if credentials are in sandbox/demo mode
+ * or if Twilio rate limits / circuit-breaker triggers.
  */
 async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText }) {
   const cleanPhone = (phoneNumber || '').replace(/[^0-9+]/g, '');
@@ -30,6 +35,7 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const waUrl = `https://wa.me/${formattedPhone.replace('+', '')}?text=${encodeURIComponent(messageText)}`;
 
+  // 1. If Twilio credentials missing/invalid, use simulated intent
   if (!isTwilioConfigured()) {
     simAlertBatchCount++;
     const now = Date.now();
@@ -51,6 +57,29 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
     };
   }
 
+  // 2. Circuit Breaker Check (Tripped when Twilio rate limits us)
+  const now = Date.now();
+  if (now < circuitBreakerUntil) {
+    return {
+      success: true,
+      mode: 'CIRCUIT_BREAKER_FALLBACK',
+      sid: 'wa_cb_' + Date.now(),
+      recipientName,
+      phoneNumber: formattedPhone,
+      messageText,
+      timestamp,
+      waUrl,
+      note: 'Twilio rate limit cooldown active; dispatched via web-intent fallback.'
+    };
+  }
+
+  // 3. Inter-request rate pacing (Max 1 request per 1000ms to stay within Twilio limits)
+  const timeSinceLastReq = now - lastTwilioRequestTime;
+  if (timeSinceLastReq < 1000) {
+    await new Promise(r => setTimeout(r, 1000 - timeSinceLastReq));
+  }
+  lastTwilioRequestTime = Date.now();
+
   const accountSid = process.env.TWILIO_ACCOUNT_SID;
   const authToken = process.env.TWILIO_AUTH_TOKEN || process.env.TWILIO_API_SECRET;
   const fromNumber = process.env.TWILIO_WHATSAPP_NUMBER || 'whatsapp:+14155238886'; // Default Twilio WhatsApp sandbox
@@ -62,7 +91,6 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
     params.append('To', formattedPhone.startsWith('whatsapp:') ? formattedPhone : `whatsapp:${formattedPhone}`);
     params.append('Body', messageText);
 
-    console.log(`[Twilio WhatsApp] 🚀 Sending real WhatsApp message via Twilio API to ${formattedPhone}...`);
     const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
       method: 'POST',
       headers: {
@@ -74,7 +102,7 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
 
     const data = await res.json();
     if (res.ok) {
-      console.log(`[Twilio WhatsApp] ✅ Message delivered! Twilio SID: ${data.sid}`);
+      console.log(`[Twilio WhatsApp] ✅ Message delivered to ${recipientName} (${formattedPhone})! Twilio SID: ${data.sid}`);
       return {
         success: true,
         mode: 'TWILIO_REST_API',
@@ -87,10 +115,25 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
         status: data.status
       };
     } else {
-      console.warn('[Twilio WhatsApp] Twilio API responded with error:', data.message || data);
+      const errMsg = data.message || JSON.stringify(data);
+      const isRateLimit = res.status === 429 || (errMsg && errMsg.toLowerCase().includes('rate limit'));
+
+      if (isRateLimit) {
+        // Trip circuit breaker for 60 seconds
+        circuitBreakerUntil = Date.now() + 60000;
+        console.warn(`[Twilio WhatsApp] ⏳ Twilio rate limit reached. Circuit breaker engaged for 60s (falling back to web-intent links for all staff).`);
+      } else {
+        const errorNow = Date.now();
+        if (errMsg !== lastLoggedError || errorNow - lastLoggedErrorTime > 15000) {
+          lastLoggedError = errMsg;
+          lastLoggedErrorTime = errorNow;
+          console.warn(`[Twilio WhatsApp] Twilio notice: ${errMsg}`);
+        }
+      }
+
       return {
         success: false,
-        error: data.message || 'Twilio API error',
+        error: errMsg,
         mode: 'FALLBACK_TO_INTENT',
         waUrl,
         recipientName,
@@ -100,7 +143,12 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
       };
     }
   } catch (err) {
-    console.error('[Twilio WhatsApp] Exception sending message:', err.message);
+    const errorNow = Date.now();
+    if (err.message !== lastLoggedError || errorNow - lastLoggedErrorTime > 15000) {
+      lastLoggedError = err.message;
+      lastLoggedErrorTime = errorNow;
+      console.warn('[Twilio WhatsApp] Network notice:', err.message);
+    }
     return {
       success: false,
       error: err.message,

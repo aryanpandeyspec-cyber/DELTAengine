@@ -2431,13 +2431,15 @@ app.post('/api/sensors/camera', async (req, res) => {
     data: cameraPayload
   });
 
-  // Evaluate Volunteer & Coordinator Notification triggers ONLY on state transition
+  // Evaluate Volunteer & Coordinator Notification triggers ONLY on state transition with per-hall cooldown
   const now = Date.now();
-  if (lastCctvAlertState !== currentStatus) {
-    if (currentStatus === 'ROOM_FULL' || occupiedPercent >= 95) {
-      lastCctvAlertState = 'ROOM_FULL';
-      lastAlertTimestamp = now;
+  if (!db.lastCctvAlerts) db.lastCctvAlerts = {};
+  const prevHallAlert = db.lastCctvAlerts[targetHallId] || { status: null, timestamp: 0 };
 
+  if (prevHallAlert.status !== currentStatus && (now - prevHallAlert.timestamp > 30000)) {
+    db.lastCctvAlerts[targetHallId] = { status: currentStatus, timestamp: now };
+
+    if (currentStatus === 'ROOM_FULL' || occupiedPercent >= 95) {
       await dispatchHallTargetedAlert({
         hallId: targetHallId,
         eventType: 'ROOM_FULL',
@@ -2454,9 +2456,6 @@ app.post('/api/sensors/camera', async (req, res) => {
       });
 
     } else if (currentStatus === 'NEAR_CAPACITY' || (occupiedPercent >= 80 && occupiedPercent < 95)) {
-      lastCctvAlertState = 'NEAR_CAPACITY';
-      lastAlertTimestamp = now;
-
       await dispatchHallTargetedAlert({
         hallId: targetHallId,
         eventType: 'ROOM_80_PERCENT',
@@ -2473,9 +2472,6 @@ app.post('/api/sensors/camera', async (req, res) => {
       });
 
     } else if (currentStatus === 'EMPTY' || occupiedPercent <= 10) {
-      lastCctvAlertState = 'EMPTY';
-      lastAlertTimestamp = now;
-
       await dispatchHallTargetedAlert({
         hallId: targetHallId,
         eventType: 'ROOM_EMPTY',
@@ -2490,9 +2486,6 @@ app.post('/api/sensors/camera', async (req, res) => {
         broadcast,
         sendWhatsAppNotification
       });
-
-    } else if (currentStatus === 'OPTIMAL') {
-      lastCctvAlertState = 'OPTIMAL';
     }
   }
 
