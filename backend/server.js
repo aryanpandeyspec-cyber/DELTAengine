@@ -187,13 +187,14 @@ app.post('/api/rooms/update', (req, res) => {
 });
 
 app.post('/api/voice/broadcast', (req, res) => {
-  const { sender, channel, target, text } = req.body;
+  const { sender, channel, target, text, audioData } = req.body;
   const broadcastData = {
     id: 'voice_' + Date.now(),
     sender: sender || 'Coordinator',
     channel: channel || '1',
     target: target || 'All Mesh Channels',
     text: text || 'Voice dispatch',
+    audioData: audioData || null, // Base64 audio blob for real audio walkie-talkie
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };
 
@@ -221,6 +222,145 @@ app.post('/api/action/dispatch', (req, res) => {
   });
 
   res.json({ success: true, action: dispatchData });
+});
+
+// DELTA Incident & Task Dispatch Board Endpoints
+if (!db.incidentTasks) {
+  db.incidentTasks = [
+    {
+      id: 'task_init_1',
+      title: 'Stage mic 2 lapel battery replacement',
+      location: 'Room 2 (Lovelace Suite)',
+      priority: 'urgent',
+      status: 'open',
+      claimedBy: null,
+      creator: 'Shahid',
+      timestamp: '11:20 AM'
+    },
+    {
+      id: 'task_init_2',
+      title: 'Restock 20 water bottles for speaker greenroom',
+      location: 'Room 1 (Turing Hall)',
+      priority: 'normal',
+      status: 'claimed',
+      claimedBy: 'Volunteer Runner',
+      creator: 'Suryansh',
+      timestamp: '11:35 AM'
+    }
+  ];
+}
+
+app.get('/api/tasks', (req, res) => {
+  res.json({ success: true, tasks: db.incidentTasks || [] });
+});
+
+app.post('/api/tasks/create', (req, res) => {
+  const { title, location, priority, creator } = req.body;
+  if (!title) return res.status(400).json({ error: 'Task title is required' });
+  const newTask = {
+    id: 'task_' + Date.now(),
+    title,
+    location: location || 'General Area',
+    priority: priority || 'normal',
+    status: 'open',
+    claimedBy: null,
+    creator: creator || 'Coordinator',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+  if (!db.incidentTasks) db.incidentTasks = [];
+  db.incidentTasks.unshift(newTask);
+
+  broadcast({
+    type: 'TASK_CREATED',
+    data: newTask
+  });
+
+  res.json({ success: true, task: newTask, tasks: db.incidentTasks });
+});
+
+app.post('/api/tasks/claim', (req, res) => {
+  const { taskId, claimedBy } = req.body;
+  if (!db.incidentTasks) return res.status(404).json({ error: 'No tasks found' });
+  const task = db.incidentTasks.find(t => t.id === taskId);
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+  task.status = 'claimed';
+  task.claimedBy = claimedBy || 'Volunteer';
+
+  broadcast({
+    type: 'TASK_UPDATED',
+    data: task
+  });
+
+  res.json({ success: true, task, tasks: db.incidentTasks });
+});
+
+app.post('/api/tasks/resolve', (req, res) => {
+  const { taskId, resolvedBy } = req.body;
+  if (!db.incidentTasks) return res.status(404).json({ error: 'No tasks found' });
+  const task = db.incidentTasks.find(t => t.id === taskId);
+  if (!task) return res.status(404).json({ error: 'Task not found' });
+  task.status = 'resolved';
+  task.resolvedBy = resolvedBy || 'Volunteer';
+
+  broadcast({
+    type: 'TASK_UPDATED',
+    data: task
+  });
+
+  res.json({ success: true, task, tasks: db.incidentTasks });
+});
+
+// Attendee QR Code Badge Verification Endpoints
+if (!db.attendeeCheckins) {
+  db.attendeeCheckins = [
+    { code: 'DELTA-8492', name: 'Dr. Aditi Rao', passType: 'VIP Keynote', roomAccess: 'All Rooms (1-5)', checkInTime: '10:05 AM', status: 'valid' },
+    { code: 'DELTA-1024', name: 'Vikram Mehta', passType: 'Core Delegate', roomAccess: 'Room 1, 2, 4', checkInTime: '10:18 AM', status: 'valid' },
+    { code: 'DELTA-5591', name: 'Priya Sharma', passType: 'General Attendee', roomAccess: 'Room 3, 5', checkInTime: '10:45 AM', status: 'valid' }
+  ];
+}
+
+app.get('/api/attendees/checkin-stats', (req, res) => {
+  res.json({
+    success: true,
+    totalCheckedIn: db.attendeeCheckins ? db.attendeeCheckins.length : 0,
+    recent: (db.attendeeCheckins || []).slice(-6).reverse()
+  });
+});
+
+app.post('/api/attendees/verify-badge', (req, res) => {
+  const { code, scannedBy } = req.body;
+  if (!code) return res.status(400).json({ error: 'Badge code is required' });
+
+  const upperCode = code.trim().toUpperCase();
+  const existing = (db.attendeeCheckins || []).find(a => a.code === upperCode);
+
+  const attendeeInfo = existing || {
+    code: upperCode,
+    name: upperCode.includes('VIP') ? 'VIP Guest Delegate' : (upperCode.includes('SPK') ? 'Keynote Speaker' : `Attendee #${upperCode.slice(-4)}`),
+    passType: upperCode.includes('VIP') ? 'VIP All-Access' : (upperCode.includes('SPK') ? 'Speaker Pass' : 'Delegate Badge'),
+    roomAccess: upperCode.includes('VIP') ? 'All Rooms (1-5)' : 'Rooms 1, 2, 4',
+    checkInTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: 'valid'
+  };
+
+  if (!existing) {
+    if (!db.attendeeCheckins) db.attendeeCheckins = [];
+    db.attendeeCheckins.push(attendeeInfo);
+  }
+
+  const broadcastData = {
+    attendee: attendeeInfo,
+    scannedBy: scannedBy || 'Door Volunteer',
+    totalCheckedIn: db.attendeeCheckins.length,
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+
+  broadcast({
+    type: 'BADGE_SCANNED',
+    data: broadcastData
+  });
+
+  res.json({ success: true, ...broadcastData });
 });
 
 
@@ -275,6 +415,8 @@ wss.on('connection', ws => {
       schedule: db.schedule,
       rooms: db.roomsState,
       chatMessages: db.chatMessages,
+      tasks: db.incidentTasks,
+      checkinsCount: db.attendeeCheckins ? db.attendeeCheckins.length : 0,
       activeDate: db.activeDate,
       contacts: db.contacts,
       volunteers: db.volunteers,
