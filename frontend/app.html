@@ -512,6 +512,214 @@
       font-weight: 900;
     }
 
+    /* Feature 1: Role Switcher Row */
+    .role-switcher-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      padding: 4px;
+      border: var(--border-outline);
+      border-radius: 20px;
+    }
+    .role-btn {
+      flex: 1;
+      padding: 6px 4px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      font-family: var(--font-main);
+      background: transparent;
+      border: none;
+      border-radius: 16px;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+    .role-btn:hover {
+      color: #0f172a;
+    }
+    .role-btn.active {
+      background: #ffffff;
+      color: #0f172a;
+      border: 1.5px solid #0f172a;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    body.dark-mode .role-switcher-row {
+      background: #1e293b;
+      border-color: #38bdf8;
+    }
+    body.dark-mode .role-btn {
+      color: #94a3b8;
+    }
+    body.dark-mode .role-btn.active {
+      background: #090d16;
+      color: #38bdf8;
+      border-color: #38bdf8;
+    }
+
+    /* Feature 4: 1-Tap Quick Field Actions Grid */
+    .quick-action-section {
+      background: #ffffff;
+      border: var(--border-outline-bold);
+      border-radius: 14px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .quick-action-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: #475569;
+    }
+    .quick-action-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .quick-action-btn {
+      background: #f8fafc;
+      border: var(--border-outline);
+      border-radius: 10px;
+      padding: 8px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .quick-action-btn:active {
+      transform: scale(0.95);
+      background: #e2e8f0;
+    }
+    .quick-action-btn .action-icon {
+      font-size: 1.15rem;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+    .quick-action-btn .action-title {
+      font-size: 0.65rem;
+      font-weight: 800;
+      color: #0f172a;
+      white-space: nowrap;
+      line-height: 1.1;
+    }
+    .quick-action-btn .action-sub {
+      font-size: 0.55rem;
+      font-weight: 600;
+      color: #64748b;
+      margin-top: 1px;
+      white-space: nowrap;
+    }
+    .quick-action-btn.action-gate { border-color: #16a34a; }
+    .quick-action-btn.action-surge { border-color: #ef4444; }
+    .quick-action-btn.action-audio { border-color: #2563eb; }
+    .quick-action-btn.action-support { border-color: #f59e0b; }
+    body.dark-mode .quick-action-section {
+      background: #131926;
+      border-color: #38bdf8;
+    }
+    body.dark-mode .quick-action-btn {
+      background: #1e293b;
+      border-color: #475569;
+    }
+    body.dark-mode .quick-action-btn .action-title {
+      color: #f8fafc;
+    }
+
+    /* Feature 2: Visual Room Capacity Meter Bars */
+    .room-meter-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 2px 0 3px;
+    }
+    .room-meter-track {
+      flex: 1;
+      height: 7px;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+    .room-meter-fill {
+      height: 100%;
+      border-radius: 5px;
+      transition: width 0.3s ease;
+    }
+    .room-meter-fill.meter-nominal {
+      background: #16a34a;
+    }
+    .room-meter-fill.meter-busy {
+      background: #f59e0b;
+    }
+    .room-meter-fill.meter-alert {
+      background: #ef4444;
+      animation: meterPulse 1.5s infinite;
+    }
+    @keyframes meterPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .room-meter-label {
+      font-family: var(--font-mono);
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: #64748b;
+      white-space: nowrap;
+    }
+    body.dark-mode .room-meter-track {
+      background: #1e293b;
+      border-color: #475569;
+    }
+
+    /* Feature 3: Cyber-Tactile Walkie-Talkie Visualizer */
+    .voice-radar-container {
+      width: 100%;
+      background: #0f172a;
+      border: 1.5px solid #38bdf8;
+      border-radius: 12px;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .voice-wave-canvas {
+      width: 100%;
+      height: 48px;
+      display: block;
+    }
+    .voice-frequency-hud {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      color: #38bdf8;
+      font-weight: 700;
+      border-top: 1px dashed rgba(56, 189, 248, 0.3);
+      padding-top: 4px;
+    }
+    .hud-tag {
+      letter-spacing: 0.5px;
+    }
+
     /* ROOMS SECTION (ROOM 1 to ROOM 5 with Lines) */
     .rooms-card-container {
       background: #ffffff;
@@ -1368,6 +1576,13 @@
                 <div class="delta-brand-subtitle">The Self-Healing & Agentic Conference OS</div>
               </div>
 
+              <!-- Feature 1: Role Switcher Pill (Coordinator / Volunteer / Attendee) -->
+              <div class="role-switcher-row" id="role-switcher-row">
+                <button class="role-btn active" data-role="coordinator">👑 Coordinator</button>
+                <button class="role-btn" data-role="volunteer">🤝 Volunteer</button>
+                <button class="role-btn" data-role="attendee">🎫 Attendee</button>
+              </div>
+
               <!-- 2. NOTIFICAION Row -->
               <div class="notification-bar-row">
                 <span class="live-status-pill-sub" id="mesh-network-pill">
@@ -1378,7 +1593,37 @@
                 </button>
               </div>
 
-              <!-- 3. ROOMS SECTION (ROOM 1 to ROOM 5 with Lines) -->
+              <!-- Feature 4: 1-Tap Quick Field Actions Grid (Fast Reporting) -->
+              <section class="quick-action-section" id="quick-action-section">
+                <div class="quick-action-header">
+                  <span>⚡ FAST FIELD DISPATCH</span>
+                  <span style="font-size:0.65rem; color:#2563eb; font-weight:700;">1-TAP MESH ACTION</span>
+                </div>
+                <div class="quick-action-grid">
+                  <button class="quick-action-btn action-gate" data-action="gate_clear" data-label="Gate A Clear">
+                    <span class="action-icon">🚪</span>
+                    <span class="action-title">Gate Clear</span>
+                    <span class="action-sub">Flow Nominal</span>
+                  </button>
+                  <button class="quick-action-btn action-surge" data-action="crowd_surge" data-label="Crowd Surge">
+                    <span class="action-icon">🚨</span>
+                    <span class="action-title">Crowd Surge</span>
+                    <span class="action-sub">Room 1 Deploy</span>
+                  </button>
+                  <button class="quick-action-btn action-audio" data-action="audio_glitch" data-label="Audio Feedback">
+                    <span class="action-icon">🎤</span>
+                    <span class="action-title">Audio Tech</span>
+                    <span class="action-sub">Ping Room 2</span>
+                  </button>
+                  <button class="quick-action-btn action-support" data-action="logistics_help" data-label="Logistics SOS">
+                    <span class="action-icon">💧</span>
+                    <span class="action-title">Logistics SOS</span>
+                    <span class="action-sub">Request Runner</span>
+                  </button>
+                </div>
+              </section>
+
+              <!-- 3. ROOMS SECTION (ROOM 1 to ROOM 5 with Lines & Capacity Meters) -->
               <section class="rooms-card-container">
                 <div class="section-eyebrow">
                   <span>🏛️ Venue Chambers</span>
@@ -1394,6 +1639,13 @@
                         value="Keynote in progress; front gate A clear" placeholder="Enter status note...">
                     </div>
                     <span class="room-status-badge badge-busy">82% • Active</span>
+                  </div>
+                  <!-- Feature 2: Visual Capacity Meter Bar -->
+                  <div class="room-meter-wrap">
+                    <div class="room-meter-track">
+                      <div class="room-meter-fill meter-busy" style="width: 82%;"></div>
+                    </div>
+                    <span class="room-meter-label">205 / 250 Seats • 82%</span>
                   </div>
                   <div class="room-sub-row">
                     <span class="venue-name">Turing Hall (250) • Dr. Aditi</span>
@@ -1414,6 +1666,13 @@
                     </div>
                     <span class="room-status-badge badge-nominal">45% • Nominal</span>
                   </div>
+                  <!-- Feature 2: Visual Capacity Meter Bar -->
+                  <div class="room-meter-wrap">
+                    <div class="room-meter-track">
+                      <div class="room-meter-fill meter-nominal" style="width: 45%;"></div>
+                    </div>
+                    <span class="room-meter-label">54 / 120 Seats • 45%</span>
+                  </div>
                   <div class="room-sub-row">
                     <span class="venue-name">Lovelace Suite (120) • Vikram</span>
                     <div class="room-sub-actions">
@@ -1432,6 +1691,13 @@
                         value="Speaker setup ready; AC cooling adjusted" placeholder="Enter status note...">
                     </div>
                     <span class="room-status-badge badge-nominal">60% • Nominal</span>
+                  </div>
+                  <!-- Feature 2: Visual Capacity Meter Bar -->
+                  <div class="room-meter-wrap">
+                    <div class="room-meter-track">
+                      <div class="room-meter-fill meter-nominal" style="width: 60%;"></div>
+                    </div>
+                    <span class="room-meter-label">36 / 60 Seats • 60%</span>
                   </div>
                   <div class="room-sub-row">
                     <span class="venue-name">Hopper Room (60) • Priya</span>
@@ -1452,6 +1718,13 @@
                     </div>
                     <span class="room-status-badge badge-alert">91% • High</span>
                   </div>
+                  <!-- Feature 2: Visual Capacity Meter Bar -->
+                  <div class="room-meter-wrap">
+                    <div class="room-meter-track">
+                      <div class="room-meter-fill meter-alert" style="width: 91%;"></div>
+                    </div>
+                    <span class="room-meter-label">455 / 500 Seats • 91%</span>
+                  </div>
                   <div class="room-sub-row">
                     <span class="venue-name">Keynote Arena (500) • Swarm</span>
                     <div class="room-sub-actions">
@@ -1470,6 +1743,13 @@
                         value="Hackathon pitching underway; wifi nominal" placeholder="Enter status note...">
                     </div>
                     <span class="room-status-badge badge-nominal">35% • Nominal</span>
+                  </div>
+                  <!-- Feature 2: Visual Capacity Meter Bar -->
+                  <div class="room-meter-wrap">
+                    <div class="room-meter-track">
+                      <div class="room-meter-fill meter-nominal" style="width: 35%;"></div>
+                    </div>
+                    <span class="room-meter-label">420 / 1,200 Seats • 35%</span>
                   </div>
                   <div class="room-sub-row">
                     <span class="venue-name">Innovation Lab (1,200) • Hack</span>
@@ -1662,6 +1942,16 @@
                 <div class="eq-bar" style="height:22px;"></div>
                 <div class="eq-bar" style="height:12px;"></div>
                 <div class="eq-bar" style="height:20px;"></div>
+              </div>
+
+              <!-- Feature 3: Cyber-Tactile Walkie-Talkie Waveform Canvas & Frequency HUD -->
+              <div class="voice-radar-container">
+                <canvas id="voice-oscilloscope-canvas" width="280" height="48" class="voice-wave-canvas"></canvas>
+                <div class="voice-frequency-hud">
+                  <span class="hud-tag">FREQ 433.10 MHz</span>
+                  <span id="voice-hud-mode" class="hud-tag" style="color:#16a34a;">● STANDBY (CH 1)</span>
+                  <span class="hud-tag">SQUELCH AUTO</span>
+                </div>
               </div>
 
               <div>
@@ -2269,12 +2559,38 @@
       });
 
       let isTransmitting = false;
+      const voiceHudMode = document.getElementById('voice-hud-mode');
+
+      function playRogerBeep() {
+        if (!sfxEnabled) return;
+        try {
+          const ctx = getAudioContext();
+          if (!ctx) return;
+          const now = ctx.currentTime;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(1400, now);
+          osc.frequency.setValueAtTime(1800, now + 0.04);
+          gain.gain.setValueAtTime(0.18, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.09);
+          osc.start(now);
+          osc.stop(now + 0.09);
+        } catch (e) {}
+      }
+
       function startTransmitting() {
         if (isTransmitting) return;
         isTransmitting = true;
         playSound('chirp');
         if (btnPushToTalk) btnPushToTalk.classList.add('transmitting');
         if (pttLabel) pttLabel.textContent = 'TRANSMITTING...';
+        if (voiceHudMode) {
+          voiceHudMode.textContent = '🔴 TX TRANSMITTING';
+          voiceHudMode.style.color = '#ef4444';
+        }
 
         eqInterval = setInterval(() => {
           document.querySelectorAll('.eq-bar').forEach(bar => {
@@ -2286,9 +2602,13 @@
       function stopTransmitting() {
         if (!isTransmitting) return;
         isTransmitting = false;
-        playSound('chirp');
+        playRogerBeep();
         if (btnPushToTalk) btnPushToTalk.classList.remove('transmitting');
         if (pttLabel) pttLabel.textContent = 'PUSH TO TALK';
+        if (voiceHudMode) {
+          voiceHudMode.textContent = '● STANDBY (CH 1)';
+          voiceHudMode.style.color = '#16a34a';
+        }
         if (eqInterval) clearInterval(eqInterval);
 
         // Reset equalizer bar heights
@@ -2322,6 +2642,127 @@
         btnPushToTalk.addEventListener('touchend', (e) => { e.preventDefault(); stopTransmitting(); }, { passive: false });
         btnPushToTalk.addEventListener('touchcancel', (e) => { e.preventDefault(); stopTransmitting(); }, { passive: false });
       }
+
+      // ========================================================================
+      // FEATURE 1: ROLE SWITCHER (COORDINATOR / VOLUNTEER / ATTENDEE)
+      // ========================================================================
+      const roleButtons = document.querySelectorAll('.role-btn');
+      const quickActionSection = document.getElementById('quick-action-section');
+      const contactsSection = document.querySelector('.contact-card-container');
+
+      roleButtons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          playSound('click');
+          roleButtons.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const role = btn.dataset.role;
+
+          if (role === 'volunteer') {
+            if (quickActionSection) quickActionSection.style.display = 'flex';
+            if (contactsSection) contactsSection.style.display = 'block';
+            showToast('🤝 Volunteer Mode: Quick Action Grid Active');
+          } else if (role === 'attendee') {
+            if (quickActionSection) quickActionSection.style.display = 'none';
+            if (contactsSection) contactsSection.style.display = 'none';
+            showToast('🎫 Attendee Mode: Live Hall Capacities Active');
+          } else {
+            if (quickActionSection) quickActionSection.style.display = 'flex';
+            if (contactsSection) contactsSection.style.display = 'block';
+            showToast('👑 Coordinator Mode: Full Venue Command');
+          }
+        });
+      });
+
+      // ========================================================================
+      // FEATURE 4: 1-TAP QUICK FIELD DISPATCH ACTIONS
+      // ========================================================================
+      document.querySelectorAll('.quick-action-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          playSound('chirp');
+          const label = btn.dataset.label || 'Action';
+          const action = btn.dataset.action;
+
+          // Haptic press bounce
+          btn.style.transform = 'scale(0.92)';
+          setTimeout(() => btn.style.transform = '', 150);
+
+          let broadcastText = `🚨 [FIELD DISPATCH]: ${label}`;
+          if (action === 'gate_clear') {
+            broadcastText = '🚪 [FIELD DISPATCH]: Gate A Clear - Attendee flow is nominal';
+          } else if (action === 'crowd_surge') {
+            broadcastText = '🚨 [URGENT]: Room 1 Crowd Surge detected - Deploying overflow team';
+          } else if (action === 'audio_glitch') {
+            broadcastText = '🎤 [AUDIO TECH]: Stage feedback reported in Room 2 (Lovelace Suite)';
+          } else if (action === 'logistics_help') {
+            broadcastText = '💧 [LOGISTICS SOS]: Floor runner requested at Turing Hall concourse';
+          }
+
+          const payload = {
+            id: 'action_' + Date.now(),
+            sender: 'Suryansh (Field Dispatch)',
+            recipient: 'All Coordinators & Mesh',
+            text: broadcastText,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          if (typeof dispatchToMesh === 'function') dispatchToMesh(payload, null);
+
+          showToast(`⚡ Dispatched: "${label}"`);
+        });
+      });
+
+      // ========================================================================
+      // FEATURE 3: CYBER-TACTILE WALKIE-TALKIE CANVAS WAVEFORM OSCILLOSCOPE
+      // ========================================================================
+      const waveCanvas = document.getElementById('voice-oscilloscope-canvas');
+      let wavePhase = 0;
+
+      function drawWaveform() {
+        if (!waveCanvas) return;
+        const ctx = waveCanvas.getContext('2d');
+        const w = waveCanvas.width;
+        const h = waveCanvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        // Draw background grid lines
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        for (let x = 0; x < w; x += 24) {
+          ctx.moveTo(x, 0); ctx.lineTo(x, h);
+        }
+        for (let y = 0; y < h; y += 12) {
+          ctx.moveTo(0, y); ctx.lineTo(w, y);
+        }
+        ctx.stroke();
+
+        // Baseline
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+        ctx.moveTo(0, h / 2);
+        ctx.lineTo(w, h / 2);
+        ctx.stroke();
+
+        // Animated Radio Frequency Wave
+        ctx.beginPath();
+        ctx.strokeStyle = isTransmitting ? '#ef4444' : '#38bdf8';
+        ctx.lineWidth = isTransmitting ? 2.5 : 1.5;
+
+        const amplitude = isTransmitting ? (h * 0.35 + Math.sin(wavePhase * 3) * 6) : 3;
+        const frequency = isTransmitting ? 0.09 : 0.035;
+
+        for (let x = 0; x < w; x++) {
+          const envelope = Math.sin((x / w) * Math.PI);
+          const y = h / 2 + Math.sin(x * frequency + wavePhase) * amplitude * envelope;
+          if (x === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        wavePhase += isTransmitting ? 0.22 : 0.04;
+        requestAnimationFrame(drawWaveform);
+      }
+
+      drawWaveform();
 
       // ========================================================================
       // OPTION 1: LOCAL HOTSPOT & TWO-AREA STORE-AND-FORWARD MESH ENGINE
