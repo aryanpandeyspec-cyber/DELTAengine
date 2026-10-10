@@ -781,7 +781,10 @@ function initSoundEffects() {
       playSuccessSfx();
       createToast('🔊 Audio feedback enabled.', 'info');
     } else {
-      createToast('🔇 Audio feedback muted.', 'info');
+      if (typeof window.stopAllVoices === 'function') {
+        window.stopAllVoices();
+      }
+      createToast('🔇 Audio feedback muted (All voices stopped).', 'info');
     }
   });
 }

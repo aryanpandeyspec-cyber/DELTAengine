@@ -615,19 +615,47 @@
     loadFemaleVoices();
   }
 
-  function speakWithNicoRobinVoice(text) {
-    if (!('speechSynthesis' in window) || !text) return;
+  // =========================================================================
+  // 🎙️ SINGLETON VOICE ANNOUNCEMENT ENGINE (ZERO OVERLAPPING VOICES)
+  // =========================================================================
+  let activeAudioInstance = null;
+  const voiceQueue = [];
+  let isVoicePlaying = false;
+  let lastSpokenText = '';
+  let lastSpokenTime = 0;
+
+  window.stopAllVoices = function () {
+    if (activeAudioInstance) {
+      try {
+        activeAudioInstance.pause();
+        activeAudioInstance.currentTime = 0;
+      } catch (e) {}
+      activeAudioInstance = null;
+    }
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+    voiceQueue.length = 0;
+    isVoicePlaying = false;
+  };
+
+  function speakWithNicoRobinVoice(text, onComplete) {
+    if (!('speechSynthesis' in window) || !text) {
+      if (typeof onComplete === 'function') onComplete();
+      return;
+    }
     try {
       window.speechSynthesis.cancel();
       loadFemaleVoices();
       const utter = new SpeechSynthesisUtterance(text);
       // Nico Robin Persona: Confident, elegant, calm female
-      utter.pitch = 1.08; // Clear, elegant female pitch (prevents male timbre)
-      utter.rate = 0.92;  // Composed, poised, deliberate tempo
+      utter.pitch = 1.08;
+      utter.rate = 0.92;
       utter.volume = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
-      // Specifically target Microsoft Zira, Samantha, or any confirmed female English voice
       const bestFemale = voices.find(v => /zira|samantha|victoria|karen|hazel|catherine|female/i.test(v.name))
         || cachedFemaleVoices[0]
         || voices.find(v => !/david|mark|george|male/i.test(v.name) && v.lang.startsWith('en'));
@@ -635,32 +663,116 @@
       if (bestFemale) {
         utter.voice = bestFemale;
       }
+
+      utter.onend = () => {
+        if (typeof onComplete === 'function') onComplete();
+      };
+      utter.onerror = () => {
+        if (typeof onComplete === 'function') onComplete();
+      };
+
       window.speechSynthesis.speak(utter);
     } catch (e) {
       console.warn('[Nico Robin Speech Error]:', e);
+      if (typeof onComplete === 'function') onComplete();
+    }
+  }
+
+  function playNextVoiceInQueue() {
+    if (voiceQueue.length === 0) {
+      isVoicePlaying = false;
+      return;
+    }
+
+    // Respect user's sound toggle
+    if (localStorage.getItem('delta_sfx_enabled') === 'false') {
+      voiceQueue.length = 0;
+      isVoicePlaying = false;
+      return;
+    }
+
+    isVoicePlaying = true;
+    const currentItem = voiceQueue.shift();
+
+    // 1. Deduplication: Drop duplicate announcements if received within 6 seconds
+    const now = Date.now();
+    if (currentItem.text === lastSpokenText && (now - lastSpokenTime < 6000)) {
+      console.log('[Voice Queue] Suppressed duplicate announcement within 6s:', currentItem.text);
+      playNextVoiceInQueue();
+      return;
+    }
+    lastSpokenText = currentItem.text;
+    lastSpokenTime = now;
+
+    // 2. Cross-Tab Mutex: Ensure only 1 open browser tab plays sound
+    const announcementId = currentItem.id || `${(currentItem.text || '').slice(0, 32)}_${Math.floor(now / 5000)}`;
+    const lastPlayedAcrossTabs = localStorage.getItem('delta_last_voice_announcement_id');
+    const lastPlayedTimestamp = parseInt(localStorage.getItem('delta_last_voice_announcement_time') || '0', 10);
+
+    if (lastPlayedAcrossTabs === announcementId && (now - lastPlayedTimestamp < 5000)) {
+      console.log('[Voice Queue] Cross-tab synchronization: Another tab is already broadcasting this voice.');
+      isVoicePlaying = false;
+      return;
+    }
+
+    localStorage.setItem('delta_last_voice_announcement_id', announcementId);
+    localStorage.setItem('delta_last_voice_announcement_time', now.toString());
+
+    // 3. Stop any existing voice before starting next
+    if (activeAudioInstance) {
+      try {
+        activeAudioInstance.pause();
+        activeAudioInstance.currentTime = 0;
+      } catch (e) {}
+      activeAudioInstance = null;
+    }
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+
+    const onPlaybackComplete = () => {
+      activeAudioInstance = null;
+      // 400ms pause between sequential announcements to prevent overlap
+      setTimeout(() => {
+        playNextVoiceInQueue();
+      }, 400);
+    };
+
+    if (currentItem.audioUrl) {
+      try {
+        const audio = new Audio('/' + currentItem.audioUrl.replace(/^\//, ''));
+        activeAudioInstance = audio;
+        audio.onended = onPlaybackComplete;
+        audio.onerror = () => {
+          console.warn('[PA Audio Player] Audio URL failed, falling back cleanly to Nico Robin speech synthesis.');
+          activeAudioInstance = null;
+          speakWithNicoRobinVoice(currentItem.text, onPlaybackComplete);
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(e => {
+            console.log('[PA Audio Player] Autoplay note:', e.message);
+            activeAudioInstance = null;
+            speakWithNicoRobinVoice(currentItem.text, onPlaybackComplete);
+          });
+        }
+      } catch (err) {
+        console.warn('[PA Audio Player] Play exception:', err);
+        activeAudioInstance = null;
+        speakWithNicoRobinVoice(currentItem.text, onPlaybackComplete);
+      }
+    } else {
+      speakWithNicoRobinVoice(currentItem.text, onPlaybackComplete);
     }
   }
 
   window.handleVoiceAnnouncement = function (data) {
     if (!data) return;
 
-    // Play announcement audio in browser
-    if (data.audioUrl) {
-      try {
-        const audio = new Audio('/' + data.audioUrl.replace(/^\//, ''));
-        audio.play().catch(e => {
-          console.log('[PA Audio Player] Autoplay note:', e.message);
-          speakWithNicoRobinVoice(data.text);
-        });
-      } catch (err) {
-        console.warn('[PA Audio Player] Play exception:', err);
-        speakWithNicoRobinVoice(data.text);
-      }
-    } else {
-      speakWithNicoRobinVoice(data.text);
-    }
-
-    // Update PA player widget if present
+    // 1. Always update visual UI components (banner, logs, toasts) in all tabs
     const paBanner = document.getElementById('venue-pa-live-banner');
     if (paBanner) {
       paBanner.style.display = 'flex';
@@ -682,6 +794,17 @@
 
     if (typeof createToast === 'function') {
       createToast(`📢 [Nico Robin PA Broadcaster] ${data.text}`, 'success');
+    }
+
+    // 2. Check if user has muted audio
+    if (localStorage.getItem('delta_sfx_enabled') === 'false') {
+      return;
+    }
+
+    // 3. Queue audio announcement cleanly to guarantee sequential playback
+    voiceQueue.push(data);
+    if (!isVoicePlaying) {
+      playNextVoiceInQueue();
     }
   };
 
