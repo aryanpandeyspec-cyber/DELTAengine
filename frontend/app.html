@@ -59,80 +59,6 @@
       --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    /* Dark Mode (Sleek Yale Midnight & Sky Aqua Outline) */
-    body.dark-mode {
-      --bg-primary: #041224;
-      --bg-card: #092342;
-      --border-color: #5ADBFF;
-      --border-outline: 1.5px solid #5ADBFF;
-      --border-outline-bold: 2px solid #5ADBFF;
-      color: #f8fafc;
-    }
-    body.dark-mode .desktop-utility-bar,
-    body.dark-mode .delta-brand-box,
-    body.dark-mode .rooms-card-container,
-    body.dark-mode .contact-card-container,
-    body.dark-mode .phone-screen-view,
-    body.dark-mode .view-top-bar,
-    body.dark-mode .messenger-input-bar,
-    body.dark-mode .app-bottom-nav,
-    body.dark-mode .settings-group,
-    body.dark-mode .task-board-section {
-      background: #092342 !important;
-      color: #f8fafc !important;
-      border-color: #5ADBFF !important;
-    }
-    body.dark-mode .btn-top {
-      background: #092342 !important;
-      color: #f8fafc !important;
-      border-color: #5ADBFF !important;
-    }
-    body.dark-mode .btn-top:hover {
-      background: #0d2e53 !important;
-    }
-    body.dark-mode .btn-top.active {
-      background: #0d2e53 !important;
-      color: #5ADBFF !important;
-      border-color: #5ADBFF !important;
-    }
-    body.dark-mode .room-line-input {
-      color: #f8fafc !important;
-      border-bottom-color: #3C6997 !important;
-    }
-    body.dark-mode .contact-item,
-    body.dark-mode .notif-item {
-      background: #0d2e53 !important;
-      border-color: #5ADBFF !important;
-      color: #f8fafc !important;
-    }
-    body.dark-mode .delta-brand-title {
-      color: #f8fafc !important;
-    }
-    body.dark-mode .nav-tab-item.active {
-      color: #5ADBFF !important;
-    }
-    body.dark-mode .channel-tab.active {
-      background: #5ADBFF !important;
-      color: #041224 !important;
-      border-color: #5ADBFF !important;
-    }
-    body.dark-mode .role-btn.active {
-      background: #5ADBFF !important;
-      color: #041224 !important;
-      border-color: #5ADBFF !important;
-    }
-    body.dark-mode .btn-push-to-talk {
-      background: #07192f !important;
-      border-color: #5ADBFF !important;
-      color: #5ADBFF !important;
-    }
-    body.dark-mode .btn-push-to-talk.transmitting {
-      background: #FE9000 !important;
-      border-color: #FE9000 !important;
-      color: #ffffff !important;
-      box-shadow: 0 0 35px rgba(254, 144, 0, 0.7) !important;
-    }
-
     * {
       box-sizing: border-box;
       margin: 0;
@@ -507,7 +433,7 @@
     }
 
     .delta-brand-title span {
-      color: #2563eb;
+      color: #3C6997;
     }
 
     .delta-brand-subtitle {
@@ -515,7 +441,7 @@
       font-weight: 700;
       letter-spacing: 0.8px;
       text-transform: uppercase;
-      color: #64748b;
+      color: #3C6997;
       margin-top: 3px;
     }
 
@@ -523,6 +449,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 6px;
       margin-top: -2px;
       margin-bottom: 2px;
     }
@@ -531,35 +458,43 @@
       font-family: var(--font-mono);
       font-size: 0.72rem;
       font-weight: 700;
-      color: #2563eb;
+      color: #094074;
+      background: #eef8ff;
+      border: 1.5px solid #5ADBFF;
+      border-radius: 8px;
+      padding: 5px 8px;
       display: flex;
       align-items: center;
       gap: 5px;
+      flex: 1;
+      white-space: nowrap;
     }
 
     .btn-notification {
       background: #ffffff;
-      border: var(--border-outline-bold);
+      border: 1.5px solid #094074;
       border-radius: 8px;
-      padding: 5px 12px;
+      padding: 5px 9px;
       font-family: var(--font-mono);
-      font-size: 0.76rem;
+      font-size: 0.72rem;
       font-weight: 800;
       letter-spacing: 0.5px;
-      color: #0f172a;
+      color: #094074;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
       text-transform: uppercase;
+      white-space: nowrap;
+      transition: all 0.15s ease;
     }
 
     .btn-notification:hover {
-      background: #f1f5f9;
+      background: #f0f6fc;
     }
 
     .btn-notification .notif-badge {
-      background: #ef4444;
+      background: #FE9000;
       color: #ffffff;
       border-radius: 12px;
       font-size: 0.65rem;
@@ -576,9 +511,9 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      background: #f1f5f9;
+      background: #edf4fa;
       padding: 4px;
-      border: var(--border-outline);
+      border: 1.5px solid #3C6997;
       border-radius: 20px;
     }
     .role-btn {
@@ -590,7 +525,7 @@
       background: transparent;
       border: none;
       border-radius: 16px;
-      color: #64748b;
+      color: #3C6997;
       cursor: pointer;
       transition: all 0.15s ease;
       display: flex;
@@ -599,36 +534,25 @@
       gap: 4px;
     }
     .role-btn:hover {
-      color: #0f172a;
+      color: #094074;
     }
     .role-btn.active {
-      background: #ffffff;
-      color: #0f172a;
-      border: 1.5px solid #0f172a;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-    }
-    body.dark-mode .role-switcher-row {
-      background: #1e293b;
-      border-color: #38bdf8;
-    }
-    body.dark-mode .role-btn {
-      color: #94a3b8;
-    }
-    body.dark-mode .role-btn.active {
-      background: #090d16;
-      color: #38bdf8;
-      border-color: #38bdf8;
+      background: #094074;
+      color: #ffffff;
+      border: 1.5px solid #094074;
+      box-shadow: 0 2px 8px rgba(9, 64, 116, 0.28);
     }
 
     /* Feature 4: 1-Tap Quick Field Actions Grid */
     .quick-action-section {
       background: #ffffff;
-      border: var(--border-outline-bold);
+      border: 2px solid #094074;
       border-radius: 14px;
-      padding: 10px 12px;
+      padding: 10px 8px;
       display: flex;
       flex-direction: column;
       gap: 8px;
+      box-shadow: 0 4px 14px rgba(9, 64, 116, 0.05);
     }
     .quick-action-header {
       display: flex;
@@ -638,18 +562,16 @@
       font-weight: 800;
       letter-spacing: 0.8px;
       text-transform: uppercase;
-      color: #475569;
+      color: #094074;
     }
     .quick-action-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
+      gap: 5px;
     }
     .quick-action-btn {
-      background: #f8fafc;
-      border: var(--border-outline);
       border-radius: 10px;
-      padding: 8px 4px;
+      padding: 8px 2px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -658,10 +580,11 @@
       cursor: pointer;
       transition: all 0.15s ease;
       user-select: none;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .quick-action-btn:active {
-      transform: scale(0.95);
-      background: #e2e8f0;
+      transform: scale(0.94);
     }
     .quick-action-btn .action-icon {
       font-size: 1.15rem;
@@ -671,32 +594,42 @@
     .quick-action-btn .action-title {
       font-size: 0.65rem;
       font-weight: 800;
-      color: #0f172a;
       white-space: nowrap;
       line-height: 1.1;
     }
     .quick-action-btn .action-sub {
       font-size: 0.55rem;
       font-weight: 600;
-      color: #64748b;
       margin-top: 1px;
       white-space: nowrap;
     }
-    .quick-action-btn.action-gate { border-color: #3C6997; }
-    .quick-action-btn.action-surge { border-color: #FE9000; background: #fff6eb; }
-    .quick-action-btn.action-audio { border-color: #094074; }
-    .quick-action-btn.action-support { border-color: #FFDD4A; background: #fffde8; }
-    body.dark-mode .quick-action-section {
-      background: #092342;
-      border-color: #5ADBFF;
+    .quick-action-btn.action-gate {
+      background: #eef5fb;
+      border: 2px solid #3C6997;
     }
-    body.dark-mode .quick-action-btn {
-      background: #0d2e53;
-      border-color: #3C6997;
+    .quick-action-btn.action-gate .action-title { color: #3C6997; }
+    .quick-action-btn.action-gate .action-sub { color: #5a7d9f; }
+
+    .quick-action-btn.action-surge {
+      background: #fff4e5;
+      border: 2px solid #FE9000;
     }
-    body.dark-mode .quick-action-btn .action-title {
-      color: #f8fafc;
+    .quick-action-btn.action-surge .action-title { color: #e07000; }
+    .quick-action-btn.action-surge .action-sub { color: #b35900; }
+
+    .quick-action-btn.action-audio {
+      background: #edf8fd;
+      border: 2px solid #094074;
     }
+    .quick-action-btn.action-audio .action-title { color: #094074; }
+    .quick-action-btn.action-audio .action-sub { color: #3C6997; }
+
+    .quick-action-btn.action-support {
+      background: #fffde6;
+      border: 2px solid #d99b00;
+    }
+    .quick-action-btn.action-support .action-title { color: #9c7300; }
+    .quick-action-btn.action-support .action-sub { color: #7a5900; }
 
     /* Feature 2: Visual Room Capacity Meter Bars */
     .room-meter-wrap {
@@ -740,11 +673,6 @@
       color: #3C6997;
       white-space: nowrap;
     }
-    body.dark-mode .room-meter-track {
-      background: #07192f;
-      border-color: #3C6997;
-    }
-
     /* Feature 3: Cyber-Tactile Walkie-Talkie Visualizer */
     .voice-radar-container {
       width: 100%;
@@ -777,7 +705,7 @@
     }
     /* Point 6: Live Event Phase Ticker */
     .event-phase-ticker {
-      background: #eaf3fb;
+      background: #f0f6fc;
       border: 1.5px solid #3C6997;
       border-radius: 10px;
       padding: 6px 10px;
@@ -812,30 +740,18 @@
     }
     .ticker-highlight {
       font-weight: 800;
-      color: #2563eb;
+      color: #094074;
       flex-shrink: 0;
     }
     .ticker-timer {
       margin-left: auto;
       font-weight: 800;
-      color: #b91c1c;
-      background: #fef2f2;
-      padding: 2px 6px;
+      color: #b35900;
+      background: #fff6eb;
+      padding: 2px 7px;
       border-radius: 6px;
-      border: 1px solid #fecaca;
+      border: 1px solid #FE9000;
       flex-shrink: 0;
-    }
-    body.dark-mode .event-phase-ticker {
-      background: #131926;
-      border-color: #38bdf8;
-    }
-    body.dark-mode .ticker-highlight {
-      color: #38bdf8;
-    }
-    body.dark-mode .ticker-timer {
-      background: #450a0a;
-      color: #f87171;
-      border-color: #7f1d1d;
     }
 
     /* Point 5: Venue Blueprint Section & SVG Interactive Map */
@@ -871,14 +787,6 @@
     .map-room:active {
       transform: scale(0.99);
     }
-    body.dark-mode .venue-blueprint-section {
-      background: #131926;
-      border-color: #38bdf8;
-    }
-    body.dark-mode .blueprint-map-container {
-      background: #090d16;
-      border-color: #38bdf8;
-    }
 
     /* Real-Time User Profile / Device Identity Styles */
     .identity-select-btn {
@@ -891,7 +799,7 @@
       border-radius: 8px;
       cursor: pointer;
       font-family: var(--font-main);
-      color: #0f172a;
+      color: #094074;
       transition: all 0.15s ease;
       width: 100%;
     }
@@ -899,26 +807,14 @@
       transform: scale(0.98);
     }
     .identity-select-btn.active {
-      background: #e8f4fc;
-      border: 1.5px solid #094074;
+      background: #eef8ff;
+      border: 1.5px solid #5ADBFF;
     }
     .identity-check-mark {
       font-size: 0.68rem;
       font-weight: 800;
       color: #094074;
       font-family: var(--font-mono);
-    }
-    body.dark-mode .identity-select-btn {
-      background: #092342;
-      border-color: #3C6997;
-      color: #f8fafc;
-    }
-    body.dark-mode .identity-select-btn.active {
-      background: #0d3663;
-      border-color: #5ADBFF;
-    }
-    body.dark-mode .identity-select-btn.active .identity-check-mark {
-      color: #5ADBFF;
     }
 
     /* ROOMS SECTION (ROOM 1 to ROOM 5 with Lines) */
@@ -1562,9 +1458,10 @@
     }
 
     .voice-chan-btn.active {
-      background: #16a34a;
+      background: #094074;
       color: #ffffff;
-      border-color: #16a34a;
+      border-color: #5ADBFF;
+      box-shadow: 0 2px 8px rgba(9, 64, 116, 0.25);
     }
 
     .btn-push-to-talk {
@@ -1572,7 +1469,8 @@
       height: 140px;
       border-radius: 50%;
       background: #ffffff;
-      border: 3px solid #0f172a;
+      border: 4px solid #094074;
+      color: #094074;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1724,7 +1622,7 @@
       margin-bottom: 8px;
       font-size: 0.72rem;
       font-weight: 800;
-      color: #0f172a;
+      color: #094074;
       letter-spacing: 0.5px;
     }
     .task-count-badge {
@@ -1738,14 +1636,20 @@
       font-weight: 800;
     }
     .btn-new-task-trigger {
-      background: #094074;
+      background: #FE9000;
       color: #ffffff;
-      border: 1px solid #5ADBFF;
+      border: 1px solid #FE9000;
       border-radius: 6px;
-      padding: 3px 8px;
+      padding: 3px 9px;
       font-size: 0.68rem;
-      font-weight: 700;
+      font-weight: 800;
       cursor: pointer;
+      box-shadow: 0 2px 6px rgba(254, 144, 0, 0.35);
+      transition: all 0.15s ease;
+    }
+    .btn-new-task-trigger:hover {
+      background: #e07d00;
+      transform: translateY(-1px);
     }
     .task-create-panel {
       background: #f8fafc;
@@ -1986,40 +1890,6 @@
       0% { opacity: 0.8; transform: scale(0.98); }
       100% { opacity: 1; transform: scale(1.02); }
     }
-
-    /* Dark Mode overrides for new sections */
-    body.dark-mode .task-board-section {
-      background: #1e293b;
-      border-color: #334155;
-    }
-    body.dark-mode .task-board-header {
-      color: #f8fafc;
-    }
-    body.dark-mode .task-card {
-      background: #0f172a;
-      border-color: #334155;
-    }
-    body.dark-mode .task-title-text {
-      color: #f1f5f9;
-    }
-    body.dark-mode .task-loc-tag {
-      color: #94a3b8;
-    }
-    body.dark-mode .task-create-panel {
-      background: #0f172a;
-      border-color: #334155;
-    }
-    body.dark-mode .task-create-input,
-    body.dark-mode .task-select {
-      background: #1e293b;
-      border-color: #475569;
-      color: #f8fafc;
-    }
-    body.dark-mode .btn-qr-scan-top {
-      background: #1e293b;
-      border-color: #38bdf8;
-      color: #38bdf8;
-    }
   </style>
 </head>
 
@@ -2036,9 +1906,6 @@
     <div class="controls-group">
       <button id="btn-toggle-sfx" class="btn-top active">
         🔊 SFX: ON
-      </button>
-      <button id="btn-toggle-theme" class="btn-top" title="Toggle Palette Dark / Light Mode">
-        🌓 Dark Theme
       </button>
       <a href="index.html" class="btn-top">
         💻 Web OS
@@ -2692,15 +2559,18 @@
                   </label>
                 </div>
 
-                <div class="settings-item">
-                  <div>
-                    <div>🌓 Dark Outline Theme</div>
-                    <div style="font-size:0.7rem; color:#64748b;">High contrast outline mode</div>
+                <div class="settings-item" style="flex-direction:column; align-items:flex-start; gap:8px;">
+                  <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
+                    <div style="font-size:0.75rem; font-weight:700; color:#094074;">🎨 5-Color Unified Palette</div>
+                    <span style="font-size:0.62rem; font-family:var(--font-mono); color:#094074; font-weight:800; background:#e0f6fc; padding:2px 6px; border-radius:6px; border:1px solid #5ADBFF;">ACTIVE</span>
                   </div>
-                  <label class="switch-ui">
-                    <input type="checkbox" id="setting-darkmode">
-                    <span class="slider-round"></span>
-                  </label>
+                  <div style="display:flex; gap:4px; width:100%;">
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#094074; color:#fff; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Yale<br>#094074</div>
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#3C6997; color:#fff; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Baltic<br>#3C6997</div>
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#5ADBFF; color:#094074; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Aqua<br>#5ADBFF</div>
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#FFDD4A; color:#094074; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Mustard<br>#FFDD4A</div>
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#FE9000; color:#fff; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Saffron<br>#FE9000</div>
+                  </div>
                 </div>
               </div>
 
@@ -3826,49 +3696,26 @@
       document.addEventListener('click', unlockAudio, { once: true });
       document.addEventListener('touchstart', unlockAudio, { once: true });
 
-      // Theme Dark/Light Palette synchronization & persistence
-      const settingDarkmode = document.getElementById('setting-darkmode');
-      const btnToggleTheme = document.getElementById('btn-toggle-theme');
-
-      function applyAppTheme(isDark) {
-        document.body.classList.toggle('dark-mode', isDark);
-        if (settingDarkmode) settingDarkmode.checked = isDark;
-        if (btnToggleTheme) {
-          btnToggleTheme.innerHTML = isDark ? '☀️ Light Theme' : '🌓 Dark Theme';
-          btnToggleTheme.classList.toggle('active', isDark);
-        }
-        try {
-          localStorage.setItem('delta_theme_dark', isDark ? '1' : '0');
-        } catch (e) {}
-      }
-
-      // Check saved theme or URL parameter
+      // Unified 5-Color Palette Theme Active
       try {
+        localStorage.removeItem('delta_theme_dark');
+        document.body.classList.remove('dark-mode');
         const urlParams = new URLSearchParams(window.location.search);
-        const urlDark = urlParams.get('dark');
-        if (urlDark === '1' || urlDark === 'true') {
-          applyAppTheme(true);
-        } else if (localStorage.getItem('delta_theme_dark') === '1') {
-          applyAppTheme(true);
+        const scrollParam = urlParams.get('scroll');
+        if (scrollParam) {
+          setTimeout(() => {
+            const sc = document.querySelector('.phone-screen-view.active .view-scroll-body');
+            if (sc) sc.scrollTop = parseInt(scrollParam, 10);
+          }, 200);
+        }
+        const tabParam = urlParams.get('tab');
+        if (tabParam) {
+          setTimeout(() => {
+            const tb = document.getElementById('nav-tab-' + tabParam);
+            if (tb) tb.click();
+          }, 200);
         }
       } catch (e) {}
-
-      if (settingDarkmode) {
-        settingDarkmode.addEventListener('change', () => {
-          playSound('click');
-          applyAppTheme(settingDarkmode.checked);
-          showToast(`Theme: ${settingDarkmode.checked ? 'Dark Outline' : 'Light Outline'}`);
-        });
-      }
-
-      if (btnToggleTheme) {
-        btnToggleTheme.addEventListener('click', () => {
-          playSound('click');
-          const isCurrentlyDark = document.body.classList.contains('dark-mode');
-          applyAppTheme(!isCurrentlyDark);
-          showToast(`Theme: ${!isCurrentlyDark ? 'Dark Outline' : 'Light Outline'}`);
-        });
-      }
 
       // Active Device Identity Selector Handlers (For Real People Multi-User Live Testing)
       function setupIdentitySelector() {
