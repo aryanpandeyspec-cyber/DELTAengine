@@ -278,7 +278,7 @@
         <!-- Left: Canvas & Video Display -->
         <div class="cctv-hub-video-col">
           <div class="cctv-canvas-frame">
-            <video id="cctv-hidden-video" style="display:none;" playsinline muted></video>
+            <video id="cctv-hidden-video" playsinline autoplay muted style="position: fixed; top: -9999px; left: -9999px; width: 320px; height: 240px; opacity: 0; pointer-events: none; z-index: -1;"></video>
             <canvas id="cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
           </div>
           <div class="cctv-hub-feed-sub">
