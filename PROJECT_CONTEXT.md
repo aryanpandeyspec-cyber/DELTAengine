@@ -496,6 +496,7 @@ DELTAengine-main/
 │   ├── announcement_test.mp3           # Local audio fallback for PA voice announcements
 │   ├── audio_announcements/            # Cached Nico Robin voice MP3 files
 │   └── components/
+│       ├── alertCoordinator.js         # Unified Sequential Alert & Voice Coordinator Engine
 │       ├── app.js                      # Core UI orchestrator & event listeners
 │       ├── auth.js                     # Authentication & role-based access management
 │       ├── cctvPerception.js           # Decoupled 60 FPS vision engine & crowd HUD
