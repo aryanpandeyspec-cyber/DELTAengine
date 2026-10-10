@@ -183,20 +183,25 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
       reason: firstNotif.message
     }, db, broadcast);
 
-    // AUTONOMOUS VENUE PA VOICE ANNOUNCEMENT VIA ELEVENLABS
-    const paScript = `Attention attendees. Autonomous schedule update: ${topicTitle} is now scheduled in ${newVenue} (${timeSlot}) to ensure safe venue capacity. Please follow digital hall signage.`;
+    // AUTONOMOUS ZONED PA VOICE ANNOUNCEMENT VIA ELEVENLABS (Zoned to foyers/corridors, never active lecture halls)
+    const paScript = `Attention foyer and corridor attendees: Autonomous schedule update: ${topicTitle} is now scheduled in ${newVenue} (${timeSlot}) to ensure safe egress flow. Please follow digital hallway signage.`;
     generateVenueVoiceAnnouncement(paScript, 'EXAVITQu4vr4xnSDxMaL').then(voiceRes => {
       if (voiceRes && voiceRes.success && typeof broadcast === 'function') {
         broadcast({
           type: 'VOICE_ANNOUNCEMENT',
-          data: voiceRes
+          data: {
+            ...voiceRes,
+            targetZone: 'FOYER_AND_CORRIDORS_ONLY',
+            suppressInLectureHalls: true,
+            priority: 'LOGISTICS_UPDATE'
+          }
         });
       }
     }).catch(err => console.warn('[SelfHealing Voice Notice]:', err.message));
   }
 
   const conflictLog = logs.find(l => l.includes('[CONFLICT]') || l.includes('exceeds') || l.includes('Capacity'));
-  const actionLog = logs.find(l => l.includes('[Action') || l.includes('Moved') || l.includes('Relocated') || l.includes('Swapped') || l.includes('shifted') || l.includes('rescheduled'));
+  const actionLog = logs.find(l => l.includes('[Action') || l.includes('Moved') || l.includes('Relocated') || l.includes('Swapped') || l.includes('shifted') || l.includes('rescheduled') || l.includes('Spillover'));
 
   const wasHealed = !!(conflictLog || actionLog || notifications.length > 0);
   const conflictReason = conflictLog ? conflictLog.replace(/\[.*?\]/g, '').trim() : (notifications[0]?.message || '⚠️ Operational constraint violation detected.');

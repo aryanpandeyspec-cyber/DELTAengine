@@ -417,6 +417,49 @@ async function runTest13_EnterpriseStartupFeatures() {
   assert(dockerfileExists && dockerComposeExists, 'Edge deployment artifacts (Dockerfile & docker-compose.yml) verified');
 }
 
+async function runTest14_DynamicScheduleImporterAndTour() {
+  console.log(`\n${BOLD}[TEST 14] Universal Dynamic Schedule Importer & 7-Step Enterprise Onboarding Tour${RESET}`);
+
+  // 1. Template CSV Endpoint
+  const templateRes = await fetch(`${BASE_URL}/api/schedule/template.csv`);
+  const templateCsv = await templateRes.text();
+  assert(templateRes.status === 200 && templateCsv.includes('Title,Speaker,Room,Capacity,TimeSlot,StartHour,Attendees'), 'CSV Template endpoint exports valid schema headers');
+
+  // 2. Preset Ingestion (ESPORTS_ARENA)
+  const presetRes = await fetchJson('/api/schedule/import', {
+    method: 'POST',
+    body: JSON.stringify({ preset: 'ESPORTS_ARENA' })
+  });
+  assert(presetRes && presetRes.success && presetRes.counts.halls >= 4, 'Dynamic preset importer compiles custom hall/session graph');
+  assert(presetRes.graph.halls['hall-main'] && presetRes.graph.halls['hall-main'].name.includes('Main Championship Stage'), 'Preset registers dynamic arena hall topologies');
+
+  // 3. Custom CSV Ingestion
+  const customCsv = `Title,Speaker,Room,Capacity,TimeSlot,StartHour,Attendees
+Quantum Key Distribution,Dr. Alice Rao,Quantum Lab,120,09:00 AM - 10:00 AM,9.0,95
+Post-Quantum Cryptography,Prof. Bob Vance,Security Hall,180,10:30 AM - 11:30 AM,10.5,160`;
+
+  const csvImportRes = await fetchJson('/api/schedule/import', {
+    method: 'POST',
+    body: JSON.stringify({ csvText: customCsv })
+  });
+  assert(csvImportRes && csvImportRes.success && csvImportRes.counts.topics === 2, 'Dynamic CSV parser converts raw text into schedule graph nodes & edges');
+
+  // 4. Rollback / Revert Functionality
+  const revertRes = await fetchJson('/api/schedule/revert', { method: 'POST' });
+  assert(revertRes && revertRes.success, 'Schedule snapshot rollback restores previous configuration');
+
+  // 5. Clean Baseline Reset
+  const resetRes = await fetchJson('/api/reset', { method: 'POST' });
+  assert(resetRes && resetRes.success, 'System reset restores default conference baseline');
+
+  // 6. Tour Guide DOM & Script Integrity
+  const indexHtml = fs.readFileSync(path.join(__dirname, '../frontend/index.html'), 'utf8');
+  const tourJs = fs.readFileSync(path.join(__dirname, '../frontend/components/tourGuide.js'), 'utf8');
+  assert(indexHtml.includes('id="btn-open-importer"'), 'Schedule matrix header includes dynamic import CTA button (#btn-open-importer)');
+  assert(indexHtml.includes('id="modal-schedule-importer"'), 'Schedule importer modal markup (#modal-schedule-importer) is verified');
+  assert(tourJs.includes('tourSteps = [') && tourJs.includes('Autonomous Zoned Voice Announcements'), 'Interactive tour upgraded to 7-step enterprise walkthrough');
+}
+
 async function main() {
   console.log(`${BOLD}${CYAN}====================================================${RESET}`);
   console.log(`${BOLD}${CYAN}  DELTA ENGINE — COMPREHENSIVE REGRESSION & EXPANSION TEST SUITE ${RESET}`);
@@ -436,6 +479,7 @@ async function main() {
     await runTest11_StressTest500();
     await runTest12_FrontendVisualLockedIntegrity();
     await runTest13_EnterpriseStartupFeatures();
+    await runTest14_DynamicScheduleImporterAndTour();
 
     console.log(`\n${BOLD}${CYAN}====================================================${RESET}`);
     if (passedTests === totalTests) {
