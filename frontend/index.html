@@ -31,6 +31,15 @@
       </div>
     </div>
   </div>
+  <script>
+    setTimeout(function() {
+      var l = document.getElementById('global-loader');
+      if (l) {
+        l.classList.add('fade-out');
+        setTimeout(function() { if (l && l.parentNode) l.remove(); }, 600);
+      }
+    }, 800);
+  </script>
 
   <!-- Neubrutalist Grid Background overlay -->
   <div class="grid-overlay"></div>

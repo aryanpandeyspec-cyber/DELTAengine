@@ -58,14 +58,14 @@ let dragStartY = 0;
 window.addEventListener('DOMContentLoaded', () => {
   removeLogoBackground();
 
-  // Shackleton Global Loader Smooth Fade-Out (3.6s loop)
+  // Shackleton Global Loader Smooth Fade-Out
   setTimeout(() => {
     const loader = document.getElementById('global-loader');
     if (loader) {
       loader.classList.add('fade-out');
-      setTimeout(() => loader.remove(), 800);
+      setTimeout(() => loader.remove(), 600);
     }
-  }, 3600);
+  }, 400);
 
   initWebSockets();
   initFormListeners();
@@ -1213,6 +1213,9 @@ function initSwarmCopy() {
         console.error('Clipboard copy failed:', err);
         createToast('Failed to copy to clipboard.', 'warning');
       });
+  });
+}
+
 // --- NFPA-101 & IBC-2024 FIRE MARSHAL & LIFE-SAFETY COMPLIANCE AUDITOR ---
 function initFireMarshalCompliance() {
   const btnTrigger = document.getElementById('btn-download-fire-marshal-audit');
