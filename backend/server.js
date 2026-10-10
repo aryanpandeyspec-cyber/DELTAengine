@@ -2511,8 +2511,7 @@ if (require.main === module) {
       console.error(`👉 Stop the existing process or run: npx kill-port ${PORT}\n`);
       process.exit(1);
     } else {
-      console.error('Server error:', err);
-      process.exit(1);
+      console.warn('⚠️ [Server Network Notice]:', err.message);
     }
   });
 

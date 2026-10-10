@@ -35,11 +35,13 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   const waUrl = `https://wa.me/${formattedPhone.replace('+', '')}?text=${encodeURIComponent(messageText)}`;
 
-  // 1. If Twilio credentials missing/invalid, use simulated intent
-  if (!isTwilioConfigured()) {
+  const isDummyPhone = formattedPhone.includes('555') || formattedPhone.includes('0000000') || formattedPhone.length < 10;
+
+  // 1. If Twilio credentials missing/invalid or dummy phone, use simulated intent
+  if (!isTwilioConfigured() || isDummyPhone) {
     simAlertBatchCount++;
     const now = Date.now();
-    if (now - lastSimLogTime > 3000) {
+    if (now - lastSimLogTime > 5000 && !isDummyPhone) {
       lastSimLogTime = now;
       console.log(`[Twilio WhatsApp] 💬 Simulation Mode: Alert queued for ${recipientName} (${formattedPhone})${simAlertBatchCount > 1 ? ` [+${simAlertBatchCount - 1} personnel]` : ''}`);
       simAlertBatchCount = 0;
@@ -53,7 +55,7 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
       messageText,
       timestamp,
       waUrl,
-      note: 'Provide valid TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN to enable autonomous background delivery.'
+      note: 'Simulation mode active: dispatched via web-intent click-to-chat.'
     };
   }
 
@@ -119,9 +121,11 @@ async function dispatchTwilioWhatsApp({ recipientName, phoneNumber, messageText 
       const isRateLimit = res.status === 429 || (errMsg && errMsg.toLowerCase().includes('rate limit'));
 
       if (isRateLimit) {
-        // Trip circuit breaker for 60 seconds
+        const wasActive = Date.now() < circuitBreakerUntil;
         circuitBreakerUntil = Date.now() + 60000;
-        console.warn(`[Twilio WhatsApp] ⏳ Twilio rate limit reached. Circuit breaker engaged for 60s (falling back to web-intent links for all staff).`);
+        if (!wasActive) {
+          console.warn(`[Twilio WhatsApp] ⏳ Twilio rate limit reached. Circuit breaker engaged for 60s (falling back to web-intent links for all staff).`);
+        }
       } else {
         const errorNow = Date.now();
         if (errMsg !== lastLoggedError || errorNow - lastLoggedErrorTime > 15000) {
