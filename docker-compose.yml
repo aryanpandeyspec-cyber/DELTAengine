@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  delta-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: delta-engine-core
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    volumes:
+      - ./frontend/audio_announcements:/app/frontend/audio_announcements
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/state"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DELTA ENGINE — Field Marshal & Volunteer Terminal</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="app.css">
+  <style>
+    body {
+      background-color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      color: #0f172a;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .volunteer-container {
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 14px 16px 40px;
+    }
+
+    .vol-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fff;
+      border: 3px solid #000;
+      box-shadow: 4px 4px 0px #000;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-bottom: 14px;
+    }
+
+    .vol-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .vol-card {
+      background: #fff;
+      border: 3px solid #000;
+      box-shadow: 5px 5px 0px #000;
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .vol-zone-select {
+      width: 100%;
+      padding: 10px 12px;
+      font-family: var(--font-mono, monospace);
+      font-weight: 800;
+      font-size: 0.95rem;
+      border: 2px solid #000;
+      border-radius: 8px;
+      background: #fef08a;
+      box-shadow: 2px 2px 0px #000;
+      margin-top: 6px;
+      cursor: pointer;
+    }
+
+    .vol-metric-hero {
+      text-align: center;
+      padding: 12px 0;
+    }
+
+    .vol-count-big {
+      font-size: 3.6rem;
+      font-weight: 900;
+      font-family: var(--font-mono, monospace);
+      line-height: 1;
+      color: #0f172a;
+    }
+
+    .vol-progress-wrap {
+      height: 16px;
+      background: #e2e8f0;
+      border: 2px solid #000;
+      border-radius: 8px;
+      overflow: hidden;
+      margin: 12px 0 8px;
+    }
+
+    .vol-progress-fill {
+      height: 100%;
+      background: #22c55e;
+      transition: width 0.3s ease, background-color 0.3s ease;
+      width: 0%;
+    }
+
+    .clicker-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .btn-clicker {
+      font-family: var(--font-mono, monospace);
+      font-weight: 900;
+      border: 3px solid #000;
+      box-shadow: 4px 4px 0px #000;
+      border-radius: 12px;
+      padding: 18px 10px;
+      font-size: 1.15rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: transform 0.05s, box-shadow 0.05s;
+      user-select: none;
+    }
+
+    .btn-clicker:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px #000;
+    }
+
+    .btn-clicker-in {
+      background: #22c55e;
+      color: #000;
+    }
+
+    .btn-clicker-out {
+      background: #ffffff;
+      color: #000;
+    }
+
+    .btn-sos {
+      width: 100%;
+      background: #ef4444;
+      color: #fff;
+      font-family: var(--font-mono, monospace);
+      font-weight: 900;
+      font-size: 1.05rem;
+      padding: 16px;
+      border: 3px solid #000;
+      box-shadow: 5px 5px 0px #000;
+      border-radius: 12px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      animation: pulse-sos 2s infinite;
+    }
+
+    @keyframes pulse-sos {
+      0%, 100% { box-shadow: 5px 5px 0px #000; }
+      50% { box-shadow: 5px 5px 0px #b91c1c; }
+    }
+
+    .btn-sos:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px #000;
+    }
+
+    .orders-log {
+      max-height: 160px;
+      overflow-y: auto;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.78rem;
+      line-height: 1.4;
+      background: #f8fafc;
+      border: 2px solid #000;
+      border-radius: 8px;
+      padding: 10px;
+    }
+
+    .order-item {
+      padding: 6px 0;
+      border-bottom: 1px dashed #cbd5e1;
+    }
+    .order-item:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="volunteer-container">
+    <!-- TOP HEADER -->
+    <header class="vol-header">
+      <div class="vol-brand">
+        <span style="font-size:1.4rem;">🛡️</span>
+        <div>
+          <div style="font-weight:900; font-size:0.95rem; font-family:var(--font-mono, monospace); line-height:1.1;">
+            DELTA FIELD MARSHAL
+          </div>
+          <div style="font-size:0.68rem; font-weight:700; color:#64748b;">
+            MOBILE TACTICAL TERMINAL
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; align-items:center; gap:6px;">
+        <span id="vol-ws-badge" class="badge-mini-green" style="font-size:0.7rem; font-weight:800;">
+          🟢 LIVE
+        </span>
+        <a href="/" style="text-decoration:none; font-size:0.7rem; font-weight:800; font-family:var(--font-mono, monospace); background:#fff; border:1.5px solid #000; padding:2px 6px; border-radius:4px; color:#000;">
+          DESK ↗
+        </a>
+      </div>
+    </header>
+
+    <!-- OPERATOR & ZONE ASSIGNMENT -->
+    <div class="vol-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <span style="font-size:0.72rem; font-weight:900; font-family:var(--font-mono, monospace); color:#475569;">
+          OPERATOR ID:
+        </span>
+        <span id="vol-operator-badge" style="font-size:0.75rem; font-weight:800; background:#e0f2fe; border:1.5px solid #000; padding:2px 8px; border-radius:6px; font-family:var(--font-mono, monospace);">
+          👤 Priya Sharma (Door Marshal)
+        </span>
+      </div>
+
+      <label style="font-size:0.72rem; font-weight:900; font-family:var(--font-mono, monospace); color:#475569;">
+        ASSIGNED DUTY ZONE:
+      </label>
+      <select id="vol-zone-select" class="vol-zone-select">
+        <option value="hall-1" selected>📍 Turing Hall (Main Auditorium)</option>
+        <option value="hall-2">📍 Lovelace Suite (Tech & AI)</option>
+        <option value="hall-3">📍 Hopper Room (Workshops)</option>
+        <option value="hall-4">📍 Keynote Arena (Grand Stage)</option>
+        <option value="hall-kumbh">📍 Kumbh Mela Sector A (Ghat)</option>
+        <option value="hall-rally">📍 Mega Election Rally Grounds</option>
+        <option value="hall-stadium">📍 Olympic / Tech Stadium Arena</option>
+      </select>
+    </div>
+
+    <!-- LIVE ZONE CAPACITY HERO -->
+    <div class="vol-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.75rem; font-weight:900; font-family:var(--font-mono, monospace); color:#475569;">
+          ZONE OCCUPANCY
+        </span>
+        <span id="vol-status-pill" class="badge-mini-green" style="font-size:0.75rem; font-weight:900; border:1.5px solid #000;">
+          🟢 OPTIMAL FLOW
+        </span>
+      </div>
+
+      <div class="vol-metric-hero">
+        <div id="vol-pax-count" class="vol-count-big">180</div>
+        <div style="font-size:0.85rem; font-weight:800; font-family:var(--font-mono, monospace); color:#64748b; margin-top:2px;">
+          OF <span id="vol-pax-capacity">250</span> PAX CAPACITY (<span id="vol-pax-pct">72%</span>)
+        </div>
+      </div>
+
+      <div class="vol-progress-wrap">
+        <div id="vol-progress-bar" class="vol-progress-fill" style="width:72%;"></div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono, monospace); color:#64748b;">
+        <span>DOOR EGRESS: <strong id="vol-flow-rate" style="color:#0f172a;">180 pax/min</strong></span>
+        <span>TRIPWIRE SENSORS: <strong style="color:#16a34a;">SYNCED</strong></span>
+      </div>
+    </div>
+
+    <!-- ONE-THUMB CLICKER BUTTONS -->
+    <div class="clicker-grid">
+      <button id="btn-vol-entry" class="btn-clicker btn-clicker-in">
+        <span style="font-size:1.8rem; line-height:1;">＋</span>
+        <span>PASSAGE ENTRY (+1)</span>
+      </button>
+      <button id="btn-vol-exit" class="btn-clicker btn-clicker-out">
+        <span style="font-size:1.8rem; line-height:1;">－</span>
+        <span>EXIT (-1)</span>
+      </button>
+    </div>
+
+    <!-- 1-TAP CRITICAL SOS / PANIC SURGE BUTTON -->
+    <div class="vol-card" style="background:#fef2f2; border-color:#dc2626;">
+      <div style="font-size:0.72rem; font-weight:900; font-family:var(--font-mono, monospace); color:#991b1b; margin-bottom:8px;">
+        ⚠️ FIELD SAFETY DISPATCH:
+      </div>
+      <button id="btn-vol-sos" class="btn-sos">
+        <span>🚨</span>
+        <span>1-TAP EMERGENCY SOS DISPATCH</span>
+      </button>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:10px;">
+        <button class="sos-quick-tag btn btn-sm btn-white" style="font-size:0.65rem; font-weight:800; border:1.5px solid #000; padding:2px 6px;">Door Bottleneck</button>
+        <button class="sos-quick-tag btn btn-sm btn-white" style="font-size:0.65rem; font-weight:800; border:1.5px solid #000; padding:2px 6px;">Barricade Pressure</button>
+        <button class="sos-quick-tag btn btn-sm btn-white" style="font-size:0.65rem; font-weight:800; border:1.5px solid #000; padding:2px 6px;">Medical Assist</button>
+      </div>
+    </div>
+
+    <!-- CENTRAL COMMAND DIRECTIVES -->
+    <div class="vol-card">
+      <div style="font-size:0.75rem; font-weight:900; font-family:var(--font-mono, monospace); color:#0f172a; margin-bottom:8px; display:flex; justify-content:space-between;">
+        <span>📡 CENTRAL COMMAND ORDERS:</span>
+        <span style="font-size:0.68rem; color:#64748b;">AUDIO PA ACTIVE</span>
+      </div>
+      <div id="vol-orders-log" class="orders-log">
+        <div class="order-item">
+          <strong>[10:48] CENTRAL COMMAND:</strong> All egress portals verified clear. Optical tripwires nominal.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function initVolunteerApp() {
+      let ws = null;
+      let currentHallId = 'hall-1';
+      let currentOccupancy = 180;
+      let currentCapacity = 250;
+      let selectedSosReason = 'Field Marshal reports critical crowd bottlenecking / barrier surge!';
+
+      const elZoneSelect = document.getElementById('vol-zone-select');
+      const elPaxCount = document.getElementById('vol-pax-count');
+      const elPaxCap = document.getElementById('vol-pax-capacity');
+      const elPaxPct = document.getElementById('vol-pax-pct');
+      const elProgBar = document.getElementById('vol-progress-bar');
+      const elStatusPill = document.getElementById('vol-status-pill');
+      const elWsBadge = document.getElementById('vol-ws-badge');
+      const elOrdersLog = document.getElementById('vol-orders-log');
+      const btnEntry = document.getElementById('btn-vol-entry');
+      const btnExit = document.getElementById('btn-vol-exit');
+      const btnSos = document.getElementById('btn-vol-sos');
+
+      // Audio feedback
+      function playTone(freq = 600, duration = 0.1) {
+        try {
+          const actx = new (window.AudioContext || window.webkitAudioContext)();
+          const osc = actx.createOscillator();
+          const gain = actx.createGain();
+          osc.frequency.setValueAtTime(freq, actx.currentTime);
+          gain.gain.setValueAtTime(0.2, actx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(actx.destination);
+          osc.start();
+          osc.stop(actx.currentTime + duration);
+        } catch (e) {}
+      }
+
+      function updateUI() {
+        if (elPaxCount) elPaxCount.textContent = currentOccupancy;
+        if (elPaxCap) elPaxCap.textContent = currentCapacity;
+        const pct = Math.min(100, Math.round((currentOccupancy / Math.max(1, currentCapacity)) * 100));
+        if (elPaxPct) elPaxPct.textContent = `${pct}%`;
+        if (elProgBar) {
+          elProgBar.style.width = `${pct}%`;
+          if (pct >= 95) {
+            elProgBar.style.backgroundColor = '#ef4444';
+            elStatusPill.className = 'badge-mini-red';
+            elStatusPill.textContent = '🚨 OVERCAPACITY';
+          } else if (pct >= 80) {
+            elProgBar.style.backgroundColor = '#f59e0b';
+            elStatusPill.className = 'badge-mini-yellow';
+            elStatusPill.textContent = '⚠️ DENSITY WARNING';
+          } else {
+            elProgBar.style.backgroundColor = '#22c55e';
+            elStatusPill.className = 'badge-mini-green';
+            elStatusPill.textContent = '🟢 OPTIMAL FLOW';
+          }
+        }
+      }
+
+      async function syncHallState() {
+        try {
+          const res = await fetch('/api/state');
+          if (res.ok) {
+            const data = await res.json();
+            const hall = data.graph?.halls?.[currentHallId];
+            if (hall) {
+              currentCapacity = hall.capacity || 250;
+              currentOccupancy = hall.currentOccupancy || (currentHallId === 'hall-1' ? (data.cctvState?.turingHallOccupancy || 180) : Math.round(currentCapacity * 0.45));
+              updateUI();
+            }
+          }
+        } catch (e) {}
+      }
+
+      if (elZoneSelect) {
+        elZoneSelect.addEventListener('change', (e) => {
+          currentHallId = e.target.value;
+          syncHallState();
+        });
+      }
+
+      // Clicker: Entry (+1)
+      if (btnEntry) {
+        btnEntry.addEventListener('click', async () => {
+          currentOccupancy++;
+          updateUI();
+          playTone(880, 0.08);
+          try {
+            await fetch('/api/sensors/face-passage', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                hallId: currentHallId,
+                event: 'PASSAGE_ENTRY',
+                attendeeId: `VOL_${Date.now()}`,
+                attendeeName: 'Mobile Gate Attendee',
+                netOccupancy: currentOccupancy,
+                totalEntries: 1,
+                totalExits: 0,
+                reEntries: 0,
+                capacity: currentCapacity
+              })
+            });
+          } catch (e) {}
+        });
+      }
+
+      // Clicker: Exit (-1)
+      if (btnExit) {
+        btnExit.addEventListener('click', async () => {
+          if (currentOccupancy > 0) currentOccupancy--;
+          updateUI();
+          playTone(440, 0.08);
+          try {
+            await fetch('/api/sensors/face-passage', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                hallId: currentHallId,
+                event: 'PASSAGE_EXIT',
+                attendeeId: `VOL_${Date.now()}`,
+                attendeeName: 'Mobile Gate Attendee',
+                netOccupancy: currentOccupancy,
+                totalEntries: 0,
+                totalExits: 1,
+                reEntries: 0,
+                capacity: currentCapacity
+              })
+            });
+          } catch (e) {}
+        });
+      }
+
+      // Quick SOS reasons
+      document.querySelectorAll('.sos-quick-tag').forEach(tag => {
+        tag.addEventListener('click', () => {
+          selectedSosReason = tag.textContent;
+          document.querySelectorAll('.sos-quick-tag').forEach(t => t.style.background = '#fff');
+          tag.style.background = '#fef08a';
+        });
+      });
+
+      // 1-Tap SOS
+      if (btnSos) {
+        btnSos.addEventListener('click', async () => {
+          playTone(220, 0.3);
+          const origText = btnSos.innerHTML;
+          btnSos.innerHTML = '<span>⏳</span> <span>DISPATCHING SOS...</span>';
+          try {
+            const res = await fetch('/api/volunteer/sos', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                volunteerName: 'Priya Sharma (Door Marshal)',
+                hallId: currentHallId,
+                note: selectedSosReason,
+                crowdSeverity: 'CRITICAL'
+              })
+            });
+            if (res.ok) {
+              btnSos.innerHTML = '<span>✅</span> <span>CENTRAL COMMAND ALERTED!</span>';
+              setTimeout(() => btnSos.innerHTML = origText, 3000);
+            }
+          } catch (e) {
+            btnSos.innerHTML = origText;
+          }
+        });
+      }
+
+      // WebSocket listener
+      function connectWs() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(`${protocol}//${window.location.host}`);
+
+        ws.onopen = () => {
+          if (elWsBadge) {
+            elWsBadge.className = 'badge-mini-green';
+            elWsBadge.textContent = '🟢 LIVE';
+          }
+        };
+
+        ws.onclose = () => {
+          if (elWsBadge) {
+            elWsBadge.className = 'badge-mini-red';
+            elWsBadge.textContent = '🔴 OFFLINE';
+          }
+          setTimeout(connectWs, 3000);
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const msg = JSON.parse(event.data);
+            if (msg.type === 'VOICE_ANNOUNCEMENT' && msg.data?.audioBase64) {
+              const audio = new Audio(`data:audio/mp3;base64,${msg.data.audioBase64}`);
+              audio.play().catch(() => {});
+            }
+            if (msg.type === 'SYSTEM_LOG' && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.innerHTML = `<strong>[${msg.data.timestamp || new Date().toLocaleTimeString()}]</strong> ${msg.data.text}`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+            }
+          } catch (e) {}
+        };
+      }
+
+      syncHallState();
+      connectWs();
+    })();
+  </script>
+</body>
+
+</html>

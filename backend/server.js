@@ -84,6 +84,10 @@ app.get('/signage', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/signage.html'));
 });
 
+app.get('/volunteer', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/volunteer.html'));
+});
+
 app.get('/download-deck', (req, res) => {
   res.download(path.join(__dirname, '../DELTA_ENGINE_Presentation.pptx'));
 });
@@ -513,6 +517,169 @@ app.post('/api/voice/announce', async (req, res) => {
     });
   }
   res.json(result);
+});
+
+// Enterprise Supervised Autonomy: Record Human-in-the-Loop Actions & Liability Signatures
+app.post('/api/audit/supervisor-action', (req, res) => {
+  const crypto = require('crypto');
+  const { actionId, decision, rationale, overriddenBy, targetZone, telemetry } = req.body || {};
+  
+  const timestamp = new Date().toISOString();
+  const rawPayload = `${actionId || 'ACT_HEAL'}_${decision || 'AUTO_DISPATCH'}_${timestamp}_${overriddenBy || 'Facility_Director'}`;
+  const cryptoSignature = crypto.createHash('sha256').update(rawPayload).digest('hex').substring(0, 16);
+
+  const auditRecord = {
+    id: `AUDIT_${Date.now()}`,
+    actionId: actionId || `ACT_${Date.now()}`,
+    decision: decision || 'AUTO_DISPATCHED', // 'APPROVED', 'HELD_FOR_REVIEW', 'ABORTED_BY_DIRECTOR', 'AUTO_DISPATCHED'
+    rationale: rationale || 'Autonomous capacity and flow healing protocol',
+    overriddenBy: overriddenBy || 'Facility Safety Director',
+    targetZone: targetZone || 'All Active Zones',
+    telemetry: telemetry || {},
+    cryptoSignature: `SIG-SHA256-${cryptoSignature.toUpperCase()}`,
+    timestamp: new Date().toLocaleTimeString(),
+    isoTimestamp: timestamp,
+    complianceCode: 'NFPA-101-SLA-15S'
+  };
+
+  if (!db.supervisorAuditLogs) {
+    db.supervisorAuditLogs = [];
+  }
+  db.supervisorAuditLogs.unshift(auditRecord);
+  if (db.supervisorAuditLogs.length > 50) {
+    db.supervisorAuditLogs.pop();
+  }
+
+  broadcast({
+    type: 'SUPERVISOR_ACTION_LOGGED',
+    data: auditRecord
+  });
+
+  broadcast({
+    type: 'SYSTEM_LOG',
+    data: {
+      text: `🛡️ [Supervised Autonomy] Decision: ${auditRecord.decision} by ${auditRecord.overriddenBy} (${auditRecord.cryptoSignature})`,
+      type: auditRecord.decision.includes('ABORT') ? 'warning' : 'success',
+      timestamp: auditRecord.timestamp
+    }
+  });
+
+  res.json({
+    success: true,
+    auditRecord
+  });
+});
+
+// Field Volunteer SOS & Real-Time Incident Reporting
+app.post('/api/volunteer/sos', (req, res) => {
+  const { volunteerName, hallId, note, crowdSeverity } = req.body || {};
+  const timestamp = new Date().toLocaleTimeString();
+  const hall = db.graph?.halls?.[hallId] || { name: hallId || 'Active Zone' };
+
+  const sosRecord = {
+    id: `SOS_${Date.now()}`,
+    volunteerName: volunteerName || 'On-Ground Safety Marshal',
+    hallId: hallId || 'hall-1',
+    hallName: hall.name,
+    crowdSeverity: crowdSeverity || 'HIGH',
+    note: note || 'Field Marshal reports critical crowd bottlenecking / barrier surge!',
+    timestamp
+  };
+
+  if (!db.incidents) db.incidents = [];
+  db.incidents.unshift({
+    id: sosRecord.id,
+    type: 'VOLUNTEER_SOS',
+    severity: sosRecord.crowdSeverity,
+    description: `🚨 [FIELD SOS - ${sosRecord.volunteerName} @ ${sosRecord.hallName}]: ${sosRecord.note}`,
+    timestamp
+  });
+
+  broadcast({
+    type: 'VOLUNTEER_SOS_ALERT',
+    data: sosRecord
+  });
+
+  broadcast({
+    type: 'SYSTEM_LOG',
+    data: {
+      text: `🚨 [FIELD MARSHAL SOS] ${sosRecord.volunteerName} signaled emergency at ${sosRecord.hallName}: "${sosRecord.note}"`,
+      type: 'conflict',
+      timestamp
+    }
+  });
+
+  res.json({ success: true, sosRecord });
+});
+
+// Regulatory Fire Marshal & Life-Safety Compliance Audit Endpoint
+app.get('/api/compliance/fire-marshal-audit', (req, res) => {
+  const crypto = require('crypto');
+  const timestamp = new Date().toISOString();
+  const auditId = `FM_AUDIT_${Date.now()}`;
+  
+  let totalCapacity = 0;
+  let totalOccupancy = 0;
+  const hallBreakdown = [];
+
+  const halls = db.graph?.halls || {};
+  for (const hId in halls) {
+    const hall = halls[hId];
+    const cap = hall.capacity || 100;
+    const occ = hall.currentOccupancy || (hId === 'hall-1' ? (db.cctvState?.turingHallOccupancy || 180) : Math.round(cap * 0.45));
+    const densityM2Pax = +(hall.spatialModel?.dimensions?.areaM2 ? (hall.spatialModel.dimensions.areaM2 / Math.max(occ, 1)).toFixed(2) : (cap > 200 ? 1.4 : 1.8));
+    const flowRatePaxMin = (hall.spatialModel?.capacityMetrics?.egressFlowRatePaxPerMin) || (Math.max(1, hall.doorsCount || 2) * 60);
+    const status = occ > cap ? 'HAZARD_BREACH' : (occ > cap * 0.85 ? 'WARNING_DENSITY' : 'NOMINAL');
+
+    totalCapacity += cap;
+    totalOccupancy += occ;
+
+    hallBreakdown.push({
+      hallId: hId,
+      hallName: hall.name,
+      capacity: cap,
+      occupancy: occ,
+      occupancyPercent: Math.round((occ / cap) * 100),
+      densityM2Pax,
+      minRequiredM2Pax: 1.4,
+      flowRatePaxMin,
+      status
+    });
+  }
+
+  const overallOccupancyPct = totalCapacity > 0 ? Math.round((totalOccupancy / totalCapacity) * 100) : 0;
+  const hasBreach = hallBreakdown.some(h => h.status === 'HAZARD_BREACH');
+  const hasWarning = hallBreakdown.some(h => h.status === 'WARNING_DENSITY');
+  const complianceStatus = hasBreach ? 'REGULATORY_BREACH' : (hasWarning ? 'IMPAIRED_FLOW' : 'CERTIFIED_COMPLIANT');
+
+  const rawHash = `${auditId}_${totalCapacity}_${totalOccupancy}_${complianceStatus}_${timestamp}`;
+  const sealHash = crypto.createHash('sha256').update(rawHash).digest('hex').substring(0, 24).toUpperCase();
+
+  const auditReport = {
+    auditId,
+    auditTitle: "Official Life-Safety & Fire Marshal Egress Compliance Audit",
+    jurisdictionStandard: "NFPA-101 (Life Safety Code § 12.7) / IBC-2024 Chapter 10",
+    venueName: "St. Peter's Systems & Convention Complex",
+    timestamp: new Date().toLocaleString(),
+    isoTimestamp: timestamp,
+    complianceStatus,
+    overallOccupancyPct,
+    metrics: {
+      totalCapacity,
+      totalOccupancy,
+      activeZonesCount: hallBreakdown.length,
+      averageDensityM2Pax: +(hallBreakdown.reduce((acc, h) => acc + h.densityM2Pax, 0) / Math.max(1, hallBreakdown.length)).toFixed(2),
+      totalEgressFlowRatePaxMin: hallBreakdown.reduce((acc, h) => acc + h.flowRatePaxMin, 0),
+      opticalTripwireSensorsActive: 4,
+      cctvPerceptionNodesActive: 4
+    },
+    hallBreakdown,
+    recentSupervisorInterventions: (db.supervisorAuditLogs || []).slice(0, 5),
+    verificationSeal: `SEAL-NFPA-${sealHash}`,
+    certifiedInspectorNote: "Autonomous real-time egress flow monitored via DELTA Engine optical sensor tripwires and CCTV crowd perception."
+  };
+
+  res.json(auditReport);
 });
 
 // Real-Time Google Gemini 3.8/3.5 Flash Safety & Capacity Perception Audit

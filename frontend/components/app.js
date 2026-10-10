@@ -90,6 +90,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initSwarmCopy(); // Swarm negotiation transcript copy to clipboard
   initScenarioLabDrawer(); // Unified Scenario & Stress Lab drawer controller
   initAutopilotController(); // Tesla Autopilot autonomous mode controller
+  initFireMarshalCompliance(); // Regulatory NFPA-101 Fire Marshal compliance auditor
 
   // Custom Node Graph animation loop (sleeps when settled)
   if (typeof wakePhysicsSimulation === 'function') {
@@ -801,7 +802,9 @@ function triggerReallocationCountdown(conflictReason, destinationTarget, onCompl
   const elDest = document.getElementById('reallocation-destination-text');
   const elNum = document.getElementById('reallocation-countdown-number');
   const elProgress = document.getElementById('reallocation-progress-bar');
-  const btnSkip = document.getElementById('btn-skip-countdown');
+  const btnApprove = document.getElementById('btn-skip-countdown');
+  const btnPause = document.getElementById('btn-pause-countdown');
+  const btnAbort = document.getElementById('btn-abort-countdown');
 
   if (!modal || !elReason || !elDest || !elNum || !elProgress) {
     if (typeof onComplete === 'function') onComplete();
@@ -816,40 +819,53 @@ function triggerReallocationCountdown(conflictReason, destinationTarget, onCompl
   elReason.textContent = conflictReason || '🚨 Self-Healing Audit: Operational constraint violation detected.';
   elDest.textContent = destinationTarget || '📍 Reallocating talk node to optimal venue hall and time slot.';
   
-  elNum.textContent = '5';
+  const TOTAL_SECONDS = 15;
+  let seconds = TOTAL_SECONDS;
+  let isPaused = false;
+  let hasCompleted = false;
+
+  elNum.textContent = seconds.toString();
   elProgress.style.transition = 'none';
   elProgress.style.width = '0%';
   modal.classList.remove('hidden');
   document.body.classList.add('self-healing-active');
 
-  // Trigger audio alert chime
   playAlertSfx();
 
-  // Trigger dramatic emergency alarm pulse and card shake animations!
   modal.classList.remove('dramatic-alarm');
   if (card) card.classList.remove('dramatic-shake');
   void modal.offsetWidth; // Force reflow
   modal.classList.add('dramatic-alarm');
   if (card) card.classList.add('dramatic-shake');
 
-  // Trigger progress bar animation for 5 full seconds
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      elProgress.style.transition = 'width 5s linear';
+      elProgress.style.transition = `width ${TOTAL_SECONDS}s linear`;
       elProgress.style.width = '100%';
     });
   });
 
-  let seconds = 5;
-  let hasCompleted = false;
+  const recordSupervisorDecision = (decision, rationale) => {
+    fetch('/api/audit/supervisor-action', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        actionId: `ACT_REALLOC_${Date.now()}`,
+        decision,
+        rationale: rationale || conflictReason,
+        overriddenBy: 'Facility Safety Director',
+        targetZone: destinationTarget
+      })
+    }).catch(() => {});
+  };
 
-  const finishCountdown = () => {
+  const finishCountdown = (decision = 'AUTO_DISPATCHED') => {
     if (hasCompleted) return;
     hasCompleted = true;
     clearInterval(timer);
     activeCountdownSkipFn = null;
 
-    if (btnSkip) btnSkip.removeEventListener('click', finishCountdown);
+    recordSupervisorDecision(decision);
 
     elNum.textContent = '0';
     elProgress.style.transition = 'width 0.15s ease';
@@ -866,20 +882,69 @@ function triggerReallocationCountdown(conflictReason, destinationTarget, onCompl
     }, 280);
   };
 
-  activeCountdownSkipFn = finishCountdown;
-  if (btnSkip) {
-    btnSkip.addEventListener('click', finishCountdown, { once: true });
+  const abortAction = () => {
+    if (hasCompleted) return;
+    hasCompleted = true;
+    clearInterval(timer);
+    activeCountdownSkipFn = null;
+
+    recordSupervisorDecision('ABORTED_BY_DIRECTOR', `Action vetoed manually by Facility Director: ${conflictReason}`);
+
+    modal.classList.add('hidden');
+    document.body.classList.remove('self-healing-active');
+    modal.classList.remove('dramatic-alarm');
+    if (card) card.classList.remove('dramatic-shake');
+
+    if (typeof createToast === 'function') {
+      createToast('⛔ Autonomous action vetoed by Facility Director. Action aborted & logged to legal audit trail.', 'warning');
+    }
+  };
+
+  const togglePause = () => {
+    isPaused = !isPaused;
+    if (isPaused) {
+      elProgress.style.transition = 'none';
+      if (btnPause) {
+        btnPause.textContent = '▶️ RESUME SLA TIMER';
+        btnPause.classList.add('btn-green');
+        btnPause.classList.remove('btn-yellow');
+      }
+      if (typeof createToast === 'function') {
+        createToast('⏸️ Reallocation SLA timer paused for manual review.', 'info');
+      }
+    } else {
+      elProgress.style.transition = `width ${seconds}s linear`;
+      elProgress.style.width = '100%';
+      if (btnPause) {
+        btnPause.textContent = '⏸️ HOLD FOR REVIEW';
+        btnPause.classList.add('btn-yellow');
+        btnPause.classList.remove('btn-green');
+      }
+    }
+  };
+
+  activeCountdownSkipFn = () => finishCountdown('APPROVED');
+
+  if (btnApprove) {
+    btnApprove.onclick = () => finishCountdown('APPROVED');
+  }
+  if (btnPause) {
+    btnPause.onclick = togglePause;
+  }
+  if (btnAbort) {
+    btnAbort.onclick = abortAction;
   }
 
   const timer = setInterval(() => {
+    if (isPaused) return;
     seconds--;
     if (seconds > 0) {
-      elNum.textContent = seconds;
+      elNum.textContent = seconds.toString();
       elNum.classList.add('tick');
       playTickSfx();
       setTimeout(() => elNum.classList.remove('tick'), 250);
     } else {
-      finishCountdown();
+      finishCountdown('AUTO_DISPATCHED');
     }
   }, 1000);
 }
@@ -1147,6 +1212,170 @@ function initSwarmCopy() {
         console.error('Clipboard copy failed:', err);
         createToast('Failed to copy to clipboard.', 'warning');
       });
-  });
-}
+// --- NFPA-101 & IBC-2024 FIRE MARSHAL & LIFE-SAFETY COMPLIANCE AUDITOR ---
+function initFireMarshalCompliance() {
+  const btnTrigger = document.getElementById('btn-download-fire-marshal-audit');
+  const modal = document.getElementById('modal-fire-marshal-audit');
+  const btnClose = document.getElementById('btn-close-fire-marshal-modal');
+  const btnCopySeal = document.getElementById('btn-copy-fm-seal');
+  const btnDownloadJson = document.getElementById('btn-download-fm-json');
+  const btnPrintReport = document.getElementById('btn-print-fm-report');
 
+  let currentAuditData = null;
+
+  async function fetchAndUpdateAuditReport(openModal = false) {
+    try {
+      const res = await fetch('/api/compliance/fire-marshal-audit');
+      if (!res.ok) throw new Error('Compliance audit fetch failed');
+      const data = await res.json();
+      currentAuditData = data;
+
+      // Update widget card in dashboard
+      const badge = document.getElementById('fire-marshal-compliance-badge');
+      const letterGrade = document.getElementById('fire-marshal-letter-grade');
+      const statusText = document.getElementById('fire-marshal-status-text');
+      const densityRate = document.getElementById('fire-marshal-density-rate');
+
+      if (badge) {
+        if (data.complianceStatus === 'CERTIFIED_COMPLIANT') {
+          badge.className = 'badge-mini-green';
+          badge.textContent = 'NFPA-101 CERTIFIED';
+        } else if (data.complianceStatus === 'IMPAIRED_FLOW') {
+          badge.className = 'badge-mini-yellow';
+          badge.textContent = 'NFPA-101 DENSITY WARNING';
+        } else {
+          badge.className = 'badge-mini-red';
+          badge.textContent = 'REGULATORY HAZARD';
+        }
+      }
+
+      if (letterGrade) {
+        letterGrade.textContent = data.complianceStatus === 'CERTIFIED_COMPLIANT' ? 'A+' : (data.complianceStatus === 'IMPAIRED_FLOW' ? 'B-' : 'F');
+        letterGrade.style.color = data.complianceStatus === 'CERTIFIED_COMPLIANT' ? '#16a34a' : (data.complianceStatus === 'IMPAIRED_FLOW' ? '#d97706' : '#dc2626');
+      }
+
+      if (statusText) {
+        statusText.textContent = data.complianceStatus === 'CERTIFIED_COMPLIANT' ? `NOMINAL FLOW (${100 - data.overallOccupancyPct}% CLEAR)` : data.complianceStatus.replace('_', ' ');
+      }
+
+      if (densityRate) {
+        densityRate.textContent = `Density: ${data.metrics?.averageDensityM2Pax || 1.8} m²/pax • Flow: ${data.metrics?.totalEgressFlowRatePaxMin || 840} pax/min`;
+      }
+
+      // If opening modal, populate modal contents
+      if (openModal && modal) {
+        const elSeal = document.getElementById('fm-modal-seal');
+        const elTimestamp = document.getElementById('fm-modal-timestamp');
+        const elStatusPill = document.getElementById('fm-modal-status-pill');
+        const elCap = document.getElementById('fm-modal-metric-capacity');
+        const elOcc = document.getElementById('fm-modal-metric-occupancy');
+        const elPct = document.getElementById('fm-modal-metric-pct');
+        const elDensity = document.getElementById('fm-modal-metric-density');
+        const elFlow = document.getElementById('fm-modal-metric-flow');
+        const elTbody = document.getElementById('fm-modal-table-body');
+        const elLogs = document.getElementById('fm-modal-interventions-log');
+
+        if (elSeal) elSeal.textContent = data.verificationSeal || 'SEAL-NFPA-PENDING';
+        if (elTimestamp) elTimestamp.textContent = data.timestamp || new Date().toLocaleString();
+        if (elStatusPill) {
+          elStatusPill.textContent = data.complianceStatus.replace('_', ' ');
+          elStatusPill.className = data.complianceStatus === 'CERTIFIED_COMPLIANT' ? 'badge-mini-green' : (data.complianceStatus === 'IMPAIRED_FLOW' ? 'badge-mini-yellow' : 'badge-mini-red');
+        }
+        if (elCap) elCap.textContent = `${data.metrics?.totalCapacity || 0} Pax`;
+        if (elOcc) elOcc.textContent = `${data.metrics?.totalOccupancy || 0} Pax`;
+        if (elPct) elPct.textContent = `${data.overallOccupancyPct}% of Max Approved Load`;
+        if (elDensity) elDensity.textContent = `${data.metrics?.averageDensityM2Pax || 0} m²/pax`;
+        if (elFlow) elFlow.textContent = `${data.metrics?.totalEgressFlowRatePaxMin || 0} pax/min`;
+
+        if (elTbody && data.hallBreakdown) {
+          elTbody.innerHTML = '';
+          data.hallBreakdown.forEach(hall => {
+            const tr = document.createElement('tr');
+            tr.style.borderBottom = '1px solid #cbd5e1';
+            const badgeClass = hall.status === 'NOMINAL' ? 'badge-mini-green' : (hall.status === 'WARNING_DENSITY' ? 'badge-mini-yellow' : 'badge-mini-red');
+            const statusLabel = hall.status === 'NOMINAL' ? '✅ COMPLIANT' : (hall.status === 'WARNING_DENSITY' ? '⚠️ DENSITY WARNING' : '🚨 HAZARD BREACH');
+            tr.innerHTML = `
+              <td style="padding:8px 10px; font-weight:800; border-right:1px solid #cbd5e1;">${hall.hallName}</td>
+              <td style="padding:8px 10px; border-right:1px solid #cbd5e1;">${hall.capacity} Pax</td>
+              <td style="padding:8px 10px; border-right:1px solid #cbd5e1; font-weight:700;">${hall.occupancy} Pax</td>
+              <td style="padding:8px 10px; border-right:1px solid #cbd5e1;">${hall.occupancyPercent}%</td>
+              <td style="padding:8px 10px; border-right:1px solid #cbd5e1;">${hall.densityM2Pax} m²</td>
+              <td style="padding:8px 10px; border-right:1px solid #cbd5e1;">${hall.flowRatePaxMin} pax/min</td>
+              <td style="padding:8px 10px;"><span class="${badgeClass}">${statusLabel}</span></td>
+            `;
+            elTbody.appendChild(tr);
+          });
+        }
+
+        if (elLogs && data.recentSupervisorInterventions) {
+          if (data.recentSupervisorInterventions.length === 0) {
+            elLogs.innerHTML = '<em>No emergency supervisor overrides recorded during this monitoring session. Autonomous SLA active.</em>';
+          } else {
+            elLogs.innerHTML = data.recentSupervisorInterventions.map(log => `
+              <div style="margin-bottom:4px; padding-bottom:4px; border-bottom:1px dashed #cbd5e1;">
+                <strong>[${new Date(log.timestamp).toLocaleTimeString()}]</strong> Action: <code>${log.action}</code> • Outcome: <span style="font-weight:800;">${log.outcome}</span> • Sig: <small>${log.signature || 'N/A'}</small>
+              </div>
+            `).join('');
+          }
+        }
+
+        modal.classList.remove('hidden');
+        if (typeof playSuccessSfx === 'function') playSuccessSfx();
+      }
+    } catch (err) {
+      console.warn('[FireMarshalAudit] Error syncing compliance data:', err);
+    }
+  }
+
+  // Bind Open Button
+  if (btnTrigger) {
+    btnTrigger.addEventListener('click', () => {
+      fetchAndUpdateAuditReport(true);
+    });
+  }
+
+  // Bind Close Button
+  if (btnClose && modal) {
+    btnClose.addEventListener('click', () => {
+      modal.classList.add('hidden');
+    });
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) modal.classList.add('hidden');
+    });
+  }
+
+  // Copy Verification Seal
+  if (btnCopySeal) {
+    btnCopySeal.addEventListener('click', () => {
+      if (!currentAuditData?.verificationSeal) return;
+      navigator.clipboard.writeText(currentAuditData.verificationSeal).then(() => {
+        if (typeof createToast === 'function') createToast('📋 Cryptographic Verification Seal copied!', 'success');
+      });
+    });
+  }
+
+  // Download JSON
+  if (btnDownloadJson) {
+    btnDownloadJson.addEventListener('click', () => {
+      if (!currentAuditData) return;
+      const jsonStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentAuditData, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute('href', jsonStr);
+      a.setAttribute('download', `delta-fire-marshal-audit-${Date.now()}.json`);
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      if (typeof createToast === 'function') createToast('⬇️ Downloaded Official Audit JSON Seal!', 'success');
+    });
+  }
+
+  // Print Report
+  if (btnPrintReport) {
+    btnPrintReport.addEventListener('click', () => {
+      window.print();
+    });
+  }
+
+  // Initial fetch to sync card badge on load
+  fetchAndUpdateAuditReport(false);
+}
