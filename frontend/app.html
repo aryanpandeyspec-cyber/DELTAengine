@@ -63,7 +63,8 @@
     body.dark-mode .phone-screen-view,
     body.dark-mode .view-top-bar,
     body.dark-mode .messenger-input-bar,
-    body.dark-mode .app-bottom-nav {
+    body.dark-mode .app-bottom-nav,
+    body.dark-mode .settings-group {
       background: #131926 !important;
       color: #f8fafc !important;
       border-color: #38bdf8 !important;
@@ -254,6 +255,8 @@
       font-family: var(--font-mono);
       color: #0f172a;
       flex-shrink: 0;
+      z-index: 100;
+      background: transparent;
     }
 
     .status-icons {
@@ -261,6 +264,14 @@
       align-items: center;
       gap: 5px;
       font-size: 0.72rem;
+    }
+
+    /* Internal Phone Screen Body Container */
+    .phone-screen-body {
+      flex: 1;
+      width: 100%;
+      position: relative;
+      overflow: hidden;
     }
 
     /* ==========================================================================
@@ -289,7 +300,7 @@
     .view-top-bar {
       background: #ffffff;
       border-bottom: var(--border-outline);
-      padding: 10px 14px;
+      padding: 8px 12px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -877,7 +888,7 @@
     }
 
     /* --------------------------------------------------------------------------
-       VIEW 2: FULL-SCREEN MESSENGER (INSIDE PHONE SCREEN)
+       VIEW 2: FULL PHONE SCREEN MESSENGER (CONFINED TO PHONE SCREEN!)
        -------------------------------------------------------------------------- */
     .msg-channel-switcher {
       background: #f8fafc;
@@ -1268,7 +1279,7 @@
     /* Toast */
     .app-toast {
       position: absolute;
-      top: 40px;
+      top: 10px;
       left: 50%;
       transform: translateX(-50%) translateY(-20px);
       background: #0f172a;
@@ -1340,417 +1351,422 @@
           </div>
         </div>
 
-        <!-- ====================================================================
-             VIEW 1: ROOMS DASHBOARD (HOME)
-             ==================================================================== -->
-        <div class="phone-screen-view active" id="view-dashboard">
-          <div class="view-scroll-body">
-            <!-- 1. Top Brand Box (DELTA) -->
-            <div class="delta-brand-box">
-              <div class="delta-brand-logo-row">
-                <img src="logo.jpeg" alt="DELTA Logo" class="delta-brand-logo-img">
-                <h1 class="delta-brand-title">DELTA <span>ENGINE</span></h1>
-              </div>
-              <div class="delta-brand-subtitle">The Self-Healing & Agentic Conference OS</div>
-            </div>
+        <!-- Phone Screen Body Container -->
+        <div class="phone-screen-body">
 
-            <!-- 2. NOTIFICAION Row -->
-            <div class="notification-bar-row">
-              <span class="live-status-pill-sub">
-                <span>🎙️</span> Voice Mesh Online
-              </span>
-              <button id="btn-open-notifications" class="btn-notification" title="Open Notifications">
-                🔔 NOTIFICAION <span class="notif-badge">3</span>
-              </button>
-            </div>
-
-            <!-- 3. ROOMS SECTION (ROOM 1 to ROOM 5 with Lines) -->
-            <section class="rooms-card-container">
-              <div class="section-eyebrow">
-                <span>🏛️ Venue Chambers</span>
-                <span style="color:#2563eb;">● Live Sync</span>
+          <!-- ====================================================================
+               VIEW 1: ROOMS DASHBOARD (HOME)
+               ==================================================================== -->
+          <div class="phone-screen-view active" id="view-dashboard">
+            <div class="view-scroll-body">
+              <!-- 1. Top Brand Box (DELTA) -->
+              <div class="delta-brand-box">
+                <div class="delta-brand-logo-row">
+                  <img src="logo.jpeg" alt="DELTA Logo" class="delta-brand-logo-img">
+                  <h1 class="delta-brand-title">DELTA <span>ENGINE</span></h1>
+                </div>
+                <div class="delta-brand-subtitle">The Self-Healing & Agentic Conference OS</div>
               </div>
 
-              <!-- ROOM 1 -->
-              <div class="room-row">
-                <div class="room-header-line">
-                  <span class="room-title-tag">ROOM 1</span>
-                  <div class="room-line-input-wrap">
-                    <input type="text" class="room-line-input" id="input-room-1"
-                      value="Keynote in progress; front gate A clear" placeholder="Enter status note...">
-                  </div>
-                  <span class="room-status-badge badge-busy">82% • Active</span>
-                </div>
-                <div class="room-sub-row">
-                  <span class="venue-name">Turing Hall (250) • Dr. Aditi</span>
-                  <div class="room-sub-actions">
-                    <button class="btn-room-mini btn-room-voice" data-room="1">🎙️ Voice</button>
-                    <button class="btn-room-mini btn-room-msg" data-room="1">💬 Msg</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ROOM 2 -->
-              <div class="room-row">
-                <div class="room-header-line">
-                  <span class="room-title-tag">ROOM 2</span>
-                  <div class="room-line-input-wrap">
-                    <input type="text" class="room-line-input" id="input-room-2"
-                      value="Mic check nominal; WebGPU slides loaded" placeholder="Enter status note...">
-                  </div>
-                  <span class="room-status-badge badge-nominal">45% • Nominal</span>
-                </div>
-                <div class="room-sub-row">
-                  <span class="venue-name">Lovelace Suite (120) • Vikram</span>
-                  <div class="room-sub-actions">
-                    <button class="btn-room-mini btn-room-voice" data-room="2">🎙️ Voice</button>
-                    <button class="btn-room-mini btn-room-msg" data-room="2">💬 Msg</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ROOM 3 -->
-              <div class="room-row">
-                <div class="room-header-line">
-                  <span class="room-title-tag">ROOM 3</span>
-                  <div class="room-line-input-wrap">
-                    <input type="text" class="room-line-input" id="input-room-3"
-                      value="Speaker setup ready; AC cooling adjusted" placeholder="Enter status note...">
-                  </div>
-                  <span class="room-status-badge badge-nominal">60% • Nominal</span>
-                </div>
-                <div class="room-sub-row">
-                  <span class="venue-name">Hopper Room (60) • Priya</span>
-                  <div class="room-sub-actions">
-                    <button class="btn-room-mini btn-room-voice" data-room="3">🎙️ Voice</button>
-                    <button class="btn-room-mini btn-room-msg" data-room="3">💬 Msg</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ROOM 4 -->
-              <div class="room-row">
-                <div class="room-header-line">
-                  <span class="room-title-tag">ROOM 4</span>
-                  <div class="room-line-input-wrap">
-                    <input type="text" class="room-line-input" id="input-room-4"
-                      value="Overflow door standby active; crowd steady" placeholder="Enter status note...">
-                  </div>
-                  <span class="room-status-badge badge-alert">91% • High</span>
-                </div>
-                <div class="room-sub-row">
-                  <span class="venue-name">Keynote Arena (500) • Swarm</span>
-                  <div class="room-sub-actions">
-                    <button class="btn-room-mini btn-room-voice" data-room="4">🎙️ Voice</button>
-                    <button class="btn-room-mini btn-room-msg" data-room="4">💬 Msg</button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- ROOM 5 -->
-              <div class="room-row">
-                <div class="room-header-line">
-                  <span class="room-title-tag">ROOM 5</span>
-                  <div class="room-line-input-wrap">
-                    <input type="text" class="room-line-input" id="input-room-5"
-                      value="Hackathon pitching underway; wifi nominal" placeholder="Enter status note...">
-                  </div>
-                  <span class="room-status-badge badge-nominal">35% • Nominal</span>
-                </div>
-                <div class="room-sub-row">
-                  <span class="venue-name">Innovation Lab (1,200) • Hack</span>
-                  <div class="room-sub-actions">
-                    <button class="btn-room-mini btn-room-voice" data-room="5">🎙️ Voice</button>
-                    <button class="btn-room-mini btn-room-msg" data-room="5">💬 Msg</button>
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            <!-- 4. CONTACT INFO SECTION (ARYAN & SHAHID) -->
-            <section class="contact-card-container">
-              <h2 class="contact-card-title">CONTACT INFO</h2>
-
-              <div class="contact-list">
-                <!-- ARYAN -->
-                <div class="contact-item">
-                  <div class="contact-profile open-chat-direct" data-target="Aryan Pandey" data-phone="888777666">
-                    <div class="contact-avatar">🧑‍💻</div>
-                    <div class="contact-details">
-                      <div class="contact-name-line">
-                        <span class="contact-name">ARYAN</span>
-                        <span class="contact-online-dot"></span>
-                      </div>
-                      <div class="contact-phone">888777666</div>
-                    </div>
-                  </div>
-                  <div class="contact-actions">
-                    <button class="btn-action-icon chat-trigger" data-target="Aryan Pandey" data-phone="888777666">
-                      💬 Msg
-                    </button>
-                    <button class="btn-action-icon voice-trigger" data-target="Aryan Pandey" data-channel="1">
-                      🎙️ Voice
-                    </button>
-                  </div>
-                </div>
-
-                <!-- SHAHID -->
-                <div class="contact-item">
-                  <div class="contact-profile open-chat-direct" data-target="Shahid" data-phone="999777666">
-                    <div class="contact-avatar" style="background:#fefce8;">🎧</div>
-                    <div class="contact-details">
-                      <div class="contact-name-line">
-                        <span class="contact-name">SHAHID</span>
-                        <span class="contact-online-dot"></span>
-                      </div>
-                      <div class="contact-phone">999777666</div>
-                    </div>
-                  </div>
-                  <div class="contact-actions">
-                    <button class="btn-action-icon chat-trigger" data-target="Shahid" data-phone="999777666">
-                      💬 Msg
-                    </button>
-                    <button class="btn-action-icon voice-trigger" data-target="Shahid" data-channel="2">
-                      🎙️ Voice
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>
-        </div>
-
-        <!-- ====================================================================
-             VIEW 2: FULL PHONE SCREEN MESSENGER (CONFINED TO PHONE SCREEN!)
-             ==================================================================== -->
-        <div class="phone-screen-view" id="view-messenger">
-          <!-- Top Bar inside Phone Screen -->
-          <div class="view-top-bar">
-            <button class="btn-view-back" id="btn-back-from-msg" title="Back to Rooms">←</button>
-            <div class="view-title-wrap">
-              <div class="contact-avatar" style="width:32px; height:32px; font-size:1rem;" id="active-chat-avatar">🧑‍💻</div>
-              <div style="display:flex; flex-direction:column; overflow:hidden;">
-                <span class="view-title-text" id="active-chat-name">Aryan Pandey</span>
-                <span class="view-sub-text">
-                  <span class="contact-online-dot"></span>
-                  <span id="active-chat-status">Online (888777666)</span>
+              <!-- 2. NOTIFICAION Row -->
+              <div class="notification-bar-row">
+                <span class="live-status-pill-sub">
+                  <span>🎙️</span> Voice Mesh Online
                 </span>
+                <button id="btn-open-notifications" class="btn-notification" title="Open Notifications">
+                  🔔 NOTIFICAION <span class="notif-badge">3</span>
+                </button>
               </div>
+
+              <!-- 3. ROOMS SECTION (ROOM 1 to ROOM 5 with Lines) -->
+              <section class="rooms-card-container">
+                <div class="section-eyebrow">
+                  <span>🏛️ Venue Chambers</span>
+                  <span style="color:#2563eb;">● Live Sync</span>
+                </div>
+
+                <!-- ROOM 1 -->
+                <div class="room-row">
+                  <div class="room-header-line">
+                    <span class="room-title-tag">ROOM 1</span>
+                    <div class="room-line-input-wrap">
+                      <input type="text" class="room-line-input" id="input-room-1"
+                        value="Keynote in progress; front gate A clear" placeholder="Enter status note...">
+                    </div>
+                    <span class="room-status-badge badge-busy">82% • Active</span>
+                  </div>
+                  <div class="room-sub-row">
+                    <span class="venue-name">Turing Hall (250) • Dr. Aditi</span>
+                    <div class="room-sub-actions">
+                      <button class="btn-room-mini btn-room-voice" data-room="1">🎙️ Voice</button>
+                      <button class="btn-room-mini btn-room-msg" data-room="1">💬 Msg</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ROOM 2 -->
+                <div class="room-row">
+                  <div class="room-header-line">
+                    <span class="room-title-tag">ROOM 2</span>
+                    <div class="room-line-input-wrap">
+                      <input type="text" class="room-line-input" id="input-room-2"
+                        value="Mic check nominal; WebGPU slides loaded" placeholder="Enter status note...">
+                    </div>
+                    <span class="room-status-badge badge-nominal">45% • Nominal</span>
+                  </div>
+                  <div class="room-sub-row">
+                    <span class="venue-name">Lovelace Suite (120) • Vikram</span>
+                    <div class="room-sub-actions">
+                      <button class="btn-room-mini btn-room-voice" data-room="2">🎙️ Voice</button>
+                      <button class="btn-room-mini btn-room-msg" data-room="2">💬 Msg</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ROOM 3 -->
+                <div class="room-row">
+                  <div class="room-header-line">
+                    <span class="room-title-tag">ROOM 3</span>
+                    <div class="room-line-input-wrap">
+                      <input type="text" class="room-line-input" id="input-room-3"
+                        value="Speaker setup ready; AC cooling adjusted" placeholder="Enter status note...">
+                    </div>
+                    <span class="room-status-badge badge-nominal">60% • Nominal</span>
+                  </div>
+                  <div class="room-sub-row">
+                    <span class="venue-name">Hopper Room (60) • Priya</span>
+                    <div class="room-sub-actions">
+                      <button class="btn-room-mini btn-room-voice" data-room="3">🎙️ Voice</button>
+                      <button class="btn-room-mini btn-room-msg" data-room="3">💬 Msg</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ROOM 4 -->
+                <div class="room-row">
+                  <div class="room-header-line">
+                    <span class="room-title-tag">ROOM 4</span>
+                    <div class="room-line-input-wrap">
+                      <input type="text" class="room-line-input" id="input-room-4"
+                        value="Overflow door standby active; crowd steady" placeholder="Enter status note...">
+                    </div>
+                    <span class="room-status-badge badge-alert">91% • High</span>
+                  </div>
+                  <div class="room-sub-row">
+                    <span class="venue-name">Keynote Arena (500) • Swarm</span>
+                    <div class="room-sub-actions">
+                      <button class="btn-room-mini btn-room-voice" data-room="4">🎙️ Voice</button>
+                      <button class="btn-room-mini btn-room-msg" data-room="4">💬 Msg</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- ROOM 5 -->
+                <div class="room-row">
+                  <div class="room-header-line">
+                    <span class="room-title-tag">ROOM 5</span>
+                    <div class="room-line-input-wrap">
+                      <input type="text" class="room-line-input" id="input-room-5"
+                        value="Hackathon pitching underway; wifi nominal" placeholder="Enter status note...">
+                    </div>
+                    <span class="room-status-badge badge-nominal">35% • Nominal</span>
+                  </div>
+                  <div class="room-sub-row">
+                    <span class="venue-name">Innovation Lab (1,200) • Hack</span>
+                    <div class="room-sub-actions">
+                      <button class="btn-room-mini btn-room-voice" data-room="5">🎙️ Voice</button>
+                      <button class="btn-room-mini btn-room-msg" data-room="5">💬 Msg</button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 4. CONTACT INFO SECTION (ARYAN & SHAHID) -->
+              <section class="contact-card-container">
+                <h2 class="contact-card-title">CONTACT INFO</h2>
+
+                <div class="contact-list">
+                  <!-- ARYAN -->
+                  <div class="contact-item">
+                    <div class="contact-profile open-chat-direct" data-target="Aryan Pandey" data-phone="888777666">
+                      <div class="contact-avatar">🧑‍💻</div>
+                      <div class="contact-details">
+                        <div class="contact-name-line">
+                          <span class="contact-name">ARYAN</span>
+                          <span class="contact-online-dot"></span>
+                        </div>
+                        <div class="contact-phone">888777666</div>
+                      </div>
+                    </div>
+                    <div class="contact-actions">
+                      <button class="btn-action-icon chat-trigger" data-target="Aryan Pandey" data-phone="888777666">
+                        💬 Msg
+                      </button>
+                      <button class="btn-action-icon voice-trigger" data-target="Aryan Pandey" data-channel="1">
+                        🎙️ Voice
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- SHAHID -->
+                  <div class="contact-item">
+                    <div class="contact-profile open-chat-direct" data-target="Shahid" data-phone="999777666">
+                      <div class="contact-avatar" style="background:#fefce8;">🎧</div>
+                      <div class="contact-details">
+                        <div class="contact-name-line">
+                          <span class="contact-name">SHAHID</span>
+                          <span class="contact-online-dot"></span>
+                        </div>
+                        <div class="contact-phone">999777666</div>
+                      </div>
+                    </div>
+                    <div class="contact-actions">
+                      <button class="btn-action-icon chat-trigger" data-target="Shahid" data-phone="999777666">
+                        💬 Msg
+                      </button>
+                      <button class="btn-action-icon voice-trigger" data-target="Shahid" data-channel="2">
+                        🎙️ Voice
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
             </div>
-            <button class="btn-action-icon voice-trigger" id="btn-msg-quick-voice" style="height:30px; font-size:0.68rem;">
-              🎙️ Voice
-            </button>
           </div>
 
-          <!-- Channel switcher -->
-          <div class="msg-channel-switcher">
-            <button class="channel-tab active" data-name="Aryan Pandey" data-phone="888777666" data-avatar="🧑‍💻">
-              🧑‍💻 Aryan
-            </button>
-            <button class="channel-tab" data-name="Shahid" data-phone="999777666" data-avatar="🎧">
-              🎧 Shahid
-            </button>
-            <button class="channel-tab" data-name="DELTA AI Swarm" data-phone="Swarm-Agent" data-avatar="🤖">
-              🤖 AI Swarm
-            </button>
-            <button class="channel-tab" data-name="All Volunteers" data-phone="Mesh-Broadcast" data-avatar="📢">
-              📢 All Mesh
-            </button>
-          </div>
-
-          <!-- Chat body inside Phone Screen -->
-          <div class="messenger-chat-body" id="messenger-chat-body">
-            <div class="chat-date-separator">Today • DELTA Live Mesh</div>
-
-            <!-- Message 1 -->
-            <div class="chat-bubble-row incoming">
-              <div class="chat-bubble">
-                <div class="chat-bubble-sender">Aryan Pandey (888777666)</div>
-                <div>Hey Suryansh! Entrance Door A is clearing up. Keep me posted on Room 1 crowd surge.</div>
-                <div class="chat-bubble-meta"><span>10:14 AM</span></div>
+          <!-- ====================================================================
+               VIEW 2: FULL PHONE SCREEN MESSENGER (CONFINED TO PHONE SCREEN!)
+               ==================================================================== -->
+          <div class="phone-screen-view" id="view-messenger">
+            <!-- Top Bar inside Phone Screen -->
+            <div class="view-top-bar">
+              <button class="btn-view-back" id="btn-back-from-msg" title="Back to Rooms">←</button>
+              <div class="view-title-wrap">
+                <div class="contact-avatar" style="width:32px; height:32px; font-size:1rem;" id="active-chat-avatar">🧑‍💻</div>
+                <div style="display:flex; flex-direction:column; overflow:hidden;">
+                  <span class="view-title-text" id="active-chat-name">Aryan Pandey</span>
+                  <span class="view-sub-text">
+                    <span class="contact-online-dot"></span>
+                    <span id="active-chat-status">Online (888777666)</span>
+                  </span>
+                </div>
               </div>
-            </div>
-
-            <!-- Message 2 -->
-            <div class="chat-bubble-row outgoing">
-              <div class="chat-bubble">
-                <div class="chat-bubble-sender">Suryansh (You)</div>
-                <div>Copy that Aryan. Door scan rate is nominal. All lanes moving smoothly.</div>
-                <div class="chat-bubble-meta"><span>10:16 AM</span></div>
-              </div>
-            </div>
-
-            <!-- Message 3 -->
-            <div class="chat-bubble-row incoming">
-              <div class="chat-bubble">
-                <div class="chat-bubble-sender">Aryan Pandey (888777666)</div>
-                <div>Great. Shahid verified Lovelace Suite (Room 2) mics. Ready for speaker transition.</div>
-                <div class="chat-bubble-meta"><span>10:20 AM</span></div>
-              </div>
-            </div>
-
-            <!-- Typing indicator -->
-            <div class="typing-indicator-row" id="typing-indicator-row">
-              <span id="typing-sender-name">Aryan</span> is typing
-              <div class="typing-dots">
-                <span></span><span></span><span></span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quick chips -->
-          <div class="msg-quick-chips-row">
-            <button class="chip-btn" data-text="🚨 Room 1 Overcrowded - Deploy overflow">🚨 Crowd Surge</button>
-            <button class="chip-btn" data-text="🚪 Gate A clear - Normal flow resumed">🚪 Gate A Clear</button>
-            <button class="chip-btn" data-text="🎙️ Mic feedback in Room 2 - Need audio tech">🎙️ Audio Glitch</button>
-            <button class="chip-btn" data-text="⏱️ Keynote running 5 mins late">⏱️ Schedule Shift</button>
-          </div>
-
-          <!-- Message input bar inside Phone Screen -->
-          <div class="messenger-input-bar">
-            <button class="btn-msg-tool" id="btn-msg-attach" title="Attach file">📎</button>
-            <button class="btn-msg-tool" id="btn-msg-mic" title="Voice note">🎙️</button>
-            <input type="text" id="msg-input-field" class="msg-input-field" placeholder="Message Aryan (888777666)..." autocomplete="off">
-            <button class="btn-msg-send" id="btn-msg-send" title="Send message">➤</button>
-          </div>
-        </div>
-
-        <!-- ====================================================================
-             VIEW 3: FULL PHONE SCREEN VOICE CONNECT (INSIDE PHONE SCREEN!)
-             ==================================================================== -->
-        <div class="phone-screen-view" id="view-voice">
-          <div class="view-top-bar">
-            <button class="btn-view-back" id="btn-back-from-voice" title="Back to Rooms">←</button>
-            <div class="view-title-wrap">
-              <span class="view-title-text">🎙️ VOICE CONNECT</span>
-              <span class="view-sub-text">● ONLINE</span>
-            </div>
-          </div>
-
-          <div class="voice-hub-content">
-            <div>
-              <div style="font-family:var(--font-mono); font-size:0.75rem; color:#64748b; text-transform:uppercase;">Connected Coordinator</div>
-              <div id="voice-target-name" style="font-size:1.25rem; font-weight:900; margin-top:2px;">Aryan Pandey (888777666)</div>
-              <div id="voice-connection-status" style="font-size:0.72rem; color:#2563eb; font-weight:700; margin-top:4px;">Frequency 433.10 MHz • Ready</div>
-
-              <div class="voice-channel-selector">
-                <button class="voice-chan-btn active" data-channel="1" data-target="Aryan Pandey (888777666)">Ch 1: Aryan</button>
-                <button class="voice-chan-btn" data-channel="2" data-target="Shahid (999777666)">Ch 2: Shahid</button>
-                <button class="voice-chan-btn" data-channel="4" data-target="All Mesh Channels">Ch 4: All Mesh</button>
-              </div>
-            </div>
-
-            <div class="voice-live-equalizer" id="voice-eq-bars">
-              <div class="eq-bar" style="height:10px;"></div>
-              <div class="eq-bar" style="height:18px;"></div>
-              <div class="eq-bar" style="height:26px;"></div>
-              <div class="eq-bar" style="height:14px;"></div>
-              <div class="eq-bar" style="height:22px;"></div>
-              <div class="eq-bar" style="height:12px;"></div>
-              <div class="eq-bar" style="height:20px;"></div>
-            </div>
-
-            <div>
-              <button class="btn-push-to-talk" id="btn-push-to-talk">
-                <span style="font-size:2rem;">🎙️</span>
-                <span>PUSH TO TALK</span>
+              <button class="btn-action-icon voice-trigger" id="btn-msg-quick-voice" style="height:30px; font-size:0.68rem;">
+                🎙️ Voice
               </button>
-              <div style="font-size:0.7rem; color:#64748b; margin-top:10px; font-weight:600;">
-                Hold or tap to speak live over the coordinator connection
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ====================================================================
-             VIEW 4: NOTIFICATIONS / ALERTS VIEW (INSIDE PHONE SCREEN!)
-             ==================================================================== -->
-        <div class="phone-screen-view" id="view-alerts">
-          <div class="view-top-bar">
-            <button class="btn-view-back" id="btn-back-from-alerts">←</button>
-            <div class="view-title-wrap">
-              <span class="view-title-text">🔔 EVENT NOTIFICATIONS</span>
-            </div>
-          </div>
-
-          <div class="view-scroll-body">
-            <div class="notif-item">
-              <div style="font-size:1.3rem;">🚨</div>
-              <div>
-                <div style="font-weight:800; font-size:0.85rem;">Room 4 Capacity Alert (91%)</div>
-                <div style="font-size:0.75rem; color:#64748b;">Keynote Arena reached density threshold. Secondary exit ready.</div>
-                <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">2 mins ago</div>
-              </div>
             </div>
 
-            <div class="notif-item">
-              <div style="font-size:1.3rem;">🎙️</div>
-              <div>
-                <div style="font-weight:800; font-size:0.85rem;">Voice Dispatch Sent to Room 1</div>
-                <div style="font-size:0.75rem; color:#64748b;">Autonomous coordinator audio notice broadcasted.</div>
-                <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">8 mins ago</div>
-              </div>
+            <!-- Channel switcher -->
+            <div class="msg-channel-switcher">
+              <button class="channel-tab active" data-name="Aryan Pandey" data-phone="888777666" data-avatar="🧑‍💻">
+                🧑‍💻 Aryan
+              </button>
+              <button class="channel-tab" data-name="Shahid" data-phone="999777666" data-avatar="🎧">
+                🎧 Shahid
+              </button>
+              <button class="channel-tab" data-name="DELTA AI Swarm" data-phone="Swarm-Agent" data-avatar="🤖">
+                🤖 AI Swarm
+              </button>
+              <button class="channel-tab" data-name="All Volunteers" data-phone="Mesh-Broadcast" data-avatar="📢">
+                📢 All Mesh
+              </button>
             </div>
 
-            <div class="notif-item">
-              <div style="font-size:1.3rem;">🤖</div>
-              <div>
-                <div style="font-weight:800; font-size:0.85rem;">Self-Healing Schedule Balanced</div>
-                <div style="font-size:0.75rem; color:#64748b;">Room 3 slot synchronized by DELTA AI runtime.</div>
-                <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">15 mins ago</div>
-              </div>
-            </div>
-          </div>
-        </div>
+            <!-- Chat body inside Phone Screen -->
+            <div class="messenger-chat-body" id="messenger-chat-body">
+              <div class="chat-date-separator">Today • DELTA Live Mesh</div>
 
-        <!-- ====================================================================
-             VIEW 5: SETTINGS VIEW (INSIDE PHONE SCREEN!)
-             ==================================================================== -->
-        <div class="phone-screen-view" id="view-settings">
-          <div class="view-top-bar">
-            <button class="btn-view-back" id="btn-back-from-settings">←</button>
-            <div class="view-title-wrap">
-              <span class="view-title-text">⚙️ APP SETTINGS</span>
-            </div>
-          </div>
-
-          <div class="view-scroll-body">
-            <div class="settings-group">
-              <div class="settings-item">
-                <div>
-                  <div>⚡ Tesla Autopilot (Zero-Touch)</div>
-                  <div style="font-size:0.7rem; color:#64748b;">Autonomous crowd mitigation</div>
+              <!-- Message 1 -->
+              <div class="chat-bubble-row incoming">
+                <div class="chat-bubble">
+                  <div class="chat-bubble-sender">Aryan Pandey (888777666)</div>
+                  <div>Hey Suryansh! Entrance Door A is clearing up. Keep me posted on Room 1 crowd surge.</div>
+                  <div class="chat-bubble-meta"><span>10:14 AM</span></div>
                 </div>
-                <label class="switch-ui">
-                  <input type="checkbox" id="setting-autopilot" checked>
-                  <span class="slider-round"></span>
-                </label>
               </div>
 
-              <div class="settings-item">
-                <div>
-                  <div>🔊 Synthesizer Audio SFX</div>
-                  <div style="font-size:0.7rem; color:#64748b;">Haptic audio confirmation</div>
+              <!-- Message 2 -->
+              <div class="chat-bubble-row outgoing">
+                <div class="chat-bubble">
+                  <div class="chat-bubble-sender">Suryansh (You)</div>
+                  <div>Copy that Aryan. Door scan rate is nominal. All lanes moving smoothly.</div>
+                  <div class="chat-bubble-meta"><span>10:16 AM</span></div>
                 </div>
-                <label class="switch-ui">
-                  <input type="checkbox" id="setting-sfx" checked>
-                  <span class="slider-round"></span>
-                </label>
               </div>
 
-              <div class="settings-item">
-                <div>
-                  <div>🌓 Dark Outline Theme</div>
-                  <div style="font-size:0.7rem; color:#64748b;">High contrast outline mode</div>
+              <!-- Message 3 -->
+              <div class="chat-bubble-row incoming">
+                <div class="chat-bubble">
+                  <div class="chat-bubble-sender">Aryan Pandey (888777666)</div>
+                  <div>Great. Shahid verified Lovelace Suite (Room 2) mics. Ready for speaker transition.</div>
+                  <div class="chat-bubble-meta"><span>10:20 AM</span></div>
                 </div>
-                <label class="switch-ui">
-                  <input type="checkbox" id="setting-darkmode">
-                  <span class="slider-round"></span>
-                </label>
+              </div>
+
+              <!-- Typing indicator -->
+              <div class="typing-indicator-row" id="typing-indicator-row">
+                <span id="typing-sender-name">Aryan</span> is typing
+                <div class="typing-dots">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick chips -->
+            <div class="msg-quick-chips-row">
+              <button class="chip-btn" data-text="🚨 Room 1 Overcrowded - Deploy overflow">🚨 Crowd Surge</button>
+              <button class="chip-btn" data-text="🚪 Gate A clear - Normal flow resumed">🚪 Gate A Clear</button>
+              <button class="chip-btn" data-text="🎙️ Mic feedback in Room 2 - Need audio tech">🎙️ Audio Glitch</button>
+              <button class="chip-btn" data-text="⏱️ Keynote running 5 mins late">⏱️ Schedule Shift</button>
+            </div>
+
+            <!-- Message input bar inside Phone Screen -->
+            <div class="messenger-input-bar">
+              <button class="btn-msg-tool" id="btn-msg-attach" title="Attach file">📎</button>
+              <button class="btn-msg-tool" id="btn-msg-mic" title="Voice note">🎙️</button>
+              <input type="text" id="msg-input-field" class="msg-input-field" placeholder="Message Aryan (888777666)..." autocomplete="off">
+              <button class="btn-msg-send" id="btn-msg-send" title="Send message">➤</button>
+            </div>
+          </div>
+
+          <!-- ====================================================================
+               VIEW 3: FULL PHONE SCREEN VOICE CONNECT (INSIDE PHONE SCREEN!)
+               ==================================================================== -->
+          <div class="phone-screen-view" id="view-voice">
+            <div class="view-top-bar">
+              <button class="btn-view-back" id="btn-back-from-voice" title="Back to Rooms">←</button>
+              <div class="view-title-wrap">
+                <span class="view-title-text">🎙️ VOICE CONNECT</span>
+                <span class="view-sub-text">● ONLINE</span>
+              </div>
+            </div>
+
+            <div class="voice-hub-content">
+              <div>
+                <div style="font-family:var(--font-mono); font-size:0.75rem; color:#64748b; text-transform:uppercase;">Connected Coordinator</div>
+                <div id="voice-target-name" style="font-size:1.25rem; font-weight:900; margin-top:2px;">Aryan Pandey (888777666)</div>
+                <div id="voice-connection-status" style="font-size:0.72rem; color:#2563eb; font-weight:700; margin-top:4px;">Frequency 433.10 MHz • Ready</div>
+
+                <div class="voice-channel-selector">
+                  <button class="voice-chan-btn active" data-channel="1" data-target="Aryan Pandey (888777666)">Ch 1: Aryan</button>
+                  <button class="voice-chan-btn" data-channel="2" data-target="Shahid (999777666)">Ch 2: Shahid</button>
+                  <button class="voice-chan-btn" data-channel="4" data-target="All Mesh Channels">Ch 4: All Mesh</button>
+                </div>
+              </div>
+
+              <div class="voice-live-equalizer" id="voice-eq-bars">
+                <div class="eq-bar" style="height:10px;"></div>
+                <div class="eq-bar" style="height:18px;"></div>
+                <div class="eq-bar" style="height:26px;"></div>
+                <div class="eq-bar" style="height:14px;"></div>
+                <div class="eq-bar" style="height:22px;"></div>
+                <div class="eq-bar" style="height:12px;"></div>
+                <div class="eq-bar" style="height:20px;"></div>
+              </div>
+
+              <div>
+                <button class="btn-push-to-talk" id="btn-push-to-talk">
+                  <span style="font-size:2rem;">🎙️</span>
+                  <span id="ptt-label">PUSH TO TALK</span>
+                </button>
+                <div style="font-size:0.7rem; color:#64748b; margin-top:10px; font-weight:600;">
+                  Hold or tap to speak live over the coordinator connection
+                </div>
               </div>
             </div>
           </div>
-        </div>
+
+          <!-- ====================================================================
+               VIEW 4: NOTIFICATIONS / ALERTS VIEW (INSIDE PHONE SCREEN!)
+               ==================================================================== -->
+          <div class="phone-screen-view" id="view-alerts">
+            <div class="view-top-bar">
+              <button class="btn-view-back" id="btn-back-from-alerts">←</button>
+              <div class="view-title-wrap">
+                <span class="view-title-text">🔔 EVENT NOTIFICATIONS</span>
+              </div>
+            </div>
+
+            <div class="view-scroll-body">
+              <div class="notif-item">
+                <div style="font-size:1.3rem;">🚨</div>
+                <div>
+                  <div style="font-weight:800; font-size:0.85rem;">Room 4 Capacity Alert (91%)</div>
+                  <div style="font-size:0.75rem; color:#64748b;">Keynote Arena reached density threshold. Secondary exit ready.</div>
+                  <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">2 mins ago</div>
+                </div>
+              </div>
+
+              <div class="notif-item">
+                <div style="font-size:1.3rem;">🎙️</div>
+                <div>
+                  <div style="font-weight:800; font-size:0.85rem;">Voice Dispatch Sent to Room 1</div>
+                  <div style="font-size:0.75rem; color:#64748b;">Autonomous coordinator audio notice broadcasted.</div>
+                  <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">8 mins ago</div>
+                </div>
+              </div>
+
+              <div class="notif-item">
+                <div style="font-size:1.3rem;">🤖</div>
+                <div>
+                  <div style="font-weight:800; font-size:0.85rem;">Self-Healing Schedule Balanced</div>
+                  <div style="font-size:0.75rem; color:#64748b;">Room 3 slot synchronized by DELTA AI runtime.</div>
+                  <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">15 mins ago</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ====================================================================
+               VIEW 5: SETTINGS VIEW (INSIDE PHONE SCREEN!)
+               ==================================================================== -->
+          <div class="phone-screen-view" id="view-settings">
+            <div class="view-top-bar">
+              <button class="btn-view-back" id="btn-back-from-settings">←</button>
+              <div class="view-title-wrap">
+                <span class="view-title-text">⚙️ APP SETTINGS</span>
+              </div>
+            </div>
+
+            <div class="view-scroll-body">
+              <div class="settings-group">
+                <div class="settings-item">
+                  <div>
+                    <div>⚡ Tesla Autopilot (Zero-Touch)</div>
+                    <div style="font-size:0.7rem; color:#64748b;">Autonomous crowd mitigation</div>
+                  </div>
+                  <label class="switch-ui">
+                    <input type="checkbox" id="setting-autopilot" checked>
+                    <span class="slider-round"></span>
+                  </label>
+                </div>
+
+                <div class="settings-item">
+                  <div>
+                    <div>🔊 Synthesizer Audio SFX</div>
+                    <div style="font-size:0.7rem; color:#64748b;">Haptic audio confirmation</div>
+                  </div>
+                  <label class="switch-ui">
+                    <input type="checkbox" id="setting-sfx" checked>
+                    <span class="slider-round"></span>
+                  </label>
+                </div>
+
+                <div class="settings-item">
+                  <div>
+                    <div>🌓 Dark Outline Theme</div>
+                    <div style="font-size:0.7rem; color:#64748b;">High contrast outline mode</div>
+                  </div>
+                  <label class="switch-ui">
+                    <input type="checkbox" id="setting-darkmode">
+                    <span class="slider-round"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- /phone-screen-body -->
 
         <!-- Floating Action Button for Messenger -->
         <button id="floating-msg-fab" class="floating-message-fab" title="Open Messenger">
@@ -1759,7 +1775,7 @@
         </button>
 
         <!-- Bottom Navigation Bar (Docked to Phone Screen Bottom) -->
-        <nav class="app-bottom-nav">
+        <nav class="app-bottom-nav" id="app-bottom-nav">
           <div class="nav-tab-item active" id="nav-tab-rooms">
             <span class="nav-tab-icon">🏛️</span>
             <span>Rooms</span>
@@ -1881,17 +1897,30 @@
       updatePhoneClock();
 
       const btnToggleSfx = document.getElementById('btn-toggle-sfx');
+      const settingSfx = document.getElementById('setting-sfx');
       if (btnToggleSfx) {
         btnToggleSfx.addEventListener('click', () => {
           sfxEnabled = !sfxEnabled;
           btnToggleSfx.textContent = sfxEnabled ? '🔊 SFX: ON' : '🔇 SFX: OFF';
           btnToggleSfx.classList.toggle('active', sfxEnabled);
+          if (settingSfx) settingSfx.checked = sfxEnabled;
+          if (sfxEnabled) playSound('click');
+        });
+      }
+
+      if (settingSfx) {
+        settingSfx.addEventListener('change', () => {
+          sfxEnabled = settingSfx.checked;
+          if (btnToggleSfx) {
+            btnToggleSfx.textContent = sfxEnabled ? '🔊 SFX: ON' : '🔇 SFX: OFF';
+            btnToggleSfx.classList.toggle('active', sfxEnabled);
+          }
           if (sfxEnabled) playSound('click');
         });
       }
 
       // ========================================================================
-      // PHONE VIEW SWITCHER (SWITCHES INSIDE THE PHONE SCREEN ONLY!)
+      // PHONE VIEW SWITCHER (STRICTLY CONTAINED IN PHONE SCREEN BODY)
       // ========================================================================
       const views = {
         dashboard: document.getElementById('view-dashboard'),
@@ -1909,30 +1938,49 @@
         settings: document.getElementById('nav-tab-settings')
       };
 
+      const appBottomNav = document.getElementById('app-bottom-nav');
+      const fab = document.getElementById('floating-msg-fab');
+
       function switchPhoneView(viewKey) {
         playSound('click');
-        Object.values(views).forEach(v => v.classList.remove('active'));
-        Object.values(navTabs).forEach(t => t.classList.remove('active'));
+        Object.values(views).forEach(v => {
+          if (v) v.classList.remove('active');
+        });
+        Object.values(navTabs).forEach(t => {
+          if (t) t.classList.remove('active');
+        });
 
         if (views[viewKey]) views[viewKey].classList.add('active');
         if (navTabs[viewKey]) navTabs[viewKey].classList.add('active');
 
-        // Hide floating button when not on dashboard
-        const fab = document.getElementById('floating-msg-fab');
+        // When in full-screen messenger or voice, hide bottom nav bar so input/push-to-talk has full room!
+        if (appBottomNav) {
+          if (viewKey === 'messenger' || viewKey === 'voice') {
+            appBottomNav.style.display = 'none';
+          } else {
+            appBottomNav.style.display = 'flex';
+          }
+        }
+
+        // Floating message button only shows on dashboard
         if (fab) fab.style.display = (viewKey === 'dashboard') ? 'flex' : 'none';
 
-        // Auto-scroll messenger to bottom if opened
+        // Clear badges on visit
         if (viewKey === 'messenger') {
+          document.querySelectorAll('.nav-tab-badge, .floating-fab-badge').forEach(b => b.style.display = 'none');
           setTimeout(() => {
             const body = document.getElementById('messenger-chat-body');
             if (body) body.scrollTop = body.scrollHeight;
             const input = document.getElementById('msg-input-field');
             if (input) input.focus();
           }, 100);
+        } else if (viewKey === 'alerts') {
+          const notifBadge = document.querySelector('.btn-notification .notif-badge');
+          if (notifBadge) notifBadge.style.display = 'none';
         }
       }
 
-      // Bottom Nav tabs switch inside phone
+      // Bottom Nav tabs
       if (navTabs.dashboard) navTabs.dashboard.addEventListener('click', () => switchPhoneView('dashboard'));
       if (navTabs.messenger) navTabs.messenger.addEventListener('click', () => switchPhoneView('messenger'));
       if (navTabs.voice) navTabs.voice.addEventListener('click', () => switchPhoneView('voice'));
@@ -1940,16 +1988,22 @@
       if (navTabs.settings) navTabs.settings.addEventListener('click', () => switchPhoneView('settings'));
 
       // Back buttons inside phone screen
-      document.getElementById('btn-back-from-msg').addEventListener('click', () => switchPhoneView('dashboard'));
-      document.getElementById('btn-back-from-voice').addEventListener('click', () => switchPhoneView('dashboard'));
-      document.getElementById('btn-back-from-alerts').addEventListener('click', () => switchPhoneView('dashboard'));
-      document.getElementById('btn-back-from-settings').addEventListener('click', () => switchPhoneView('dashboard'));
+      const btnBackMsg = document.getElementById('btn-back-from-msg');
+      if (btnBackMsg) btnBackMsg.addEventListener('click', () => switchPhoneView('dashboard'));
+
+      const btnBackVoice = document.getElementById('btn-back-from-voice');
+      if (btnBackVoice) btnBackVoice.addEventListener('click', () => switchPhoneView('dashboard'));
+
+      const btnBackAlerts = document.getElementById('btn-back-from-alerts');
+      if (btnBackAlerts) btnBackAlerts.addEventListener('click', () => switchPhoneView('dashboard'));
+
+      const btnBackSettings = document.getElementById('btn-back-from-settings');
+      if (btnBackSettings) btnBackSettings.addEventListener('click', () => switchPhoneView('dashboard'));
 
       const btnOpenNotif = document.getElementById('btn-open-notifications');
       if (btnOpenNotif) btnOpenNotif.addEventListener('click', () => switchPhoneView('alerts'));
 
-      const floatingMsgFab = document.getElementById('floating-msg-fab');
-      if (floatingMsgFab) floatingMsgFab.addEventListener('click', () => switchPhoneView('messenger'));
+      if (fab) fab.addEventListener('click', () => switchPhoneView('messenger'));
 
       // ========================================================================
       // MESSENGER LOGIC (CONFINED INSIDE PHONE SCREEN)
@@ -2069,8 +2123,9 @@
       });
 
       function triggerCoordinatorReply(userText) {
-        const recipientName = currentChatContact.name;
-        const senderFirst = recipientName.split(' ')[0];
+        const contactNameAtSend = currentChatContact.name;
+        const contactPhoneAtSend = currentChatContact.phone;
+        const senderFirst = contactNameAtSend.split(' ')[0];
 
         if (typingIndicatorRow && typingSenderName) {
           typingSenderName.textContent = senderFirst;
@@ -2101,7 +2156,7 @@
           const replyTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
           incomingRow.innerHTML = `
             <div class="chat-bubble">
-              <div class="chat-bubble-sender">${recipientName} (${currentChatContact.phone})</div>
+              <div class="chat-bubble-sender">${contactNameAtSend} (${contactPhoneAtSend})</div>
               <div>${escapeHtml(replyText)}</div>
               <div class="chat-bubble-meta">
                 <span>${replyTime}</span>
@@ -2140,7 +2195,6 @@
         });
       }
 
-      // Quick voice from messenger header
       const btnMsgQuickVoice = document.getElementById('btn-msg-quick-voice');
       if (btnMsgQuickVoice) {
         btnMsgQuickVoice.addEventListener('click', () => {
@@ -2154,12 +2208,13 @@
       const voiceTargetName = document.getElementById('voice-target-name');
       const voiceConnectionStatus = document.getElementById('voice-connection-status');
       const btnPushToTalk = document.getElementById('btn-push-to-talk');
+      const pttLabel = document.getElementById('ptt-label');
       let eqInterval = null;
 
       function openVoiceConnect(targetName = 'Aryan Pandey (888777666)', channel = '1') {
         playSound('chirp');
-        voiceTargetName.textContent = targetName;
-        voiceConnectionStatus.textContent = `Frequency 433.${channel}0 MHz • Connected 🟢`;
+        if (voiceTargetName) voiceTargetName.textContent = targetName;
+        if (voiceConnectionStatus) voiceConnectionStatus.textContent = `Frequency 433.${channel}0 MHz • Connected 🟢`;
         switchPhoneView('voice');
       }
 
@@ -2177,8 +2232,8 @@
           playSound('click');
           document.querySelectorAll('.voice-chan-btn').forEach(b => b.classList.remove('active'));
           btn.classList.add('active');
-          voiceTargetName.textContent = btn.dataset.target;
-          voiceConnectionStatus.textContent = `Frequency 433.${btn.dataset.channel}0 MHz • Connected 🟢`;
+          if (voiceTargetName) voiceTargetName.textContent = btn.dataset.target;
+          if (voiceConnectionStatus) voiceConnectionStatus.textContent = `Frequency 433.${btn.dataset.channel}0 MHz • Connected 🟢`;
         });
       });
 
@@ -2187,8 +2242,8 @@
         if (isTransmitting) return;
         isTransmitting = true;
         playSound('chirp');
-        btnPushToTalk.classList.add('transmitting');
-        btnPushToTalk.querySelector('span:last-child').textContent = 'TRANSMITTING...';
+        if (btnPushToTalk) btnPushToTalk.classList.add('transmitting');
+        if (pttLabel) pttLabel.textContent = 'TRANSMITTING...';
 
         eqInterval = setInterval(() => {
           document.querySelectorAll('.eq-bar').forEach(bar => {
@@ -2201,9 +2256,14 @@
         if (!isTransmitting) return;
         isTransmitting = false;
         playSound('chirp');
-        btnPushToTalk.classList.remove('transmitting');
-        btnPushToTalk.querySelector('span:last-child').textContent = 'PUSH TO TALK';
+        if (btnPushToTalk) btnPushToTalk.classList.remove('transmitting');
+        if (pttLabel) pttLabel.textContent = 'PUSH TO TALK';
         if (eqInterval) clearInterval(eqInterval);
+
+        // Reset equalizer bar heights
+        document.querySelectorAll('.eq-bar').forEach((bar, idx) => {
+          bar.style.height = `${(idx % 3 + 1) * 8}px`;
+        });
 
         showToast('Voice dispatch transmitted!');
 
@@ -2216,9 +2276,23 @@
       if (btnPushToTalk) {
         btnPushToTalk.addEventListener('mousedown', startTransmitting);
         btnPushToTalk.addEventListener('mouseup', stopTransmitting);
-        btnPushToTalk.addEventListener('touchstart', (e) => { e.preventDefault(); startTransmitting(); });
-        btnPushToTalk.addEventListener('touchend', (e) => { e.preventDefault(); stopTransmitting(); });
+        btnPushToTalk.addEventListener('mouseleave', stopTransmitting);
+        btnPushToTalk.addEventListener('touchstart', (e) => { e.preventDefault(); startTransmitting(); }, { passive: false });
+        btnPushToTalk.addEventListener('touchend', (e) => { e.preventDefault(); stopTransmitting(); }, { passive: false });
+        btnPushToTalk.addEventListener('touchcancel', (e) => { e.preventDefault(); stopTransmitting(); }, { passive: false });
       }
+
+      // Mobile Audio Context Unlock (prevents silent audio on first touch in mobile browsers)
+      const unlockAudio = () => {
+        try {
+          const ctx = getAudioContext();
+          if (ctx && ctx.state === 'suspended') ctx.resume();
+        } catch (e) {}
+        document.removeEventListener('click', unlockAudio);
+        document.removeEventListener('touchstart', unlockAudio);
+      };
+      document.addEventListener('click', unlockAudio, { once: true });
+      document.addEventListener('touchstart', unlockAudio, { once: true });
 
       // Settings toggles
       const settingDarkmode = document.getElementById('setting-darkmode');
@@ -2230,23 +2304,20 @@
         });
       }
 
-      const settingSfx = document.getElementById('setting-sfx');
-      if (settingSfx) {
-        settingSfx.addEventListener('change', () => {
-          sfxEnabled = settingSfx.checked;
-        });
-      }
-
-      // Rooms Notes Persistence
+      // Rooms Notes Persistence (Safely guarded for WebView/Incognito modes)
       document.querySelectorAll('.room-line-input').forEach(input => {
         const key = 'delta_note_' + input.id;
-        const saved = localStorage.getItem(key);
-        if (saved) input.value = saved;
-        input.addEventListener('change', () => {
-          localStorage.setItem(key, input.value);
-          playSound('click');
-          showToast(`Saved note for ${input.id.replace('input-', '').toUpperCase()}`);
-        });
+        try {
+          const saved = localStorage.getItem(key);
+          if (saved) input.value = saved;
+          input.addEventListener('change', () => {
+            try {
+              localStorage.setItem(key, input.value);
+            } catch (e) {}
+            playSound('click');
+            showToast(`Saved note for ${input.id.replace('input-', '').toUpperCase()}`);
+          });
+        } catch (e) {}
       });
 
       // Status badges cycle
@@ -2265,6 +2336,13 @@
           }
         });
       });
+
+      // Service Worker Registration for PWA / Play Store offline caching
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
 
     })();
   </script>
