@@ -821,6 +821,44 @@
       border-color: #38bdf8;
     }
 
+    /* Real-Time User Profile / Device Identity Styles */
+    .identity-select-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      background: #f8fafc;
+      border: var(--border-outline);
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--font-main);
+      color: #0f172a;
+      transition: all 0.15s ease;
+      width: 100%;
+    }
+    .identity-select-btn:active {
+      transform: scale(0.98);
+    }
+    .identity-select-btn.active {
+      background: #eff6ff;
+      border: 1.5px solid #2563eb;
+    }
+    .identity-check-mark {
+      font-size: 0.68rem;
+      font-weight: 800;
+      color: #2563eb;
+      font-family: var(--font-mono);
+    }
+    body.dark-mode .identity-select-btn {
+      background: #1e293b;
+      border-color: #475569;
+      color: #f8fafc;
+    }
+    body.dark-mode .identity-select-btn.active {
+      background: #0c4a6e;
+      border-color: #38bdf8;
+    }
+
     /* ROOMS SECTION (ROOM 1 to ROOM 5 with Lines) */
     .rooms-card-container {
       background: #ffffff;
@@ -2284,6 +2322,50 @@
                   </button>
                 </div>
               </div>
+
+              <!-- REAL-TIME USER IDENTITY SELECTOR -->
+              <div class="settings-group" style="margin-top: 4px;">
+                <div style="font-family:var(--font-mono); font-size:0.72rem; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:0.5px;">
+                  👤 Active Device Identity (For Real People)
+                </div>
+                <div style="font-size:0.68rem; color:#64748b;">
+                  Select who is holding this phone so your dispatches and messages show your real name across all other devices:
+                </div>
+                <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;" id="identity-btn-container">
+                  <button class="identity-select-btn active" data-name="Suryansh" data-phone="888777666" data-role="Lead Coordinator" data-avatar="🧑‍💻">
+                    <span style="font-size:1.1rem;">🧑‍💻</span>
+                    <div style="text-align:left; flex:1;">
+                      <div style="font-weight:800; font-size:0.8rem;">Suryansh</div>
+                      <div style="font-size:0.65rem; color:#64748b;">Lead Coordinator (888777666)</div>
+                    </div>
+                    <span class="identity-check-mark">✓ Active</span>
+                  </button>
+                  <button class="identity-select-btn" data-name="Aryan Pandey" data-phone="888777666" data-role="Core Lead" data-avatar="💻">
+                    <span style="font-size:1.1rem;">💻</span>
+                    <div style="text-align:left; flex:1;">
+                      <div style="font-weight:800; font-size:0.8rem;">Aryan Pandey</div>
+                      <div style="font-size:0.65rem; color:#64748b;">Core Lead (888777666)</div>
+                    </div>
+                    <span class="identity-check-mark" style="display:none;">✓ Active</span>
+                  </button>
+                  <button class="identity-select-btn" data-name="Shahid" data-phone="999777666" data-role="Audio Lead" data-avatar="🎧">
+                    <span style="font-size:1.1rem;">🎧</span>
+                    <div style="text-align:left; flex:1;">
+                      <div style="font-weight:800; font-size:0.8rem;">Shahid</div>
+                      <div style="font-size:0.65rem; color:#64748b;">Audio & AV Lead (999777666)</div>
+                    </div>
+                    <span class="identity-check-mark" style="display:none;">✓ Active</span>
+                  </button>
+                  <button class="identity-select-btn" data-name="Volunteer Runner" data-phone="Gate-Runner" data-role="Field Volunteer" data-avatar="🤝">
+                    <span style="font-size:1.1rem;">🤝</span>
+                    <div style="text-align:left; flex:1;">
+                      <div style="font-weight:800; font-size:0.8rem;">Volunteer Runner</div>
+                      <div style="font-size:0.65rem; color:#64748b;">Field Gate Team</div>
+                    </div>
+                    <span class="identity-check-mark" style="display:none;">✓ Active</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2334,6 +2416,13 @@
     (function initDeltaAppContained() {
       let sfxEnabled = true;
       let audioCtx = null;
+
+      let myProfile = {
+        name: localStorage.getItem('delta_identity_name') || 'Suryansh',
+        phone: localStorage.getItem('delta_identity_phone') || '888777666',
+        avatar: localStorage.getItem('delta_identity_avatar') || '🧑‍💻',
+        role: localStorage.getItem('delta_identity_role') || 'Lead Coordinator'
+      };
 
       function getAudioContext() {
         if (!audioCtx) {
@@ -2595,7 +2684,7 @@
         outgoingRow.className = 'chat-bubble-row outgoing';
         outgoingRow.innerHTML = `
           <div class="chat-bubble">
-            <div class="chat-bubble-sender">Suryansh (You)</div>
+            <div class="chat-bubble-sender">${escapeHtml(myProfile.name)} (You)</div>
             <div>${escapeHtml(msgText)}</div>
             <div class="chat-bubble-meta">
               <span>${timeStr}</span>
@@ -2614,7 +2703,7 @@
         // Option 1: Mesh Hotspot Dispatch with Store-and-Forward Queue
         const msgPayload = {
           id: 'msg_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
-          sender: 'Suryansh',
+          sender: myProfile.name,
           recipient: currentChatContact.name,
           recipientPhone: currentChatContact.phone,
           text: msgText,
@@ -2622,7 +2711,9 @@
         };
 
         dispatchToMesh(msgPayload, outgoingRow);
-        triggerCoordinatorReply(msgText);
+        if (currentChatContact.name.includes('AI') || currentChatContact.name.includes('Swarm')) {
+          triggerCoordinatorReply(msgText);
+        }
       }
 
       if (btnMsgSend) btnMsgSend.addEventListener('click', () => sendMessage());
@@ -2819,16 +2910,28 @@
         // Broadcast voice dispatch to Option 1 mesh
         const voicePayload = {
           id: 'voice_' + Date.now(),
-          sender: 'Suryansh',
+          sender: myProfile.name,
           recipient: voiceTargetName ? voiceTargetName.textContent : 'All Coordinators',
-          text: '🎙️ [Radio PTT Voice Dispatch on Mesh Frequency 433.10 MHz]',
+          text: `🎙️ [Radio PTT Voice Dispatch on Frequency 433.10 MHz by ${myProfile.name}]`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         };
         if (typeof dispatchToMesh === 'function') dispatchToMesh(voicePayload, null);
 
+        // Real-time voice broadcast to all other phones!
+        fetch('/api/voice/broadcast', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender: myProfile.name,
+            channel: '1',
+            target: voiceTargetName ? voiceTargetName.textContent : 'All Coordinators',
+            text: `Radio transmission on Channel 1 by ${myProfile.name}`
+          })
+        }).catch(() => {});
+
         setTimeout(() => {
-          speakVoiceText('Loud and clear Suryansh. Channel 1 standing by.');
-          showToast('📻 Aryan: "Loud and clear Suryansh"');
+          speakVoiceText('Loud and clear. Channel 1 standing by.');
+          showToast('📻 Aryan: "Loud and clear, standing by"');
         }, 1200);
       }
 
@@ -2897,12 +3000,23 @@
 
           const payload = {
             id: 'action_' + Date.now(),
-            sender: 'Suryansh (Field Dispatch)',
+            sender: `${myProfile.name} (${myProfile.role})`,
             recipient: 'All Coordinators & Mesh',
             text: broadcastText,
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
           };
           if (typeof dispatchToMesh === 'function') dispatchToMesh(payload, null);
+
+          // Real-time broadcast to all connected phones!
+          fetch('/api/action/dispatch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action,
+              label,
+              sender: myProfile.name
+            })
+          }).catch(() => {});
 
           showToast(`⚡ Dispatched: "${label}"`);
         });
@@ -3199,38 +3313,350 @@
         });
       }
 
-      // Rooms Notes Persistence (Safely guarded for WebView/Incognito modes)
+      // Active Device Identity Selector Handlers (For Real People Multi-User Live Testing)
+      function setupIdentitySelector() {
+        const identityBtns = document.querySelectorAll('.identity-select-btn');
+        if (!identityBtns.length) return;
+
+        function updateActiveIdentityUI() {
+          identityBtns.forEach(btn => {
+            const isCurrent = btn.dataset.name.toLowerCase() === myProfile.name.toLowerCase();
+            btn.classList.toggle('active', isCurrent);
+            const mark = btn.querySelector('.identity-check-mark');
+            if (mark) mark.style.display = isCurrent ? 'inline-block' : 'none';
+          });
+        }
+
+        updateActiveIdentityUI();
+
+        identityBtns.forEach(btn => {
+          btn.addEventListener('click', () => {
+            playSound('click');
+            myProfile.name = btn.dataset.name;
+            myProfile.phone = btn.dataset.phone;
+            myProfile.avatar = btn.dataset.avatar;
+            myProfile.role = btn.dataset.role;
+
+            try {
+              localStorage.setItem('delta_identity_name', myProfile.name);
+              localStorage.setItem('delta_identity_phone', myProfile.phone);
+              localStorage.setItem('delta_identity_avatar', myProfile.avatar);
+              localStorage.setItem('delta_identity_role', myProfile.role);
+            } catch (e) {}
+
+            updateActiveIdentityUI();
+            showToast(`👤 Active Device: ${myProfile.name} (${myProfile.role})`);
+          });
+        });
+      }
+      setupIdentitySelector();
+
+      // DOM Helper: Apply real-time room update locally
+      function applyRoomUpdateLocally(roomId, roomData, animated = false) {
+        if (!roomId || !roomData) return;
+        const cleanId = roomId.toString().replace(/[^0-9]/g, '');
+        const input = document.getElementById('input-room-' + cleanId);
+        if (!input) return;
+
+        if (roomData.note !== undefined && document.activeElement !== input) {
+          input.value = roomData.note;
+        }
+
+        const row = input.closest('.room-row');
+        if (!row) return;
+
+        if (roomData.status && roomData.label) {
+          const badge = row.querySelector('.room-status-badge');
+          if (badge) {
+            badge.className = `room-status-badge badge-${roomData.status}`;
+            badge.textContent = roomData.label;
+          }
+        }
+
+        if (roomData.percent !== undefined) {
+          const fill = row.querySelector('.room-meter-fill');
+          if (fill) {
+            fill.className = `room-meter-fill meter-${roomData.status || 'nominal'}`;
+            fill.style.width = `${roomData.percent}%`;
+          }
+          const label = row.querySelector('.room-meter-label');
+          if (label && roomData.seats) {
+            label.textContent = `${roomData.seats} • ${roomData.percent}%`;
+          }
+        }
+
+        if (animated) {
+          row.style.transition = 'background 0.3s ease';
+          row.style.background = 'rgba(37, 99, 235, 0.08)';
+          setTimeout(() => {
+            row.style.background = '';
+          }, 1200);
+        }
+      }
+
+      // DOM Helper: Append incoming real-time chat message from another device
+      function appendIncomingChatMessage(msg) {
+        if (!msg || !msg.text) return;
+        const isSelf = msg.sender === myProfile.name;
+        if (isSelf) return;
+
+        if (messengerChatBody) {
+          const incomingRow = document.createElement('div');
+          incomingRow.className = 'chat-bubble-row incoming';
+          incomingRow.innerHTML = `
+            <div class="chat-bubble">
+              <div class="chat-bubble-sender">${escapeHtml(msg.sender)}</div>
+              <div>${escapeHtml(msg.text)}</div>
+              <div class="chat-bubble-meta">
+                <span>${msg.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+              </div>
+            </div>
+          `;
+          if (typingIndicatorRow) {
+            messengerChatBody.insertBefore(incomingRow, typingIndicatorRow);
+          } else {
+            messengerChatBody.appendChild(incomingRow);
+          }
+          scrollChatToBottom();
+        }
+
+        playSound('receive');
+
+        const currentActiveView = document.querySelector('.phone-screen-view.active');
+        if (!currentActiveView || currentActiveView.id !== 'view-messenger') {
+          document.querySelectorAll('.nav-tab-badge, .floating-fab-badge').forEach(b => {
+            b.style.display = 'inline-block';
+            const cur = parseInt(b.textContent || '0', 10);
+            b.textContent = isNaN(cur) ? '1' : (cur + 1);
+          });
+        }
+
+        showToast(`💬 ${msg.sender}: "${msg.text.slice(0, 32)}${msg.text.length > 32 ? '...' : ''}"`);
+        addAlertNotification({
+          icon: '💬',
+          title: `Message from ${msg.sender}`,
+          desc: msg.text,
+          time: msg.timestamp || 'Just now'
+        });
+      }
+
+      // DOM Helper: Add live alert notification to Notifications list
+      function addAlertNotification({ icon = '🔔', title, desc, time = 'Just now' }) {
+        const container = document.querySelector('#view-alerts .view-scroll-body');
+        if (!container) return;
+        const item = document.createElement('div');
+        item.className = 'notif-item';
+        item.innerHTML = `
+          <div style="font-size:1.3rem;">${icon}</div>
+          <div>
+            <div style="font-weight:800; font-size:0.85rem;">${escapeHtml(title)}</div>
+            <div style="font-size:0.75rem; color:#64748b;">${escapeHtml(desc)}</div>
+            <div style="font-size:0.65rem; color:#94a3b8; margin-top:2px;">${escapeHtml(time)}</div>
+          </div>
+        `;
+        container.insertBefore(item, container.firstChild);
+
+        const currentActiveView = document.querySelector('.phone-screen-view.active');
+        if (!currentActiveView || currentActiveView.id !== 'view-alerts') {
+          const notifBadge = document.querySelector('.btn-notification .notif-badge');
+          if (notifBadge) notifBadge.style.display = 'inline-block';
+        }
+      }
+
+      // Rooms Notes Persistence + Live Real-Time Multi-User Sync
       document.querySelectorAll('.room-line-input').forEach(input => {
+        const roomId = input.id.replace('input-', '').replace('-', '');
         const key = 'delta_note_' + input.id;
         try {
           const saved = localStorage.getItem(key);
           if (saved) input.value = saved;
-          input.addEventListener('change', () => {
-            try {
-              localStorage.setItem(key, input.value);
-            } catch (e) {}
-            playSound('click');
-            showToast(`Saved note for ${input.id.replace('input-', '').toUpperCase()}`);
-          });
         } catch (e) {}
+
+        input.addEventListener('change', () => {
+          try {
+            localStorage.setItem(key, input.value);
+          } catch (e) {}
+          playSound('click');
+          showToast(`Saved & synced note for ${input.id.replace('input-', '').toUpperCase()}`);
+
+          fetch('/api/rooms/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              roomId: roomId,
+              note: input.value,
+              sender: myProfile.name
+            })
+          }).catch(() => {});
+        });
       });
 
-      // Status badges cycle
+      // Status badges cycle + Live Real-Time Multi-User Sync
       document.querySelectorAll('.room-status-badge').forEach(badge => {
         badge.addEventListener('click', () => {
           playSound('click');
+          const row = badge.closest('.room-row');
+          const input = row ? row.querySelector('.room-line-input') : null;
+          const roomId = input ? input.id.replace('input-', '').replace('-', '') : 'room1';
+
+          let newStatus, newLabel, newPercent;
           if (badge.classList.contains('badge-nominal')) {
-            badge.className = 'room-status-badge badge-busy';
-            badge.textContent = '82% • Active';
+            newStatus = 'busy';
+            newLabel = '82% • Active';
+            newPercent = 82;
           } else if (badge.classList.contains('badge-busy')) {
-            badge.className = 'room-status-badge badge-alert';
-            badge.textContent = '95% • High';
+            newStatus = 'alert';
+            newLabel = '95% • High';
+            newPercent = 95;
           } else {
-            badge.className = 'room-status-badge badge-nominal';
-            badge.textContent = '45% • Nominal';
+            newStatus = 'nominal';
+            newLabel = '45% • Nominal';
+            newPercent = 45;
           }
+
+          badge.className = `room-status-badge badge-${newStatus}`;
+          badge.textContent = newLabel;
+
+          const fill = row ? row.querySelector('.room-meter-fill') : null;
+          if (fill) {
+            fill.className = `room-meter-fill meter-${newStatus}`;
+            fill.style.width = `${newPercent}%`;
+          }
+
+          showToast(`Updated ${roomId.toUpperCase()} to ${newLabel}`);
+
+          fetch('/api/rooms/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              roomId: roomId,
+              status: newStatus,
+              label: newLabel,
+              percent: newPercent,
+              sender: myProfile.name
+            })
+          }).catch(() => {});
         });
       });
+
+      // ========================================================================
+      // REAL-TIME WEBSOCKET SYNCHRONIZATION (SUB-SECOND MULTI-DEVICE COORDINATION)
+      // ========================================================================
+      let realTimeWs = null;
+      let wsReconnectTimer = null;
+
+      function connectRealTimeWebSocket() {
+        if (realTimeWs && (realTimeWs.readyState === WebSocket.CONNECTING || realTimeWs.readyState === WebSocket.OPEN)) {
+          return;
+        }
+
+        try {
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = `${protocol}//${window.location.host}`;
+          realTimeWs = new WebSocket(wsUrl);
+
+          realTimeWs.onopen = () => {
+            console.log('[DELTA RealTime] WebSocket connected successfully to', wsUrl);
+            updateMeshStatus(true);
+          };
+
+          realTimeWs.onmessage = (event) => {
+            try {
+              const packet = JSON.parse(event.data);
+              if (!packet || !packet.type) return;
+
+              switch (packet.type) {
+                case 'INIT_STATE':
+                  if (packet.data && packet.data.rooms) {
+                    Object.keys(packet.data.rooms).forEach(rId => {
+                      applyRoomUpdateLocally(rId, packet.data.rooms[rId], false);
+                    });
+                  }
+                  break;
+
+                case 'CHAT_MESSAGE':
+                  if (packet.data) {
+                    appendIncomingChatMessage(packet.data);
+                  }
+                  break;
+
+                case 'ROOMS_UPDATE':
+                  if (packet.data) {
+                    applyRoomUpdateLocally(packet.data.roomId, packet.data.room, true);
+                    if (packet.data.sender && packet.data.sender !== myProfile.name) {
+                      playSound('chirp');
+                      showToast(`🏢 ${packet.data.roomId.toUpperCase()} updated by ${packet.data.sender}`);
+                      addAlertNotification({
+                        icon: '🏢',
+                        title: `${packet.data.roomId.toUpperCase()} Updated`,
+                        desc: `${packet.data.sender} modified status: ${packet.data.room.label || packet.data.room.note || ''}`,
+                        time: packet.data.timestamp || 'Just now'
+                      });
+                    }
+                  }
+                  break;
+
+                case 'VOICE_BROADCAST':
+                  if (packet.data && packet.data.sender !== myProfile.name) {
+                    playSound('chirp');
+                    showToast(`🎙️ Voice Dispatch from ${packet.data.sender} (Ch ${packet.data.channel})`);
+                    addAlertNotification({
+                      icon: '🎙️',
+                      title: `Radio Dispatch (Ch ${packet.data.channel})`,
+                      desc: `${packet.data.sender}: ${packet.data.text}`,
+                      time: packet.data.timestamp || 'Just now'
+                    });
+                  }
+                  break;
+
+                case 'QUICK_ACTION_DISPATCH':
+                  if (packet.data && packet.data.sender !== myProfile.name) {
+                    playSound('ping');
+                    showToast(`⚡ Action: "${packet.data.label}" by ${packet.data.sender}`);
+                    addAlertNotification({
+                      icon: '⚡',
+                      title: packet.data.label,
+                      desc: `Triggered by ${packet.data.sender}`,
+                      time: packet.data.timestamp || 'Just now'
+                    });
+                  }
+                  break;
+              }
+            } catch (err) {
+              console.error('[DELTA RealTime] Packet parse error:', err);
+            }
+          };
+
+          realTimeWs.onclose = () => {
+            if (!wsReconnectTimer) {
+              wsReconnectTimer = setTimeout(() => {
+                wsReconnectTimer = null;
+                connectRealTimeWebSocket();
+              }, 3000);
+            }
+          };
+
+          realTimeWs.onerror = () => {
+            if (realTimeWs) realTimeWs.close();
+          };
+        } catch (e) {
+          console.warn('[DELTA RealTime] Could not initiate WebSocket:', e);
+        }
+      }
+
+      // Initial rooms fetch and WebSocket connect
+      fetch('/api/rooms')
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.rooms) {
+            Object.keys(data.rooms).forEach(rId => {
+              applyRoomUpdateLocally(rId, data.rooms[rId], false);
+            });
+          }
+        })
+        .catch(() => {});
+
+      connectRealTimeWebSocket();
 
       // Service Worker Registration for PWA / Play Store offline caching
       if ('serviceWorker' in navigator) {

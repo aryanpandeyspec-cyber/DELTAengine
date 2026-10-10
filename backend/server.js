@@ -145,6 +145,84 @@ app.post('/api/messages/send', (req, res) => {
   res.json({ success: true, message: newMsg });
 });
 
+if (!db.roomsState) {
+  db.roomsState = {
+    room1: { note: 'Keynote in progress; front gate A clear', percent: 82, status: 'busy', label: '82% • Active', seats: '205 / 250 Seats' },
+    room2: { note: 'Mic check nominal; WebGPU slides loaded', percent: 45, status: 'nominal', label: '45% • Nominal', seats: '54 / 120 Seats' },
+    room3: { note: 'Speaker setup ready; AC cooling adjusted', percent: 60, status: 'nominal', label: '60% • Nominal', seats: '36 / 60 Seats' },
+    room4: { note: 'Overflow door standby active; crowd steady', percent: 91, status: 'alert', label: '91% • High', seats: '455 / 500 Seats' },
+    room5: { note: 'Hackathon pitching underway; wifi nominal', percent: 35, status: 'nominal', label: '35% • Nominal', seats: '420 / 1,200 Seats' }
+  };
+}
+
+app.get('/api/rooms', (req, res) => {
+  res.json({ success: true, rooms: db.roomsState });
+});
+
+app.post('/api/rooms/update', (req, res) => {
+  const { roomId, note, percent, status, label, seats, sender } = req.body;
+  if (!roomId || !db.roomsState[roomId]) {
+    return res.status(400).json({ error: 'Valid roomId required' });
+  }
+  if (note !== undefined) db.roomsState[roomId].note = note;
+  if (percent !== undefined) db.roomsState[roomId].percent = percent;
+  if (status !== undefined) db.roomsState[roomId].status = status;
+  if (label !== undefined) db.roomsState[roomId].label = label;
+  if (seats !== undefined) db.roomsState[roomId].seats = seats;
+
+  const updatePayload = {
+    roomId,
+    room: db.roomsState[roomId],
+    rooms: db.roomsState,
+    sender: sender || 'Coordinator',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+
+  broadcast({
+    type: 'ROOMS_UPDATE',
+    data: updatePayload
+  });
+
+  res.json({ success: true, room: db.roomsState[roomId], rooms: db.roomsState });
+});
+
+app.post('/api/voice/broadcast', (req, res) => {
+  const { sender, channel, target, text } = req.body;
+  const broadcastData = {
+    id: 'voice_' + Date.now(),
+    sender: sender || 'Coordinator',
+    channel: channel || '1',
+    target: target || 'All Mesh Channels',
+    text: text || 'Voice dispatch',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+
+  broadcast({
+    type: 'VOICE_BROADCAST',
+    data: broadcastData
+  });
+
+  res.json({ success: true, voice: broadcastData });
+});
+
+app.post('/api/action/dispatch', (req, res) => {
+  const { action, label, sender } = req.body;
+  const dispatchData = {
+    id: 'act_' + Date.now(),
+    action: action || 'general',
+    label: label || 'Field Dispatch',
+    sender: sender || 'Volunteer',
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+
+  broadcast({
+    type: 'QUICK_ACTION_DISPATCH',
+    data: dispatchData
+  });
+
+  res.json({ success: true, action: dispatchData });
+});
+
 
 // Configure multer with strict file size limits (20MB max)
 const storage = multer.memoryStorage();
@@ -195,6 +273,8 @@ wss.on('connection', ws => {
     data: {
       graph: db.graph,
       schedule: db.schedule,
+      rooms: db.roomsState,
+      chatMessages: db.chatMessages,
       activeDate: db.activeDate,
       contacts: db.contacts,
       volunteers: db.volunteers,
