@@ -197,8 +197,8 @@
   }
 
   function updateAuthUI() {
-    const badge = document.getElementById('user-role-badge');
-    const nameText = document.getElementById('user-name-text');
+    const badge = document.getElementById('user-role-badge') || document.getElementById('admin-role-badge');
+    const nameText = document.getElementById('user-name-text') || document.getElementById('admin-user-name');
     const btnAdminLink = document.getElementById('btn-admin-portal-link');
     const btnCoordLink = document.getElementById('btn-coordinator-portal-link');
 
@@ -282,6 +282,41 @@
     if (btnReindex) btnReindex.addEventListener('click', () => triggerAdminAction('reindex'));
     if (btnAlert) btnAlert.addEventListener('click', () => triggerAdminAction('broadcast'));
     if (btnPurge) btnPurge.addEventListener('click', () => triggerAdminAction('clear_locks'));
+
+    const scenarioSelect = document.getElementById('admin-scenario-select');
+    if (scenarioSelect) {
+      scenarioSelect.addEventListener('change', async (e) => {
+        const scenarioId = e.target.value;
+        try {
+          const res = await fetch('/api/scenarios/select', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scenarioId })
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            if (typeof createToast === 'function') {
+              createToast(`🎯 Scenario Switched: ${data.scenario?.name || scenarioId}`, 'success');
+            }
+            const auditBox = document.getElementById('admin-audit-log-container');
+            if (auditBox) {
+              const line = document.createElement('div');
+              line.className = 'admin-audit-line info';
+              line.textContent = `[${new Date().toLocaleTimeString()}] Switched active operational domain to ${data.scenario?.name || scenarioId}`;
+              auditBox.insertBefore(line, auditBox.firstChild);
+            }
+          } else {
+            if (typeof createToast === 'function') {
+              createToast(`Failed to switch scenario: ${data?.error || 'Unknown error'}`, 'error');
+            }
+          }
+        } catch (err) {
+          if (typeof createToast === 'function') {
+            createToast(`Network error switching scenario: ${err.message}`, 'error');
+          }
+        }
+      });
+    }
   }
 
   // Contacts & WhatsApp Notification State (Indian Personnel & +91 Format)
@@ -913,7 +948,7 @@
       // Determine currently active featured talk in Turing Hall (or current active slot)
       let activeTopicId = null;
       let activeSlotId = 'slot-1';
-      const slots = ['slot-1', 'slot-2', 'slot-3', 'slot-4'];
+      const slots = (graph && graph.slots) ? Object.keys(graph.slots) : (schedule ? Object.keys(schedule) : ['slot-1', 'slot-2', 'slot-3', 'slot-4']);
       for (const s of slots) {
         if (schedule[s] && schedule[s]['hall-1']) {
           activeTopicId = schedule[s]['hall-1'];
@@ -1002,6 +1037,27 @@
     if (data.uptimeSeconds !== undefined) {
       adminServerUptimeBase = data.uptimeSeconds;
       adminClientStartTime = Date.now();
+    }
+
+    // Sync Limiters checkboxes
+    if (data.limiters) {
+      const toggleLlm = document.getElementById('toggle-llm-limiter');
+      const toggleDb = document.getElementById('toggle-db-limiter');
+      if (toggleLlm && typeof data.limiters.llm === 'boolean') {
+        toggleLlm.checked = data.limiters.llm;
+      }
+      if (toggleDb && typeof data.limiters.db === 'boolean') {
+        toggleDb.checked = data.limiters.db;
+      }
+    }
+
+    // Sync Active Scenario selector
+    const activeScn = data.activeScenario || data.currentScenario;
+    if (activeScn) {
+      const scnSelect = document.getElementById('admin-scenario-select');
+      if (scnSelect && scnSelect.value !== activeScn) {
+        scnSelect.value = activeScn;
+      }
     }
   };
 

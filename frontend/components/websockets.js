@@ -376,6 +376,13 @@ function initWebSockets() {
       case 'SCENARIO_CHANGED':
         if (payload.data && payload.data.graph) graphState = payload.data.graph;
         safeSyncUI(selectedNodeId);
+        const adminScnSelect = document.getElementById('admin-scenario-select');
+        if (adminScnSelect && payload.data && payload.data.activeScenario) {
+          adminScnSelect.value = payload.data.activeScenario;
+        }
+        if (typeof window.syncAdminDashboard === 'function' && payload.data) {
+          window.syncAdminDashboard(payload.data);
+        }
         if (typeof createToast === 'function') {
           createToast(`🌐 Operational Domain Switched: ${payload.data.scenarioName || payload.data.activeScenario}`, 'info');
         }

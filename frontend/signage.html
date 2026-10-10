@@ -697,7 +697,7 @@
             <span>ASSIGNED HALL COORDINATORS</span>
           </div>
 
-          <div class="side-card-body" style="gap:8px;">
+          <div class="side-card-body" id="signage-assigned-coordinators" style="gap:8px;">
             <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.8rem; font-weight:700;">
               <span>🚪 <strong>Suryansh</strong> (Entrance Lead)</span>
               <span class="badge-mini-green">ON DUTY</span>
@@ -765,6 +765,7 @@
     let scheduleData = null;
     let cctvState = null;
     let gatesMesh = null;
+    let volunteersData = [];
     let currentOccupancy = 0;
 
     const venuePicker = document.getElementById('venue-picker');
@@ -785,6 +786,7 @@
       url.searchParams.set('hall', activeHallId);
       window.history.replaceState({}, '', url);
       renderSignage();
+      renderSignageCoordinators();
     });
 
     // Dismiss Emergency Overlay
@@ -920,6 +922,81 @@
 
       // Render Real Live Room Capacity Gauge (NO RANDOM FALLBACKS)
       renderRealCapacityGauge(hall.capacity);
+
+      // Render Dynamic Assigned Coordinators for this Hall
+      renderSignageCoordinators();
+    }
+
+    // Dynamic Hall-Targeted Coordinator Directory
+    const defaultSignageVolunteers = [
+      { name: 'Suryansh', role: 'Entrance & Crowd Lead', assignedHallId: 'hall-1', status: 'ON DUTY', icon: '🚪' },
+      { name: 'Shahid', role: 'Stage & Operations Coordinator', assignedHallId: 'hall-2', status: 'ON DUTY', icon: '🎤' },
+      { name: 'Aryan Pandey', role: 'Lead Systems Commander', assignedHallId: 'ALL', status: 'COMMAND DESK', icon: '🖥️' }
+    ];
+
+    function renderSignageCoordinators() {
+      const container = document.getElementById('signage-assigned-coordinators');
+      if (!container) return;
+
+      const list = (volunteersData && volunteersData.length > 0) ? volunteersData : defaultSignageVolunteers;
+      
+      const filtered = list.filter(v => {
+        const h = (v.assignedHallId || v.hall || v.assignedZone || '').toLowerCase();
+        return h === 'all' || h.includes('all') || h.includes('central') || h.includes(activeHallId.toLowerCase());
+      });
+
+      const displayList = filtered.length > 0 ? filtered : list;
+
+      container.innerHTML = displayList.map(v => {
+        const isCentral = (v.assignedHallId === 'ALL' || (v.hall && v.hall.includes('ALL')) || (v.role && v.role.includes('Commander')) || (v.role && v.role.includes('Systems')));
+        const badgeClass = isCentral ? 'badge-mini-blue' : 'badge-mini-green';
+        const badgeText = isCentral ? 'COMMAND DESK' : 'ON DUTY';
+        const icon = v.icon || (isCentral ? '🖥️' : v.role?.toLowerCase().includes('stage') ? '🎤' : '🚪');
+        return `
+          <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+            <span>${icon} <strong>${escapeHtml(v.name)}</strong> <span style="font-weight:500; font-size:0.75rem; color:#555;">(${escapeHtml(v.role || 'Coordinator')})</span></span>
+            <span class="${badgeClass}">${badgeText}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showSignagePABanner(data) {
+      if (!data || !data.text) return;
+      let banner = document.getElementById('signage-pa-broadcast-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'signage-pa-broadcast-banner';
+        banner.style.position = 'fixed';
+        banner.style.bottom = '20px';
+        banner.style.left = '50%';
+        banner.style.transform = 'translateX(-50%)';
+        banner.style.zIndex = '99999';
+        banner.style.background = '#2563eb';
+        banner.style.color = '#ffffff';
+        banner.style.border = '3px solid #000000';
+        banner.style.boxShadow = '5px 5px 0px #000000';
+        banner.style.borderRadius = '12px';
+        banner.style.padding = '12px 24px';
+        banner.style.display = 'flex';
+        banner.style.alignItems = 'center';
+        banner.style.gap = '14px';
+        banner.style.maxWidth = '90vw';
+        banner.style.fontFamily = "var(--font-mono, 'Space Grotesk', monospace)";
+        banner.style.fontWeight = '800';
+        document.body.appendChild(banner);
+      }
+      banner.innerHTML = `
+        <span style="font-size:1.4rem;">📢</span>
+        <div>
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#bfdbfe;">PUBLIC ADDRESS BROADCAST • ${escapeHtml(data.voice || 'DELTA Synthesizer')}</div>
+          <div style="font-size:0.95rem; color:#ffffff; font-weight:700;">${escapeHtml(data.text)}</div>
+        </div>
+      `;
+      banner.style.display = 'flex';
+      setTimeout(() => {
+        if (banner) banner.style.display = 'none';
+      }, 12000);
     }
 
     // Render Upcoming Agenda for this specific hall
@@ -1092,13 +1169,29 @@
             scheduleData = payload.data.schedule;
             cctvState = payload.data.cctvState;
             gatesMesh = payload.data.gatesMesh;
+            volunteersData = payload.data.volunteers || [];
             renderSignage();
+            renderSignageCoordinators();
           } else if (payload.type === 'SCHEDULE_HEALED' || payload.type === 'SCHEDULE_UPDATED') {
             const prev = scheduleData;
             graphData = payload.data.graph || graphData;
             scheduleData = payload.data.schedule || scheduleData;
             checkReallocationFlip(prev, scheduleData);
             renderSignage();
+          } else if (payload.type === 'SCENARIO_CHANGED') {
+            if (payload.data && payload.data.graph) {
+              graphData = payload.data.graph;
+            }
+            populateVenueDropdown();
+            renderSignage();
+            renderSignageCoordinators();
+          } else if (payload.type === 'VOLUNTEERS_UPDATED') {
+            if (payload.data && Array.isArray(payload.data.volunteers)) {
+              volunteersData = payload.data.volunteers;
+            }
+            renderSignageCoordinators();
+          } else if (payload.type === 'VOICE_ANNOUNCEMENT') {
+            showSignagePABanner(payload.data);
           } else if (payload.type === 'ROOM_OCCUPANCY_UPDATE' || payload.type === 'CCTV_OCCUPANCY_UPDATE') {
             if (payload.data.hallId === activeHallId) {
               currentOccupancy = payload.data.peopleDetected ?? payload.data.occupancy ?? currentOccupancy;
@@ -1152,7 +1245,9 @@
         scheduleData = data.schedule;
         cctvState = data.cctvState;
         gatesMesh = data.gatesMesh;
+        volunteersData = data.volunteers || [];
         renderSignage();
+        renderSignageCoordinators();
         initWebSocket();
       })
       .catch(err => {
