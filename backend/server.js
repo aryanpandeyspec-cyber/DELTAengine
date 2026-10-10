@@ -141,6 +141,31 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
   });
 });
 
+app.post('/api/auth/logout', (req, res) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  let operatorName = req.body?.username || 'Authenticated User';
+  let role = req.body?.role || 'OPERATOR';
+
+  if (token) {
+    const verified = verifyJwt(token);
+    if (verified) {
+      operatorName = verified.name || operatorName;
+      role = verified.role || role;
+    }
+  }
+
+  appendForensicAuditLog('OPERATOR_LOGOUT', operatorName, role, 'AUTH_PORTAL', {
+    ip: req.ip,
+    terminatedAt: new Date().toISOString()
+  });
+
+  res.json({
+    success: true,
+    message: `Session terminated cleanly for ${operatorName}.`
+  });
+});
+
 app.get('/api/audit/forensic-logs', authenticateToken, (req, res) => {
   const limit = parseInt(req.query.limit || '50', 10);
   const logs = getForensicAuditLogs(limit);

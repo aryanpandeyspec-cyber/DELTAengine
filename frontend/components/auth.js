@@ -109,9 +109,58 @@
       });
     }
 
+    // Bind all logout triggers across the page (sidebar link, admin logout button, etc.)
+    const logoutTriggers = document.querySelectorAll('#btn-logout, a[href="login.html"], .btn-logout-trigger');
+    logoutTriggers.forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        logoutUser();
+      });
+    });
+
     // Admin System Override Buttons
     bindAdminActionButtons();
   }
+
+  async function logoutUser() {
+    const token = localStorage.getItem('delta_auth_token');
+    const role = currentUserRole;
+    const name = currentUserName;
+
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ role, username: name })
+      });
+    } catch (e) {
+      console.warn('[Auth] Offline mode during logout');
+    }
+
+    try {
+      localStorage.removeItem('delta_auth_token');
+      localStorage.removeItem('delta_user_role');
+      localStorage.removeItem('delta_user_name');
+    } catch (e) {}
+
+    currentUserRole = 'coordinator';
+    currentUserName = 'Guest';
+
+    if (typeof createToast === 'function') {
+      createToast('🚪 Logged out cleanly. Session and credentials terminated.', 'info');
+    }
+
+    // Redirect to login page
+    setTimeout(() => {
+      window.location.href = 'login.html';
+    }, 350);
+  }
+
+  window.logoutUser = logoutUser;
+  window.loginUser = loginUser;
 
   async function loginUser(role, displayName) {
     currentUserRole = role;

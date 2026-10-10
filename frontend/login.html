@@ -247,9 +247,24 @@
       proceedToPortal('admin', 'Marcus Aurelius (Super Admin)');
     });
 
-    function proceedToPortal(role, username) {
+    async function proceedToPortal(role, username) {
       localStorage.setItem('delta_user_role', role);
       localStorage.setItem('delta_user_name', username);
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ role, username })
+        });
+        const data = await res.json();
+        if (data && data.token) {
+          localStorage.setItem('delta_auth_token', data.token);
+        }
+      } catch (err) {
+        console.warn('[Login Portal] Offline fallback for token exchange:', err.message);
+      }
+
       if (role === 'admin') {
         window.location.href = 'admin.html';
       } else {
