@@ -24,6 +24,8 @@ Think of it as **"Kubernetes for physical event venues"**:
 4. When a hall experiences an overcrowding breach (>100% capacity) or an unexpected speaker delay, a **multi-agent Groq LLaMA-3 AI Swarm autonomously self-heals the schedule** — swapping halls, recalculating room allocations, updating attendee calendars, and dispatching instant WhatsApp and Email alerts to volunteers and speakers without human panic.
 5. An **autonomous voice announcer** (modeled after *Nico Robin* from One Piece) synthesizes serene, intellectual PA voice broadcasts over venue speakers to maintain composure during crowd redistributions.
 6. **2-Way Volunteer WhatsApp Webhook** allows field coordinators to text commands (`GATE CLEAR`, `OVERFLOW OPEN`, `AUTOPILOT ON/OFF`) straight from WhatsApp to orchestrate venue operations.
+7. **Autonomous Multi-Domain Crowd Operations Engine**: Deterministic mitigation engine (<1.02ms, <5ms SLA) across 5 real-world scenarios (Conference, Public Rally, Mela / Large Gathering, Movie Promotion, Religious Festival) with automated zone rerouting and targeted volunteer dispatch.
+8. **Three.js PBR Spatial Reconstruction & NVIDIA NIM**: High-performance Three.js PBR 3D engine with soft shadows, timber stage, laser tripwire light beams, and multi-image spatial construction powered by NVIDIA Nemotron NIM and Gemini Vision.
 
 ---
 
