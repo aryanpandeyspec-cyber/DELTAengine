@@ -4,7 +4,7 @@
 > **Hackathon**: HackIndia Spark 2026 — South Central Region (Hyderabad, Telangana)  
 > **Repository**: [aryanpandeyspec-cyber/DELTAengine](https://github.com/aryanpandeyspec-cyber/DELTAengine)  
 > **Core Leadership**: Aryan Pandey (Lead Coordinator), Suryansh (Crowd & Safety Lead), Shahid (Stage & Ops Lead)  
-> **Last Updated**: October 2026 (v3.6.1 — Clean Dev Terminal Streamlining & High-Frequency Telemetry Throttling)
+> **Last Updated**: October 2026 (v3.6.2 — Comprehensive UI Decluttering, Visual Layout Sorting & Zero-Lag Performance Optimization)
 
 ---
 
@@ -384,6 +384,16 @@ Located in [`frontend/components/customCursor.js`](file:///d:/DESKTOP/Desktop/HA
 3. **Decoupled Vision Throttling**: 60 FPS video draw separated from 75ms throttled computer vision calculations.
 4. **WebSocket Render Debouncing**: Wrapped `safeSyncUI()` in `requestAnimationFrame` debouncing to coalesce multi-message sensor bursts into a single render tick.
 5. **Idle Cursor Comet Tail Sleep**: Particle canvas sleeps when mouse stops moving.
+6. **Cursor Hover Style Thrashing Elimination (`customCursor.js`)**: Removed global `mouseover` inline-style interceptors that previously traversed and mutated every hovered DOM node, restoring smooth 60–120 FPS cursor tracking across rich UI elements.
+7. **CCTV Metric State Dirty-Checking (`cctvPerception.js`)**: Implemented `lastCachedMetrics` state comparison in `updateDensityMetrics()`. Previously, 12 `querySelectorAll` lookups and complete `#cctv-attendee-chips` DOM rebuilds fired 13 times/sec even when metrics had zero changes. The dirty cache skips DOM work completely during steady-state.
+8. **HUD Video Frame Style Invalidation Protection (`cctvPerception.js`)**: Added text and class cache equality checks to `#cctv-optical-detection-tag` in `processVideoFrame()`, avoiding continuous style recalculation on each 60 FPS render tick.
+9. **Three.js WebGL Resource Leak & Idle Pause (`roomSpatialModel.js`, `contentPipeline.js`)**: Added idle visibility detection (`offsetParent !== null && !document.hidden`) in `RoomSpatialModelRenderer.animate()` that sleeps WebGL render loops when canvas elements are off-screen or modal is closed, plus explicit `destroy()` disposing WebGLRenderer and OrbitControls to eliminate GPU memory leaks.
+10. **Compositor Hardware Acceleration Layering (`app.css`)**: Levitation decorative doodles promoted to dedicated hardware-accelerated GPU layers (`will-change: transform; transform: translateZ(0); backface-visibility: hidden;`) with reduced opacity (0.14) to eliminate full-screen repaint recomposition lag.
+11. **Visual Decluttering & Semantic Hierarchy (`index.html`, `app.css`)**:
+    - Organized 7 disparate CCTV header controls into 3 semantic clusters (`.cctv-cluster-source`, `.cctv-cluster-stream`, `.cctv-cluster-modes`).
+    - Standardized `widget-ingress-kpi` into a clean flex layout matching Cards 1–3 without artificial scale hacks (`transform: scale(0.85)`).
+    - Docked `.sentiment-ticker` underneath `.terminal-container` so agent incident logs read without interruption.
+    - Standardized 3D spatial reconstruction toolbars (`.spatial-actions-row`, `.spatial-config-bar`) to eliminate repetitive inline style blobs.
 
 ---
 

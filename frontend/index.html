@@ -243,25 +243,31 @@
           <span id="cctv-stream-status" class="cctv-status-badge">⚪ <strong>CAMERA READY</strong></span>
         </div>
         <div class="cctv-hub-header-actions">
-          <select id="cctv-venue-select" class="cctv-select cctv-venue-select" title="Switch Conference Hall / Venue">
-            <option value="hall-1" data-capacity="250" data-name="Turing Hall">🏛️ Turing Hall (250)</option>
-            <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
-            <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
-            <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
-            <option value="hall-kumbh" data-capacity="1200" data-name="Kumbh Mela Sector A (Ghat)">🕉️ Kumbh Mela Sector A (1,200)</option>
-            <option value="hall-rally" data-capacity="2500" data-name="Mega Election Rally Grounds">🚩 Mega Election Rally (2,500)</option>
-            <option value="hall-stadium" data-capacity="5000" data-name="Olympic Stadium Arena">🏟️ Stadium Arena (5,000)</option>
-            <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
-          </select>
-          <select id="cctv-device-select" class="cctv-select">
-            <option value="">Detecting Available Cameras...</option>
-          </select>
-          <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
-          <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
-          <button id="btn-cctv-crowd-mode" class="btn btn-sm btn-white btn-cctv-crowd-mode" style="font-weight:800;"
-            title="Toggle between Eulerian Mega-Crowd (1,000+ Kumbh/Rally) and Precision Room mode">👥 Mode: Auto</button>
-          <button id="btn-cctv-tint-fix" class="btn btn-sm btn-white btn-cctv-tint-fix" style="font-weight:800;"
-            title="Toggle Camera Color Correction / IR Pink Fix">🎨 Tint: Auto-Fix</button>
+          <div class="cctv-header-cluster cctv-cluster-source">
+            <select id="cctv-venue-select" class="cctv-select cctv-venue-select" title="Switch Conference Hall / Venue">
+              <option value="hall-1" data-capacity="250" data-name="Turing Hall">🏛️ Turing Hall (250)</option>
+              <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
+              <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
+              <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
+              <option value="hall-kumbh" data-capacity="1200" data-name="Kumbh Mela Sector A (Ghat)">🕉️ Kumbh Mela Sector A (1,200)</option>
+              <option value="hall-rally" data-capacity="2500" data-name="Mega Election Rally Grounds">🚩 Mega Election Rally (2,500)</option>
+              <option value="hall-stadium" data-capacity="5000" data-name="Olympic Stadium Arena">🏟️ Stadium Arena (5,000)</option>
+              <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
+            </select>
+            <select id="cctv-device-select" class="cctv-select">
+              <option value="">Detecting Available Cameras...</option>
+            </select>
+          </div>
+          <div class="cctv-header-cluster cctv-cluster-stream">
+            <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
+            <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
+          </div>
+          <div class="cctv-header-cluster cctv-cluster-modes">
+            <button id="btn-cctv-crowd-mode" class="btn btn-sm btn-white btn-cctv-crowd-mode" style="font-weight:800;"
+              title="Toggle between Eulerian Mega-Crowd (1,000+ Kumbh/Rally) and Precision Room mode">👥 Mode: Auto</button>
+            <button id="btn-cctv-tint-fix" class="btn btn-sm btn-white btn-cctv-tint-fix" style="font-weight:800;"
+              title="Toggle Camera Color Correction / IR Pink Fix">🎨 Tint: Auto-Fix</button>
+          </div>
           <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;"
             title="Toggle between Full Camera HUD and Compact Bar">🔽 Expand View</button>
         </div>
@@ -544,21 +550,21 @@
             <span class="dot yellow"></span>
             <span class="widget-title">Live Ingress & Sensor Pulse</span>
           </div>
-          <div class="widget-body" style="padding: 10px 14px; display:flex; flex-direction:column; justify-content:space-between; gap:6px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div>
-                <span style="font-size:0.72rem; font-weight:700; color:#555;">OPTICAL SENSOR COUNT:</span>
-                <div style="font-size:1.05rem; font-weight:900; font-family:var(--font-mono); color:#1e293b;">
-                  <strong id="cctv-metric-headcount">0 / 25 Pax</strong> <span style="font-size:0.7rem; color:#16a34a; font-weight:800;">(NOMINAL)</span>
+          <div class="widget-body widget-ingress-body">
+            <div class="ingress-kpi-top">
+              <div class="ingress-kpi-headline">
+                <span class="ingress-kpi-label">OPTICAL SENSOR COUNT:</span>
+                <div class="ingress-kpi-val">
+                  <strong id="cctv-metric-headcount">0 / 25 Pax</strong> <span class="ingress-kpi-status-tag">(NOMINAL)</span>
                 </div>
               </div>
               <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
                 style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:4px 8px;"
                 title="Simulate hardware tripwire pulse (+1 Entry)">⚡ Tripwire (+1)</button>
             </div>
-            <div style="display:flex; justify-content:space-between; align-items:center; gap:6px; background:#f8fafc; border:1.5px solid #000; border-radius:6px; padding:3px 8px;">
-              <span style="font-size:0.7rem; font-weight:800; font-family:var(--font-mono); color:#475569;">MANUAL COUNT:</span>
-              <div class="segmented-stepper" style="transform:scale(0.85); transform-origin:right center;">
+            <div class="ingress-kpi-subbar">
+              <span class="ingress-kpi-sublabel">MANUAL COUNT:</span>
+              <div class="segmented-stepper ingress-stepper">
                 <button id="btn-cctv-sub-pax" class="stepper-btn" title="Decrease Headcount (-1)">－</button>
                 <div class="stepper-display">
                   <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
@@ -568,15 +574,15 @@
                 <button id="btn-cctv-add-pax" class="stepper-btn" title="Increase Headcount (+1)">＋</button>
               </div>
             </div>
-            <div style="display:flex; justify-content:space-between; gap:4px;">
+            <div class="ingress-kpi-actions">
               <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
-                style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:2px 4px;"
+                style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 4px;"
                 title="Trigger 80% Occupancy Warning">⚠️ 80% Alert</button>
               <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
-                style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:2px 4px;"
+                style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 4px;"
                 title="Trigger 100% Critical Capacity Breach">🚨 100% Alert</button>
               <button id="btn-open-scenario-hub" class="btn btn-sm btn-purple"
-                style="font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:2px 6px;"
+                style="font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 6px;"
                 title="Open Scenario & Stress Lab">⚡ Lab ↗</button>
             </div>
           </div>
@@ -648,17 +654,6 @@
                 </button>
               </div>
 
-                <div class="sentiment-ticker mt-4">
-                  <h4
-                    style="font-size:0.8rem; font-weight:800; font-family:var(--font-mono); margin-bottom:4px; display:flex; justify-content:space-between;">
-                    <span>💬 ATTENDEE REACTION STREAM</span>
-                    <span class="pulse-indicator-red">● LIVE</span>
-                  </h4>
-                  <div class="ticker-box" id="sentiment-ticker-box">
-                    <div class="ticker-item">"The swarms keynote was absolute fire!" - @agentic_geek</div>
-                  </div>
-                </div>
-
               <!-- Terminal-style Log Output -->
               <div class="terminal-container">
                 <div class="terminal-header">
@@ -668,6 +663,18 @@
                   <span class="terminal-title">agent_decision_matrix.log</span>
                 </div>
                 <div class="terminal-body" id="agent-logs">
+                </div>
+              </div>
+
+              <!-- Live Attendee Reaction Stream Docked Neatly at Card Base -->
+              <div class="sentiment-ticker mt-3">
+                <h4
+                  style="font-size:0.78rem; font-weight:800; font-family:var(--font-mono); margin-bottom:4px; display:flex; justify-content:space-between;">
+                  <span>💬 ATTENDEE REACTION STREAM</span>
+                  <span class="pulse-indicator-red">● LIVE</span>
+                </h4>
+                <div class="ticker-box" id="sentiment-ticker-box">
+                  <div class="ticker-item">"The swarms keynote was absolute fire!" - @agentic_geek</div>
                 </div>
               </div>
             </div>
@@ -843,12 +850,12 @@
               </div>
 
               <!-- Sample Photos Demo Buttons & Actions Row -->
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-top:10px; margin-bottom:12px;">
+              <div class="spatial-actions-row">
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                  <button type="button" class="btn btn-sm" id="btn-load-sample-lab-photos" style="font-size:0.75rem; padding:5px 12px; background:#eff6ff; border:2px solid #0284c7; color:#0369a1; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
+                  <button type="button" class="btn btn-sm spatial-sample-btn-lab" id="btn-load-sample-lab-photos">
                     🖥️ Load St. Peter's College Lab (4 Real Photos)
                   </button>
-                  <button type="button" class="btn btn-sm" id="btn-load-sample-hall-photos" style="font-size:0.75rem; padding:5px 12px; background:#f0fdf4; border:2px solid #16a34a; color:#15803d; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
+                  <button type="button" class="btn btn-sm spatial-sample-btn-hall" id="btn-load-sample-hall-photos">
                     📸 Load 3 Sample Auditorium Photos
                   </button>
                   <button type="button" class="btn btn-sm btn-white" id="btn-add-more-photos" style="font-size:0.75rem; padding:5px 10px; border:2px solid #000; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
@@ -875,10 +882,10 @@
               </div>
 
               <!-- Target Hall & Reconstruct Execution Row -->
-              <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; padding:10px 12px; background:#f1f5f9; border:2px solid #000; border-radius:8px; margin-bottom:14px;">
-                <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+              <div class="spatial-config-bar">
+                <div class="spatial-select-group">
                   <label for="spatial-target-hall-select" style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800;">TARGET VENUE:</label>
-                  <select id="spatial-target-hall-select" style="padding:5px 10px; border:2px solid #000; border-radius:6px; font-weight:700; font-size:0.8rem; background:#fff;">
+                  <select id="spatial-target-hall-select" class="spatial-select-field">
                     <option value="hall-lab" selected>St. Peter's Systems Lab (hall-lab)</option>
                     <option value="hall-1">Turing Hall (hall-1)</option>
                     <option value="hall-2">Lovelace Suite (hall-2)</option>
@@ -888,7 +895,7 @@
                   </select>
 
                   <label for="spatial-engine-select" style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800; margin-left:6px;">AI ENGINE:</label>
-                  <select id="spatial-engine-select" style="padding:5px 10px; border:2px solid #000; border-radius:6px; font-weight:700; font-size:0.8rem; background:#fff;">
+                  <select id="spatial-engine-select" class="spatial-select-field">
                     <option value="auto">🤖 Auto (Best Available Acceleration)</option>
                     <option value="nvidia">🟢 NVIDIA Nemotron NVLM-1D-72B (NVIDIA NIM)</option>
                     <option value="gemini">⚡ Google Gemini 3 Flash Vision</option>

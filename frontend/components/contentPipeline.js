@@ -165,6 +165,10 @@ function closeUploadReviewModal() {
   }
   const fileInput = document.getElementById('file-input');
   if (fileInput) fileInput.value = '';
+  if (typeof activeModalSpatialRenderer !== 'undefined' && activeModalSpatialRenderer) {
+    activeModalSpatialRenderer.destroy();
+    activeModalSpatialRenderer = null;
+  }
 }
 
 function setReviewModalTab(type) {

@@ -33,13 +33,6 @@
       // Force inline style on root elements
       if (document.documentElement) document.documentElement.style.setProperty('cursor', 'none', 'important');
       if (document.body) document.body.style.setProperty('cursor', 'none', 'important');
-
-      // Intercept any dynamic element hover
-      window.addEventListener('mouseover', (e) => {
-        if (e.target && e.target.style && e.target.style.cursor !== 'none') {
-          e.target.style.setProperty('cursor', 'none', 'important');
-        }
-      }, { passive: true });
     }
 
     // 1. Create Meteor Trail Canvas Overlay
