@@ -842,7 +842,7 @@
         featuredTopicId = scheduleData['slot-1'][activeHallId];
       } else {
         // Find first upcoming slot that has a session in this hall
-        const slotsOrder = ['slot-2', 'slot-3', 'slot-4'];
+        const slotsOrder = (graphData && graphData.slots) ? Object.keys(graphData.slots) : Object.keys(scheduleData);
         for (const sId of slotsOrder) {
           if (scheduleData[sId] && scheduleData[sId][activeHallId]) {
             featuredSlotId = sId;
@@ -927,7 +927,7 @@
       const container = document.getElementById('upcoming-sessions-container');
       container.innerHTML = '';
 
-      const allSlots = ['slot-1', 'slot-2', 'slot-3', 'slot-4'];
+      const allSlots = (graphData && graphData.slots) ? Object.keys(graphData.slots) : Object.keys(scheduleData);
       let upcomingFound = 0;
 
       allSlots.forEach(sId => {
@@ -966,9 +966,11 @@
     function renderRealCapacityGauge(hallCapacity) {
       let occ = 0;
 
-      // 1. Check cctvState from server
+      // 1. Check cctvState from server or hall telemetry
       if (cctvState && cctvState[activeHallId] && cctvState[activeHallId].peopleDetected !== undefined) {
         occ = cctvState[activeHallId].peopleDetected;
+      } else if (graphData?.halls?.[activeHallId]?.currentOccupancy !== undefined) {
+        occ = graphData.halls[activeHallId].currentOccupancy;
       } else if (currentOccupancy > 0 && activeHallId === 'hall-1') {
         occ = currentOccupancy;
       }

@@ -215,6 +215,9 @@
         <a href="/" style="text-decoration:none; font-size:0.7rem; font-weight:800; font-family:var(--font-mono, monospace); background:#fff; border:1.5px solid #000; padding:2px 6px; border-radius:4px; color:#000;">
           DESK ↗
         </a>
+        <button id="btn-vol-logout" style="border:1.5px solid #000; background:#fee2e2; color:#b91c1c; font-size:0.7rem; font-weight:800; font-family:var(--font-mono, monospace); padding:2px 6px; border-radius:4px; cursor:pointer;" title="Sign out of tactical terminal">
+          EXIT ⏻
+        </button>
       </div>
     </header>
 
@@ -317,11 +320,13 @@
     (function initVolunteerApp() {
       let ws = null;
       let currentHallId = 'hall-1';
+      let currentUserName = localStorage.getItem('delta_user_name') || 'Priya Sharma (Door Marshal)';
       let currentOccupancy = 180;
       let currentCapacity = 250;
       let selectedSosReason = 'Field Marshal reports critical crowd bottlenecking / barrier surge!';
 
       const elZoneSelect = document.getElementById('vol-zone-select');
+      const elOperatorBadge = document.getElementById('vol-operator-badge');
       const elPaxCount = document.getElementById('vol-pax-count');
       const elPaxCap = document.getElementById('vol-pax-capacity');
       const elPaxPct = document.getElementById('vol-pax-pct');
@@ -332,6 +337,29 @@
       const btnEntry = document.getElementById('btn-vol-entry');
       const btnExit = document.getElementById('btn-vol-exit');
       const btnSos = document.getElementById('btn-vol-sos');
+      const btnLogout = document.getElementById('btn-vol-logout');
+
+      if (elOperatorBadge) {
+        elOperatorBadge.textContent = `👤 ${currentUserName}`;
+      }
+
+      if (btnLogout) {
+        btnLogout.addEventListener('click', async () => {
+          const token = localStorage.getItem('delta_auth_token');
+          try {
+            if (token) {
+              await fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }
+              });
+            }
+          } catch (e) {}
+          localStorage.removeItem('delta_auth_token');
+          localStorage.removeItem('delta_user_role');
+          localStorage.removeItem('delta_user_name');
+          window.location.href = 'login.html';
+        });
+      }
 
       // Audio feedback
       function playTone(freq = 600, duration = 0.1) {
@@ -377,10 +405,32 @@
           const res = await fetch('/api/state');
           if (res.ok) {
             const data = await res.json();
+            // Dynamically populate available venue halls if provided by graph
+            if (data.graph?.halls && elZoneSelect) {
+              const availableHalls = Object.keys(data.graph.halls);
+              if (availableHalls.length > 0 && !elZoneSelect.dataset.synced) {
+                const prev = elZoneSelect.value || currentHallId;
+                elZoneSelect.innerHTML = availableHalls.map(hId => {
+                  const h = data.graph.halls[hId];
+                  return `<option value="${hId}">📍 ${h.name} (${h.capacity} Cap)</option>`;
+                }).join('');
+                elZoneSelect.dataset.synced = 'true';
+                if (data.graph.halls[prev]) {
+                  elZoneSelect.value = prev;
+                  currentHallId = prev;
+                } else {
+                  currentHallId = availableHalls[0];
+                  elZoneSelect.value = currentHallId;
+                }
+              }
+            }
             const hall = data.graph?.halls?.[currentHallId];
             if (hall) {
               currentCapacity = hall.capacity || 250;
-              currentOccupancy = hall.currentOccupancy || (currentHallId === 'hall-1' ? (data.cctvState?.turingHallOccupancy || 180) : Math.round(currentCapacity * 0.45));
+              const cctvOcc = data.cctvState?.[currentHallId]?.peopleDetected;
+              currentOccupancy = hall.currentOccupancy !== undefined
+                ? hall.currentOccupancy
+                : (cctvOcc !== undefined ? cctvOcc : (currentHallId === 'hall-1' ? 180 : Math.round(currentCapacity * 0.45)));
               updateUI();
             }
           }
@@ -408,7 +458,7 @@
                 hallId: currentHallId,
                 event: 'PASSAGE_ENTRY',
                 attendeeId: `VOL_${Date.now()}`,
-                attendeeName: 'Mobile Gate Attendee',
+                attendeeName: `${currentUserName} Gate Entry`,
                 netOccupancy: currentOccupancy,
                 totalEntries: 1,
                 totalExits: 0,
@@ -434,7 +484,7 @@
                 hallId: currentHallId,
                 event: 'PASSAGE_EXIT',
                 attendeeId: `VOL_${Date.now()}`,
-                attendeeName: 'Mobile Gate Attendee',
+                attendeeName: `${currentUserName} Gate Exit`,
                 netOccupancy: currentOccupancy,
                 totalEntries: 0,
                 totalExits: 1,
@@ -466,7 +516,7 @@
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                volunteerName: 'Priya Sharma (Door Marshal)',
+                volunteerName: currentUserName,
                 hallId: currentHallId,
                 note: selectedSosReason,
                 crowdSeverity: 'CRITICAL'
@@ -514,6 +564,9 @@
               div.className = 'order-item';
               div.innerHTML = `<strong>[${msg.data.timestamp || new Date().toLocaleTimeString()}]</strong> ${msg.data.text}`;
               elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+            }
+            if (['STATE_UPDATE', 'INIT_STATE', 'SCHEDULE_UPDATED', 'CCTV_OCCUPANCY_UPDATE', 'ROOM_OCCUPANCY_UPDATE', 'DOOR_TRIGGER', 'SCENARIO_CHANGED'].includes(msg.type)) {
+              syncHallState();
             }
           } catch (e) {}
         };

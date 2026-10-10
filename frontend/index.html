@@ -375,13 +375,13 @@
               <span class="sim-label">⚡ Attendance Calibration:</span>
               <div style="display:flex; align-items:center; gap:8px;">
                 <div class="segmented-stepper">
-                  <button id="btn-cctv-sub-pax" class="stepper-btn" title="Decrease Headcount (-1)">－</button>
+                  <button id="btn-cctv-sub-pax" class="stepper-btn btn-cctv-sub-pax" title="Decrease Headcount (-1)">－</button>
                   <div class="stepper-display">
                     <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
                       value="0" title="Directly set attendee headcount manually">
                     <span style="font-size:0.75rem; color:#555;">Pax</span>
                   </div>
-                  <button id="btn-cctv-add-pax" class="stepper-btn" title="Increase Headcount (+1)">＋</button>
+                  <button id="btn-cctv-add-pax" class="stepper-btn btn-cctv-add-pax" title="Increase Headcount (+1)">＋</button>
                 </div>
                 <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
                   style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;"
@@ -391,16 +391,16 @@
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
               <span style="font-size:0.75rem; font-weight:700; color:#555;">Direct Thresholds:</span>
               <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
+                <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
                   style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
                   title="Trigger 80% Occupancy Warning">⚠️ 80% Warning</button>
-                <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
+                <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red btn-cctv-trigger-full"
                   style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
                   title="Trigger 100% Critical Capacity Breach">🚨 100% Breach</button>
-                <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white"
+                <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white btn-cctv-trigger-empty"
                   style="font-weight:700; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
                   title="Reset to 0% Empty">⚪ 0% Empty</button>
-                <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white"
+                <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white btn-cctv-clear-pax"
                   style="font-weight:700; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
                   title="Reset Manual Counter">🧹 Reset</button>
               </div>
@@ -584,20 +584,20 @@
             <div class="ingress-kpi-subbar">
               <span class="ingress-kpi-sublabel">MANUAL COUNT:</span>
               <div class="segmented-stepper ingress-stepper">
-                <button id="btn-cctv-sub-pax" class="stepper-btn" title="Decrease Headcount (-1)">－</button>
+                <button id="btn-cctv-sub-pax-kpi" class="stepper-btn btn-cctv-sub-pax" title="Decrease Headcount (-1)">－</button>
                 <div class="stepper-display">
-                  <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
+                  <input type="number" class="cctv-manual-pax-input" min="0" max="1000"
                     value="0" title="Directly set attendee headcount manually">
                   <span style="font-size:0.7rem; color:#555;">Pax</span>
                 </div>
-                <button id="btn-cctv-add-pax" class="stepper-btn" title="Increase Headcount (+1)">＋</button>
+                <button id="btn-cctv-add-pax-kpi" class="stepper-btn btn-cctv-add-pax" title="Increase Headcount (+1)">＋</button>
               </div>
             </div>
             <div class="ingress-kpi-actions">
-              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
+              <button id="btn-cctv-trigger-80-kpi" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
                 style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 4px;"
                 title="Trigger 80% Occupancy Warning">⚠️ 80% Alert</button>
-              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
+              <button id="btn-cctv-trigger-full-kpi" class="btn btn-sm btn-red btn-cctv-trigger-full"
                 style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 4px;"
                 title="Trigger 100% Critical Capacity Breach">🚨 100% Alert</button>
               <button id="btn-open-scenario-hub" class="btn btn-sm btn-purple"
@@ -1853,16 +1853,16 @@
                 <button class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
                   style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Sensor (+1
                   Entry)</button>
-                <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
-                <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
-                <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
+                <button id="btn-modal-cctv-add-pax" class="btn btn-sm btn-yellow btn-cctv-add-pax">+1 Person</button>
+                <button id="btn-modal-cctv-sub-pax" class="btn btn-sm btn-white btn-cctv-sub-pax">-1 Person</button>
+                <button id="btn-modal-cctv-trigger-80" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
                   style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80%
                   Full</button>
-                <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
+                <button id="btn-modal-cctv-trigger-full" class="btn btn-sm btn-red btn-cctv-trigger-full"
                   style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100%
                   Full</button>
-                <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
-                <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
+                <button id="btn-modal-cctv-trigger-empty" class="btn btn-sm btn-white btn-cctv-trigger-empty">⚪ Simulate 0% Empty</button>
+                <button id="btn-modal-cctv-clear-pax" class="btn btn-sm btn-white btn-cctv-clear-pax">🧹 Reset</button>
               </div>
             </div>
 

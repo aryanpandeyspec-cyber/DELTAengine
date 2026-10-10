@@ -624,17 +624,17 @@
   }
 
   function triggerWhatsAppNotification(name, phone, msg) {
-    // 1. Call backend API for dispatch logging
-    fetch('/api/notify/whatsapp', {
+    // 1. Open real WhatsApp Web / Mobile chat with selected number pre-loaded!
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+
+    // 2. Call backend API for dispatch logging & verification
+    return fetch('/api/notify/whatsapp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recipientName: name, phoneNumber: phone, messageText: msg })
     });
-
-    // 2. Open real WhatsApp Web / Mobile chat with selected number pre-loaded!
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, '_blank');
   }
 
   window.handleWhatsAppDispatch = function (data) {
@@ -1187,12 +1187,24 @@
     };
 
     if (btnTwilio) {
-      btnTwilio.addEventListener('click', () => {
-        triggerWhatsAppNotification(
-          'Aryan Pandey (Lead Coordinator)',
-          '+91 91542 76178',
-          '⚠️ Operational update from DELTA Engine Central AV desk: Venue crowd nominal.'
-        );
+      btnTwilio.addEventListener('click', async () => {
+        btnTwilio.disabled = true;
+        btnTwilio.textContent = '💬 Dispatching...';
+        try {
+          await triggerWhatsAppNotification(
+            'Aryan Pandey (Lead Coordinator)',
+            '+91 91542 76178',
+            '⚠️ Operational update from DELTA Engine Central AV desk: Venue crowd nominal.'
+          );
+          if (typeof createToast === 'function') {
+            createToast('💬 Real WhatsApp alert dispatched to Lead Coordinator (+91 91542 76178)!', 'success');
+          }
+        } catch (e) {
+          console.error('[Admin Twilio Test Error]:', e);
+        } finally {
+          btnTwilio.disabled = false;
+          btnTwilio.textContent = '💬 Test WhatsApp Alert';
+        }
       });
     }
   }

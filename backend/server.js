@@ -709,8 +709,8 @@ app.get('/api/compliance/fire-marshal-audit', (req, res) => {
   const halls = db.graph?.halls || {};
   for (const hId in halls) {
     const hall = halls[hId];
-    const cap = hall.capacity || 100;
-    const occ = hall.currentOccupancy || (hId === 'hall-1' ? (db.cctvState?.turingHallOccupancy || 180) : Math.round(cap * 0.45));
+    const cctvOcc = db.cctvState?.[hId]?.peopleDetected ?? db.cctvState?.turingHallOccupancy;
+    const occ = hall.currentOccupancy ?? (cctvOcc !== undefined ? cctvOcc : (hId === 'hall-1' ? 180 : Math.round(cap * 0.45)));
     const densityM2Pax = +(hall.spatialModel?.dimensions?.areaM2 ? (hall.spatialModel.dimensions.areaM2 / Math.max(occ, 1)).toFixed(2) : (cap > 200 ? 1.4 : 1.8));
     const flowRatePaxMin = (hall.spatialModel?.capacityMetrics?.egressFlowRatePaxPerMin) || (Math.max(1, hall.doorsCount || 2) * 60);
     const status = occ > cap ? 'HAZARD_BREACH' : (occ > cap * 0.85 ? 'WARNING_DENSITY' : 'NOMINAL');
@@ -769,10 +769,13 @@ app.get('/api/compliance/fire-marshal-audit', (req, res) => {
 // Real-Time Google Gemini 3.8/3.5 Flash Safety & Capacity Perception Audit
 app.post('/api/gemini/audit', async (req, res) => {
   const { hallTelemetry, conflicts } = req.body || {};
+  const turingOcc = (db.cctvState && db.cctvState['hall-1'] ? db.cctvState['hall-1'].peopleDetected : (db.cctvState?.turingHallOccupancy || 285));
+  const lovelaceOcc = (db.cctvState && db.cctvState['hall-2'] ? db.cctvState['hall-2'].peopleDetected : 82);
+  const hopperOcc = (db.cctvState && db.cctvState['hall-3'] ? db.cctvState['hall-3'].peopleDetected : 64);
   const currentTelemetry = hallTelemetry || {
-    'Turing Hall': { capacity: 250, currentOccupancy: (db.cctvState && db.cctvState.turingHallOccupancy) || 285, status: 'SURGE_WARNING' },
-    'Lovelace Suite': { capacity: 180, currentOccupancy: 82, status: 'NOMINAL' },
-    'Hopper Room': { capacity: 120, currentOccupancy: 64, status: 'NOMINAL' }
+    'Turing Hall': { capacity: db.graph?.halls?.['hall-1']?.capacity || 250, currentOccupancy: turingOcc, status: turingOcc > 250 ? 'SURGE_WARNING' : 'NOMINAL' },
+    'Lovelace Suite': { capacity: db.graph?.halls?.['hall-2']?.capacity || 180, currentOccupancy: lovelaceOcc, status: lovelaceOcc > 180 ? 'SURGE_WARNING' : 'NOMINAL' },
+    'Hopper Room': { capacity: db.graph?.halls?.['hall-3']?.capacity || 120, currentOccupancy: hopperOcc, status: hopperOcc > 120 ? 'SURGE_WARNING' : 'NOMINAL' }
   };
   const result = await auditVenueCrowdAndRisks({
     hallTelemetry: currentTelemetry,
