@@ -198,19 +198,31 @@ window.showAutopilotResolutionHUD = function(conflictText, destText) {
   }, 4800);
 };
 
+function getLocalDateStr(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 function initDatePicker() {
   const datePicker = document.getElementById('schedule-date-picker');
   if (!datePicker) return;
 
-  // Initialize dynamic date to today if not set or default
-  const todayStr = new Date().toISOString().split('T')[0];
-  if (!datePicker.value || datePicker.value === '2026-08-07') {
-    datePicker.value = todayStr;
-  }
+  // Initialize dynamic date to today's local date or active server date
+  const todayStr = (graphState && graphState.activeDate) || getLocalDateStr();
+  datePicker.value = todayStr;
+  datePicker.min = todayStr; // Prevent selecting historical archived past dates
 
   datePicker.addEventListener('change', (e) => {
-    const selectedDate = e.target.value;
-    createToast(`📅 Switching schedule matrix view to ${selectedDate}...`, 'info');
+    let selectedDate = e.target.value;
+    if (selectedDate < todayStr) {
+      selectedDate = todayStr;
+      datePicker.value = todayStr;
+      createToast(`⚠️ Past events are archived. Showing latest active day (${todayStr}).`, 'info');
+    } else {
+      createToast(`📅 Switching schedule matrix view to ${selectedDate}...`, 'info');
+    }
     
     fetch('/api/schedule/set-date', {
       method: 'POST',
@@ -220,6 +232,7 @@ function initDatePicker() {
     .then(res => res.json())
     .then(data => {
       if (data.success && data.schedule) {
+        if (graphState) graphState.activeDate = data.activeDate;
         scheduleState = data.schedule;
         renderScheduleGrid();
         if (typeof rebuildGraphData === 'function') rebuildGraphData();

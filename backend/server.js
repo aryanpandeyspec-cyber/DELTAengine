@@ -1160,6 +1160,7 @@ app.post('/api/schedule/set-date', (req, res) => {
       data: {
         graph: db.graph,
         schedule: db.schedule,
+        activeDate: db.activeDate,
         logs: [`[Date Change] Live schedule matrix view switched to ${date}.`]
       }
     });

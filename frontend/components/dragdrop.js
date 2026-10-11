@@ -19,7 +19,35 @@ function renderScheduleGrid() {
     }
   }
 
-  for (const hallId in graphState.halls) {
+  // Determine active halls to show:
+  // In Conference mode (default), show the standard conference halls plus any hall with an active session.
+  // In other scenarios, show that scenario's active zones/halls and any scheduled hall.
+  // This cleanly hides off-scenario halls (e.g. Kumbh Mela, Election Rally) and leftover test imports.
+  const activeScenarioId = (graphState && graphState.activeScenario) || 'CONFERENCE';
+  const defaultConfHalls = ['hall-1', 'hall-2', 'hall-3', 'hall-4'];
+
+  const scheduledHallIds = new Set();
+  if (scheduleState) {
+    for (const slotId in scheduleState) {
+      for (const hId in scheduleState[slotId]) {
+        if (scheduleState[slotId][hId]) {
+          scheduledHallIds.add(hId);
+        }
+      }
+    }
+  }
+
+  const allHallIds = Object.keys(graphState.halls || {});
+  const displayHallIds = allHallIds.filter(hId => {
+    if (scheduledHallIds.has(hId)) return true;
+    if (activeScenarioId === 'CONFERENCE') {
+      return defaultConfHalls.includes(hId);
+    }
+    if (graphState.zones && graphState.zones[hId]) return true;
+    return allHallIds.length <= 4;
+  });
+
+  for (const hallId of displayHallIds) {
     const hall = graphState.halls[hallId] || { name: hallId, capacity: 250 };
     const tr = document.createElement('tr');
     

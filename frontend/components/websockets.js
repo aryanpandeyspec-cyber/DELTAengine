@@ -78,6 +78,15 @@ function initWebSockets() {
         graphState = payload.data.graph;
         scheduleState = payload.data.schedule;
 
+        if (payload.data.activeDate) {
+          if (graphState) graphState.activeDate = payload.data.activeDate;
+          const dp = document.getElementById('schedule-date-picker');
+          if (dp) {
+            dp.value = payload.data.activeDate;
+            dp.min = payload.data.activeDate;
+          }
+        }
+
         if (payload.data.autopilotEnabled !== undefined && typeof window.setAutopilotMode === 'function') {
           window.setAutopilotMode(payload.data.autopilotEnabled);
         }
@@ -272,6 +281,15 @@ function initWebSockets() {
             <span class="chat-text">Swarm session synchronized. Scheduler ⏱️, Logistics 🏛️, Liaison 🗣️, Marketing 📢 active.</span>
           </div>`;
         if (typeof appendLog === 'function') appendLog('[SYSTEM] DB flushed. Schedules restored to default state.', 'success');
+
+        if (payload.data.activeDate) {
+          if (graphState) graphState.activeDate = payload.data.activeDate;
+          const dp = document.getElementById('schedule-date-picker');
+          if (dp) {
+            dp.value = payload.data.activeDate;
+            dp.min = payload.data.activeDate;
+          }
+        }
 
         safeSyncUI(null);
         if (typeof createToast === 'function') createToast('Conference layout reset to default settings!', 'success');
