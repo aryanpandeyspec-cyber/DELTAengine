@@ -3397,6 +3397,35 @@ input:checked + .slider:before {
   display: none !important;
 }
 
+.modal-card {
+  background: #ffffff;
+  border: 3.5px solid #000000;
+  border-radius: 16px;
+  box-shadow: 8px 8px 0px #000000;
+  max-width: 95vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.cctv-modal-card {
+  max-width: 1040px;
+  width: 95vw;
+  max-height: 90vh;
+}
+
+.modal-card .modal-header {
+  flex-shrink: 0;
+}
+
+.modal-card .modal-body {
+  overflow-y: auto;
+  flex: 1 1 auto;
+  max-height: calc(90vh - 70px);
+}
+
 /* TOP-LEVEL CCTV PERCEPTION HUB (Station at top of dashboard) */
 .cctv-top-hub {
   background: #ffffff;

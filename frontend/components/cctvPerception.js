@@ -376,6 +376,31 @@
       });
     }
 
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+          modal.classList.add('hidden');
+        }
+      });
+    }
+
+    const btnPopout = document.getElementById('btn-cctv-popout-modal');
+    if (btnPopout && modal) {
+      btnPopout.addEventListener('click', (e) => {
+        if (e) e.preventDefault();
+        modal.classList.remove('hidden');
+        enumerateCameras();
+        if (!isCameraActive) {
+          startWebcam();
+        }
+      });
+    }
+
     // Toggle Collapse / Expand Top Hub View
     if (btnToggleView && hubBody) {
       btnToggleView.addEventListener('click', () => {
@@ -385,7 +410,7 @@
     }
 
     // Bind ALL Start Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-start, .btn-cctv-start').forEach(btn => {
+    document.querySelectorAll('#btn-cctv-start, #btn-modal-cctv-start, .btn-cctv-start').forEach(btn => {
       btn.addEventListener('click', () => {
         if (hubBody && hubBody.classList.contains('collapsed')) {
           hubBody.classList.remove('collapsed');
@@ -397,7 +422,7 @@
     });
 
     // Bind ALL Stop Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-stop, .btn-cctv-stop').forEach(btn => {
+    document.querySelectorAll('#btn-cctv-stop, #btn-modal-cctv-stop, .btn-cctv-stop').forEach(btn => {
       btn.addEventListener('click', () => stopWebcam());
     });
 
@@ -633,16 +658,16 @@
       });
     });
 
-    // Bind Add Person (+1) buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-add-pax, .btn-cctv-add-pax').forEach(btn => {
+    // Bind Add Person (+1) buttons (Top Hub, Modal & KPI)
+    document.querySelectorAll('#btn-cctv-add-pax, #btn-modal-cctv-add-pax, #btn-cctv-add-pax-kpi, .btn-cctv-add-pax').forEach(btn => {
       btn.addEventListener('click', () => {
         simulateAttendeeAction('ENTRY');
         syncManualCountControls(currentNetOccupancy);
       });
     });
 
-    // Bind Subtract Person (-1) buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-sub-pax, .btn-cctv-sub-pax').forEach(btn => {
+    // Bind Subtract Person (-1) buttons (Top Hub, Modal & KPI)
+    document.querySelectorAll('#btn-cctv-sub-pax, #btn-modal-cctv-sub-pax, #btn-cctv-sub-pax-kpi, .btn-cctv-sub-pax').forEach(btn => {
       btn.addEventListener('click', () => {
         simulateAttendeeAction('EXIT');
         syncManualCountControls(currentNetOccupancy);
@@ -650,7 +675,7 @@
     });
 
     // Bind Reset Pax buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-clear-pax, .btn-cctv-clear-pax').forEach(btn => {
+    document.querySelectorAll('#btn-cctv-clear-pax, #btn-modal-cctv-clear-pax, .btn-cctv-clear-pax').forEach(btn => {
       btn.addEventListener('click', () => {
         attendeeDb.clear();
         trackedHeads = [];
@@ -669,8 +694,8 @@
       });
     });
 
-    // Bind 80% Room Capacity Trigger Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-trigger-80, .btn-cctv-trigger-80').forEach(btn => {
+    // Bind 80% Room Capacity Trigger Buttons (Top Hub, Modal & KPI)
+    document.querySelectorAll('#btn-cctv-trigger-80, #btn-modal-cctv-trigger-80, #btn-cctv-trigger-80-kpi, .btn-cctv-trigger-80').forEach(btn => {
       btn.addEventListener('click', () => {
         currentNetOccupancy = Math.max(1, Math.round(currentCapacity * 0.80));
         manualCount = currentNetOccupancy;
@@ -679,8 +704,8 @@
       });
     });
 
-    // Bind 100% Room Full Trigger Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-trigger-full, .btn-cctv-trigger-full').forEach(btn => {
+    // Bind 100% Room Full Trigger Buttons (Top Hub, Modal & KPI)
+    document.querySelectorAll('#btn-cctv-trigger-full, #btn-modal-cctv-trigger-full, #btn-cctv-trigger-full-kpi, .btn-cctv-trigger-full').forEach(btn => {
       btn.addEventListener('click', () => {
         currentNetOccupancy = currentCapacity;
         manualCount = currentCapacity;
@@ -690,7 +715,7 @@
     });
 
     // Bind 0% Room Empty Trigger Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-trigger-empty, .btn-cctv-trigger-empty').forEach(btn => {
+    document.querySelectorAll('#btn-cctv-trigger-empty, #btn-modal-cctv-trigger-empty, .btn-cctv-trigger-empty').forEach(btn => {
       btn.addEventListener('click', () => {
         currentNetOccupancy = 0;
         manualCount = 0;

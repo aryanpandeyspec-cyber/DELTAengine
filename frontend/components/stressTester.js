@@ -82,6 +82,10 @@ function initICalModal() {
     if (e.target === modal) modal.style.display = 'none';
   };
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display !== 'none') modal.style.display = 'none';
+  });
+
   btnCopy.onclick = () => {
     inputUrl.select();
     navigator.clipboard.writeText(inputUrl.value);

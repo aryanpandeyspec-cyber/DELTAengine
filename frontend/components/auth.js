@@ -38,6 +38,17 @@
       });
     }
 
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+          modal.classList.add('hidden');
+        }
+      });
+    }
+
     // Role Tab Toggles
     const tabCoord = document.getElementById('tab-login-coordinator');
     const tabAdmin = document.getElementById('tab-login-admin');
@@ -83,6 +94,7 @@
 
     // Form Submit Listener
     const form = document.getElementById('auth-login-form');
+    const btnSubmitLogin = document.getElementById('btn-submit-auth-login');
     if (form) {
       form.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -90,6 +102,11 @@
         const username = inputUsername ? inputUsername.value : 'User';
         const name = role === 'admin' ? `Admin (${username})` : `Coordinator (${username})`;
         loginUser(role, name);
+      });
+    }
+    if (btnSubmitLogin && form) {
+      btnSubmitLogin.addEventListener('click', (e) => {
+        // Form submit handles event, but ensures button click activates
       });
     }
 
@@ -549,6 +566,14 @@
 
     if (btnCloseAddVol) btnCloseAddVol.addEventListener('click', closeModal);
     if (btnCancelAddVol) btnCancelAddVol.addEventListener('click', closeModal);
+    if (modalAddVol) {
+      modalAddVol.addEventListener('click', (e) => {
+        if (e.target === modalAddVol) closeModal();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalAddVol.style.display !== 'none') closeModal();
+      });
+    }
 
     // 3. Form Submit -> POST /api/volunteers
     if (formAddVol) {

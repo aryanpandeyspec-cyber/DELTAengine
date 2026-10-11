@@ -1869,7 +1869,7 @@ app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
       const eventDesc = `🏛️ Room Blueprint Ingested: "${hallName}" mapped (${width}m x ${length}m = ${areaM2}m²). Safe capacity calibrated to ${capacity} pax (${doorsCount} doors). Ephemeral TTL: ${ephemeralHours}h post-event.`;
       
       // Evaluate if current live occupancy in this hall exceeds new capacity limit
-      const currentOccupancy = db.cctvState ? (db.cctvState.currentOccupancy || 0) : 0;
+      const currentOccupancy = db.cctvState?.[hallId]?.peopleDetected ?? db.cctvState?.currentOccupancy ?? 0;
       let healingReport = { logs: [], notifications: [] };
       if (currentOccupancy > capacity) {
         try {
