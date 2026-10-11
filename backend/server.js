@@ -229,6 +229,7 @@ wss.on('connection', ws => {
       contacts: db.contacts,
       volunteers: db.volunteers,
       whatsappLogs: db.whatsappLogs,
+      emailLogs: db.emailLogs || [],
       limiters: db.limiters,
       cctvState: db.cctvState,
       autopilotEnabled: db.autopilotEnabled !== false,
@@ -252,6 +253,7 @@ app.get('/api/state', (req, res) => {
     contacts: db.contacts,
     volunteers: db.volunteers,
     whatsappLogs: db.whatsappLogs,
+    emailLogs: db.emailLogs || [],
     limiters: db.limiters,
     cctvState: db.cctvState,
     autopilotEnabled: db.autopilotEnabled !== false,
@@ -259,6 +261,28 @@ app.get('/api/state', (req, res) => {
     tokensUsed: db.tokensUsed,
     activeScenario: getActiveScenario().id,
     scenarios: getScenarios()
+  });
+});
+
+app.get('/api/notify/logs', (req, res) => {
+  res.json({
+    success: true,
+    whatsappLogs: db.whatsappLogs || [],
+    emailLogs: db.emailLogs || []
+  });
+});
+
+app.get('/api/notify/whatsapp-logs', (req, res) => {
+  res.json({
+    success: true,
+    logs: db.whatsappLogs || []
+  });
+});
+
+app.get('/api/notify/email-logs', (req, res) => {
+  res.json({
+    success: true,
+    logs: db.emailLogs || []
   });
 });
 
@@ -709,6 +733,7 @@ app.get('/api/compliance/fire-marshal-audit', (req, res) => {
   const halls = db.graph?.halls || {};
   for (const hId in halls) {
     const hall = halls[hId];
+    const cap = hall.capacity || (hId === 'hall-1' ? 250 : 200);
     const cctvOcc = db.cctvState?.[hId]?.peopleDetected ?? db.cctvState?.turingHallOccupancy;
     const occ = hall.currentOccupancy ?? (cctvOcc !== undefined ? cctvOcc : (hId === 'hall-1' ? 180 : Math.round(cap * 0.45)));
     const densityM2Pax = +(hall.spatialModel?.dimensions?.areaM2 ? (hall.spatialModel.dimensions.areaM2 / Math.max(occ, 1)).toFixed(2) : (cap > 200 ? 1.4 : 1.8));

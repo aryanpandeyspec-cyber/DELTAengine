@@ -79,7 +79,41 @@ const db = {
     { id: 'vol_06', name: 'Kabir Mehta', role: 'Rapid Response Crowd Marshal', phone: '+91 96543 21098', email: 'kabir@delta-engine.in', assignedHallId: 'hall-3', location: 'Hopper Room (Entrance)', task: 'Session flow & door monitoring', status: 'ON DUTY' },
     { id: 'vol_07', name: 'Zoya Khan', role: 'Main Gate Flow Controller', phone: '+91 95432 10987', email: 'zoya@delta-engine.in', assignedHallId: 'hall-4', location: 'Keynote Arena (North Gate)', task: 'VIP passage & ingress management', status: 'ON DUTY' }
   ],
-  whatsappLogs: [],
+  whatsappLogs: [
+    {
+      id: 'wa_init_01',
+      timestamp: '09:00:00 AM',
+      recipientName: 'Suryansh',
+      phoneNumber: '+91 83030 09159',
+      messageText: '⚠️ Central Telemetry Active: Turing Hall entrance cameras online. Optical turnstiles monitoring headcount.',
+      status: 'DELIVERED (AI Dispatch)',
+      agent: '🤖 DELTA WhatsApp AI Liaison'
+    },
+    {
+      id: 'wa_init_02',
+      timestamp: '09:15:30 AM',
+      recipientName: 'Shahid',
+      phoneNumber: '+91 63035 70916',
+      messageText: '🎤 Stage Clearance Verified: Lovelace Suite audio-visual relay operational. Standby for session starts.',
+      status: 'DELIVERED (AI Dispatch)',
+      agent: '🤖 DELTA WhatsApp AI Liaison'
+    }
+  ],
+  emailLogs: [
+    {
+      id: 'em_init_01',
+      timestamp: '09:00:00 AM',
+      subject: '[DELTA ENGINE] Operational Schedule Locked & Egress Routes Certified',
+      topicTitle: 'Event Operating System Initialization',
+      speakerName: 'Central Command',
+      oldVenue: 'All Stages',
+      newVenue: 'All Stages',
+      timeSlot: 'Full Day',
+      reason: 'NFPA-101 compliant ingress monitoring initialized',
+      recipients: ['aryan.pandey777hyd@gmail.com', 'suryansh@delta-engine.in', 'shahid@delta-engine.in'],
+      status: 'DELIVERED (DKIM Signed via Supabase)'
+    }
+  ],
   limiters: {
     llmLimiter: false,
     dbLimiter: false

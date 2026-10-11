@@ -1084,7 +1084,65 @@
         scnSelect.value = activeScn;
       }
     }
+
+    // Hydrate Live WhatsApp Dispatches
+    if (data.whatsappLogs && Array.isArray(data.whatsappLogs)) {
+      const waBox = document.getElementById('admin-whatsapp-log-container');
+      if (waBox) {
+        waBox.innerHTML = '';
+        data.whatsappLogs.forEach(item => {
+          const line = document.createElement('div');
+          line.className = 'admin-audit-line success';
+          line.textContent = `[${item.timestamp}] 💬 WhatsApp Alert sent to ${item.recipientName} (${item.phoneNumber}): "${item.messageText}"`;
+          waBox.appendChild(line);
+        });
+      }
+    }
+
+    // Hydrate Live Email Dispatches
+    if (data.emailLogs && Array.isArray(data.emailLogs)) {
+      const emailBox = document.getElementById('admin-email-log-container');
+      if (emailBox) {
+        emailBox.innerHTML = '';
+        data.emailLogs.forEach(item => {
+          const line = document.createElement('div');
+          line.className = 'admin-audit-line info';
+          const recCount = item.recipients ? item.recipients.length : 3;
+          line.textContent = `[${item.timestamp}] 📧 Email Dispatched to ${recCount} personnel: "${item.subject || item.topicTitle}"`;
+          emailBox.appendChild(line);
+        });
+      }
+    }
+
+    // Fetch and hydrate real forensic cryptographic audit trail
+    fetchForensicAuditLogs();
   };
+
+  async function fetchForensicAuditLogs() {
+    const auditBox = document.getElementById('admin-audit-log-container');
+    if (!auditBox) return;
+    try {
+      const token = localStorage.getItem('delta_auth_token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch('/api/audit/forensic-logs?limit=30', { headers });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.logs) && data.logs.length > 0) {
+        auditBox.innerHTML = '';
+        data.logs.forEach(log => {
+          const line = document.createElement('div');
+          const isErr = log.actionType && (log.actionType.includes('ERROR') || log.actionType.includes('BREACH'));
+          const isWarn = log.actionType && (log.actionType.includes('WARN') || log.actionType.includes('CONFLICT'));
+          line.className = `admin-audit-line ${isErr ? 'danger' : isWarn ? 'warning' : 'info'}`;
+          const time = log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : 'NOW';
+          const detailsStr = typeof log.details === 'object' ? JSON.stringify(log.details) : (log.details || '');
+          line.textContent = `[${time}] 🔒 [${log.actionType}] ${log.actorName || 'OPERATOR'} (${log.role || 'SYS'}): ${detailsStr}`;
+          auditBox.appendChild(line);
+        });
+      }
+    } catch (err) {
+      console.warn('[Admin Audit] Forensic logs offline/deferred:', err.message);
+    }
+  }
 
   let lastPAAudioUrl = null;
 

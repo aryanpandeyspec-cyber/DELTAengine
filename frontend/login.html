@@ -237,18 +237,19 @@
     document.getElementById('standalone-login-form').addEventListener('submit', (e) => {
       e.preventDefault();
       const username = inputUsername.value || 'User';
-      proceedToPortal(selectedRole, username);
+      const password = document.getElementById('input-password') ? document.getElementById('input-password').value : '';
+      proceedToPortal(selectedRole, username, password);
     });
 
     document.getElementById('btn-demo-coord').addEventListener('click', () => {
-      proceedToPortal('coordinator', 'Suryansh (Lead Coordinator)');
+      proceedToPortal('coordinator', 'Suryansh (Lead Coordinator)', 'demo_pass');
     });
 
     document.getElementById('btn-demo-admin').addEventListener('click', () => {
-      proceedToPortal('admin', 'Marcus Aurelius (Super Admin)');
+      proceedToPortal('admin', 'Marcus Aurelius (Super Admin)', 'admin_pass');
     });
 
-    async function proceedToPortal(role, username) {
+    async function proceedToPortal(role, username, password = '') {
       localStorage.setItem('delta_user_role', role);
       localStorage.setItem('delta_user_name', username);
 
@@ -256,7 +257,7 @@
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role, username })
+          body: JSON.stringify({ role, username, password })
         });
         const data = await res.json();
         if (data && data.token) {
