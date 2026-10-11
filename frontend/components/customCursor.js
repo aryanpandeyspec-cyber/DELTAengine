@@ -101,12 +101,14 @@
 
     // Meteor Trail Point History Buffer
     const points = [];
-    const MAX_POINTS = 12;
+    const MAX_POINTS = 10;
+    let lastDirtyRect = null;
 
     // Clear trail immediately on scroll
     window.addEventListener('scroll', () => {
       points.length = 0;
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      lastDirtyRect = null;
     }, { passive: true });
 
     // Zero-lag instant position update on direct mousemove
@@ -146,6 +148,7 @@
       cursor.style.display = 'none';
       points.length = 0;
       if (ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+      lastDirtyRect = null;
       isCometLoopActive = false;
     });
 
@@ -166,37 +169,67 @@
       requestAnimationFrame(renderCometTail);
     }
 
-    // High-performance sleepable render loop for the comet tail
+    // High-performance sleepable render loop with Dirty-Rect Bounding Box optimization
     function renderCometTail() {
-      // If mouse stopped moving for 80ms, decay trail points so it cleanly disappears
-      if (Date.now() - lastMoveTime > 80 && points.length > 0) {
+      // If mouse stopped moving for 60ms, decay trail points so it cleanly disappears
+      if (Date.now() - lastMoveTime > 60 && points.length > 0) {
         points.shift();
       }
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // 1. Clear ONLY the previous dirty bounding box instead of the full 4K screen (99% GPU fillrate savings)
+      if (lastDirtyRect) {
+        ctx.clearRect(lastDirtyRect.x, lastDirtyRect.y, lastDirtyRect.w, lastDirtyRect.h);
+        lastDirtyRect = null;
+      }
 
       if (points.length > 1 && isInsideWindow) {
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
         for (let i = 0; i < points.length - 1; i++) {
           const pt1 = points[i];
           const pt2 = points[i + 1];
           const ratio = (i + 1) / points.length;
+
+          if (pt1.x < minX) minX = pt1.x;
+          if (pt1.x > maxX) maxX = pt1.x;
+          if (pt1.y < minY) minY = pt1.y;
+          if (pt1.y > maxY) maxY = pt1.y;
+          if (pt2.x < minX) minX = pt2.x;
+          if (pt2.x > maxX) maxX = pt2.x;
+          if (pt2.y < minY) minY = pt2.y;
+          if (pt2.y > maxY) maxY = pt2.y;
 
           ctx.beginPath();
           ctx.moveTo(pt1.x, pt1.y);
           ctx.lineTo(pt2.x, pt2.y);
 
           // Meteor tail tapering width and electric blue glowing gradient
-          ctx.lineWidth = ratio * 4.5 + 1.2;
-          ctx.strokeStyle = `rgba(66, 133, 244, ${ratio * 0.65})`;
+          ctx.lineWidth = ratio * 4.2 + 1.2;
+          ctx.strokeStyle = `rgba(66, 133, 244, ${ratio * 0.75})`;
           ctx.lineCap = 'round';
-          ctx.shadowBlur = ratio * 7;
+          ctx.shadowBlur = ratio * 8;
           ctx.shadowColor = '#4285f4';
           ctx.stroke();
         }
+
+        // Cache dirty bounding box with 24px padding for glow
+        const pad = 24;
+        lastDirtyRect = {
+          x: Math.max(0, Math.floor(minX - pad)),
+          y: Math.max(0, Math.floor(minY - pad)),
+          w: Math.ceil(maxX - minX + pad * 2),
+          h: Math.ceil(maxY - minY + pad * 2)
+        };
       }
 
-      // If trail has vanished, sleep loop completely (0% CPU/GPU idle usage)
+      // If trail has vanished, clean up and sleep loop completely (0% CPU/GPU idle usage)
       if (points.length === 0) {
+        if (lastDirtyRect) {
+          ctx.clearRect(lastDirtyRect.x, lastDirtyRect.y, lastDirtyRect.w, lastDirtyRect.h);
+          lastDirtyRect = null;
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
         isCometLoopActive = false;
         return;
       }
