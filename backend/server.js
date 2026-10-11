@@ -62,7 +62,7 @@ app.use(rateLimiter); // Apply Rate Limiter to prevent DoS attacks
 
 // Prevent browser from caching perception engine & client scripts
 app.use((req, res, next) => {
-  if (req.url.endsWith('.js') || req.url.endsWith('.html') || req.url.includes('/components/')) {
+  if (req.url.endsWith('.js') || req.url.endsWith('.html') || req.url.endsWith('.css') || req.url.includes('/components/')) {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
