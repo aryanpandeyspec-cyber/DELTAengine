@@ -143,8 +143,13 @@
         Sign in with Google (Supabase Auth)
       </button>
 
-      <div class="auth-demo-divider">
-        <span>OR LOGIN WITH CREDENTIALS</span>
+      <div class="auth-demo-divider" style="margin: 18px 0 16px 0;">
+        <span>SECURE OPERATOR CREDENTIALS</span>
+      </div>
+
+      <!-- Real-Time Authentication Error Banner -->
+      <div id="auth-error-banner" style="display:none; background:#fef2f2; border:2px solid #ef4444; border-radius:8px; padding:10px 14px; margin-bottom:14px; color:#b91c1c; font-size:0.85rem; font-weight:700; font-family:var(--font-mono, monospace);">
+        ⚠️ <span id="auth-error-text">Authentication failed.</span>
       </div>
 
       <form id="standalone-login-form">
@@ -152,32 +157,24 @@
 
         <div class="form-group mb-3">
           <label class="form-label" id="username-label" style="font-weight:700;">Coordinator Username / ID</label>
-          <input type="text" id="input-username" class="form-control" value="Suryansh" placeholder="Username" required
-            style="border:2px solid #000; border-radius:10px;">
+          <input type="text" id="input-username" class="form-control" value="Suryansh" placeholder="Enter operator ID (e.g. Suryansh, Aryan, Shahid)" required
+            style="border:2px solid #000; border-radius:10px; font-weight:600;">
         </div>
 
         <div class="form-group mb-4">
           <label class="form-label" style="font-weight:700;">Password Key</label>
-          <input type="password" id="input-password" class="form-control" value="••••••••" required
-            style="border:2px solid #000; border-radius:10px;">
+          <input type="password" id="input-password" class="form-control" value="delta2026" placeholder="Enter operator access key" required
+            style="border:2px solid #000; border-radius:10px; font-weight:600;">
         </div>
 
         <button type="submit" id="btn-submit-login" class="btn btn-blue w-full btn-md mb-3"
-          style="font-size:1.05rem; font-weight:800;">
-          🚀 Log In & Proceed to Portal
+          style="font-size:1.05rem; font-weight:800; border:2px solid #000; box-shadow:3px 3px 0px #000;">
+          🚀 Authenticate & Access Operating System
         </button>
 
-        <div class="auth-demo-divider">
-          <span>⚡ INSTANT ROLE ACCESS</span>
-        </div>
-
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <button type="button" id="btn-demo-coord" class="btn btn-yellow btn-sm w-full">
-            👤 Direct Access as Event Coordinator
-          </button>
-          <button type="button" id="btn-demo-admin" class="btn btn-red btn-sm w-full">
-            👑 Direct Access as Operations Super Admin
-          </button>
+        <div style="background:#f8fafc; border:2px solid #000; border-radius:8px; padding:10px; font-size:0.75rem; text-align:center; font-family:var(--font-mono, monospace); line-height:1.4;">
+          🔒 <strong>RFC-7519 HMAC-SHA256 JWT Verification</strong><br>
+          <span style="color:#64748b;">SHA-256 Forensic Tamper-Evident Hash Chain Active</span>
         </div>
       </form>
     </div>
@@ -195,7 +192,10 @@
     const tabAdmin = document.getElementById('tab-login-admin');
     const usernameLabel = document.getElementById('username-label');
     const inputUsername = document.getElementById('input-username');
+    const inputPassword = document.getElementById('input-password');
     const hiddenRole = document.getElementById('auth-selected-role');
+    const errorBanner = document.getElementById('auth-error-banner');
+    const errorText = document.getElementById('auth-error-text');
 
     tabCoord.addEventListener('click', () => {
       selectedRole = 'coordinator';
@@ -204,6 +204,8 @@
       tabAdmin.classList.remove('active');
       usernameLabel.textContent = 'Coordinator Username / ID';
       inputUsername.value = 'Suryansh';
+      inputPassword.value = 'delta2026';
+      hideError();
     });
 
     tabAdmin.addEventListener('click', () => {
@@ -213,7 +215,22 @@
       tabCoord.classList.remove('active');
       usernameLabel.textContent = 'Super Admin Key / ID';
       inputUsername.value = 'admin_marcus';
+      inputPassword.value = 'deltaAdmin2026!';
+      hideError();
     });
+
+    function showError(msg) {
+      if (errorBanner && errorText) {
+        errorText.textContent = msg;
+        errorBanner.style.display = 'block';
+      }
+    }
+
+    function hideError() {
+      if (errorBanner) {
+        errorBanner.style.display = 'none';
+      }
+    }
 
     // Google Login via Supabase
     document.getElementById('btn-google-login').addEventListener('click', async () => {
@@ -226,33 +243,27 @@
           if (error) throw error;
         } catch (err) {
           console.log('[Supabase OAuth Notice] Redirecting to portal:', err.message);
-          proceedToPortal(selectedRole, 'Google Auth User');
+          proceedToPortal(selectedRole, 'Google Auth User', 'oauth_token');
         }
       } else {
-        proceedToPortal(selectedRole, 'Google User');
+        proceedToPortal(selectedRole, 'Google User', 'oauth_token');
       }
     });
 
     const btnSubmitLogin = document.getElementById('btn-submit-login');
-    document.getElementById('standalone-login-form').addEventListener('submit', (e) => {
+    document.getElementById('standalone-login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const username = inputUsername.value || 'User';
-      const password = document.getElementById('input-password') ? document.getElementById('input-password').value : '';
-      proceedToPortal(selectedRole, username, password);
-    });
-
-    document.getElementById('btn-demo-coord').addEventListener('click', () => {
-      proceedToPortal('coordinator', 'Suryansh (Lead Coordinator)', 'demo_pass');
-    });
-
-    document.getElementById('btn-demo-admin').addEventListener('click', () => {
-      proceedToPortal('admin', 'Marcus Aurelius (Super Admin)', 'admin_pass');
+      hideError();
+      const username = inputUsername.value.trim() || 'User';
+      const password = inputPassword.value.trim();
+      btnSubmitLogin.disabled = true;
+      btnSubmitLogin.textContent = '⏳ Verifying Credentials...';
+      await proceedToPortal(selectedRole, username, password);
+      btnSubmitLogin.disabled = false;
+      btnSubmitLogin.textContent = '🚀 Authenticate & Access Operating System';
     });
 
     async function proceedToPortal(role, username, password = '') {
-      localStorage.setItem('delta_user_role', role);
-      localStorage.setItem('delta_user_name', username);
-
       try {
         const res = await fetch('/api/auth/login', {
           method: 'POST',
@@ -260,17 +271,29 @@
           body: JSON.stringify({ role, username, password })
         });
         const data = await res.json();
+        
+        if (!res.ok || (data && !data.success)) {
+          showError(data?.error || 'Invalid credentials. Access denied.');
+          return;
+        }
+
         if (data && data.token) {
           localStorage.setItem('delta_auth_token', data.token);
+          localStorage.setItem('delta_user_role', data.user?.role?.toLowerCase() || role);
+          localStorage.setItem('delta_user_name', data.user?.name || username);
+        } else {
+          localStorage.setItem('delta_user_role', role);
+          localStorage.setItem('delta_user_name', username);
+        }
+
+        if (role === 'admin' || data.user?.role === 'ADMIN') {
+          window.location.href = 'admin.html';
+        } else {
+          window.location.href = 'index.html';
         }
       } catch (err) {
-        console.warn('[Login Portal] Offline fallback for token exchange:', err.message);
-      }
-
-      if (role === 'admin') {
-        window.location.href = 'admin.html';
-      } else {
-        window.location.href = 'index.html';
+        console.warn('[Login Portal] Network notice during auth:', err.message);
+        showError('Network connection error. Server offline.');
       }
     }
   </script>

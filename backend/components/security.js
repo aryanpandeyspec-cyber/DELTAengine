@@ -166,12 +166,13 @@ function verifyJwt(token) {
   }
 }
 
-// Pre-seeded authorized operator accounts for instant enterprise access
+// Pre-seeded authorized operator accounts for live enterprise access
 const OPERATOR_CREDENTIALS = {
-  'admin_marcus': { id: 'usr_admin', name: 'Marcus Aurelius', role: 'ADMIN', title: 'Super Admin & Systems Commander' },
-  'Suryansh': { id: 'usr_coord', name: 'Suryansh', role: 'COORDINATOR', title: 'Lead Operations Coordinator' },
-  'Aryan': { id: 'usr_safety', name: 'Aryan Pandey', role: 'SAFETY_DIRECTOR', title: 'Safety Director & Incident Commander' },
-  'Volunteer': { id: 'usr_field', name: 'Field Marshal', role: 'VOLUNTEER', title: 'On-Ground Crowd Marshal' }
+  'admin_marcus': { id: 'usr_admin', name: 'Marcus Aurelius', role: 'ADMIN', title: 'Super Admin & Systems Commander', password: process.env.ADMIN_PASSWORD || 'deltaAdmin2026!' },
+  'Suryansh': { id: 'usr_coord', name: 'Suryansh', role: 'COORDINATOR', title: 'Lead Operations Coordinator', password: process.env.OPERATOR_PASSWORD || 'delta2026' },
+  'Aryan': { id: 'usr_safety', name: 'Aryan Pandey', role: 'SAFETY_DIRECTOR', title: 'Safety Director & Incident Commander', password: process.env.OPERATOR_PASSWORD || 'delta2026' },
+  'Shahid': { id: 'usr_ops', name: 'Shahid', role: 'COORDINATOR', title: 'Stage & Operations Coordinator', password: process.env.OPERATOR_PASSWORD || 'delta2026' },
+  'Volunteer': { id: 'usr_field', name: 'Field Marshal', role: 'VOLUNTEER', title: 'On-Ground Crowd Marshal', password: process.env.OPERATOR_PASSWORD || 'delta2026' }
 };
 
 /**
