@@ -100,6 +100,8 @@ window.addEventListener('DOMContentLoaded', () => {
   initAutopilotController(); // Tesla Autopilot autonomous mode controller
   initFireMarshalCompliance(); // Regulatory NFPA-101 Fire Marshal compliance auditor
   initScheduleImporter(); // Universal dynamic schedule & venue importer
+  initMorningBriefingQRHub(); // 1-Scan Ephemeral QR Onboarding & DELTA Box Offline Mesh
+  initWhatsAppBroadcastManager(); // 2-Way WhatsApp Coordinator Broadcast & Ground Bot
 
   // Custom Node Graph animation loop (sleeps when settled)
   if (typeof wakePhysicsSimulation === 'function') {
@@ -1519,3 +1521,198 @@ function initScheduleImporter() {
     });
   }
 }
+
+// --- MORNING BRIEFING QR HUB & DELTA BOX OFFLINE MESH CONTROLLER ---
+function initMorningBriefingQRHub() {
+  const btnOpen = document.getElementById('btn-morning-briefing-qrs');
+  const modal = document.getElementById('modal-morning-briefing');
+  const btnClose = document.getElementById('btn-close-morning-briefing');
+  const btnCloseFooter = document.getElementById('btn-close-briefing-footer');
+  const btnPrint = document.getElementById('btn-print-briefing-sheet');
+  const btnFullscreen = document.getElementById('btn-fullscreen-briefing');
+  const grid = document.getElementById('briefing-roles-grid');
+  const elSsid = document.getElementById('briefing-box-ssid');
+  const elIp = document.getElementById('briefing-box-ip');
+
+  let briefingLoaded = false;
+
+  async function loadBriefingData() {
+    try {
+      const [resQrs, resOffline] = await Promise.all([
+        fetch('/api/system/morning-briefing-qrs').then(r => r.json()).catch(() => null),
+        fetch('/api/system/offline-mode').then(r => r.json()).catch(() => null)
+      ]);
+
+      if (resOffline && resOffline.venueHotspot) {
+        if (elSsid) elSsid.textContent = resOffline.venueHotspot.recommendedSsid || 'DELTA-HOTSPOT-VENUE-MESH';
+        if (elIp) elIp.textContent = resOffline.venueHotspot.localGatewayUrl || `http://${resOffline.venueHotspot.lanIp}:3000`;
+      }
+
+      if (resQrs && resQrs.roles && grid) {
+        grid.innerHTML = resQrs.roles.map(role => `
+          <div class="briefing-card" style="background:#ffffff; border:3px solid #000; border-top:8px solid ${role.badgeColor || '#094074'}; border-radius:12px; padding:14px; box-shadow:4px 4px 0px #000; display:flex; flex-direction:column; justify-content:space-between; gap:10px;">
+            <div>
+              <div style="font-size:0.68rem; font-weight:900; font-family:monospace; text-transform:uppercase; color:#64748b; letter-spacing:0.5px;">
+                ROLE CARD
+              </div>
+              <h4 style="margin:2px 0 6px; font-size:1.05rem; font-weight:900; font-family:var(--font-mono, monospace); color:#0f172a;">
+                ${role.title}
+              </h4>
+              <p style="margin:0 0 10px; font-size:0.75rem; color:#475569; line-height:1.3;">
+                ${role.duty}
+              </p>
+            </div>
+
+            <div style="background:#f8fafc; border:2px solid #000; border-radius:8px; padding:8px; display:flex; justify-content:center; align-items:center; min-height:180px;">
+              ${role.qrSvg ? role.qrSvg : `<img src="${role.qrDataUrl}" alt="${role.title} QR" style="width:160px; height:160px;" />`}
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <input type="text" readonly value="${role.targetUrl}" style="width:100%; font-size:0.68rem; font-family:monospace; padding:4px 6px; border:1.5px solid #000; border-radius:6px; background:#f1f5f9; text-overflow:ellipsis; overflow:hidden;" />
+              <div style="display:flex; gap:6px;">
+                <button class="btn btn-sm btn-white btn-copy-role-url" data-url="${role.targetUrl}" style="flex:1; font-size:0.7rem; font-weight:800; border:1.5px solid #000; padding:4px;">
+                  📋 Copy Link
+                </button>
+                <a href="${role.targetUrl}" target="_blank" class="btn btn-sm btn-yellow" style="flex:1; font-size:0.7rem; font-weight:800; border:1.5px solid #000; text-decoration:none; text-align:center; padding:4px; display:inline-block;">
+                  🚀 Open ↗
+                </a>
+              </div>
+            </div>
+          </div>
+        `).join('');
+
+        // Bind copy buttons
+        grid.querySelectorAll('.btn-copy-role-url').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const url = btn.dataset.url;
+            if (url) {
+              navigator.clipboard.writeText(url).then(() => {
+                if (typeof createToast === 'function') createToast(`📋 Role link copied to clipboard!`, 'success');
+                if (typeof playSuccessSfx === 'function') playSuccessSfx();
+              });
+            }
+          });
+        });
+        briefingLoaded = true;
+      }
+    } catch (e) {
+      console.warn('[Briefing QR] Error loading data:', e);
+    }
+  }
+
+  if (btnOpen && modal) {
+    btnOpen.addEventListener('click', () => {
+      modal.classList.remove('hidden');
+      if (!briefingLoaded) loadBriefingData();
+      if (typeof playSuccessSfx === 'function') playSuccessSfx();
+    });
+  }
+
+  const closeModal = () => {
+    if (modal) modal.classList.add('hidden');
+  };
+
+  if (btnClose) btnClose.addEventListener('click', closeModal);
+  if (btnCloseFooter) btnCloseFooter.addEventListener('click', closeModal);
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+    });
+  }
+
+  if (btnPrint) {
+    btnPrint.addEventListener('click', () => {
+      window.print();
+    });
+  }
+
+  if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', () => {
+      const card = modal?.querySelector('.modal-card');
+      if (card) {
+        if (!document.fullscreenElement) {
+          card.requestFullscreen?.().catch(() => {});
+        } else {
+          document.exitFullscreen?.().catch(() => {});
+        }
+      }
+    });
+  }
+}
+
+// --- WHATSAPP FIELD MARSHAL BROADCAST & BOT CONTROLLER ---
+function initWhatsAppBroadcastManager() {
+  const btnOpen = document.getElementById('btn-open-whatsapp-broadcast');
+  const modal = document.getElementById('modal-whatsapp-broadcast');
+  const btnClose = document.getElementById('btn-close-whatsapp-modal');
+  const btnCancel = document.getElementById('btn-cancel-wa-modal');
+  const btnSubmit = document.getElementById('btn-submit-wa-broadcast');
+  const textarea = document.getElementById('wa-broadcast-message');
+  const presetBtns = document.querySelectorAll('.btn-wa-preset');
+
+  if (btnOpen && modal) {
+    btnOpen.addEventListener('click', () => {
+      modal.classList.remove('hidden');
+      if (textarea) textarea.focus();
+    });
+  }
+
+  const closeModal = () => {
+    if (modal) modal.classList.add('hidden');
+  };
+
+  if (btnClose) btnClose.addEventListener('click', closeModal);
+  if (btnCancel) btnCancel.addEventListener('click', closeModal);
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+    });
+  }
+
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (textarea && btn.dataset.preset) {
+        textarea.value = btn.dataset.preset;
+      }
+    });
+  });
+
+  if (btnSubmit) {
+    btnSubmit.addEventListener('click', async () => {
+      const messageText = textarea?.value?.trim();
+      if (!messageText) {
+        if (typeof createToast === 'function') createToast('Please enter a broadcast message.', 'info');
+        return;
+      }
+
+      btnSubmit.textContent = '⏳ Blasting WhatsApp Dispatch...';
+      try {
+        const res = await fetch('/api/notify/whatsapp-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messageText })
+        });
+        const data = await res.json();
+        if (data.success) {
+          if (typeof createToast === 'function') createToast(`💬 WhatsApp broadcast dispatched to ${data.count || 3} coordinators!`, 'success');
+          if (typeof playSuccessSfx === 'function') playSuccessSfx();
+          if (textarea) textarea.value = '';
+          closeModal();
+        } else {
+          if (typeof createToast === 'function') createToast(`Dispatch notice: ${data.error || 'Failed'}`, 'warning');
+        }
+      } catch (err) {
+        if (typeof createToast === 'function') createToast('WhatsApp broadcast network failed.', 'conflict');
+      } finally {
+        btnSubmit.textContent = '🚀 Blast WhatsApp Broadcast';
+      }
+    });
+  }
+}
+

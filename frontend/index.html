@@ -129,6 +129,19 @@
               <span class="nav-label">Interactive Tour</span>
             </button>
           </li>
+          <li>
+            <button id="btn-morning-briefing-qrs" class="sidebar-nav-btn btn-nav-yellow" title="Morning Briefing Role QRs & Offline DELTA Box Setup" style="background:#5ADBFF; color:#000;">
+              <span class="nav-icon">📋</span>
+              <span class="nav-label">Briefing QRs & DELTA Box</span>
+              <span class="pulse-indicator-green" style="width:7px; height:7px; display:inline-block; border-radius:50%; background:#22c55e; flex-shrink:0;"></span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-open-whatsapp-broadcast" class="sidebar-nav-btn btn-nav-green" title="Blast WhatsApp broadcast to on-duty coordinators" style="background:#25D366; color:#000;">
+              <span class="nav-icon">💬</span>
+              <span class="nav-label">WhatsApp Field Blast</span>
+            </button>
+          </li>
         </ul>
       </div>
 
@@ -136,6 +149,13 @@
       <div class="sidebar-nav-group">
         <div class="sidebar-group-title">📺 PORTALS & ACCESS</div>
         <ul class="sidebar-nav-list">
+          <li>
+            <a href="volunteer.html" class="sidebar-nav-link link-yellow" title="Open Field Marshal & Virtual Turnstile Terminal">
+              <span class="nav-icon">🛡️</span>
+              <span class="nav-label">Field Marshal & Clicker</span>
+              <span class="nav-external">↗</span>
+            </a>
+          </li>
           <li>
             <a href="app.html" class="sidebar-nav-link link-yellow" title="Open DELTA Mobile Coordinator PWA">
               <span class="nav-icon">📱</span>
@@ -2417,6 +2437,151 @@
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         MORNING BRIEFING QR HUB & DELTA BOX OFFLINE MESH MODAL
+         ==================================================================== -->
+    <div id="modal-morning-briefing" class="modal-backdrop hidden" style="z-index: 100020;">
+      <div class="modal-card" style="max-width: 960px; width: 96%; max-height: 90vh; display: flex; flex-direction: column;">
+        <div class="modal-header" style="background:#5ADBFF; color:#000; border-bottom: 3px solid #000;">
+          <div class="modal-title-group">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <h2 class="modal-title" style="color:#000;">📋 MORNING BRIEFING QR HUB & DELTA BOX OFFLINE MESH</h2>
+          </div>
+          <button id="btn-close-morning-briefing" class="btn-close-modal" aria-label="Close Modal">&times;</button>
+        </div>
+
+        <div class="modal-body" style="padding: 18px; overflow-y: auto;">
+          <!-- DELTA BOX VENUE BLACKOUT CREDENTIALS -->
+          <div style="background:#092038; color:#fff; border:3px solid #000; border-radius:12px; padding:14px 16px; margin-bottom:18px; box-shadow:4px 4px 0px #000;">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:8px;">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:1.4rem;">📦</span>
+                <div>
+                  <strong style="font-size:0.95rem; color:#5ADBFF; font-family:var(--font-mono, monospace);">DELTA BOX — ZERO-CLOUD AUTONOMOUS EDGE PACK</strong>
+                  <div style="font-size:0.75rem; color:#94a3b8;">Autonomous Event Operations Hub • 100% Functional Without Public Internet</div>
+                </div>
+              </div>
+              <span class="badge-mini-green" style="background:#22c55e; color:#000; font-weight:900;">⚡ 0.7ms LOCAL DETERMINISTIC SLA</span>
+            </div>
+            
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:10px; background:#0f2a4a; padding:10px 12px; border-radius:8px; border:1px solid #1e4976; font-family:var(--font-mono, monospace); font-size:0.78rem;">
+              <div>
+                <span style="color:#94a3b8; display:block; font-size:0.68rem;">VENUE WI-FI HOTSPOT:</span>
+                <strong id="briefing-box-ssid" style="color:#FFDD4A;">DELTA-HOTSPOT-VENUE-MESH</strong>
+              </div>
+              <div>
+                <span style="color:#94a3b8; display:block; font-size:0.68rem;">LOCAL GATEWAY IP:</span>
+                <strong id="briefing-box-ip" style="color:#5ADBFF;">http://192.168.1.4:3000</strong>
+              </div>
+              <div>
+                <span style="color:#94a3b8; display:block; font-size:0.68rem;">LOCAL mDNS HOSTNAME:</span>
+                <strong style="color:#fff;">http://deltaengine.local:3000</strong>
+              </div>
+              <div>
+                <span style="color:#94a3b8; display:block; font-size:0.68rem;">OFFLINE PWA STATUS:</span>
+                <strong style="color:#4ade80;">SERVICE WORKER PRE-CACHED</strong>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4 ROLE QR CODES CONTAINER -->
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+            <div>
+              <h3 style="margin:0; font-size:1.05rem; font-weight:900; font-family:var(--font-mono, monospace);">
+                🎟️ 1-SCAN EPHEMERAL VOLUNTEER ONBOARDING
+              </h3>
+              <p style="margin:2px 0 0; font-size:0.78rem; color:#64748b;">
+                Project these QRs on stage during morning briefing or print sheet. Volunteers scan to open pre-authenticated instant terminals.
+              </p>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button id="btn-print-briefing-sheet" class="btn btn-sm btn-white" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                🖨️ Print A4 Sheet
+              </button>
+              <button id="btn-fullscreen-briefing" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                📺 Projector Mode
+              </button>
+            </div>
+          </div>
+
+          <div id="briefing-roles-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:14px;">
+            <div style="text-align:center; padding:30px; font-family:monospace; color:#64748b;">
+              ⏳ Loading Morning Briefing QR Codes...
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="padding:12px 18px; border-top:2px solid #000; background:#f8fafc; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.75rem; color:#64748b; font-family:monospace;">
+            💡 Tip: Volunteer devices cache offline. Reconnection flushes stored clicker packets automatically.
+          </span>
+          <button id="btn-close-briefing-footer" class="btn btn-white font-bold" style="border:2px solid #000; box-shadow:2px 2px 0px #000;">
+            ✕ Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         WHATSAPP FIELD MARSHAL BROADCAST & 2-WAY COMMAND BOT MODAL
+         ==================================================================== -->
+    <div id="modal-whatsapp-broadcast" class="modal-backdrop hidden" style="z-index: 100021;">
+      <div class="modal-card" style="max-width: 680px; width: 95%;">
+        <div class="modal-header" style="background:#25D366; color:#000; border-bottom:3px solid #000;">
+          <div class="modal-title-group">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <h2 class="modal-title" style="color:#000;">💬 WHATSAPP 2-WAY MARSHAL COMMAND DISPATCH</h2>
+          </div>
+          <button id="btn-close-whatsapp-modal" class="btn-close-modal" aria-label="Close Modal">&times;</button>
+        </div>
+
+        <div class="modal-body" style="padding:18px;">
+          <!-- Command Bot Cheatsheet -->
+          <div style="background:#f0fdf4; border:2px solid #16a34a; border-radius:8px; padding:10px 14px; margin-bottom:14px; font-family:var(--font-mono, monospace); font-size:0.75rem;">
+            <div style="font-weight:900; color:#15803d; margin-bottom:4px;">🤖 2-Way WhatsApp Ground Bot Commands (Volunteers can text directly):</div>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; color:#166534;">
+              <div>• <code>STATUS</code>: Headcount & task queue</div>
+              <div>• <code>CLAIM &lt;task_id&gt;</code>: Claim incident</div>
+              <div>• <code>RESOLVE &lt;task_id&gt;</code>: Mark done</div>
+              <div>• <code>SOS &lt;reason&gt;</code>: Flash security override</div>
+              <div>• <code>COUNT &lt;hall&gt; &lt;n&gt;</code>: Manual tally</div>
+              <div>• <code>GATE CLEAR</code>: Reset chokepoint</div>
+            </div>
+          </div>
+
+          <!-- Broadcast Message Input -->
+          <label style="font-size:0.82rem; font-weight:800; font-family:var(--font-mono, monospace); color:#0f172a; display:block; margin-bottom:4px;">
+            📢 BROADCAST DIRECTIVE TO ALL COORDINATORS (Aryan, Suryansh, Shahid, Gate Marshals):
+          </label>
+          <textarea id="wa-broadcast-message" class="input-text w-full" rows="3" placeholder="Enter tactical directive or instruction..." style="width:100%; border:2px solid #000; border-radius:8px; padding:10px; font-family:var(--font-mono, monospace); font-size:0.85rem; box-shadow:2px 2px 0px #000; margin-bottom:10px;"></textarea>
+
+          <!-- Quick Directive Presets -->
+          <div style="margin-bottom:14px;">
+            <span style="font-size:0.72rem; font-weight:800; color:#64748b; display:block; margin-bottom:4px;">QUICK TACTICAL PRESETS:</span>
+            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+              <button class="btn-wa-preset btn btn-sm btn-white" data-preset="🚨 Gate A bottlenecking: All runners escort overflow queue to East Park immediately." style="font-size:0.7rem; font-weight:800; border:1.5px solid #000;">Gate A Bottleneck</button>
+              <button class="btn-wa-preset btn btn-sm btn-white" data-preset="🌟 VIP Motorcade 5 mins away: Gate marshals hold central aisle clear." style="font-size:0.7rem; font-weight:800; border:1.5px solid #000;">VIP Arrival Escort</button>
+              <button class="btn-wa-preset btn btn-sm btn-white" data-preset="🏛️ Turing Hall 95% full: Open overflow seating lounge now." style="font-size:0.7rem; font-weight:800; border:1.5px solid #000;">Open Overflow</button>
+              <button class="btn-wa-preset btn btn-sm btn-white" data-preset="✅ Stand down: All venue sectors verified clear and nominal." style="font-size:0.7rem; font-weight:800; border:1.5px solid #000;">All Clear Nominal</button>
+            </div>
+          </div>
+
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button id="btn-cancel-wa-modal" class="btn btn-white font-bold" style="border:2px solid #000; box-shadow:2px 2px 0px #000;">
+              Cancel
+            </button>
+            <button id="btn-submit-wa-broadcast" class="btn btn-green font-bold" style="background:#25D366; color:#000; border:2px solid #000; box-shadow:3px 3px 0px #000; font-size:0.9rem;">
+              🚀 Blast WhatsApp Broadcast
+            </button>
           </div>
         </div>
       </div>

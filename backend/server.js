@@ -864,15 +864,82 @@ app.post('/api/whatsapp/incoming', async (req, res) => {
       data: { autopilotEnabled: false, timestamp: timeStr }
     });
     replyText = `🕹️ Tesla Autopilot PAUSED by ${volunteerName}. System switched to Manual Co-Pilot mode.`;
+  } else if (cmd.startsWith('CLAIM')) {
+    const taskId = rawBody.split(/\s+/)[1];
+    const task = db.incidentTasks?.find(t => t.id === taskId || t.id.toLowerCase().includes(taskId?.toLowerCase() || ''));
+    if (task) {
+      task.status = 'claimed';
+      task.claimedBy = volunteerName;
+      actionTaken = 'TASK_CLAIMED';
+      broadcast({ type: 'TASK_UPDATED', data: task });
+      replyText = `✋ Task "${task.title}" claimed by ${volunteerName}! Central Command queue updated.`;
+    } else {
+      actionTaken = 'TASK_NOT_FOUND';
+      replyText = `⚠️ Task ID "${taskId}" not found in active queue. Type STATUS to see live overview.`;
+    }
+  } else if (cmd.startsWith('RESOLVE')) {
+    const taskId = rawBody.split(/\s+/)[1];
+    const task = db.incidentTasks?.find(t => t.id === taskId || t.id.toLowerCase().includes(taskId?.toLowerCase() || ''));
+    if (task) {
+      task.status = 'resolved';
+      task.resolvedBy = volunteerName;
+      actionTaken = 'TASK_RESOLVED';
+      broadcast({ type: 'TASK_UPDATED', data: task });
+      replyText = `✅ Task "${task.title}" resolved by ${volunteerName}! Great job, field queue updated.`;
+    } else {
+      actionTaken = 'TASK_NOT_FOUND';
+      replyText = `⚠️ Task ID "${taskId}" not found. Type STATUS to verify active tasks.`;
+    }
+  } else if (cmd.startsWith('SOS')) {
+    const sosNote = rawBody.replace(/^SOS\s*/i, '').trim() || 'Urgent field marshal escalation requested!';
+    actionTaken = 'VOLUNTEER_SOS';
+    const sosRecord = {
+      id: `SOS_WA_${Date.now()}`,
+      volunteerName,
+      hallId: 'hall-1',
+      hallName: 'Turing Grand Hall',
+      crowdSeverity: 'CRITICAL',
+      note: `[WHATSAPP SOS]: ${sosNote}`,
+      timestamp: timeStr
+    };
+    if (!db.incidents) db.incidents = [];
+    db.incidents.unshift({
+      id: sosRecord.id,
+      type: 'VOLUNTEER_SOS',
+      severity: 'CRITICAL',
+      description: `🚨 [WHATSAPP SOS - ${volunteerName}]: ${sosNote}`,
+      timestamp: timeStr
+    });
+    broadcast({ type: 'VOLUNTEER_SOS_ALERT', data: sosRecord });
+    replyText = `🚨 EMERGENCY SOS DISPATCHED: "${sosNote}" flashed on Central Command Projector and Security Deck! Marshals alerted.`;
+  } else if (cmd.startsWith('COUNT') || cmd.startsWith('TALLY')) {
+    const parts = rawBody.split(/\s+/);
+    const countNum = parseInt(parts[2] || parts[1], 10);
+    const targetHall = parts[2] ? parts[1].toLowerCase() : 'room1';
+    if (!isNaN(countNum)) {
+      actionTaken = 'COUNT_UPDATED';
+      if (db.roomsState && db.roomsState[targetHall]) {
+        db.roomsState[targetHall].percent = Math.min(100, Math.round((countNum / 250) * 100));
+        db.roomsState[targetHall].seats = `${countNum} / 250 Seats`;
+        broadcast({
+          type: 'ROOMS_UPDATE',
+          data: { roomId: targetHall, room: db.roomsState[targetHall], sender: volunteerName, timestamp: timeStr }
+        });
+      }
+      replyText = `🔢 Gate Tally Recorded: ${targetHall.toUpperCase()} updated to ${countNum} pax by ${volunteerName}.`;
+    } else {
+      replyText = `⚠️ Invalid count format. Use: COUNT <room1/room2> <number> (e.g. COUNT room1 180)`;
+    }
   } else if (cmd.includes('STATUS')) {
     actionTaken = 'STATUS_QUERY';
     const occTuring = db.cctvState && db.cctvState['hall-1'] ? db.cctvState['hall-1'].peopleDetected : (doorSensorNetOccupancy || 0);
     const capTuring = db.graph.halls['hall-1'] ? db.graph.halls['hall-1'].capacity : 250;
     const pct = Math.round((occTuring / capTuring) * 100);
-    replyText = `📊 DELTA Engine Live Telemetry:\n• Turing Hall: ${occTuring}/${capTuring} pax (${pct}%)\n• Autopilot: ${db.autopilotEnabled ? 'ENGAGED ⚡' : 'MANUAL 🕹️'}\n• Gates Mesh: Active (Gate A / B / C)\n• System Uptime: ${Math.floor(process.uptime())}s`;
+    const openTasks = (db.incidentTasks || []).filter(t => t.status !== 'resolved').length;
+    replyText = `📊 DELTA Engine Live Ground Telemetry:\n• Turing Hall: ${occTuring}/${capTuring} pax (${pct}%)\n• Active Tasks: ${openTasks} pending\n• Autopilot: ${db.autopilotEnabled ? 'ENGAGED ⚡' : 'MANUAL 🕹️'}\n• Uptime: ${Math.floor(process.uptime())}s\nCommands: CLAIM <id>, RESOLVE <id>, SOS <text>, COUNT <room> <n>`;
   } else {
     actionTaken = 'HELP_PROMPT';
-    replyText = `DELTA Engine Coordinator Bot. Available Commands:\n• GATE CLEAR - Reset door chokepoint alert\n• OVERFLOW OPEN - Unlock overflow lounge\n• STATUS - Live headcount & capacity\n• AUTOPILOT ON/OFF - Toggle zero-touch healing`;
+    replyText = `DELTA Engine Coordinator Bot. Ground Commands:\n• STATUS - Live headcount & pending tasks\n• CLAIM <task_id> - Claim an open incident\n• RESOLVE <task_id> - Mark incident resolved\n• SOS <text> - Flash emergency override\n• COUNT <room> <n> - Update door tally\n• GATE CLEAR - Reset door chokepoint\n• OVERFLOW OPEN - Activate overflow park`;
   }
 
   // Record into live whatsappLogs feed
@@ -1440,6 +1507,104 @@ app.post('/api/notify/email', async (req, res) => {
     reason: reason || 'Automated Self-Healing capacity surge reallocation'
   }, db, broadcast);
   res.json({ success: true, email: result });
+});
+
+// =========================================================================
+// DELTA BOX — ZERO-INTERNET VENUE BLACKOUT PACK & MORNING BRIEFING QR CODES
+// =========================================================================
+function getLocalIpAddress() {
+  try {
+    const os = require('os');
+    const interfaces = os.networkInterfaces();
+    for (const name of Object.keys(interfaces)) {
+      for (const iface of interfaces[name] || []) {
+        if ((iface.family === 'IPv4' || iface.family === 4) && !iface.internal) {
+          return iface.address;
+        }
+      }
+    }
+  } catch (_) {}
+  return 'localhost';
+}
+
+app.get('/api/system/offline-mode', (req, res) => {
+  const lanIp = getLocalIpAddress();
+  const currentPort = process.env.PORT || 3000;
+  const baseUrl = `http://${lanIp}:${currentPort}`;
+
+  res.json({
+    success: true,
+    offlineReady: true,
+    mode: 'DELTA_BOX_AUTONOMOUS_EDGE',
+    venueHotspot: {
+      recommendedSsid: 'DELTA-HOTSPOT-VENUE-MESH',
+      lanIp,
+      port: currentPort,
+      localGatewayUrl: baseUrl,
+      mDnsHostname: 'http://deltaengine.local:3000'
+    },
+    autonomousEngines: {
+      deterministicSafetyEngine: 'ACTIVE (0.7ms SLA, zero-LLM hotpath)',
+      databasePersistence: 'ACTIVE (SQLite WAL Local Snapshot)',
+      audioMeshRelay: 'ACTIVE (Local WebSockets & WebRTC)',
+      offlineQueueStorage: 'ACTIVE (Store-and-Forward Client Sync)'
+    },
+    message: 'DELTA Engine is fully functional with ZERO active cloud or internet connection required.'
+  });
+});
+
+app.get('/api/system/morning-briefing-qrs', async (req, res) => {
+  const lanIp = getLocalIpAddress();
+  const currentPort = process.env.PORT || 3000;
+  const baseUrl = `http://${lanIp}:${currentPort}`;
+
+  const roles = [
+    {
+      roleId: 'gate-marshal',
+      title: 'Gate & Badge Marshal',
+      duty: 'Attendee badge scanning, ticket verification & VIP escort',
+      targetUrl: `${baseUrl}/volunteer.html?role=gate&name=Gate%20Marshal`,
+      badgeColor: '#5ADBFF'
+    },
+    {
+      roleId: 'door-tally',
+      title: 'Door Tally Counter',
+      duty: '1-Tap optical & manual headcount clicks at auditorium doors',
+      targetUrl: `${baseUrl}/volunteer.html?role=tally&name=Door%20Tally`,
+      badgeColor: '#FFDD4A'
+    },
+    {
+      roleId: 'lead-coordinator',
+      title: 'Lead Operations Coordinator',
+      duty: 'Crowd telemetry, 1-tap quick actions, walkie mesh & SOS override',
+      targetUrl: `${baseUrl}/app.html?role=coordinator&name=Lead%20Coordinator`,
+      badgeColor: '#094074'
+    },
+    {
+      roleId: 'safety-marshal',
+      title: 'Safety & NFPA Marshal',
+      duty: 'Chokepoint dispersal, emergency SOS alerts & evacuation path check',
+      targetUrl: `${baseUrl}/volunteer.html?role=safety&name=Safety%20Marshal`,
+      badgeColor: '#FE9000'
+    }
+  ];
+
+  try {
+    const QRCode = require('qrcode');
+    for (const r of roles) {
+      r.qrSvg = await QRCode.toString(r.targetUrl, { type: 'svg', margin: 2, color: { dark: '#000000', light: '#ffffff' } });
+      r.qrDataUrl = await QRCode.toDataURL(r.targetUrl, { margin: 2, color: { dark: '#000000', light: '#ffffff' } });
+    }
+  } catch (e) {
+    console.warn('[QR Gen] Error generating QR codes:', e);
+  }
+
+  res.json({
+    success: true,
+    baseUrl,
+    lanIp,
+    roles
+  });
 });
 
 app.post('/api/admin/toggle-limiter', (req, res) => {
