@@ -55,8 +55,8 @@ function createIncident(params = {}) {
   const now = new Date();
   const id = params.id || `inc_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
-  const currentOccupancy = parseInt(params.currentOccupancy, 10) || 0;
-  const capacity = parseInt(params.capacity, 10) || 1;
+  const currentOccupancy = Math.max(0, parseInt(params.currentOccupancy, 10) || 0);
+  const capacity = Math.max(1, parseInt(params.capacity, 10) || 1);
   const occupancyRate = Math.min(300, Math.round((currentOccupancy / capacity) * 100));
 
   let calculatedSeverity = params.severity;

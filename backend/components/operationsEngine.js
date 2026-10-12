@@ -26,10 +26,10 @@ function detectIncidentsFromTelemetry(telemetry = {}, db, customScenario = null)
                scenario.zones.find(z => z.id === zoneId) || 
                { id: zoneId, name: 'Main Venue', capacity: 250 };
 
-  const currentCount = parseInt(telemetry.peopleDetected ?? telemetry.netOccupancy ?? telemetry.occupancy ?? 0, 10);
-  const targetCap = parseInt(telemetry.capacity || zone.capacity || 250, 10);
-  const flowRate = parseInt(telemetry.flowRate || telemetry.entryRate || 0, 10);
-  const maxFlow = parseInt(telemetry.flowRateMax || 300, 10);
+  const currentCount = Math.max(0, parseInt(telemetry.peopleDetected ?? telemetry.netOccupancy ?? telemetry.occupancy ?? 0, 10) || 0);
+  const targetCap = Math.max(1, parseInt(telemetry.capacity || zone.capacity || 250, 10) || 1);
+  const flowRate = Math.max(0, parseInt(telemetry.flowRate || telemetry.entryRate || 0, 10) || 0);
+  const maxFlow = Math.max(1, parseInt(telemetry.flowRateMax || 300, 10) || 300);
 
   const incidents = [];
 

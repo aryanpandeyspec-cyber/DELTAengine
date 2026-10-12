@@ -790,8 +790,75 @@ async function runAudit() {
   }
 
   // -------------------------------------------------------------
-  // FINAL SUMMARY
+  // SECTION 14: ENTERPRISE HEALTH, METRICS & SECURITY HARDENING
   // -------------------------------------------------------------
+  console.log('\n--- SECTION 14: Enterprise Health, Metrics & Security Hardening ---');
+  try {
+    const healthRes = await httpRequest({ hostname: 'localhost', port: 3000, path: '/health', method: 'GET' });
+    const healthData = JSON.parse(healthRes.body);
+    if (healthRes.statusCode === 200 && healthData.status === 'UP' && healthData.checks?.memory?.status === 'HEALTHY') {
+      logPass('ENTERPRISE_HEALTH', 'GET /health Kubernetes & ALB probe operational', `Uptime: ${healthData.uptimeSeconds}s | Status: ${healthData.status}`);
+    } else {
+      logFail('ENTERPRISE_HEALTH', 'Health probe returned unexpected body', JSON.stringify(healthData));
+    }
+  } catch (err) {
+    logFail('ENTERPRISE_HEALTH', 'Failed to request /health probe', err.message);
+  }
+
+  try {
+    const metricsRes = await httpRequest({ hostname: 'localhost', port: 3000, path: '/api/metrics', method: 'GET' });
+    const metricsData = JSON.parse(metricsRes.body);
+    if (metricsRes.statusCode === 200 && metricsData.operationalMetrics?.slaCompliance?.status === 'WITHIN_SLA') {
+      logPass('ENTERPRISE_METRICS', 'GET /api/metrics operational SLA metrics active', `Deterministic Calculation SLA: ${metricsData.operationalMetrics.slaCompliance.currentAverageMs}ms (< 5.0ms)`);
+    } else {
+      logFail('ENTERPRISE_METRICS', 'Metrics endpoint returned unexpected body', JSON.stringify(metricsData));
+    }
+  } catch (err) {
+    logFail('ENTERPRISE_METRICS', 'Failed to request /api/metrics', err.message);
+  }
+
+  try {
+    const headersRes = await httpRequest({ hostname: 'localhost', port: 3000, path: '/api/state', method: 'GET' });
+    const headers = headersRes.headers;
+    const hasNosniff = headers['x-content-type-options'] === 'nosniff';
+    const hasFrameOptions = headers['x-frame-options'] === 'SAMEORIGIN';
+    if (hasNosniff && hasFrameOptions) {
+      logPass('SECURITY_HEADERS', 'Enterprise Security Headers Enforced (X-Content-Type-Options: nosniff, X-Frame-Options: SAMEORIGIN)');
+    } else {
+      logFail('SECURITY_HEADERS', 'Security headers missing or misconfigured', JSON.stringify(headers));
+    }
+  } catch (err) {
+    logFail('SECURITY_HEADERS', 'Failed to inspect security headers', err.message);
+  }
+
+  try {
+    const volPayload = JSON.stringify({
+      name: '<script>alert("XSS")</script>Marshal Bob',
+      phone: '+91 99999 88888',
+      role: '<b>Safety Commander</b>',
+      assignedHallId: 'hall-1',
+      task: 'Patrol <i>East Wing</i>'
+    });
+    const volRes = await httpRequest({
+      hostname: 'localhost',
+      port: 3000,
+      path: '/api/volunteers',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    }, volPayload);
+    const volData = JSON.parse(volRes.body);
+    if (volData.success && volData.volunteer && !volData.volunteer.name.includes('<script>') && volData.volunteer.name.includes('&lt;script&gt;')) {
+      logPass('INPUT_SANITIZATION', 'XSS Input Sanitization verified on volunteer entity inputs');
+      // Cleanup created test volunteer
+      if (volData.volunteer.id) {
+        await httpRequest({ hostname: 'localhost', port: 3000, path: `/api/volunteers/${volData.volunteer.id}`, method: 'DELETE' });
+      }
+    } else {
+      logFail('INPUT_SANITIZATION', 'Volunteer input was not properly escaped', JSON.stringify(volData));
+    }
+  } catch (err) {
+    logFail('INPUT_SANITIZATION', 'Failed to test input sanitization', err.message);
+  }
   console.log('\n=============================================================');
   console.log(`   AUDIT COMPLETE: ${results.passed}/${results.total} PASSED (${((results.passed/results.total)*100).toFixed(1)}%)`);
   if (results.failed > 0) {

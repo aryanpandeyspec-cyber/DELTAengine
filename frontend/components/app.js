@@ -340,8 +340,10 @@ function initFormListeners() {
 
   if (btnDelay) {
     btnDelay.addEventListener('click', () => {
-      const speakerId = document.getElementById('select-speaker').value;
-      const delayMinutes = document.getElementById('select-delay').value;
+      const spEl = document.getElementById('select-speaker');
+      const delEl = document.getElementById('select-delay');
+      const speakerId = spEl ? spEl.value : 'speaker-1';
+      const delayMinutes = delEl ? delEl.value : '15';
       
       appendLog(`[SYSTEM] Client triggering delay: Speaker ${speakerId} by ${delayMinutes} mins...`, 'system');
       
@@ -380,8 +382,10 @@ function initFormListeners() {
 
   if (btnSurge) {
     btnSurge.addEventListener('click', () => {
-      const topicId = document.getElementById('select-topic').value;
-      const interestCount = document.getElementById('input-surge-count').value;
+      const topEl = document.getElementById('select-topic');
+      const surgeEl = document.getElementById('input-surge-count');
+      const topicId = topEl ? topEl.value : 'topic-1';
+      const interestCount = surgeEl ? surgeEl.value : '300';
 
       appendLog(`[SYSTEM] Client triggering capacity surge: Talk ${topicId} to ${interestCount} interest...`, 'system');
 

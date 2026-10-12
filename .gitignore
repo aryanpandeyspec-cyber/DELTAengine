@@ -10,3 +10,4 @@ extracted_assets/
 __pycache__/
 frontend/audio_announcements/*.mp3
 backend/data/*.json
+scratch/
