@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "node --watch-path=backend backend/server.js",
     "start": "node backend/server.js",
-    "test": "node tests/runAllTests.js"
+    "test": "node tests/runAllTests.js",
+    "test:audit": "node tests/comprehensive_system_audit.js",
+    "mobile:analyze": "cd mobile && flutter analyze",
+    "mobile:test": "cd mobile && flutter test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.2",
