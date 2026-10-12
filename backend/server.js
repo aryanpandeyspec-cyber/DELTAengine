@@ -35,6 +35,7 @@ const { reconstructRoom3DFromImages } = require('./components/spatial3dEngine');
 
 // Process Uncaught Crash Guards (Prevents server process from ever freezing or exiting on errors)
 process.on('uncaughtException', (err) => {
+  if (err.code === 'EADDRINUSE') return; // Handled by server error listener
   console.error('[CRASH GUARD] Caught Uncaught Exception:', err.message, err.stack);
 });
 process.on('unhandledRejection', (reason, promise) => {
@@ -3207,8 +3208,37 @@ app.get('/api/sensors/camera/latest', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 if (require.main === module) {
+  let hasRetried = false;
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
+      if (!hasRetried) {
+        hasRetried = true;
+        console.warn(`⚠️ [PORT OCCUPIED] Port ${PORT} is in use. Attempting auto-clear of stale process...`);
+        try {
+          const { execSync } = require('child_process');
+          if (process.platform === 'win32') {
+            const out = execSync('netstat -ano').toString();
+            const lines = out.split('\n').filter(l => l.includes(`:${PORT}`) && l.includes('LISTENING'));
+            for (const l of lines) {
+              const pid = l.trim().split(/\s+/).pop();
+              if (pid && parseInt(pid, 10) > 0 && pid !== String(process.pid)) {
+                try {
+                  execSync(`taskkill /F /PID ${pid}`);
+                  console.log(`✅ [Auto-Recovery] Terminated stale PID ${pid} on port ${PORT}. Retrying listen...`);
+                } catch (e) {}
+              }
+            }
+          } else {
+            try { execSync(`fuser -k ${PORT}/tcp 2>/dev/null || true`); } catch (e) {}
+          }
+          setTimeout(() => {
+            server.listen(PORT);
+          }, 600);
+          return;
+        } catch (recoverErr) {
+          console.warn(`[Auto-Recovery] Could not auto-clear port ${PORT}:`, recoverErr.message);
+        }
+      }
       console.error(`\n❌ [PORT CONFLICT] Port ${PORT} is already occupied by another running instance of DELTA Engine.`);
       console.error(`👉 Stop the existing process or run: npx kill-port ${PORT}\n`);
       process.exit(1);
