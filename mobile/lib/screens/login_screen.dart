@@ -12,18 +12,31 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController(text: 'coordinator@delta-engine.in');
   final _passwordController = TextEditingController(text: 'delta2026');
   final _api = ApiService();
 
   bool _isLoading = false;
   String? _errorMessage;
+  String _selectedRole = 'COORDINATOR';
+
+  late AnimationController _badgeAnimController;
+
+  @override
+  void initState() {
+    super.initState();
+    _badgeAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+  }
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _badgeAnimController.dispose();
     super.dispose();
   }
 
@@ -37,6 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final session = await _api.login(
         email: _emailController.text,
         password: _passwordController.text,
+        role: _selectedRole,
       );
 
       // Connect real-time WebSocket on successful authentication
@@ -71,13 +85,27 @@ class _LoginScreenState extends State<LoginScreen> {
           borderRadius: BorderRadius.circular(12),
           side: const BorderSide(color: Colors.black, width: 2.5),
         ),
-        title: Text(
-          'SERVER CONFIGURATION',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.w900,
-            color: DeltaColors.mustard,
-            fontSize: 18,
-          ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: DeltaColors.yaleBlue,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.black, width: 1.5),
+              ),
+              child: const Icon(Icons.dns, color: DeltaColors.mustard, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'NETWORK BACKEND',
+              style: GoogleFonts.outfit(
+                fontWeight: FontWeight.w900,
+                color: DeltaColors.mustard,
+                fontSize: 16,
+              ),
+            ),
+          ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -120,8 +148,8 @@ class _LoginScreenState extends State<LoginScreen> {
               backgroundColor: DeltaColors.skyAqua,
               foregroundColor: Colors.black,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
-                side: const BorderSide(color: Colors.black, width: 1.8),
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Colors.black, width: 2),
               ),
             ),
             onPressed: () async {
@@ -154,63 +182,87 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Badge / Brand Header
+                  // App Badge / Brand Header with animated pulsing live tag
                   Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: Neubrutalism.boxDecoration(
                         color: DeltaColors.yaleBlue,
-                        radius: 8,
+                        radius: 20,
+                        shadow: const Offset(3, 3),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.bolt, color: DeltaColors.mustard, size: 16),
+                          const PulsingDot(color: DeltaColors.neonCyan, size: 7),
                           const SizedBox(width: 6),
                           Text(
-                            'DELTA ENGINE OS v3.6',
+                            'SUPABASE AUTH • v3.6',
                             style: GoogleFonts.spaceGrotesk(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
-                              fontSize: 12,
-                              letterSpacing: 1.2,
+                              fontSize: 10,
+                              letterSpacing: 0.8,
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
-                  // Title
+                  // Title with Neubrutalist drop shadow style
                   Text(
-                    'MOBILE\nCOORDINATOR',
+                    'DELTA ENGINE',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
-                      fontSize: 34,
+                      fontSize: 36,
                       fontWeight: FontWeight.w900,
                       height: 1.05,
                       color: DeltaColors.textLight,
-                      letterSpacing: -0.5,
+                      letterSpacing: -1.0,
                     ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: DeltaColors.mustard,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: Colors.black, width: 1.5),
+                        ),
+                        child: Text(
+                          'MOBILE COORDINATOR OS',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.black,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Enterprise Crowd Safety & Event Orchestration',
+                    'Real-time crowd telemetry, incident dispatch & mesh communications',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.spaceGrotesk(
-                      fontSize: 13,
+                      fontSize: 12,
                       color: DeltaColors.textMuted,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   // Neubrutalist Login Card
                   NeubrutalistCard(
@@ -222,14 +274,20 @@ class _LoginScreenState extends State<LoginScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
-                              'OPERATOR AUTH',
-                              style: GoogleFonts.outfit(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: DeltaColors.mustard,
-                                letterSpacing: 0.5,
-                              ),
+                            Row(
+                              children: [
+                                const Icon(Icons.shield_outlined, color: DeltaColors.mustard, size: 18),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'OPERATOR AUTH',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: DeltaColors.mustard,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
                             ),
                             InkWell(
                               onTap: _showHostConfigDialog,
@@ -238,7 +296,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: BoxDecoration(
                                   color: DeltaColors.surfaceLight,
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Colors.black, width: 1.5),
+                                  border: Border.all(color: Colors.black, width: 1.8),
+                                  boxShadow: const [
+                                    BoxShadow(color: Colors.black, offset: Offset(1.5, 1.5), blurRadius: 0),
+                                  ],
                                 ),
                                 child: Row(
                                   children: [
@@ -248,7 +309,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                       'HOST',
                                       style: GoogleFonts.spaceGrotesk(
                                         fontSize: 10,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w800,
                                         color: DeltaColors.skyAqua,
                                       ),
                                     ),
@@ -262,22 +323,26 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         if (_errorMessage != null) ...[
                           Container(
-                            padding: const EdgeInsets.all(10),
+                            padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: DeltaColors.dangerRed.withValues(alpha: 0.15),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: DeltaColors.dangerRed, width: 1.5),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: DeltaColors.dangerRed, width: 2),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+                              ],
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.error_outline, color: DeltaColors.dangerRed, size: 16),
-                                const SizedBox(width: 8),
+                                const Icon(Icons.error_outline, color: DeltaColors.dangerRed, size: 18),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     _errorMessage!,
                                     style: GoogleFonts.spaceGrotesk(
                                       color: Colors.redAccent,
                                       fontSize: 12,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -299,7 +364,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const SizedBox(height: 6),
                         TextField(
                           controller: _emailController,
-                          style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14),
+                          style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 13),
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: DeltaColors.surfaceLight,
@@ -312,6 +377,10 @@ class _LoginScreenState extends State<LoginScreen> {
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
                               borderSide: const BorderSide(color: Colors.black, width: 2),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: DeltaColors.skyAqua, width: 2.5),
                             ),
                           ),
                         ),
@@ -330,7 +399,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         TextField(
                           controller: _passwordController,
                           obscureText: true,
-                          style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 14),
+                          style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 13),
                           decoration: InputDecoration(
                             filled: true,
                             fillColor: DeltaColors.surfaceLight,
@@ -344,63 +413,72 @@ class _LoginScreenState extends State<LoginScreen> {
                               borderRadius: BorderRadius.circular(8),
                               borderSide: const BorderSide(color: Colors.black, width: 2),
                             ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: const BorderSide(color: DeltaColors.skyAqua, width: 2.5),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 18),
 
-                        // Quick Role Switchers
+                        // Role Selector Tabs
+                        Text(
+                          'SELECT ACTIVE DUTY ROLE:',
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: DeltaColors.mustard,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
                             Expanded(
-                              child: _buildRolePresetBtn('COORDINATOR', 'coordinator@delta-engine.in'),
+                              child: _buildRolePresetBtn('COORDINATOR', 'coordinator@delta-engine.in', Icons.alt_route),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: _buildRolePresetBtn('ADMIN', 'admin@delta-engine.in'),
+                              child: _buildRolePresetBtn('ADMIN', 'admin@delta-engine.in', Icons.admin_panel_settings),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: _buildRolePresetBtn('SAFETY', 'safety@delta-engine.in'),
+                              child: _buildRolePresetBtn('SAFETY', 'safety@delta-engine.in', Icons.local_police),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 22),
 
                         // Login Action Button
                         NeubrutalistButton(
                           label: 'INITIALIZE COCKPIT',
-                          icon: Icons.login,
+                          icon: Icons.rocket_launch,
                           backgroundColor: DeltaColors.mustard,
                           textColor: Colors.black,
+                          height: 52,
+                          fontSize: 14,
                           isLoading: _isLoading,
                           onPressed: _handleLogin,
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // Live Connection Status Footer
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: DeltaColors.successGreen,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
+                      const PulsingDot(color: DeltaColors.successGreen, size: 8),
                       const SizedBox(width: 8),
                       Flexible(
                         child: Text(
-                          'Target Server: ${_api.baseUrl}',
+                          'Target Engine: ${_api.baseUrl}',
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 11,
                             color: DeltaColors.textMuted,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
@@ -415,31 +493,47 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildRolePresetBtn(String label, String email) {
-    final isSelected = _emailController.text == email;
+  Widget _buildRolePresetBtn(String label, String email, IconData icon) {
+    final isSelected = _selectedRole == label;
     return GestureDetector(
       onTap: () {
         setState(() {
+          _selectedRole = label;
           _emailController.text = email;
           _passwordController.text = 'delta2026';
         });
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: isSelected ? DeltaColors.skyAqua : DeltaColors.surfaceLight,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.black, width: 1.5),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.black, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black,
+              offset: isSelected ? const Offset(2, 2) : const Offset(1.5, 1.5),
+              blurRadius: 0,
+            ),
+          ],
         ),
-        child: Center(
-          child: Text(
-            label,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 10,
-              fontWeight: FontWeight.w800,
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 16,
               color: isSelected ? Colors.black : DeltaColors.textMuted,
             ),
-          ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 10,
+                fontWeight: FontWeight.w800,
+                color: isSelected ? Colors.black : DeltaColors.textMuted,
+              ),
+            ),
+          ],
         ),
       ),
     );

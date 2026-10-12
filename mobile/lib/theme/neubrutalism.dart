@@ -9,10 +9,18 @@ class DeltaColors {
   static const Color mustard = Color(0xFFFFDD4A);
   static const Color deepSaffron = Color(0xFFFE9000);
 
+  // Neon & Tactical Accents
+  static const Color neonCyan = Color(0xFF00F5D4);
+  static const Color electricPurple = Color(0xFF7B2CBF);
+  static const Color hotPink = Color(0xFFFF007F);
+  static const Color mintGreen = Color(0xFF06D6A0);
+  static const Color coralRed = Color(0xFFFF4365);
+
   // Dark & Neutral tones
-  static const Color background = Color(0xFF0A0F1D);
-  static const Color surface = Color(0xFF131D31);
-  static const Color surfaceLight = Color(0xFF1B2845);
+  static const Color background = Color(0xFF070B14);
+  static const Color surface = Color(0xFF101728);
+  static const Color surfaceLight = Color(0xFF18223B);
+  static const Color surfaceElevated = Color(0xFF202D4F);
   static const Color borderBlack = Color(0xFF000000);
   static const Color textLight = Color(0xFFF8FAFC);
   static const Color textMuted = Color(0xFF94A3B8);
@@ -23,8 +31,8 @@ class DeltaColors {
 /// Neubrutalist Decorator Utilities
 class Neubrutalism {
   static const double borderWidth = 2.5;
-  static const double borderRadius = 10.0;
-  static const Offset shadowOffset = Offset(3.5, 3.5);
+  static const double borderRadius = 12.0;
+  static const Offset shadowOffset = Offset(4.0, 4.0);
 
   static BoxDecoration boxDecoration({
     Color color = DeltaColors.surface,
@@ -32,9 +40,11 @@ class Neubrutalism {
     double radius = borderRadius,
     Color shadowColor = DeltaColors.borderBlack,
     Offset shadow = shadowOffset,
+    Gradient? gradient,
   }) {
     return BoxDecoration(
-      color: color,
+      color: gradient == null ? color : null,
+      gradient: gradient,
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(
         color: borderColor,
@@ -99,13 +109,15 @@ class Neubrutalism {
   }
 }
 
-/// Tactile Neubrutalist Card
-class NeubrutalistCard extends StatelessWidget {
+/// Tactile Neubrutalist Card with Press Depression Animation
+class NeubrutalistCard extends StatefulWidget {
   final Widget child;
   final Color backgroundColor;
   final EdgeInsetsGeometry padding;
   final VoidCallback? onTap;
   final double radius;
+  final Gradient? gradient;
+  final Color borderColor;
 
   const NeubrutalistCard({
     super.key,
@@ -114,22 +126,45 @@ class NeubrutalistCard extends StatelessWidget {
     this.padding = const EdgeInsets.all(16),
     this.onTap,
     this.radius = Neubrutalism.borderRadius,
+    this.gradient,
+    this.borderColor = DeltaColors.borderBlack,
   });
 
   @override
+  State<NeubrutalistCard> createState() => _NeubrutalistCardState();
+}
+
+class _NeubrutalistCardState extends State<NeubrutalistCard> {
+  bool _isPressed = false;
+
+  @override
   Widget build(BuildContext context) {
-    Widget card = Container(
-      padding: padding,
-      decoration: Neubrutalism.boxDecoration(
-        color: backgroundColor,
-        radius: radius,
+    final effectiveShadow = _isPressed ? Offset.zero : Neubrutalism.shadowOffset;
+    final transformOffset = _isPressed ? const Offset(3, 3) : Offset.zero;
+
+    Widget card = Transform.translate(
+      offset: transformOffset,
+      child: Container(
+        padding: widget.padding,
+        decoration: Neubrutalism.boxDecoration(
+          color: widget.backgroundColor,
+          radius: widget.radius,
+          gradient: widget.gradient,
+          borderColor: widget.borderColor,
+          shadow: effectiveShadow,
+        ),
+        child: widget.child,
       ),
-      child: child,
     );
 
-    if (onTap != null) {
+    if (widget.onTap != null) {
       return GestureDetector(
-        onTap: onTap,
+        onTapDown: (_) => setState(() => _isPressed = true),
+        onTapUp: (_) {
+          setState(() => _isPressed = false);
+          widget.onTap!();
+        },
+        onTapCancel: () => setState(() => _isPressed = false),
         child: card,
       );
     }
@@ -146,6 +181,8 @@ class NeubrutalistButton extends StatefulWidget {
   final Color textColor;
   final bool isFullWidth;
   final bool isLoading;
+  final double height;
+  final double fontSize;
 
   const NeubrutalistButton({
     super.key,
@@ -156,6 +193,8 @@ class NeubrutalistButton extends StatefulWidget {
     this.textColor = DeltaColors.borderBlack,
     this.isFullWidth = true,
     this.isLoading = false,
+    this.height = 48,
+    this.fontSize = 13,
   });
 
   @override
@@ -167,11 +206,15 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveShadow = _isPressed ? Offset.zero : Neubrutalism.shadowOffset;
-    final transformOffset = _isPressed ? const Offset(2, 2) : Offset.zero;
+    final effectiveShadow = _isPressed ? Offset.zero : const Offset(3.5, 3.5);
+    final transformOffset = _isPressed ? const Offset(2.5, 2.5) : Offset.zero;
 
     return GestureDetector(
-      onTapDown: (_) => setState(() => _isPressed = true),
+      onTapDown: (_) {
+        if (!widget.isLoading && widget.onPressed != null) {
+          setState(() => _isPressed = true);
+        }
+      },
       onTapUp: (_) {
         setState(() => _isPressed = false);
         if (!widget.isLoading && widget.onPressed != null) {
@@ -183,10 +226,12 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
         offset: transformOffset,
         child: Container(
           width: widget.isFullWidth ? double.infinity : null,
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
+          height: widget.height,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: Neubrutalism.boxDecoration(
             color: widget.backgroundColor,
             shadow: effectiveShadow,
+            radius: 10,
           ),
           child: Row(
             mainAxisSize: widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
@@ -194,22 +239,22 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
             children: [
               if (widget.isLoading) ...[
                 SizedBox(
-                  width: 18,
-                  height: 18,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
+                    strokeWidth: 2.2,
                     valueColor: AlwaysStoppedAnimation<Color>(widget.textColor),
                   ),
                 ),
                 const SizedBox(width: 10),
               ] else if (widget.icon != null) ...[
-                Icon(widget.icon, color: widget.textColor, size: 18),
+                Icon(widget.icon, color: widget.textColor, size: 16),
                 const SizedBox(width: 8),
               ],
               Text(
                 widget.label,
                 style: GoogleFonts.spaceGrotesk(
-                  fontSize: 14,
+                  fontSize: widget.fontSize,
                   fontWeight: FontWeight.w800,
                   color: widget.textColor,
                   letterSpacing: 0.5,
@@ -271,6 +316,146 @@ class NeubrutalistBadge extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Animated Pulsing Heartbeat / Live Signal Dot
+class PulsingDot extends StatefulWidget {
+  final Color color;
+  final double size;
+
+  const PulsingDot({
+    super.key,
+    this.color = DeltaColors.successGreen,
+    this.size = 8.0,
+  });
+
+  @override
+  State<PulsingDot> createState() => _PulsingDotState();
+}
+
+class _PulsingDotState extends State<PulsingDot> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _opacityAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.3).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+
+    _opacityAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              width: widget.size * _scaleAnimation.value * 1.5,
+              height: widget.size * _scaleAnimation.value * 1.5,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: widget.color.withValues(alpha: 0.3 * _opacityAnimation.value),
+              ),
+            ),
+            Container(
+              width: widget.size,
+              height: widget.size,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: widget.color,
+                border: Border.all(color: Colors.black, width: 1.2),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+/// Live Audio Waveform Equalizer Visualizer
+class AudioWaveformVisualizer extends StatefulWidget {
+  final bool isBroadcasting;
+  final Color barColor;
+
+  const AudioWaveformVisualizer({
+    super.key,
+    required this.isBroadcasting,
+    this.barColor = DeltaColors.skyAqua,
+  });
+
+  @override
+  State<AudioWaveformVisualizer> createState() => _AudioWaveformVisualizerState();
+}
+
+class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer> with SingleTickerProviderStateMixin {
+  late AnimationController _anim;
+
+  @override
+  void initState() {
+    super.initState();
+    _anim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    )..repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _anim.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final multipliers = [0.3, 0.8, 0.5, 1.0, 0.7, 0.4, 0.9, 0.6, 0.2, 0.85, 0.45, 0.75];
+
+    return AnimatedBuilder(
+      animation: _anim,
+      builder: (context, _) {
+        return Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: List.generate(multipliers.length, (index) {
+            final activeHeight = widget.isBroadcasting
+                ? 10.0 + (32.0 * multipliers[index] * (0.4 + 0.6 * _anim.value))
+                : 6.0;
+
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 2.5),
+              width: 5,
+              height: activeHeight,
+              decoration: BoxDecoration(
+                color: widget.isBroadcasting ? widget.barColor : DeltaColors.textMuted.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(3),
+                border: Border.all(color: Colors.black, width: 1),
+              ),
+            );
+          }),
+        );
+      },
     );
   }
 }

@@ -16,18 +16,28 @@ class CockpitScreen extends StatefulWidget {
   State<CockpitScreen> createState() => _CockpitScreenState();
 }
 
-class _CockpitScreenState extends State<CockpitScreen> {
+class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProviderStateMixin {
   final _api = ApiService();
   final _ws = WebSocketService();
 
   int _currentTabIndex = 0;
   bool _isLoading = true;
   bool _isWsConnected = false;
+  String _taskFilter = 'ALL';
 
   List<RoomTelemetry> _rooms = [];
   List<TaskItem> _tasks = [];
   final List<VoiceTransmission> _voiceTransmissions = [];
   AttendeeBadgeResult? _lastScannedBadge;
+  int _totalGateCheckins = 842;
+
+  // Walkie talkie state
+  String _activeChannel = '1';
+  bool _isBroadcasting = false;
+
+  // Scanner animation
+  late AnimationController _scannerAnim;
+  late Animation<double> _scanLinePosition;
 
   StreamSubscription? _wsStateSub;
   StreamSubscription? _taskSub;
@@ -38,12 +48,22 @@ class _CockpitScreenState extends State<CockpitScreen> {
   @override
   void initState() {
     super.initState();
+    _scannerAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat(reverse: true);
+
+    _scanLinePosition = Tween<double>(begin: 0.1, end: 0.9).animate(
+      CurvedAnimation(parent: _scannerAnim, curve: Curves.easeInOut),
+    );
+
     _loadInitialData();
     _setupWebSocketListeners();
   }
 
   @override
   void dispose() {
+    _scannerAnim.dispose();
     _wsStateSub?.cancel();
     _taskSub?.cancel();
     _roomSub?.cancel();
@@ -65,17 +85,16 @@ class _CockpitScreenState extends State<CockpitScreen> {
         _isLoading = false;
       });
     } catch (e) {
-      // Fallback sample data if server responds empty
       if (mounted) {
         setState(() {
           _isLoading = false;
           if (_rooms.isEmpty) {
             _rooms = [
-              RoomTelemetry(id: 'room1', name: 'Turing Grand Hall', currentDensity: 84.0, capacity: 500, currentOccupancy: 420, status: 'CRITICAL', predictedRisk: 0.88),
-              RoomTelemetry(id: 'room2', name: 'Lovelace Auditorium', currentDensity: 65.0, capacity: 250, currentOccupancy: 162, status: 'ELEVATED', predictedRisk: 0.65),
-              RoomTelemetry(id: 'room3', name: 'Von Neumann Hub', currentDensity: 42.0, capacity: 180, currentOccupancy: 75, status: 'OPTIMAL', predictedRisk: 0.30),
-              RoomTelemetry(id: 'room4', name: 'Shannon Workshop Suite', currentDensity: 52.0, capacity: 120, currentOccupancy: 62, status: 'OPTIMAL', predictedRisk: 0.40),
-              RoomTelemetry(id: 'room5', name: 'Hopper Tech Pavilion', currentDensity: 35.0, capacity: 1200, currentOccupancy: 420, status: 'OPTIMAL', predictedRisk: 0.25),
+              RoomTelemetry(id: 'room1', name: 'Turing Grand Hall', currentDensity: 84.0, capacity: 500, currentOccupancy: 420, status: 'CRITICAL', predictedRisk: 0.88, doorCountIn: 480, doorCountOut: 60, temperature: 24.2, co2: 780),
+              RoomTelemetry(id: 'room2', name: 'Lovelace Auditorium', currentDensity: 65.0, capacity: 250, currentOccupancy: 162, status: 'ELEVATED', predictedRisk: 0.65, doorCountIn: 190, doorCountOut: 28, temperature: 22.8, co2: 640),
+              RoomTelemetry(id: 'room3', name: 'Von Neumann Hub', currentDensity: 42.0, capacity: 180, currentOccupancy: 75, status: 'OPTIMAL', predictedRisk: 0.30, doorCountIn: 92, doorCountOut: 17, temperature: 21.5, co2: 520),
+              RoomTelemetry(id: 'room4', name: 'Shannon Workshop Suite', currentDensity: 52.0, capacity: 120, currentOccupancy: 62, status: 'OPTIMAL', predictedRisk: 0.40, doorCountIn: 70, doorCountOut: 8, temperature: 22.0, co2: 590),
+              RoomTelemetry(id: 'room5', name: 'Hopper Tech Pavilion', currentDensity: 35.0, capacity: 1200, currentOccupancy: 420, status: 'OPTIMAL', predictedRisk: 0.25, doorCountIn: 490, doorCountOut: 70, temperature: 20.8, co2: 480),
             ];
           }
         });
@@ -117,11 +136,23 @@ class _CockpitScreenState extends State<CockpitScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
-            content: Text(
-              '📻 [CH ${voice.channel}] ${voice.speaker}: "${voice.message}"',
-              style: GoogleFonts.spaceGrotesk(color: DeltaColors.skyAqua),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(color: Colors.black, width: 2),
             ),
-            duration: const Duration(seconds: 3),
+            content: Row(
+              children: [
+                const Icon(Icons.radio, color: DeltaColors.neonCyan, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '📻 [CH ${voice.channel}] ${voice.speaker}: "${voice.message}"',
+                    style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -141,13 +172,13 @@ class _CockpitScreenState extends State<CockpitScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: DeltaColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: DeltaColors.dangerRed, width: 3),
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: DeltaColors.dangerRed, width: 3.5),
         ),
         title: Row(
           children: [
-            const Icon(Icons.warning, color: DeltaColors.dangerRed, size: 28),
-            const SizedBox(width: 8),
+            const PulsingDot(color: DeltaColors.dangerRed, size: 14),
+            const SizedBox(width: 10),
             Text(
               'FIELD MARSHAL SOS!',
               style: GoogleFonts.outfit(
@@ -163,17 +194,26 @@ class _CockpitScreenState extends State<CockpitScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Reporter: ${sos['volunteerName'] ?? 'Safety Marshal'}',
-              style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, color: Colors.white),
+              'Marshal: ${sos['volunteerName'] ?? 'Safety Lead'}',
+              style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, color: Colors.white, fontSize: 13),
             ),
+            const SizedBox(height: 4),
             Text(
               'Location: ${sos['hallName'] ?? sos['hallId'] ?? 'Auditorium'}',
-              style: GoogleFonts.spaceGrotesk(color: DeltaColors.mustard),
+              style: GoogleFonts.spaceGrotesk(color: DeltaColors.mustard, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Text(
-              'Note: "${sos['note'] ?? 'Critical crowd surge detected!'}"',
-              style: GoogleFonts.spaceGrotesk(color: DeltaColors.textLight),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: DeltaColors.dangerRed.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: DeltaColors.dangerRed, width: 1.5),
+              ),
+              child: Text(
+                'Note: "${sos['note'] ?? 'Critical crowd surge detected!'}"',
+                style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 12),
+              ),
             ),
           ],
         ),
@@ -182,9 +222,13 @@ class _CockpitScreenState extends State<CockpitScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: DeltaColors.dangerRed,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Colors.black, width: 2),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('ACKNOWLEDGE & DISPATCH'),
+            child: Text('ACKNOWLEDGE & DISPATCH', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -206,7 +250,7 @@ class _CockpitScreenState extends State<CockpitScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
-            content: Text('Claimed task: ${task.title}', style: const TextStyle(color: DeltaColors.skyAqua)),
+            content: Text('Claimed task: ${task.title}', style: const TextStyle(color: DeltaColors.skyAqua, fontWeight: FontWeight.bold)),
           ),
         );
       }
@@ -232,7 +276,7 @@ class _CockpitScreenState extends State<CockpitScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
-            content: Text('Resolved task: ${task.title}', style: const TextStyle(color: DeltaColors.successGreen)),
+            content: Text('Resolved task: ${task.title}', style: const TextStyle(color: DeltaColors.successGreen, fontWeight: FontWeight.bold)),
           ),
         );
       }
@@ -247,8 +291,16 @@ class _CockpitScreenState extends State<CockpitScreen> {
 
   void _showCreateTaskDialog() {
     final titleCtrl = TextEditingController();
-    final locationCtrl = TextEditingController(text: 'Room 1 (Turing Hall)');
+    final locationCtrl = TextEditingController(text: 'Room 1 (Turing Grand Hall)');
     String priority = 'urgent';
+
+    final presetTasks = [
+      'Stage wireless lapel battery swap',
+      'Restock 20 water bottles for speaker lounge',
+      'Crowd bottleneck surge near main entrance',
+      'First aid emergency marshal required',
+      'HVAC thermal cooling boost requested',
+    ];
 
     showDialog(
       context: context,
@@ -256,62 +308,99 @@ class _CockpitScreenState extends State<CockpitScreen> {
         builder: (ctx, setDialogState) => AlertDialog(
           backgroundColor: DeltaColors.surface,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Colors.black, width: 2.5),
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: Colors.black, width: 2.8),
           ),
-          title: Text(
-            'DISPATCH INCIDENT TASK',
-            style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: DeltaColors.mustard),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          title: Row(
             children: [
-              Text('Task Directive / Title:', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: titleCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'e.g. Stage 1 wireless mic battery swap',
-                  filled: true,
-                  fillColor: DeltaColors.surfaceLight,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text('Target Zone / Room:', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
-              const SizedBox(height: 4),
-              TextField(
-                controller: locationCtrl,
-                style: const TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: DeltaColors.surfaceLight,
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text('Priority Level:', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  ChoiceChip(
-                    label: const Text('URGENT'),
-                    selected: priority == 'urgent',
-                    selectedColor: DeltaColors.dangerRed,
-                    onSelected: (_) => setDialogState(() => priority = 'urgent'),
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: const Text('NORMAL'),
-                    selected: priority == 'normal',
-                    selectedColor: DeltaColors.skyAqua,
-                    onSelected: (_) => setDialogState(() => priority = 'normal'),
-                  ),
-                ],
+              const Icon(Icons.add_task, color: DeltaColors.mustard, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                'DISPATCH FIELD TASK',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: DeltaColors.mustard, fontSize: 17),
               ),
             ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Directive / Title:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: titleCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Stage wireless lapel battery swap',
+                    filled: true,
+                    fillColor: DeltaColors.surfaceLight,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text('Quick Directives:', style: GoogleFonts.spaceGrotesk(fontSize: 10, color: DeltaColors.mustard, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: presetTasks.map((preset) => InkWell(
+                    onTap: () => setDialogState(() => titleCtrl.text = preset),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: DeltaColors.surfaceLight,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.black, width: 1.5),
+                      ),
+                      child: Text(preset, style: const TextStyle(fontSize: 10, color: DeltaColors.skyAqua)),
+                    ),
+                  )).toList(),
+                ),
+                const SizedBox(height: 14),
+                Text('Target Zone / Room:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted)),
+                const SizedBox(height: 4),
+                TextField(
+                  controller: locationCtrl,
+                  style: const TextStyle(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: DeltaColors.surfaceLight,
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text('Priority Level:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted)),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    ChoiceChip(
+                      label: const Text('URGENT'),
+                      selected: priority == 'urgent',
+                      selectedColor: DeltaColors.dangerRed,
+                      labelStyle: TextStyle(
+                        color: priority == 'urgent' ? Colors.white : DeltaColors.textMuted,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                      onSelected: (_) => setDialogState(() => priority = 'urgent'),
+                    ),
+                    const SizedBox(width: 8),
+                    ChoiceChip(
+                      label: const Text('NORMAL'),
+                      selected: priority == 'normal',
+                      selectedColor: DeltaColors.skyAqua,
+                      labelStyle: TextStyle(
+                        color: priority == 'normal' ? Colors.black : DeltaColors.textMuted,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 11,
+                      ),
+                      onSelected: (_) => setDialogState(() => priority = 'normal'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -319,7 +408,14 @@ class _CockpitScreenState extends State<CockpitScreen> {
               child: const Text('CANCEL', style: TextStyle(color: DeltaColors.textMuted)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: DeltaColors.mustard, foregroundColor: Colors.black),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DeltaColors.mustard,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: const BorderSide(color: Colors.black, width: 2),
+                ),
+              ),
               onPressed: () async {
                 if (titleCtrl.text.trim().isEmpty) return;
                 try {
@@ -332,7 +428,6 @@ class _CockpitScreenState extends State<CockpitScreen> {
                   setState(() => _tasks.insert(0, newTask));
                   if (ctx.mounted) Navigator.pop(ctx);
                 } catch (e) {
-                  // Fallback local task
                   final fallback = TaskItem(
                     id: 'task_${DateTime.now().millisecondsSinceEpoch}',
                     title: titleCtrl.text.trim(),
@@ -346,7 +441,7 @@ class _CockpitScreenState extends State<CockpitScreen> {
                   if (ctx.mounted) Navigator.pop(ctx);
                 }
               },
-              child: const Text('DISPATCH NOW', style: TextStyle(fontWeight: FontWeight.bold)),
+              child: Text('DISPATCH NOW', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800)),
             ),
           ],
         ),
@@ -363,16 +458,16 @@ class _CockpitScreenState extends State<CockpitScreen> {
       builder: (ctx) => AlertDialog(
         backgroundColor: DeltaColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: DeltaColors.dangerRed, width: 3),
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: DeltaColors.dangerRed, width: 3.5),
         ),
         title: Row(
           children: [
-            const Icon(Icons.warning, color: DeltaColors.dangerRed),
-            const SizedBox(width: 8),
+            const PulsingDot(color: DeltaColors.dangerRed, size: 16),
+            const SizedBox(width: 10),
             Text(
               'TRIGGER EMERGENCY SOS',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: DeltaColors.dangerRed),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: DeltaColors.dangerRed, fontSize: 17),
             ),
           ],
         ),
@@ -380,10 +475,10 @@ class _CockpitScreenState extends State<CockpitScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('This will broadcast an immediate high-priority alert to all command dashboards and mesh channels.',
+            Text('Broadcasts immediate high-priority override to all command dashboards, mesh radios, and safety marshals.',
                 style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
-            const SizedBox(height: 12),
-            Text('Incident Location:', style: GoogleFonts.spaceGrotesk(fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 14),
+            Text('Incident Location:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 4),
             DropdownButtonFormField<String>(
               initialValue: selectedHall,
@@ -401,19 +496,19 @@ class _CockpitScreenState extends State<CockpitScreen> {
               decoration: InputDecoration(
                 filled: true,
                 fillColor: DeltaColors.surfaceLight,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
             const SizedBox(height: 12),
-            Text('Urgent Field Note:', style: GoogleFonts.spaceGrotesk(fontSize: 12, fontWeight: FontWeight.bold)),
+            Text('Urgent Field Note:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
             const SizedBox(height: 4),
             TextField(
               controller: noteCtrl,
-              style: const TextStyle(color: Colors.white),
+              style: const TextStyle(color: Colors.white, fontSize: 13),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: DeltaColors.surfaceLight,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ],
@@ -424,7 +519,14 @@ class _CockpitScreenState extends State<CockpitScreen> {
             child: const Text('CANCEL', style: TextStyle(color: DeltaColors.textMuted)),
           ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: DeltaColors.dangerRed, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: DeltaColors.dangerRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: const BorderSide(color: Colors.black, width: 2),
+              ),
+            ),
             onPressed: () async {
               Navigator.pop(ctx);
               await _api.triggerEmergencySos(
@@ -436,19 +538,19 @@ class _CockpitScreenState extends State<CockpitScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     backgroundColor: DeltaColors.dangerRed,
-                    content: Text('🚨 Emergency SOS Broadcast Sent to Command Deck!'),
+                    content: Text('🚨 Emergency SOS Broadcast Sent to Central Command Deck!'),
                   ),
                 );
               }
             },
-            child: const Text('SEND SOS ALERT', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('SEND SOS ALERT', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w900)),
           ),
         ],
       ),
     );
   }
 
-  // --- RENDER APP BAR & BODY ---
+  // --- RENDER APP BAR & TABS ---
 
   @override
   Widget build(BuildContext context) {
@@ -462,11 +564,14 @@ class _CockpitScreenState extends State<CockpitScreen> {
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.all(7),
               decoration: BoxDecoration(
                 color: DeltaColors.yaleBlue,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.black, width: 1.8),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.black, width: 2),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+                ],
               ),
               child: const Icon(Icons.bolt, color: DeltaColors.mustard, size: 18),
             ),
@@ -482,44 +587,79 @@ class _CockpitScreenState extends State<CockpitScreen> {
                     letterSpacing: 0.5,
                   ),
                 ),
-                Text(
-                  widget.session.name.toUpperCase(),
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 10,
-                    color: DeltaColors.mustard,
-                    fontWeight: FontWeight.w700,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      widget.session.name.toUpperCase(),
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10,
+                        color: DeltaColors.mustard,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '• ${widget.session.role}',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 9,
+                        color: DeltaColors.skyAqua,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ],
         ),
         actions: [
+          // Quick Emergency SOS Header Button
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            child: InkWell(
+              onTap: _showSosConfirmationDialog,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: DeltaColors.dangerRed,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: Colors.black, width: 1.8),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black, offset: Offset(1.5, 1.5), blurRadius: 0),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.emergency, color: Colors.white, size: 14),
+                    const SizedBox(width: 4),
+                    Text(
+                      'SOS',
+                      style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
           // Live WS indicator pill
           Container(
-            margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            margin: const EdgeInsets.symmetric(vertical: 11, horizontal: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: _isWsConnected ? DeltaColors.successGreen.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(20),
+              color: _isWsConnected ? DeltaColors.successGreen.withValues(alpha: 0.18) : Colors.red.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: _isWsConnected ? DeltaColors.successGreen : Colors.red,
-                width: 1.5,
+                width: 1.8,
               ),
             ),
             child: Row(
               children: [
-                Container(
-                  width: 6,
-                  height: 6,
-                  decoration: BoxDecoration(
-                    color: _isWsConnected ? DeltaColors.successGreen : Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                ),
+                PulsingDot(color: _isWsConnected ? DeltaColors.successGreen : Colors.red, size: 7),
                 const SizedBox(width: 6),
                 Text(
-                  _isWsConnected ? 'LIVE MESH' : 'OFFLINE',
+                  _isWsConnected ? 'MESH' : 'OFFLINE',
                   style: GoogleFonts.spaceGrotesk(
                     fontSize: 10,
                     fontWeight: FontWeight.w800,
@@ -529,8 +669,9 @@ class _CockpitScreenState extends State<CockpitScreen> {
               ],
             ),
           ),
+
           IconButton(
-            icon: const Icon(Icons.logout, size: 20, color: DeltaColors.textMuted),
+            icon: const Icon(Icons.logout, size: 18, color: DeltaColors.textMuted),
             onPressed: () {
               WebSocketService().disconnect();
               Navigator.of(context).pushReplacement(
@@ -564,7 +705,7 @@ class _CockpitScreenState extends State<CockpitScreen> {
           type: BottomNavigationBarType.fixed,
           selectedItemColor: DeltaColors.mustard,
           unselectedItemColor: DeltaColors.textMuted,
-          selectedLabelStyle: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w800),
+          selectedLabelStyle: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w900),
           unselectedLabelStyle: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w600),
           items: const [
             BottomNavigationBarItem(
@@ -598,7 +739,10 @@ class _CockpitScreenState extends State<CockpitScreen> {
   // ==========================================
   Widget _buildTelemetryTab() {
     final totalOccupancy = _rooms.fold<int>(0, (sum, r) => sum + r.currentOccupancy);
-    final avgDensity = _rooms.isEmpty ? 0 : (_rooms.fold<double>(0, (sum, r) => sum + r.currentDensity) / _rooms.length).round();
+    final totalCapacity = _rooms.fold<int>(0, (sum, r) => sum + r.capacity);
+    final avgDensity = totalCapacity > 0 ? ((totalOccupancy / totalCapacity) * 100).round() : 0;
+    final totalIn = _rooms.fold<int>(0, (sum, r) => sum + r.doorCountIn);
+    final totalOut = _rooms.fold<int>(0, (sum, r) => sum + r.doorCountOut);
 
     return RefreshIndicator(
       onRefresh: _loadInitialData,
@@ -606,9 +750,97 @@ class _CockpitScreenState extends State<CockpitScreen> {
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // Emergency SOS Banner Card
+          // Venue Global Pressure Index Card
+          NeubrutalistCard(
+            backgroundColor: DeltaColors.yaleBlue,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.hub_outlined, color: DeltaColors.neonCyan, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'GLOBAL VENUE PRESSURE',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    NeubrutalistBadge(
+                      label: avgDensity >= 80 ? 'HIGH SURGE' : avgDensity >= 60 ? 'ELEVATED' : 'NOMINAL',
+                      backgroundColor: avgDensity >= 80 ? DeltaColors.dangerRed : avgDensity >= 60 ? DeltaColors.mustard : DeltaColors.neonCyan,
+                      textColor: Colors.black,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '$avgDensity%',
+                      style: GoogleFonts.outfit(
+                        fontSize: 42,
+                        fontWeight: FontWeight.w900,
+                        color: DeltaColors.mustard,
+                        height: 0.9,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '$totalOccupancy / $totalCapacity Attendees',
+                            style: GoogleFonts.spaceGrotesk(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Turnstile Mesh: +$totalIn IN / -$totalOut OUT',
+                            style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.skyAqua),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                // Micro telemetry indicators
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.black, width: 1.5),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildMicroStat('🌡️ TEMP', '22.4°C'),
+                      _buildMicroStat('💨 CO2', '620 ppm'),
+                      _buildMicroStat('⚡ SLA', '0.7ms'),
+                      _buildMicroStat('🚨 SURGES', '0 Active'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // 1-Tap Emergency SOS Banner
           NeubrutalistCard(
             backgroundColor: DeltaColors.dangerRed.withValues(alpha: 0.18),
+            borderColor: DeltaColors.dangerRed,
             onTap: _showSosConfirmationDialog,
             child: Row(
               children: [
@@ -617,17 +849,20 @@ class _CockpitScreenState extends State<CockpitScreen> {
                   decoration: BoxDecoration(
                     color: DeltaColors.dangerRed,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.black, width: 1.8),
+                    border: Border.all(color: Colors.black, width: 2),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+                    ],
                   ),
-                  child: const Icon(Icons.emergency, color: Colors.white, size: 24),
+                  child: const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 24),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'FIELD MARSHAL SOS ALERT',
+                        '1-TAP FIELD MARSHAL SOS',
                         style: GoogleFonts.outfit(
                           fontSize: 15,
                           fontWeight: FontWeight.w900,
@@ -635,69 +870,35 @@ class _CockpitScreenState extends State<CockpitScreen> {
                         ),
                       ),
                       Text(
-                        '1-Tap crowd surge & incident escalation',
+                        'Instant crowd surge & emergency safety escalation',
                         style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textLight),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 16, color: DeltaColors.dangerRed),
+                const Icon(Icons.arrow_forward_ios, size: 14, color: DeltaColors.dangerRed),
               ],
             ),
           ),
-          const SizedBox(height: 16),
-
-          // High-level Stats Overview
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatTile('INSIDE VENUE', '$totalOccupancy', 'Attended', DeltaColors.skyAqua),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatTile('AVG DENSITY', '$avgDensity%', 'Global Index', DeltaColors.mustard),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _buildStatTile('OPEN TASKS', '${_tasks.where((t) => t.status != 'resolved').length}', 'Live Incidents', DeltaColors.deepSaffron),
-              ),
-            ],
-          ),
           const SizedBox(height: 20),
 
-          // Monitored Zone Gauges Header
+          // 1-Tap Quick Action Dispatch Grid
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'ZONE DENSITY TELEMETRY',
+                '1-TAP TACTICAL DISPATCH',
                 style: GoogleFonts.outfit(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
-                  color: DeltaColors.textLight,
+                  color: Colors.white,
                 ),
               ),
               Text(
-                '${_rooms.length} ZONES ACTIVE',
-                style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.skyAqua, fontWeight: FontWeight.bold),
+                'INSTANT RELAY',
+                style: GoogleFonts.spaceGrotesk(fontSize: 10, color: DeltaColors.mustard, fontWeight: FontWeight.bold),
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-
-          // Zone Density List
-          ..._rooms.map((room) => _buildRoomDensityCard(room)),
-
-          const SizedBox(height: 20),
-
-          // 1-Tap Quick Action Dispatch Grid
-          Text(
-            '1-TAP FIELD DISPATCH GRID',
-            style: GoogleFonts.outfit(
-              fontSize: 16,
-              fontWeight: FontWeight.w900,
-              color: DeltaColors.textLight,
-            ),
           ),
           const SizedBox(height: 10),
           GridView.count(
@@ -708,58 +909,109 @@ class _CockpitScreenState extends State<CockpitScreen> {
             mainAxisSpacing: 10,
             childAspectRatio: 2.2,
             children: [
-              _buildQuickActionBtn(
-                'RESTOCK WATER',
-                'water_supply',
-                Icons.water_drop,
-                DeltaColors.skyAqua,
+              _buildTacticalActionCard('RESTOCK WATER', 'water_supply', Icons.water_drop, DeltaColors.skyAqua),
+              _buildTacticalActionCard('DEPLOY SECURITY', 'security_post', Icons.shield, DeltaColors.mustard),
+              _buildTacticalActionCard('OPEN OVERFLOW', 'gate_release', Icons.door_sliding, DeltaColors.deepSaffron),
+              _buildTacticalActionCard('COOLING BOOST', 'hvac_boost', Icons.ac_unit, DeltaColors.balticBlue),
+            ],
+          ),
+          const SizedBox(height: 24),
+
+          // Monitored Zone Gauges Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'MONITORED ZONE DENSITY',
+                style: GoogleFonts.outfit(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
               ),
-              _buildQuickActionBtn(
-                'DEPLOY SECURITY',
-                'security_post',
-                Icons.shield,
-                DeltaColors.mustard,
-              ),
-              _buildQuickActionBtn(
-                'OPEN OVERFLOW GATES',
-                'gate_release',
-                Icons.door_sliding,
-                DeltaColors.deepSaffron,
-              ),
-              _buildQuickActionBtn(
-                'COOLING BOOST',
-                'hvac_boost',
-                Icons.ac_unit,
-                DeltaColors.balticBlue,
+              Text(
+                '${_rooms.length} ZONES ACTIVE',
+                style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.neonCyan, fontWeight: FontWeight.bold),
               ),
             ],
           ),
+          const SizedBox(height: 12),
+
+          // Zone Density List
+          ..._rooms.map((room) => _buildEnhancedRoomCard(room)),
           const SizedBox(height: 24),
         ],
       ),
     );
   }
 
-  Widget _buildStatTile(String label, String value, String sub, Color accent) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-      decoration: Neubrutalism.boxDecoration(color: DeltaColors.surface, radius: 8),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildMicroStat(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: GoogleFonts.spaceGrotesk(fontSize: 9, color: DeltaColors.textMuted, fontWeight: FontWeight.bold)),
+        Text(value, style: GoogleFonts.spaceGrotesk(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w800)),
+      ],
+    );
+  }
+
+  Widget _buildTacticalActionCard(String title, String actionCode, IconData icon, Color color) {
+    return NeubrutalistCard(
+      backgroundColor: DeltaColors.surface,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      onTap: () async {
+        await _api.dispatchQuickAction(
+          action: actionCode,
+          label: title,
+          sender: widget.session.name,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: DeltaColors.surfaceLight,
+              content: Row(
+                children: [
+                  Icon(icon, color: color, size: 18),
+                  const SizedBox(width: 8),
+                  Text('Dispatched: $title', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+                ],
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      },
+      child: Row(
         children: [
-          Text(label, style: GoogleFonts.spaceGrotesk(fontSize: 9, fontWeight: FontWeight.w800, color: DeltaColors.textMuted)),
-          const SizedBox(height: 4),
-          Text(value, style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w900, color: accent)),
-          Text(sub, style: GoogleFonts.spaceGrotesk(fontSize: 9, color: DeltaColors.textLight)),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.black, width: 1.5),
+            ),
+            child: Icon(icon, color: Colors.black, size: 16),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.spaceGrotesk(
+                fontSize: 11,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildRoomDensityCard(RoomTelemetry room) {
+  Widget _buildEnhancedRoomCard(RoomTelemetry room) {
     final isCritical = room.currentDensity >= 80;
     final isElevated = room.currentDensity >= 60 && room.currentDensity < 80;
-    final statusColor = isCritical ? DeltaColors.dangerRed : isElevated ? DeltaColors.mustard : DeltaColors.successGreen;
+    final statusColor = isCritical ? DeltaColors.dangerRed : isElevated ? DeltaColors.mustard : DeltaColors.neonCyan;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -773,13 +1025,28 @@ class _CockpitScreenState extends State<CockpitScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text(
-                    room.name,
-                    style: GoogleFonts.outfit(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: statusColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          room.name,
+                          style: GoogleFonts.outfit(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 NeubrutalistBadge(
@@ -789,9 +1056,9 @@ class _CockpitScreenState extends State<CockpitScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
-            // Density progress bar
+            // Segmented Density Bar
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
               child: Container(
@@ -800,66 +1067,43 @@ class _CockpitScreenState extends State<CockpitScreen> {
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
                   widthFactor: (room.currentDensity / 100).clamp(0.0, 1.0),
-                  child: Container(color: statusColor),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          DeltaColors.skyAqua,
+                          statusColor,
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 12),
 
-            // Details footer
+            // Telemetry Metrics Row
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${room.currentOccupancy} / ${room.capacity} seats',
-                  style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textMuted),
+                  '${room.currentOccupancy} / ${room.capacity} seats (${(room.currentDensity).toStringAsFixed(1)}%)',
+                  style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textMuted, fontWeight: FontWeight.bold),
                 ),
-                Text(
-                  'Risk: ${(room.predictedRisk * 100).toStringAsFixed(0)}% • ${room.temperature}°C',
-                  style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.skyAqua),
+                Row(
+                  children: [
+                    Text(
+                      '↑${room.doorCountIn}  ↓${room.doorCountOut}',
+                      style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.skyAqua, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      '• ${room.temperature}°C',
+                      style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.mustard),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionBtn(String title, String actionCode, IconData icon, Color color) {
-    return InkWell(
-      onTap: () async {
-        await _api.dispatchQuickAction(
-          action: actionCode,
-          label: title,
-          sender: widget.session.name,
-        );
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              backgroundColor: DeltaColors.surfaceLight,
-              content: Text('Dispatched: $title', style: TextStyle(color: color)),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-      },
-      child: Container(
-        decoration: Neubrutalism.boxDecoration(color: DeltaColors.surface, radius: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-        child: Row(
-          children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                title,
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
-              ),
             ),
           ],
         ),
@@ -871,6 +1115,17 @@ class _CockpitScreenState extends State<CockpitScreen> {
   // TAB 2: INCIDENT TASK DISPATCH BOARD
   // ==========================================
   Widget _buildTasksTab() {
+    final filteredTasks = _tasks.where((t) {
+      if (_taskFilter == 'URGENT') return t.severity == 'URGENT' || t.severity == 'CRITICAL';
+      if (_taskFilter == 'CLAIMED') return t.status == 'claimed';
+      if (_taskFilter == 'RESOLVED') return t.status == 'resolved';
+      return true;
+    }).toList();
+
+    final urgentCount = _tasks.where((t) => t.severity == 'URGENT' || t.severity == 'CRITICAL').length;
+    final claimedCount = _tasks.where((t) => t.status == 'claimed').length;
+    final resolvedCount = _tasks.where((t) => t.status == 'resolved').length;
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       floatingActionButton: FloatingActionButton.extended(
@@ -882,7 +1137,7 @@ class _CockpitScreenState extends State<CockpitScreen> {
         ),
         onPressed: _showCreateTaskDialog,
         icon: const Icon(Icons.add_task),
-        label: Text('DISPATCH TASK', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800)),
+        label: Text('DISPATCH TASK', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w900)),
       ),
       body: RefreshIndicator(
         onRefresh: _loadInitialData,
@@ -911,17 +1166,43 @@ class _CockpitScreenState extends State<CockpitScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
 
-            if (_tasks.isEmpty)
+            // Filter Tabs Row
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildTaskFilterChip('ALL', 'ALL (${_tasks.length})'),
+                  const SizedBox(width: 6),
+                  _buildTaskFilterChip('URGENT', '🔥 URGENT ($urgentCount)'),
+                  const SizedBox(width: 6),
+                  _buildTaskFilterChip('CLAIMED', '✋ CLAIMED ($claimedCount)'),
+                  const SizedBox(width: 6),
+                  _buildTaskFilterChip('RESOLVED', '✅ RESOLVED ($resolvedCount)'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            if (filteredTasks.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 40),
                 child: Center(
-                  child: Text('No active incidents reported.', style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted)),
+                  child: Column(
+                    children: [
+                      const Icon(Icons.task_alt, size: 48, color: DeltaColors.textMuted),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No incidents matching $_taskFilter filter.',
+                        style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted, fontSize: 13),
+                      ),
+                    ],
+                  ),
                 ),
               )
             else
-              ..._tasks.map((task) => _buildTaskCard(task)),
+              ...filteredTasks.map((task) => _buildEnhancedTaskCard(task)),
             const SizedBox(height: 80),
           ],
         ),
@@ -929,7 +1210,37 @@ class _CockpitScreenState extends State<CockpitScreen> {
     );
   }
 
-  Widget _buildTaskCard(TaskItem task) {
+  Widget _buildTaskFilterChip(String filterKey, String label) {
+    final isSelected = _taskFilter == filterKey;
+    return GestureDetector(
+      onTap: () => setState(() => _taskFilter = filterKey),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: isSelected ? DeltaColors.skyAqua : DeltaColors.surface,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.black, width: 1.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black,
+              offset: isSelected ? const Offset(1.5, 1.5) : const Offset(1, 1),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.spaceGrotesk(
+            fontSize: 10,
+            fontWeight: FontWeight.w800,
+            color: isSelected ? Colors.black : DeltaColors.textLight,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEnhancedTaskCard(TaskItem task) {
     final isUrgent = task.severity == 'URGENT' || task.severity == 'CRITICAL';
     final isClaimed = task.status == 'claimed';
     final isResolved = task.status == 'resolved';
@@ -949,6 +1260,7 @@ class _CockpitScreenState extends State<CockpitScreen> {
                   label: task.severity,
                   backgroundColor: isUrgent ? DeltaColors.dangerRed : DeltaColors.skyAqua,
                   textColor: isUrgent ? Colors.white : Colors.black,
+                  icon: isUrgent ? Icons.warning_amber : null,
                 ),
                 NeubrutalistBadge(
                   label: task.status.toUpperCase(),
@@ -970,7 +1282,7 @@ class _CockpitScreenState extends State<CockpitScreen> {
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 6),
             Row(
               children: [
                 const Icon(Icons.location_on_outlined, size: 14, color: DeltaColors.mustard),
@@ -978,13 +1290,13 @@ class _CockpitScreenState extends State<CockpitScreen> {
                 Text(task.location, style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
                 if (task.assignedTo != null) ...[
                   const SizedBox(width: 12),
-                  const Icon(Icons.person_outline, size: 14, color: DeltaColors.skyAqua),
+                  const Icon(Icons.person_pin, size: 14, color: DeltaColors.neonCyan),
                   const SizedBox(width: 4),
-                  Text(task.assignedTo!, style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.skyAqua)),
+                  Text(task.assignedTo!, style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.neonCyan, fontWeight: FontWeight.bold)),
                 ],
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
 
             // Action Buttons
             if (!isResolved) ...[
@@ -997,6 +1309,8 @@ class _CockpitScreenState extends State<CockpitScreen> {
                         icon: Icons.pan_tool_alt,
                         backgroundColor: DeltaColors.skyAqua,
                         textColor: Colors.black,
+                        height: 40,
+                        fontSize: 12,
                         onPressed: () => _handleClaimTask(task),
                       ),
                     ),
@@ -1008,6 +1322,8 @@ class _CockpitScreenState extends State<CockpitScreen> {
                       icon: Icons.check_circle_outline,
                       backgroundColor: DeltaColors.successGreen,
                       textColor: Colors.black,
+                      height: 40,
+                      fontSize: 12,
                       onPressed: () => _handleResolveTask(task),
                     ),
                   ),
@@ -1024,22 +1340,44 @@ class _CockpitScreenState extends State<CockpitScreen> {
   // TAB 3: WALKIE-TALKIE MESH HUD
   // ==========================================
   Widget _buildWalkieTalkieTab() {
+    final quickVoiceMessages = [
+      'All primary venue exits verified clear.',
+      'Requesting 2 runners for Turing stage water restock.',
+      'Crowd surge detected at Entrance Gate 1.',
+      'Medical first responder on standby at Hub.',
+    ];
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          'TACTICAL WALKIE MESH',
-          style: GoogleFonts.outfit(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'TACTICAL WALKIE MESH',
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Encrypted low-latency tactical radio dispatch',
+                  style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textMuted),
+                ),
+              ],
+            ),
+            NeubrutalistBadge(
+              label: 'MESH CH $_activeChannel',
+              backgroundColor: DeltaColors.neonCyan,
+              textColor: Colors.black,
+            ),
+          ],
         ),
-        Text(
-          'Low-latency encrypted radio broadcast',
-          style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted),
-        ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
         // Channel Selector
         NeubrutalistCard(
@@ -1047,15 +1385,17 @@ class _CockpitScreenState extends State<CockpitScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('ACTIVE MESH CHANNEL', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.mustard)),
+              Text('ACTIVE RADIO CHANNEL:', style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.bold, color: DeltaColors.mustard)),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Expanded(child: _buildChannelPill('CH 1: OPS', '1', true)),
+                  Expanded(child: _buildChannelPill('CH 1: OPS', '1')),
                   const SizedBox(width: 6),
-                  Expanded(child: _buildChannelPill('CH 2: SEC', '2', false)),
+                  Expanded(child: _buildChannelPill('CH 2: SEC', '2')),
                   const SizedBox(width: 6),
-                  Expanded(child: _buildChannelPill('CH 3: MED', '3', false)),
+                  Expanded(child: _buildChannelPill('CH 3: MED', '3')),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildChannelPill('CH 4: AV', '4')),
                 ],
               ),
             ],
@@ -1063,58 +1403,115 @@ class _CockpitScreenState extends State<CockpitScreen> {
         ),
         const SizedBox(height: 18),
 
-        // PTT Big Broadcast Trigger
-        Center(
-          child: NeubrutalistCard(
-            backgroundColor: DeltaColors.yaleBlue,
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 32),
-            child: Column(
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    await _api.broadcastVoice(
-                      sender: widget.session.name,
-                      channel: '1',
-                      text: 'Field check: All primary security exits verified clear.',
-                    );
-                  },
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: DeltaColors.mustard,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black, width: 3),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 0),
-                      ],
-                    ),
-                    child: const Icon(Icons.mic, size: 48, color: Colors.black),
+        // PTT Big Broadcast Trigger Card
+        NeubrutalistCard(
+          backgroundColor: DeltaColors.yaleBlue,
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+          child: Column(
+            children: [
+              // Waveform Visualizer
+              AudioWaveformVisualizer(
+                isBroadcasting: _isBroadcasting,
+                barColor: DeltaColors.neonCyan,
+              ),
+              const SizedBox(height: 20),
+
+              // Interactive PTT Mic Button
+              GestureDetector(
+                onTapDown: (_) => setState(() => _isBroadcasting = true),
+                onTapUp: (_) async {
+                  setState(() => _isBroadcasting = false);
+                  await _api.broadcastVoice(
+                    sender: widget.session.name,
+                    channel: _activeChannel,
+                    text: 'Live radio transmission from ${widget.session.name}',
+                  );
+                },
+                onTapCancel: () => setState(() => _isBroadcasting = false),
+                child: Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    color: _isBroadcasting ? DeltaColors.dangerRed : DeltaColors.mustard,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.black, width: 3.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black,
+                        offset: _isBroadcasting ? const Offset(1, 1) : const Offset(4, 4),
+                        blurRadius: 0,
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    _isBroadcasting ? Icons.graphic_eq : Icons.mic,
+                    size: 46,
+                    color: Colors.black,
                   ),
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'TAP TO BROADCAST VOICE',
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                  ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _isBroadcasting ? 'TRANSMITTING LIVE RADIO...' : 'HOLD / TAP TO BROADCAST',
+                style: GoogleFonts.outfit(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w900,
+                  color: _isBroadcasting ? DeltaColors.neonCyan : Colors.white,
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Transmits audio snippet to all marshals',
-                  style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.skyAqua),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Transmits encrypted voice burst to all channel $_activeChannel marshals',
+                style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.skyAqua),
+              ),
+            ],
           ),
+        ),
+        const SizedBox(height: 18),
+
+        // Quick Tactical Voice Callouts
+        Text(
+          '1-TAP RADIO PHRASES:',
+          style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.mustard),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: quickVoiceMessages.map((msg) => InkWell(
+            onTap: () async {
+              await _api.broadcastVoice(
+                sender: widget.session.name,
+                channel: _activeChannel,
+                text: msg,
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: DeltaColors.surface,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.black, width: 1.8),
+                boxShadow: const [
+                  BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.send, color: DeltaColors.skyAqua, size: 12),
+                  const SizedBox(width: 6),
+                  Text(msg, style: GoogleFonts.spaceGrotesk(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
+          )).toList(),
         ),
         const SizedBox(height: 24),
 
-        // Radio Feed
+        // Transmission Feed
         Text(
-          'TRANSMISSION FEED',
+          'TRANSMISSION FEED LOG',
           style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
         ),
         const SizedBox(height: 10),
@@ -1124,7 +1521,7 @@ class _CockpitScreenState extends State<CockpitScreen> {
             padding: const EdgeInsets.all(16),
             decoration: Neubrutalism.boxDecoration(color: DeltaColors.surface, radius: 8),
             child: Text(
-              'No voice transmissions recorded this session. Tap microphone to send.',
+              'No voice transmissions recorded yet. Tap microphone or select phrase above.',
               style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted),
             ),
           )
@@ -1135,13 +1532,34 @@ class _CockpitScreenState extends State<CockpitScreen> {
                 decoration: Neubrutalism.boxDecoration(color: DeltaColors.surface, radius: 8),
                 child: Row(
                   children: [
-                    const Icon(Icons.volume_up, color: DeltaColors.skyAqua, size: 18),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: DeltaColors.skyAqua,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.black, width: 1.5),
+                      ),
+                      child: const Icon(Icons.volume_up, color: Colors.black, size: 16),
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('${v.speaker} (CH ${v.channel})', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.mustard)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '${v.speaker} (CH ${v.channel})',
+                                style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.mustard),
+                              ),
+                              Text(
+                                '${v.timestamp.hour.toString().padLeft(2, '0')}:${v.timestamp.minute.toString().padLeft(2, '0')}',
+                                style: GoogleFonts.spaceGrotesk(fontSize: 10, color: DeltaColors.textMuted),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
                           Text(v.message, style: GoogleFonts.spaceGrotesk(fontSize: 13, color: Colors.white)),
                         ],
                       ),
@@ -1153,21 +1571,32 @@ class _CockpitScreenState extends State<CockpitScreen> {
     );
   }
 
-  Widget _buildChannelPill(String title, String chNum, bool isSelected) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: isSelected ? DeltaColors.skyAqua : DeltaColors.surfaceLight,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.black, width: 1.5),
-      ),
-      child: Center(
-        child: Text(
-          title,
-          style: GoogleFonts.spaceGrotesk(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: isSelected ? Colors.black : DeltaColors.textMuted,
+  Widget _buildChannelPill(String title, String chNum) {
+    final isSelected = _activeChannel == chNum;
+    return GestureDetector(
+      onTap: () => setState(() => _activeChannel = chNum),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? DeltaColors.neonCyan : DeltaColors.surfaceLight,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.black, width: 1.8),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black,
+              offset: isSelected ? const Offset(2, 2) : const Offset(1, 1),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Center(
+          child: Text(
+            title,
+            style: GoogleFonts.spaceGrotesk(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: isSelected ? Colors.black : DeltaColors.textMuted,
+            ),
           ),
         ),
       ),
@@ -1183,37 +1612,101 @@ class _CockpitScreenState extends State<CockpitScreen> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          'BADGE VERIFICATION DECK',
-          style: GoogleFonts.outfit(
-            fontSize: 18,
-            fontWeight: FontWeight.w900,
-            color: Colors.white,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'BADGE SCANNER DECK',
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Anti-tamper holographic attendee pass validation',
+                  style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textMuted),
+                ),
+              ],
+            ),
+            NeubrutalistBadge(
+              label: '$_totalGateCheckins CHECK-INS',
+              backgroundColor: DeltaColors.mustard,
+              textColor: Colors.black,
+            ),
+          ],
         ),
-        Text(
-          'Instant Supabase attendee credential check',
-          style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted),
-        ),
-        const SizedBox(height: 18),
+        const SizedBox(height: 16),
 
-        // Verification Input Card
+        // Futuristic Scanner Viewfinder with Animated Laser
         NeubrutalistCard(
-          backgroundColor: DeltaColors.surface,
+          backgroundColor: Colors.black,
+          padding: const EdgeInsets.all(16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('SCAN BADGE / ENTER TICKET ID:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.mustard)),
-              const SizedBox(height: 8),
+              Container(
+                height: 140,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: DeltaColors.surface,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: DeltaColors.neonCyan, width: 2),
+                ),
+                child: AnimatedBuilder(
+                  animation: _scannerAnim,
+                  builder: (context, _) {
+                    return Stack(
+                      children: [
+                        Center(
+                          child: Icon(Icons.qr_code_2, size: 84, color: DeltaColors.textMuted.withValues(alpha: 0.25)),
+                        ),
+                        // Sweeping Laser Beam
+                        Positioned(
+                          top: 140 * _scanLinePosition.value,
+                          left: 0,
+                          right: 0,
+                          child: Container(
+                            height: 2.5,
+                            decoration: BoxDecoration(
+                              color: DeltaColors.neonCyan,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: DeltaColors.neonCyan.withValues(alpha: 0.8),
+                                  blurRadius: 8,
+                                  spreadRadius: 2,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: Text(
+                            'OPTICAL SCANNER READY',
+                            style: GoogleFonts.spaceGrotesk(fontSize: 9, fontWeight: FontWeight.bold, color: DeltaColors.neonCyan),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 14),
+
+              // Code Input & Presets
               TextField(
                 controller: codeCtrl,
-                style: const TextStyle(color: Colors.white),
+                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
                 decoration: InputDecoration(
                   filled: true,
                   fillColor: DeltaColors.surfaceLight,
-                  prefixIcon: const Icon(Icons.qr_code, color: DeltaColors.skyAqua),
+                  prefixIcon: const Icon(Icons.qr_code, color: DeltaColors.neonCyan),
                   hintText: 'e.g. VIP-9941',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.black, width: 2)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -1221,18 +1714,21 @@ class _CockpitScreenState extends State<CockpitScreen> {
                 spacing: 8,
                 children: [
                   ActionChip(
-                    label: const Text('Preset: VIP Pass'),
+                    label: const Text('Preset: VIP Pass', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     backgroundColor: DeltaColors.surfaceLight,
+                    side: const BorderSide(color: Colors.black, width: 1.5),
                     onPressed: () => codeCtrl.text = 'VIP-9941',
                   ),
                   ActionChip(
-                    label: const Text('Preset: Keynote Speaker'),
+                    label: const Text('Preset: Keynote Speaker', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     backgroundColor: DeltaColors.surfaceLight,
+                    side: const BorderSide(color: Colors.black, width: 1.5),
                     onPressed: () => codeCtrl.text = 'SPK-1022',
                   ),
                   ActionChip(
-                    label: const Text('Preset: Delegate'),
+                    label: const Text('Preset: Delegate', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     backgroundColor: DeltaColors.surfaceLight,
+                    side: const BorderSide(color: Colors.black, width: 1.5),
                     onPressed: () => codeCtrl.text = 'DEL-4418',
                   ),
                 ],
@@ -1246,11 +1742,14 @@ class _CockpitScreenState extends State<CockpitScreen> {
                 onPressed: () async {
                   try {
                     final res = await _api.verifyBadge(code: codeCtrl.text, scannedBy: widget.session.name);
-                    setState(() => _lastScannedBadge = res);
+                    setState(() {
+                      _lastScannedBadge = res;
+                      _totalGateCheckins++;
+                    });
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Badge verification failed: $e')),
+                        SnackBar(content: Text('Badge verification error: $e')),
                       );
                     }
                   }
@@ -1261,23 +1760,35 @@ class _CockpitScreenState extends State<CockpitScreen> {
         ),
         const SizedBox(height: 20),
 
-        // Result Card if scanned
+        // Holographic Attendee Pass Card Result
         if (_lastScannedBadge != null) ...[
           NeubrutalistCard(
-            backgroundColor: _lastScannedBadge!.valid ? DeltaColors.yaleBlue : DeltaColors.dangerRed.withValues(alpha: 0.2),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: _lastScannedBadge!.valid
+                  ? [DeltaColors.yaleBlue, DeltaColors.balticBlue, const Color(0xFF1B3B6F)]
+                  : [DeltaColors.dangerRed, const Color(0xFF8B0000)],
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'STATUS: VALID BADGE',
-                      style: GoogleFonts.outfit(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w900,
-                        color: DeltaColors.successGreen,
-                      ),
+                    Row(
+                      children: [
+                        const Icon(Icons.check_circle, color: DeltaColors.neonCyan, size: 20),
+                        const SizedBox(width: 8),
+                        Text(
+                          'CLEARANCE APPROVED',
+                          style: GoogleFonts.outfit(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: DeltaColors.neonCyan,
+                          ),
+                        ),
+                      ],
                     ),
                     NeubrutalistBadge(
                       label: _lastScannedBadge!.tier,
@@ -1286,37 +1797,41 @@ class _CockpitScreenState extends State<CockpitScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 14),
                 Text(
                   _lastScannedBadge!.name,
-                  style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white),
+                  style: GoogleFonts.outfit(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.white),
                 ),
                 Text(
-                  'Ticket ID: ${_lastScannedBadge!.ticketId}',
-                  style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.skyAqua),
+                  'Credential ID: ${_lastScannedBadge!.ticketId}',
+                  style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.skyAqua, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 10),
-                const Divider(color: Colors.black, thickness: 1.5),
-                const SizedBox(height: 6),
+                const SizedBox(height: 12),
+                const Divider(color: Colors.black, thickness: 1.8),
+                const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Zone Clearance:', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
-                    Text(_lastScannedBadge!.allowedZones.join(', '), style: GoogleFonts.spaceGrotesk(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold)),
+                    Text(
+                      _lastScannedBadge!.allowedZones.join(', '),
+                      style: GoogleFonts.spaceGrotesk(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
+                    ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('Anti-Tamper Status:', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
-                    const Text('PASS (HMAC Valid)', style: TextStyle(color: DeltaColors.successGreen, fontSize: 12, fontWeight: FontWeight.bold)),
+                    Text('Anti-Tamper Seal:', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
+                    Text('HMAC-SHA256 VERIFIED', style: GoogleFonts.spaceGrotesk(color: DeltaColors.neonCyan, fontSize: 12, fontWeight: FontWeight.bold)),
                   ],
                 ),
               ],
             ),
           ),
         ],
+        const SizedBox(height: 24),
       ],
     );
   }
