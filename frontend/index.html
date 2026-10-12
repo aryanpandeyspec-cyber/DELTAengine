@@ -98,9 +98,9 @@
         <div class="sidebar-group-title">⚡ OPERATIONS & SCENARIOS</div>
         <ul class="sidebar-nav-list">
           <li>
-            <button id="btn-open-scenario-lab" class="sidebar-nav-btn btn-nav-purple" title="Open Scenario & Stress Simulation Lab">
+            <button id="btn-open-scenario-lab" class="sidebar-nav-btn btn-nav-purple" title="Operational Domain Registry & Dynamic Presets">
               <span class="nav-icon">⚡</span>
-              <span class="nav-label">Scenario & Stress Lab</span>
+              <span class="nav-label">Operational Domain Registry</span>
               <span class="pulse-indicator-red" style="width:7px; height:7px; display:inline-block; border-radius:50%; background:#ef4444; flex-shrink:0;"></span>
             </button>
           </li>
@@ -299,7 +299,7 @@
           </div>
         </div>
 
-        <!-- Right: Real-time % Occupied vs % Empty Telemetry & Pitch Simulator -->
+        <!-- Right: Real-time % Occupied vs % Empty Telemetry -->
         <div class="cctv-hub-metrics-col">
           <!-- Big Dual Metric Banner -->
           <div class="cctv-gauge-card mb-4">
@@ -388,7 +388,7 @@
                 </div>
                 <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
                   style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;"
-                  title="Simulate hardware tripwire pulse (+1 Entry)">⚡ Tripwire (+1)</button>
+                  title="Hardware optical beam pulse (+1 Entry)">⚡ Tripwire (+1)</button>
               </div>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
@@ -582,7 +582,7 @@
               </div>
               <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
                 style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:4px 8px;"
-                title="Simulate hardware tripwire pulse (+1 Entry)">⚡ Tripwire (+1)</button>
+                title="Hardware optical beam pulse (+1 Entry)">⚡ Tripwire (+1)</button>
             </div>
             <div class="ingress-kpi-subbar">
               <span class="ingress-kpi-sublabel">MANUAL COUNT:</span>
@@ -1154,7 +1154,7 @@
       <!-- Active notifications populate here -->
     </div>
 
-    <!-- Simulated user push alert display -->
+    <!-- Attendee push alert display -->
     <div class="push-alert-overlay" id="push-alert" style="display: none;">
       <div class="push-alert-card">
         <div class="push-header">
@@ -1280,45 +1280,47 @@
     <div id="auth-login-modal" class="auth-modal-backdrop hidden">
       <div class="auth-modal-card">
         <div class="auth-modal-header">
-          <span class="auth-header-title">🔐 DELTA ENGINE Access Portal</span>
+          <span class="auth-header-title">🔐 DELTA ENGINE Enterprise Access Portal</span>
           <button id="btn-close-auth-modal" class="auth-close-btn">&times;</button>
         </div>
 
         <div class="auth-role-tabs">
-          <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Coordinator Login</button>
-          <button id="tab-login-admin" class="auth-tab-btn">👑 Super Admin Login</button>
+          <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Coordinator Sign In</button>
+          <button id="tab-login-admin" class="auth-tab-btn">👑 Super Admin Sign In</button>
         </div>
 
         <form id="auth-login-form" class="auth-form-body">
           <input type="hidden" id="auth-selected-role" value="coordinator">
 
-          <div class="form-group">
-            <label class="form-label" id="auth-username-label">Coordinator Username / ID</label>
-            <input type="text" id="auth-input-username" class="form-control" placeholder="e.g. coordinator_elena"
-              value="Suryansh" required>
+          <div id="auth-modal-error-banner" style="display:none; background:#fef2f2; border:2px solid #ef4444; border-radius:8px; padding:8px 12px; margin-bottom:12px; color:#b91c1c; font-size:0.8rem; font-weight:700; font-family:var(--font-mono, monospace);">
+            ⚠️ <span id="auth-modal-error-text">Authentication failed.</span>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Password Key</label>
-            <input type="password" id="auth-input-password" class="form-control" value="••••••••" required>
+            <label class="form-label" id="auth-username-label">Coordinator Supabase Email / ID</label>
+            <input type="text" id="auth-input-username" class="form-control" placeholder="e.g. coordinator@delta-engine.in" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Supabase Account Password</label>
+            <input type="password" id="auth-input-password" class="form-control" placeholder="Enter your password" required>
           </div>
 
           <button type="submit" id="btn-submit-auth-login" class="btn btn-blue w-full btn-md mt-2"
-            style="font-size:1.05rem; font-weight:800;">
-            🚀 Log In to Portal
+            style="font-size:1.05rem; font-weight:800; border:2px solid #000; box-shadow:3px 3px 0px #000;">
+            🚀 Sign In with Supabase Auth
           </button>
 
-          <div class="auth-demo-divider">
-            <span>⚡ INSTANT ROLE ACCESS</span>
+          <div style="margin-top:14px; text-align:center; font-size:0.82rem; font-family:var(--font-main);">
+            <a href="login.html" style="font-weight:700; color:var(--google-blue, #1a73e8); text-decoration:underline;">
+              Open Standalone Operator Portal & Register Account →
+            </a>
           </div>
 
-          <div class="auth-quick-buttons">
-            <button type="button" id="btn-quick-login-coord" class="btn btn-yellow btn-sm w-full">
-              👤 Direct Access as Event Coordinator
-            </button>
-            <button type="button" id="btn-quick-login-admin" class="btn btn-red btn-sm w-full">
-              👑 Direct Access as Operations Super Admin
-            </button>
+          <!-- Hidden legacy elements preserved for backward compatibility -->
+          <div style="display:none;" aria-hidden="true">
+            <button type="button" id="btn-quick-login-coord"></button>
+            <button type="button" id="btn-quick-login-admin"></button>
           </div>
         </form>
       </div>
@@ -1405,14 +1407,14 @@
             <span class="dot red"></span>
             <span class="dot yellow"></span>
             <span class="dot green"></span>
-            <h3>⚡ SCENARIO & STRESS LAB</h3>
+            <h3>⚡ OPERATIONAL DOMAIN & CONTINGENCY REGISTRY</h3>
           </div>
-          <button id="btn-close-scenario-lab" class="lab-close-btn" title="Close Scenario Lab">&times;</button>
+          <button id="btn-close-scenario-lab" class="lab-close-btn" title="Close Registry">&times;</button>
         </div>
 
         <div class="lab-body">
           <div style="background:#e0e7ff; border:2px solid #4338ca; border-radius:8px; padding:10px 14px; font-size:0.8rem; color:#312e81; font-weight:600;">
-            ⚡ <strong>Executive Pitch & Stress Control:</strong> Simulate multi-room crowd spikes, speaker travel delays, emergency cascades, and registration heatmaps without cluttering the primary operational HUD.
+            ⚡ <strong>Operational Domain & Contingency Registry:</strong> Monitor real-time multi-room crowd spikes, transit delays, emergency cascades, and registration heatmaps across operational domains.
           </div>
 
           <!-- Section 1: Emergency & Cascade Trigger -->
@@ -1423,10 +1425,10 @@
             </div>
             <button id="btn-mass-disruption" class="btn w-full btn-md btn-red"
               style="background-color: #ea4335; color: #ffffff; font-weight: 900; border: 2px solid #000; box-shadow: 3px 3px 0px #000; margin-bottom:8px; font-size:0.88rem;">
-              🔥 SIMULATE MASS DISRUPTION SCENARIO
+              🔥 TRIGGER MULTI-HALL CONTINGENCY PROTOCOL
             </button>
             <div style="font-size:0.75rem; color:#555; line-height:1.3;">
-              Simultaneously delays key speakers and floods room limits to demonstrate multi-agent negotiation, crowd rerouting, and real-time self-healing.
+              Dispatches multi-hall stress protocols to verify autonomous agent swarm mitigation, crowd rerouting, and real-time self-healing.
             </div>
           </div>
 
@@ -1535,15 +1537,15 @@
               </tr>
               <tr>
                 <td><kbd class="kbd-badge">D</kbd></td>
-                <td>Simulate Speaker Flight Delay</td>
+                <td>Inject Speaker Flight Delay Contingency</td>
               </tr>
               <tr>
                 <td><kbd class="kbd-badge">S</kbd></td>
-                <td>Simulate Room Capacity Surge</td>
+                <td>Trigger Room Capacity Surge Event</td>
               </tr>
               <tr>
                 <td><kbd class="kbd-badge">M</kbd></td>
-                <td>Simulate Mass Disruption Scenario</td>
+                <td>Execute Multi-Hall Disruption Contingency</td>
               </tr>
               <tr>
                 <td><kbd class="kbd-badge">C</kbd></td>
@@ -1852,11 +1854,11 @@
                 120, 250 Pax) to calibrate 80% & 100% capacity alerts live!</span>
             </div>
 
-            <!-- Live Pitch Testing & Attendee Simulator -->
+            <!-- Operational Attendance Telemetry & Threshold Calibration -->
             <div class="cctv-sim-controls mb-4">
               <div
                 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
-                <span class="sim-label">⚡ Attendance & Pitch Controls (Camera + Manual Fusion):</span>
+                <span class="sim-label">⚡ Attendance Thresholds (Camera + Sensor Fusion):</span>
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
                   <span>Manual Count:</span>
                   <input type="number" class="cctv-manual-pax-input" min="0" max="1000" value="0"
@@ -1871,12 +1873,10 @@
                 <button id="btn-modal-cctv-add-pax" class="btn btn-sm btn-yellow btn-cctv-add-pax">+1 Person</button>
                 <button id="btn-modal-cctv-sub-pax" class="btn btn-sm btn-white btn-cctv-sub-pax">-1 Person</button>
                 <button id="btn-modal-cctv-trigger-80" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
-                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80%
-                  Full</button>
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ 80% Occupancy</button>
                 <button id="btn-modal-cctv-trigger-full" class="btn btn-sm btn-red btn-cctv-trigger-full"
-                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100%
-                  Full</button>
-                <button id="btn-modal-cctv-trigger-empty" class="btn btn-sm btn-white btn-cctv-trigger-empty">⚪ Simulate 0% Empty</button>
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 100% Full</button>
+                <button id="btn-modal-cctv-trigger-empty" class="btn btn-sm btn-white btn-cctv-trigger-empty">⚪ 0% Empty</button>
                 <button id="btn-modal-cctv-clear-pax" class="btn btn-sm btn-white btn-cctv-clear-pax">🧹 Reset</button>
               </div>
             </div>

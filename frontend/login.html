@@ -123,10 +123,10 @@
         <p class="login-subtitle">Role Access Portal & Event OS Authentication</p>
       </div>
 
-      <!-- Top Role Selection Tabs -->
+      <!-- Top Mode Selection Tabs -->
       <div class="auth-role-tabs mb-4">
-        <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Regular / Coordinator</button>
-        <button id="tab-login-admin" class="auth-tab-btn">👑 Super Admin Login</button>
+        <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Sign In (Supabase)</button>
+        <button id="tab-login-admin" class="auth-tab-btn">⚡ Create Operator Account</button>
       </div>
 
       <!-- Google Sign-In via Supabase Auth -->
@@ -145,7 +145,7 @@
       </button>
 
       <div class="auth-demo-divider" style="margin: 18px 0 16px 0;">
-        <span>SECURE OPERATOR CREDENTIALS</span>
+        <span>SUPABASE POSTGRESQL AUTHENTICATION</span>
       </div>
 
       <!-- Real-Time Authentication Error Banner -->
@@ -153,29 +153,51 @@
         ⚠️ <span id="auth-error-text">Authentication failed.</span>
       </div>
 
+      <!-- Real-Time Success Banner -->
+      <div id="auth-success-banner" style="display:none; background:#ecfdf5; border:2px solid #10b981; border-radius:8px; padding:10px 14px; margin-bottom:14px; color:#047857; font-size:0.85rem; font-weight:700; font-family:var(--font-mono, monospace);">
+        ✅ <span id="auth-success-text">Account created successfully!</span>
+      </div>
+
       <form id="standalone-login-form">
         <input type="hidden" id="auth-selected-role" value="coordinator">
 
+        <!-- Extra Name Field for Registration Mode -->
+        <div class="form-group mb-3" id="reg-name-group" style="display:none;">
+          <label class="form-label" style="font-weight:700;">Full Name</label>
+          <input type="text" id="input-fullname" class="form-control" placeholder="e.g. Marcus Aurelius"
+            style="border:2px solid #000; border-radius:10px; font-weight:600;">
+        </div>
+
         <div class="form-group mb-3">
-          <label class="form-label" id="username-label" style="font-weight:700;">Coordinator Username / ID</label>
-          <input type="text" id="input-username" class="form-control" value="Suryansh" placeholder="Enter operator ID (e.g. Suryansh, Aryan, Shahid)" required
+          <label class="form-label" id="username-label" style="font-weight:700;">Operator Email / Identifier</label>
+          <input type="text" id="input-username" class="form-control" placeholder="e.g. admin@delta-engine.in or coordinator@delta-engine.in" required
             style="border:2px solid #000; border-radius:10px; font-weight:600;">
         </div>
 
         <div class="form-group mb-4">
-          <label class="form-label" style="font-weight:700;">Password Key</label>
-          <input type="password" id="input-password" class="form-control" value="delta2026" placeholder="Enter operator access key" required
+          <label class="form-label" style="font-weight:700;">Account Password</label>
+          <input type="password" id="input-password" class="form-control" placeholder="Enter your Supabase password" required
             style="border:2px solid #000; border-radius:10px; font-weight:600;">
+        </div>
+
+        <!-- Role Select for Registration Mode -->
+        <div class="form-group mb-3" id="reg-role-group" style="display:none;">
+          <label class="form-label" style="font-weight:700;">Assigned Role</label>
+          <select id="input-new-role" class="form-control" style="border:2px solid #000; border-radius:10px; font-weight:700;">
+            <option value="COORDINATOR">Event Operations Coordinator</option>
+            <option value="ADMIN">Super Admin & Incident Commander</option>
+            <option value="SAFETY_DIRECTOR">Safety & Life-Safety Director</option>
+          </select>
         </div>
 
         <button type="submit" id="btn-submit-login" class="btn btn-blue w-full btn-md mb-3"
           style="font-size:1.05rem; font-weight:800; border:2px solid #000; box-shadow:3px 3px 0px #000;">
-          🚀 Authenticate & Access Operating System
+          🚀 Sign In with Supabase
         </button>
 
         <div style="background:#f8fafc; border:2px solid #000; border-radius:8px; padding:10px; font-size:0.75rem; text-align:center; font-family:var(--font-mono, monospace); line-height:1.4;">
-          🔒 <strong>RFC-7519 HMAC-SHA256 JWT Verification</strong><br>
-          <span style="color:#64748b;">SHA-256 Forensic Tamper-Evident Hash Chain Active</span>
+          🔒 <strong>Official Supabase Auth (PostgreSQL DB)</strong><br>
+          <span style="color:#64748b;">Enterprise RBAC & Signed JWT Verification</span>
         </div>
       </form>
     </div>
@@ -187,6 +209,7 @@
     const SUPABASE_KEY = window.SUPABASE_ANON_KEY || 'sb_publishable_bcmjO-FDpberqg7vt94Etw_0pSElRbx';
     const supabaseClient = (window.supabase && SUPABASE_KEY) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
+    let authMode = 'login'; // 'login' | 'register'
     let selectedRole = 'coordinator';
 
     const tabCoord = document.getElementById('tab-login-coordinator');
@@ -194,30 +217,39 @@
     const usernameLabel = document.getElementById('username-label');
     const inputUsername = document.getElementById('input-username');
     const inputPassword = document.getElementById('input-password');
+    const inputFullname = document.getElementById('input-fullname');
+    const inputNewRole = document.getElementById('input-new-role');
+    const regNameGroup = document.getElementById('reg-name-group');
+    const regRoleGroup = document.getElementById('reg-role-group');
     const hiddenRole = document.getElementById('auth-selected-role');
     const errorBanner = document.getElementById('auth-error-banner');
     const errorText = document.getElementById('auth-error-text');
+    const successBanner = document.getElementById('auth-success-banner');
+    const successText = document.getElementById('auth-success-text');
+    const btnSubmitLogin = document.getElementById('btn-submit-login');
 
-    tabCoord.addEventListener('click', () => {
-      selectedRole = 'coordinator';
-      hiddenRole.value = 'coordinator';
+    tabCoord.addEventListener('click', (e) => {
+      e.preventDefault();
+      authMode = 'login';
       tabCoord.classList.add('active');
       tabAdmin.classList.remove('active');
-      usernameLabel.textContent = 'Coordinator Username / ID';
-      inputUsername.value = 'Suryansh';
-      inputPassword.value = 'delta2026';
+      regNameGroup.style.display = 'none';
+      regRoleGroup.style.display = 'none';
+      btnSubmitLogin.textContent = '🚀 Sign In with Supabase';
       hideError();
+      hideSuccess();
     });
 
-    tabAdmin.addEventListener('click', () => {
-      selectedRole = 'admin';
-      hiddenRole.value = 'admin';
+    tabAdmin.addEventListener('click', (e) => {
+      e.preventDefault();
+      authMode = 'register';
       tabAdmin.classList.add('active');
       tabCoord.classList.remove('active');
-      usernameLabel.textContent = 'Super Admin Key / ID';
-      inputUsername.value = 'admin_marcus';
-      inputPassword.value = 'deltaAdmin2026!';
+      regNameGroup.style.display = 'block';
+      regRoleGroup.style.display = 'block';
+      btnSubmitLogin.textContent = '⚡ Register New Operator';
       hideError();
+      hideSuccess();
     });
 
     function showError(msg) {
@@ -225,12 +257,23 @@
         errorText.textContent = msg;
         errorBanner.style.display = 'block';
       }
+      hideSuccess();
     }
 
     function hideError() {
-      if (errorBanner) {
-        errorBanner.style.display = 'none';
+      if (errorBanner) errorBanner.style.display = 'none';
+    }
+
+    function showSuccess(msg) {
+      if (successBanner && successText) {
+        successText.textContent = msg;
+        successBanner.style.display = 'block';
       }
+      hideError();
+    }
+
+    function hideSuccess() {
+      if (successBanner) successBanner.style.display = 'none';
     }
 
     // Google Login via Supabase
@@ -239,29 +282,65 @@
         try {
           const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: window.location.origin + (selectedRole === 'admin' ? '/admin.html' : '/index.html') }
+            options: { redirectTo: window.location.origin + '/index.html' }
           });
           if (error) throw error;
         } catch (err) {
           console.log('[Supabase OAuth Notice] Redirecting to portal:', err.message);
-          proceedToPortal(selectedRole, 'Google Auth User', 'oauth_token');
+          proceedToPortal('coordinator', 'Google Auth User', 'oauth_token');
         }
       } else {
-        proceedToPortal(selectedRole, 'Google User', 'oauth_token');
+        proceedToPortal('coordinator', 'Google User', 'oauth_token');
       }
     });
 
-    const btnSubmitLogin = document.getElementById('btn-submit-login');
     document.getElementById('standalone-login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       hideError();
-      const username = inputUsername.value.trim() || 'User';
+      hideSuccess();
+      const identifier = inputUsername.value.trim();
       const password = inputPassword.value.trim();
+
+      if (!identifier || !password) {
+        showError('Please fill in both your email and password.');
+        return;
+      }
+
       btnSubmitLogin.disabled = true;
-      btnSubmitLogin.textContent = '⏳ Verifying Credentials...';
-      await proceedToPortal(selectedRole, username, password);
-      btnSubmitLogin.disabled = false;
-      btnSubmitLogin.textContent = '🚀 Authenticate & Access Operating System';
+
+      if (authMode === 'register') {
+        const fullname = inputFullname.value.trim() || identifier.split('@')[0];
+        const newRole = inputNewRole.value || 'COORDINATOR';
+        btnSubmitLogin.textContent = '⏳ Registering in Supabase...';
+
+        try {
+          const res = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: identifier, password, name: fullname, role: newRole })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            showError(data?.error || 'Registration failed.');
+            btnSubmitLogin.disabled = false;
+            btnSubmitLogin.textContent = '⚡ Register New Operator';
+            return;
+          }
+          showSuccess('Account registered! Signing you in...');
+          setTimeout(() => {
+            proceedToPortal(newRole.toLowerCase(), identifier, password);
+          }, 800);
+        } catch (err) {
+          showError('Registration network failure: ' + err.message);
+          btnSubmitLogin.disabled = false;
+          btnSubmitLogin.textContent = '⚡ Register New Operator';
+        }
+      } else {
+        btnSubmitLogin.textContent = '⏳ Verifying via Supabase Auth...';
+        await proceedToPortal(selectedRole, identifier, password);
+        btnSubmitLogin.disabled = false;
+        btnSubmitLogin.textContent = '🚀 Sign In with Supabase';
+      }
     });
 
     async function proceedToPortal(role, username, password = '') {
@@ -269,12 +348,12 @@
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ role, username, password })
+          body: JSON.stringify({ role, username, email: username, password })
         });
         const data = await res.json();
         
         if (!res.ok || (data && !data.success)) {
-          showError(data?.error || 'Invalid credentials. Access denied.');
+          showError(data?.error || 'Invalid Supabase credentials. Access denied.');
           return;
         }
 
@@ -293,7 +372,7 @@
           window.location.href = 'index.html';
         }
       } catch (err) {
-        console.warn('[Login Portal] Network notice during auth:', err.message);
+        console.warn('[Login Portal] Network error during auth:', err.message);
         showError('Network connection error. Server offline.');
       }
     }

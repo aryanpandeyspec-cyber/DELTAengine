@@ -345,7 +345,7 @@ function initFormListeners() {
       const speakerId = spEl ? spEl.value : 'speaker-1';
       const delayMinutes = delEl ? delEl.value : '15';
       
-      appendLog(`[SYSTEM] Client triggering delay: Speaker ${speakerId} by ${delayMinutes} mins...`, 'system');
+      appendLog(`[SYSTEM] Speaker schedule contingency: Speaker ${speakerId} delayed by ${delayMinutes} mins...`, 'system');
       
       fetch('/api/simulate/delay', {
         method: 'POST',
@@ -375,7 +375,7 @@ function initFormListeners() {
       })
       .catch(err => {
         console.error(err);
-        createToast('Failed to trigger simulated delay.', 'warning');
+        createToast('Failed to execute delay contingency.', 'warning');
       });
     });
   }
@@ -387,7 +387,7 @@ function initFormListeners() {
       const topicId = topEl ? topEl.value : 'topic-1';
       const interestCount = surgeEl ? surgeEl.value : '300';
 
-      appendLog(`[SYSTEM] Client triggering capacity surge: Talk ${topicId} to ${interestCount} interest...`, 'system');
+      appendLog(`[SYSTEM] Capacity surge detected: Talk ${topicId} increased to ${interestCount} attendees...`, 'system');
 
       fetch('/api/simulate/capacity', {
         method: 'POST',

@@ -2,14 +2,14 @@
 
 (function initAuthManager() {
   let currentUserRole = 'coordinator'; // 'coordinator' | 'admin'
-  let currentUserName = 'Suryansh (Lead Coordinator)';
+  let currentUserName = 'Operations Specialist';
   try {
     const savedRole = localStorage.getItem('delta_user_role');
     const savedName = localStorage.getItem('delta_user_name');
     if (savedRole) currentUserRole = savedRole;
     else if (window.location.pathname.includes('admin')) currentUserRole = 'admin';
     if (savedName) currentUserName = savedName;
-    else if (currentUserRole === 'admin') currentUserName = 'Marcus Aurelius (Super Admin)';
+    else if (currentUserRole === 'admin') currentUserName = 'System Administrator';
   } catch (e) { }
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -55,6 +55,7 @@
     const hiddenRoleInput = document.getElementById('auth-selected-role');
     const usernameLabel = document.getElementById('auth-username-label');
     const inputUsername = document.getElementById('auth-input-username');
+    const errBanner = document.getElementById('auth-modal-error-banner');
 
     if (tabCoord && tabAdmin) {
       tabCoord.addEventListener('click', (e) => {
@@ -62,8 +63,9 @@
         tabCoord.classList.add('active');
         tabAdmin.classList.remove('active');
         if (hiddenRoleInput) hiddenRoleInput.value = 'coordinator';
-        if (usernameLabel) usernameLabel.textContent = 'Coordinator Username / ID';
-        if (inputUsername) inputUsername.value = 'Suryansh';
+        if (usernameLabel) usernameLabel.textContent = 'Coordinator Supabase Email / ID';
+        if (inputUsername) inputUsername.placeholder = 'e.g. coordinator@delta-engine.in';
+        if (errBanner) errBanner.style.display = 'none';
       });
 
       tabAdmin.addEventListener('click', (e) => {
@@ -71,42 +73,60 @@
         tabAdmin.classList.add('active');
         tabCoord.classList.remove('active');
         if (hiddenRoleInput) hiddenRoleInput.value = 'admin';
-        if (usernameLabel) usernameLabel.textContent = 'Super Admin Key / ID';
-        if (inputUsername) inputUsername.value = 'admin_marcus';
+        if (usernameLabel) usernameLabel.textContent = 'Super Admin Supabase Email / ID';
+        if (inputUsername) inputUsername.placeholder = 'e.g. admin@delta-engine.in';
+        if (errBanner) errBanner.style.display = 'none';
       });
     }
 
-    // Quick One-Click Demo Access Buttons
+    // Quick access hooks (safe handlers if legacy elements exist)
     const btnQuickCoord = document.getElementById('btn-quick-login-coord');
     const btnQuickAdmin = document.getElementById('btn-quick-login-admin');
 
     if (btnQuickCoord) {
       btnQuickCoord.addEventListener('click', () => {
-        loginUser('coordinator', 'Suryansh (Lead Coordinator)');
+        loginUser('coordinator', 'coordinator@delta-engine.in', 'DeltaCoord2026!');
       });
     }
 
     if (btnQuickAdmin) {
       btnQuickAdmin.addEventListener('click', () => {
-        loginUser('admin', 'Marcus Aurelius (Super Admin)');
+        loginUser('admin', 'admin@delta-engine.in', 'DeltaAdmin2026!');
       });
     }
 
-    // Form Submit Listener
+    // Form Submit Listener (Live Supabase Verification)
     const form = document.getElementById('auth-login-form');
     const btnSubmitLogin = document.getElementById('btn-submit-auth-login');
     if (form) {
-      form.addEventListener('submit', (e) => {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const role = hiddenRoleInput ? hiddenRoleInput.value : 'coordinator';
-        const username = inputUsername ? inputUsername.value : 'User';
-        const name = role === 'admin' ? `Admin (${username})` : `Coordinator (${username})`;
-        loginUser(role, name);
-      });
-    }
-    if (btnSubmitLogin && form) {
-      btnSubmitLogin.addEventListener('click', (e) => {
-        // Form submit handles event, but ensures button click activates
+        const identifier = inputUsername ? inputUsername.value.trim() : '';
+        const passwordInput = document.getElementById('auth-input-password');
+        const password = passwordInput ? passwordInput.value.trim() : '';
+
+        if (!identifier || !password) {
+          const errBannerEl = document.getElementById('auth-modal-error-banner');
+          const errTextEl = document.getElementById('auth-modal-error-text');
+          if (errBannerEl && errTextEl) {
+            errTextEl.textContent = 'Please provide both your Supabase email and password.';
+            errBannerEl.style.display = 'block';
+          }
+          return;
+        }
+
+        if (btnSubmitLogin) {
+          btnSubmitLogin.disabled = true;
+          btnSubmitLogin.textContent = '⏳ Verifying Supabase Auth...';
+        }
+
+        await loginUser(role, identifier, password);
+
+        if (btnSubmitLogin) {
+          btnSubmitLogin.disabled = false;
+          btnSubmitLogin.textContent = '🚀 Sign In with Supabase Auth';
+        }
       });
     }
 
@@ -179,38 +199,63 @@
   window.logoutUser = logoutUser;
   window.loginUser = loginUser;
 
-  async function loginUser(role, displayName) {
-    currentUserRole = role;
-    currentUserName = displayName;
-    try {
-      localStorage.setItem('delta_user_role', role);
-      localStorage.setItem('delta_user_name', displayName);
-    } catch (e) { }
+  async function loginUser(role, identifier, password = '') {
+    const errBanner = document.getElementById('auth-modal-error-banner');
+    const errText = document.getElementById('auth-modal-error-text');
 
-    // Exchange credentials for real RFC-7519 cryptographic JWT token
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role, username: displayName })
+        body: JSON.stringify({ role, username: identifier, email: identifier, password })
       });
       const data = await res.json();
-      if (data && data.token) {
-        localStorage.setItem('delta_auth_token', data.token);
+
+      if (!res.ok || (data && !data.success)) {
+        const errorMsg = data?.error || 'Invalid credentials. Please verify your Supabase email and password.';
+        if (errBanner && errText) {
+          errText.textContent = errorMsg;
+          errBanner.style.display = 'block';
+        }
+        if (typeof createToast === 'function') {
+          createToast(`⛔ Auth Failed: ${errorMsg}`, 'warning');
+        }
+        return false;
       }
+
+      if (errBanner) errBanner.style.display = 'none';
+
+      const user = data.user || {};
+      currentUserRole = (user.role ? user.role.toLowerCase() : (role || 'coordinator'));
+      currentUserName = user.name || identifier;
+
+      try {
+        if (data.token) localStorage.setItem('delta_auth_token', data.token);
+        localStorage.setItem('delta_user_role', currentUserRole);
+        localStorage.setItem('delta_user_name', currentUserName);
+      } catch (e) { }
+
+      const modal = document.getElementById('auth-login-modal');
+      if (modal) modal.classList.add('hidden');
+
+      if (typeof createToast === 'function') {
+        createToast(`🔓 Authenticated via Supabase PostgreSQL Auth: ${currentUserName} (${currentUserRole.toUpperCase()})`, 'success');
+      }
+
+      updateAuthUI();
+      showView(currentUserRole);
+      return true;
     } catch (e) {
-      console.warn('[Auth] Offline mode active for token exchange');
+      console.warn('[Auth] Error during login:', e.message);
+      if (errBanner && errText) {
+        errText.textContent = 'Connection error. Could not reach Supabase Auth server.';
+        errBanner.style.display = 'block';
+      }
+      if (typeof createToast === 'function') {
+        createToast('Connection error connecting to auth server.', 'warning');
+      }
+      return false;
     }
-
-    const modal = document.getElementById('auth-login-modal');
-    if (modal) modal.classList.add('hidden');
-
-    if (typeof createToast === 'function') {
-      createToast(`🔓 Authenticated with Cryptographic JWT as ${role.toUpperCase()}: ${displayName}`, 'success');
-    }
-
-    updateAuthUI();
-    showView(role);
   }
 
   function updateAuthUI() {

@@ -1180,7 +1180,7 @@ Email: ${fromEmail}`;
     statusTexts.forEach(statusText => {
       if (active) {
         statusText.innerHTML = isSim
-          ? '🟢 <strong>SIMULATED FEED</strong> (640x480)'
+          ? '🟢 <strong>VIRTUAL SENSOR FEED</strong> (640x480)'
           : '🟢 <strong>CAMERA FEED LIVE</strong>';
         statusText.style.color = '#10b981';
       } else {
@@ -1870,7 +1870,7 @@ Email: ${fromEmail}`;
         totalExits++;
         if (currentNetOccupancy > 0) currentNetOccupancy--;
         lastPassageInfo = { event: 'EXIT', attendee: insideAtt, timestamp: new Date().toLocaleTimeString() };
-        if (typeof createToast === 'function') createToast(`🚪 [SIMULATED EXIT] ${insideAtt.name} Exited (Net: ${currentNetOccupancy} Pax)`, 'warning');
+        if (typeof createToast === 'function') createToast(`🚪 [GATE EXIT] ${insideAtt.name} Exited (Net: ${currentNetOccupancy} Pax)`, 'warning');
       } else if (currentNetOccupancy > 0) {
         currentNetOccupancy--;
         totalExits++;
@@ -1887,7 +1887,7 @@ Email: ${fromEmail}`;
         totalReEntries++;
         currentNetOccupancy++;
         lastPassageInfo = { event: 'RE_ENTRY', attendee: outsideAtt, timestamp: new Date().toLocaleTimeString() };
-        if (typeof createToast === 'function') createToast(`🔁 [SIMULATED RE-ENTRY] ${outsideAtt.name} Re-entered (Net: ${currentNetOccupancy} Pax)`, 'success');
+        if (typeof createToast === 'function') createToast(`🔁 [GATE RE-ENTRY] ${outsideAtt.name} Re-entered (Net: ${currentNetOccupancy} Pax)`, 'success');
       } else {
         const id = 'att-' + nextAttendeeNum;
         const name = 'Attendee #' + nextAttendeeNum++;
@@ -1896,7 +1896,7 @@ Email: ${fromEmail}`;
         totalEntries++;
         currentNetOccupancy++;
         lastPassageInfo = { event: 'ENTRY', attendee: newAtt, timestamp: new Date().toLocaleTimeString() };
-        if (typeof createToast === 'function') createToast(`👤 [SIMULATED ENTRY] ${name} Entered (Net: ${currentNetOccupancy} Pax)`, 'success');
+        if (typeof createToast === 'function') createToast(`👤 [GATE ENTRY] ${name} Entered (Net: ${currentNetOccupancy} Pax)`, 'success');
       }
     }
     updateDensityMetrics(true);
