@@ -112,6 +112,12 @@
             </button>
           </li>
           <li>
+            <button id="btn-sidebar-youtube-stream" class="sidebar-nav-btn btn-cctv-youtube-stream" style="background: #fee2e2; border-color: #ef4444;" title="Load YouTube Video Feed for Crowd Testing">
+              <span class="nav-icon">📺</span>
+              <span class="nav-label" style="font-weight: 800; color: #b91c1c;">Play YouTube URL</span>
+            </button>
+          </li>
+          <li>
             <button id="btn-reset-db" class="sidebar-nav-btn btn-nav-green" title="Reset schedule and database to normal baseline">
               <span class="nav-icon">🔄</span>
               <span class="nav-label">Reset Baseline State</span>
@@ -279,6 +285,7 @@
             <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
             <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
             <button id="btn-cctv-connect-real" class="btn btn-sm btn-yellow btn-cctv-connect-real" style="font-weight:800;" title="Connect Physical Web Camera">📷 Connect Real Camera</button>
+            <button id="btn-cctv-youtube-stream" class="btn btn-sm btn-cctv-youtube-stream" style="font-weight:800; background:#ef4444; color:#ffffff; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Play YouTube Video or Stream by URL">📺 Paste YouTube URL</button>
           </div>
           <div class="cctv-header-cluster cctv-cluster-modes">
             <button id="btn-cctv-crowd-mode" class="btn btn-sm btn-white btn-cctv-crowd-mode" style="font-weight:800;"
@@ -297,13 +304,41 @@
       <div id="cctv-hub-body" class="cctv-hub-body collapsed">
         <!-- Left: Canvas & Video Display -->
         <div class="cctv-hub-video-col">
-          <div class="cctv-canvas-frame">
-            <video id="cctv-hidden-video" playsinline autoplay muted style="position: fixed; top: -9999px; left: -9999px; width: 320px; height: 240px; opacity: 0; pointer-events: none; z-index: -1;"></video>
+          <div class="cctv-canvas-frame" style="position: relative; overflow: hidden; width: 100%; aspect-ratio: 4 / 3; min-height: 280px;">
+            <video id="cctv-hidden-video" playsinline autoplay muted style="position: absolute; top: 0; left: 0; width: 1px; height: 1px; opacity: 0.001; pointer-events: none; z-index: 0;"></video>
+            
+            <!-- YouTube Player Wrap (Underneath Canvas with z-index: 1) -->
+            <div id="cctv-youtube-frame-wrap" class="cctv-youtube-frame-wrap" style="display: none; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; background: #000;">
+              <iframe id="cctv-youtube-player" style="width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+              <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 25;">
+                <button id="btn-toggle-hud-overlay" class="btn btn-sm btn-white font-bold" style="padding: 3px 10px; font-size: 0.75rem; border: 2px solid #000; box-shadow: 2px 2px 0px #000;" title="Toggle AI HUD Bounding Boxes on/off">
+                  🎯 AI HUD: ON
+                </button>
+                <button id="btn-close-yt-stream" class="btn btn-sm btn-yellow font-bold" style="padding: 3px 10px; font-size: 0.75rem; border: 2px solid #000; box-shadow: 2px 2px 0px #000;" title="Close Video Stream">
+                  ✖ Stop Video
+                </button>
+              </div>
+            </div>
+
+            <!-- CCTV Vision Canvas (Overlaid on top with bounding boxes, z-index: 10) -->
             <canvas id="cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
           </div>
           <div class="cctv-hub-feed-sub">
             <span>🎯 <strong>Optical AI Engine:</strong> Real-time Head & Facial Recognition</span>
             <span id="cctv-optical-detection-tag" class="badge-mini-green">0 Persons Detected</span>
+          </div>
+
+          <!-- Direct Inline YouTube / Video URL & File Upload Bar -->
+          <div class="cctv-inline-yt-bar mt-2" style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; background:#fff1f2; border:2px solid #000; border-radius:8px; padding:6px 10px; box-shadow:2px 2px 0px #000;">
+            <span style="font-weight:800; font-size:0.75rem; color:#b91c1c; white-space:nowrap;">📺 Video URL / File:</span>
+            <input type="text" class="cctv-inline-yt-input" placeholder="Paste YouTube link or MP4 URL (e.g. /TESTING_IMAGES/cam_fixx.mp4)..." style="flex:1; min-width:180px; padding:5px 8px; font-size:0.75rem; border:2px solid #000; border-radius:6px; font-family:var(--font-mono); background:#fff;">
+            <button class="btn btn-sm btn-cctv-inline-yt-play font-bold" style="background:#ef4444; color:#fff; padding:5px 12px; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">▶ Play</button>
+            <label class="btn btn-sm btn-yellow font-bold" style="padding:5px 8px; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer; margin:0;" title="Upload or Select an MP4 video file from your laptop">
+              📁 Choose MP4 File
+              <input type="file" class="cctv-video-file-input" accept="video/mp4,video/webm,video/*" style="display:none;">
+            </label>
+            <button class="btn btn-sm btn-green btn-load-sample-video font-bold" style="padding:5px 8px; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Instantly load bundled test video cam_fixx.mp4 with real-time face detection">🎬 Test Video</button>
+            <button class="btn btn-sm btn-white btn-cctv-youtube-stream font-bold" style="padding:5px 8px; font-size:0.75rem; border:2px solid #000;" title="Open Presets & YouTube Modal">⚡ Presets</button>
           </div>
         </div>
 
@@ -1793,8 +1828,34 @@
               </div>
             </div>
 
-            <div class="cctv-canvas-frame">
+            <div class="cctv-canvas-frame" style="position: relative; overflow: hidden; width: 100%; aspect-ratio: 4 / 3; min-height: 280px;">
+              <!-- YouTube Player Wrap (Underneath Canvas with z-index: 1) -->
+              <div id="modal-cctv-youtube-frame-wrap" class="cctv-youtube-frame-wrap" style="display: none; position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; background: #000;">
+                <iframe id="modal-cctv-youtube-player" style="width: 100%; height: 100%; border: 0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                <div style="position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 25;">
+                  <button id="btn-modal-toggle-hud-overlay" class="btn btn-sm btn-white font-bold" style="padding: 3px 10px; font-size: 0.75rem; border: 2px solid #000; box-shadow: 2px 2px 0px #000;" title="Toggle AI HUD Bounding Boxes on/off">
+                    🎯 AI HUD: ON
+                  </button>
+                  <button id="btn-modal-close-yt-stream" class="btn btn-sm btn-yellow font-bold" style="padding: 3px 10px; font-size: 0.75rem; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+                    ✖ Stop Video
+                  </button>
+                </div>
+              </div>
+              <!-- CCTV Vision Canvas (Overlaid on top with bounding boxes, z-index: 10) -->
               <canvas id="modal-cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
+            </div>
+
+            <!-- Direct Inline YouTube / Video URL & File Upload Bar inside Modal -->
+            <div class="cctv-inline-yt-bar mt-2 mb-2" style="display:flex; flex-wrap:wrap; gap:6px; align-items:center; background:#fff1f2; border:2px solid #000; border-radius:8px; padding:6px 10px; box-shadow:2px 2px 0px #000;">
+              <span style="font-weight:800; font-size:0.75rem; color:#b91c1c; white-space:nowrap;">📺 Video URL / File:</span>
+              <input type="text" class="cctv-inline-yt-input" placeholder="Paste YouTube link or MP4 URL (e.g. /TESTING_IMAGES/cam_fixx.mp4)..." style="flex:1; min-width:180px; padding:5px 8px; font-size:0.75rem; border:2px solid #000; border-radius:6px; font-family:var(--font-mono); background:#fff;">
+              <button class="btn btn-sm btn-cctv-inline-yt-play font-bold" style="background:#ef4444; color:#fff; padding:5px 12px; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">▶ Play</button>
+              <label class="btn btn-sm btn-yellow font-bold" style="padding:5px 8px; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer; margin:0;" title="Upload or Select an MP4 video file from your laptop">
+                📁 Choose MP4 File
+                <input type="file" class="cctv-video-file-input" accept="video/mp4,video/webm,video/*" style="display:none;">
+              </label>
+              <button class="btn btn-sm btn-green btn-load-sample-video font-bold" style="padding:5px 8px; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Instantly load bundled test video cam_fixx.mp4 with real-time face detection">🎬 Test Video</button>
+              <button class="btn btn-sm btn-white btn-cctv-youtube-stream font-bold" style="padding:5px 8px; font-size:0.75rem; border:2px solid #000;" title="Open Presets & YouTube Modal">⚡ Presets</button>
             </div>
 
             <div class="cctv-camera-action-bar">
@@ -1803,6 +1864,7 @@
               <button id="btn-modal-cctv-stop" class="btn btn-sm btn-white btn-cctv-stop" style="font-weight:800;">⏹️
                 Stop Camera</button>
               <button id="btn-modal-cctv-connect-real" class="btn btn-sm btn-yellow btn-cctv-connect-real" style="font-weight:800;" title="Connect Physical Web Camera">📷 Connect Real Camera</button>
+              <button id="btn-modal-cctv-youtube-stream" class="btn btn-sm btn-cctv-youtube-stream" style="font-weight:800; background:#ef4444; color:#ffffff; border:2px solid #000; box-shadow:2px 2px 0px #000;" title="Play YouTube Video by URL">📺 Paste YouTube URL</button>
               <span class="cctv-device-sub">Live CCTV & Optical AI Perception Feed</span>
             </div>
           </div>
@@ -2055,6 +2117,88 @@
               style="font-weight:800; font-size:0.85rem; border:2px solid #000; box-shadow:3px 3px 0px #000;"
               title="Re-fetch live metrics and recompile">
               🔄 Re-compile
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- YOUTUBE & ONLINE VIDEO STREAM PLAYER MODAL -->
+    <div id="modal-youtube-stream" class="modal-backdrop hidden" style="z-index: 100030;">
+      <div class="modal-card" style="max-width: 640px; width: 95%;">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <h2 class="modal-title">📺 LOAD YOUTUBE / VIDEO URL</h2>
+          </div>
+          <button id="btn-close-youtube-modal" class="btn-close-modal" aria-label="Close Modal">&times;</button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+          <div style="background: #eff6ff; border: 2px solid #3b82f6; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px;">
+            <strong style="color: #1e40af; font-size: 0.85rem;">🎬 Test DELTA Engine with Live Video:</strong>
+            <div style="font-size: 0.75rem; color: #1e3a8a; margin-top: 2px;">
+              Paste any YouTube video link or direct MP4 URL to stream video directly into the CCTV Perception Hub. You can monitor the crowd, trigger alerts, and test audio announcements alongside the video.
+            </div>
+          </div>
+
+          <label style="display: block; font-weight: 800; font-size: 0.8rem; margin-bottom: 6px; color: #0f172a;">
+            YouTube / Video Stream URL:
+          </label>
+          <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+            <input id="input-youtube-url" type="text" placeholder="https://www.youtube.com/watch?v=... or https://youtu.be/..."
+              style="flex: 1; padding: 10px 12px; border: 2px solid #000; border-radius: 8px; font-family: var(--font-mono); font-size: 0.85rem; box-shadow: 2px 2px 0px #000;">
+            <button id="btn-submit-youtube-url" class="btn btn-green font-bold" style="border: 2px solid #000; box-shadow: 3px 3px 0px #000; padding: 0 16px;">
+              ▶️ Play Feed
+            </button>
+          </div>
+
+          <!-- Real-Time Face Detection MP4 & File Option -->
+          <div style="background: #f0fdf4; border: 2px solid #22c55e; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;">
+              <strong style="color: #15803d; font-size: 0.85rem;">🤖 Full Face Detection & Vision AI on Video:</strong>
+              <span class="badge-mini-green" style="font-size: 0.7rem;">Pico.js + COCO-SSD</span>
+            </div>
+            <div style="font-size: 0.75rem; color: #166534; margin-bottom: 10px;">
+              Direct MP4 videos and local video files feed raw frame buffers directly to the vision AI engine for instant facial detection bounding boxes, optical flow headcount, and automated self-healing alerts!
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+              <button class="btn btn-sm btn-green btn-load-sample-video font-bold" style="border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 6px 12px;">
+                🎬 Load Bundled Test Video (cam_fixx.mp4)
+              </button>
+              <label class="btn btn-sm btn-yellow font-bold" style="border: 2px solid #000; box-shadow: 2px 2px 0px #000; cursor: pointer; margin: 0; padding: 6px 12px;">
+                📁 Choose Video File from Laptop
+                <input type="file" class="cctv-video-file-input" accept="video/mp4,video/webm,video/*" style="display: none;">
+              </label>
+            </div>
+          </div>
+
+          <!-- Quick Test Presets -->
+          <div style="margin-bottom: 16px;">
+            <span style="font-size: 0.75rem; font-weight: 800; color: #64748b; text-transform: uppercase;">⚡ Quick YouTube Crowd Presets:</span>
+            <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">
+              <button class="btn btn-sm btn-white btn-youtube-preset" data-url="https://www.youtube.com/watch?v=0e3GPea1Tyg" style="font-size: 0.75rem;">
+                👥 Keynote Auditorium
+              </button>
+              <button class="btn btn-sm btn-white btn-youtube-preset" data-url="https://www.youtube.com/watch?v=21X5lGlDOfg" style="font-size: 0.75rem;">
+                🌊 Stadium Crowd
+              </button>
+              <button class="btn btn-sm btn-white btn-youtube-preset" data-url="https://www.youtube.com/watch?v=iCvmsMzlF7o" style="font-size: 0.75rem;">
+                🏛️ Conference Hall
+              </button>
+              <button class="btn btn-sm btn-white btn-youtube-preset" data-url="https://www.youtube.com/watch?v=UqQYV4kK4y8" style="font-size: 0.75rem;">
+                🚩 Public Gathering
+              </button>
+            </div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 2px solid #e2e8f0; padding-top: 14px;">
+            <button id="btn-clear-youtube-player" class="btn btn-sm btn-white font-bold" style="border: 2px solid #000;">
+              ⏹️ Clear / Stop Video
+            </button>
+            <button id="btn-cancel-youtube-modal" class="btn btn-sm btn-yellow font-bold" style="border: 2px solid #000;">
+              Done
             </button>
           </div>
         </div>

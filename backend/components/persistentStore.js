@@ -4,7 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const DATA_DIR = path.join(__dirname, '../data');
+const DATA_DIR = path.join(__dirname, '../../data');
 const STATE_FILE = path.join(DATA_DIR, 'delta_state_snapshot.json');
 
 // Ensure data directory exists
