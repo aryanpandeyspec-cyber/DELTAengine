@@ -285,4 +285,51 @@ class ApiService {
     );
     return response.statusCode == 200;
   }
+
+  // ===============================================================
+  // OPTION 1: STORE-AND-FORWARD MESH RELAY ENGINE (FROM SURYANSH)
+  // ===============================================================
+  final List<Map<String, dynamic>> _offlineQueue = [];
+  int get offlineQueueCount => _offlineQueue.length;
+
+  Future<void> enqueueOfflineAction({
+    required String endpoint,
+    required Map<String, dynamic> payload,
+  }) async {
+    _offlineQueue.add({
+      'endpoint': endpoint,
+      'payload': payload,
+      'enqueuedAt': DateTime.now().toIso8601String(),
+    });
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('delta_mesh_queue', jsonEncode(_offlineQueue));
+  }
+
+  Future<int> flushOfflineQueue() async {
+    if (_offlineQueue.isEmpty) return 0;
+    int flushed = 0;
+    final failedItems = <Map<String, dynamic>>[];
+
+    for (final item in _offlineQueue) {
+      try {
+        final endpoint = item['endpoint']?.toString() ?? '';
+        final payload = item['payload'] as Map<String, dynamic>? ?? {};
+        final uri = Uri.parse('$_baseUrl$endpoint');
+        final res = await http.post(uri, headers: _headers(), body: jsonEncode(payload));
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          flushed++;
+        } else {
+          failedItems.add(item);
+        }
+      } catch (_) {
+        failedItems.add(item);
+      }
+    }
+
+    _offlineQueue.clear();
+    _offlineQueue.addAll(failedItems);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('delta_mesh_queue', jsonEncode(_offlineQueue));
+    return flushed;
+  }
 }
