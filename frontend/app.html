@@ -28,28 +28,28 @@
        REAL PHONE MINIMAL OUTLINE THEME (STRICTLY CONTAINED IN PHONE SCREEN)
        ========================================================================== */
     :root {
-      /* User Master Color Palette Tokens */
-      --pal-yale-blue: #094074;      /* 094074: Yale Blue */
-      --pal-baltic-blue: #3C6997;    /* 3C6997: Baltic Blue */
-      --pal-sky-aqua: #5ADBFF;       /* 5ADBFF: Sky Aqua */
-      --pal-mustard: #FFDD4A;        /* FFDD4A: Mustard */
-      --pal-deep-saffron: #FE9000;   /* FE9000: Deep Saffron */
+      /* User Master Color Palette Tokens (Earth & Slate Architecture) */
+      --pal-slate: #628395;       /* 628395: Slate Steel Blue (Chassis / Headers / Primary Anchor) */
+      --pal-taupe: #96897B;       /* 96897B: Warm Taupe (Neutral / Subtitles / Secondary Accents) */
+      --pal-sand: #DFD5A5;        /* DFD5A5: Pale Sand Cream (Soft Badges / Nominal Meters / Dynamic Island) */
+      --pal-ochre: #DBAD6A;       /* DBAD6A: Warm Ochre (Busy Status / Amber Alerts / Logistics SOS) */
+      --pal-caramel: #CF995F;     /* CF995F: Caramel Copper (Surge Alerts / Critical CTAs / High Priority) */
 
-      --bg-primary: #f4f8fb;
+      --bg-primary: #F8F7F3;
       --bg-card: #ffffff;
-      --border-color: #094074;
-      --border-outline: 1.5px solid #094074;
-      --border-outline-bold: 2px solid #094074;
+      --border-color: #628395;
+      --border-outline: 1.5px solid #628395;
+      --border-outline-bold: 2px solid #628395;
 
-      --blue-accent: #094074;
-      --baltic-accent: #3C6997;
-      --aqua-accent: #5ADBFF;
-      --mustard-accent: #FFDD4A;
-      --saffron-accent: #FE9000;
+      --blue-accent: #628395;
+      --baltic-accent: #96897B;
+      --aqua-accent: #DFD5A5;
+      --mustard-accent: #DBAD6A;
+      --saffron-accent: #CF995F;
 
-      --green-accent: #5ADBFF;
-      --yellow-accent: #FFDD4A;
-      --red-accent: #FE9000;
+      --green-accent: #628395;
+      --yellow-accent: #DBAD6A;
+      --red-accent: #CF995F;
 
       --font-main: 'Outfit', sans-serif;
       --font-mono: 'Space Grotesk', monospace;
@@ -68,15 +68,16 @@
     }
 
     body {
-      background-color: #092038;
+      background-color: #21292E;
       background-image: 
-        radial-gradient(circle at 50% 15%, rgba(90, 219, 255, 0.12), transparent 60%),
-        radial-gradient(circle at 85% 85%, rgba(254, 144, 0, 0.08), transparent 50%),
-        linear-gradient(rgba(90, 219, 255, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(90, 219, 255, 0.03) 1px, transparent 1px);
-      background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+        radial-gradient(circle at 50% 15%, rgba(98, 131, 149, 0.22), transparent 60%),
+        radial-gradient(circle at 85% 85%, rgba(207, 153, 95, 0.16), transparent 50%),
+        radial-gradient(circle at 15% 75%, rgba(219, 173, 106, 0.14), transparent 50%),
+        linear-gradient(rgba(223, 213, 165, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(223, 213, 165, 0.04) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 100% 100%, 28px 28px, 28px 28px;
       font-family: var(--font-main);
-      color: #094074;
+      color: #263339;
       min-height: 100vh;
       min-height: 100dvh;
       display: flex;
@@ -153,18 +154,18 @@
       align-items: center;
       gap: 6px;
       text-decoration: none;
-      color: #0f172a;
+      color: #263339;
       box-shadow: none;
     }
 
     .btn-top:hover {
-      background: #f1f5f9;
+      background: #F4EFE6;
     }
 
     .btn-top.active {
-      background: #e0f6fc;
-      border-color: #5ADBFF;
-      color: #094074;
+      background: #EDE8D4;
+      border-color: #628395;
+      color: #263339;
       font-weight: 800;
     }
 
@@ -181,10 +182,10 @@
     .phone-chassis {
       width: 100%;
       background: #ffffff;
-      border: 3px solid #094074;
+      border: 3.5px solid #628395;
       border-radius: 38px;
       padding: 10px;
-      box-shadow: 0 12px 36px rgba(9, 64, 116, 0.22), 0 0 20px rgba(90, 219, 255, 0.18);
+      box-shadow: 0 16px 42px rgba(33, 41, 46, 0.28), 0 0 24px rgba(98, 131, 149, 0.25);
       position: relative;
       box-sizing: border-box;
     }
@@ -194,7 +195,7 @@
       width: 100%;
       height: 760px;
       background: var(--bg-primary);
-      border: 1.5px solid #094074;
+      border: 1.5px solid #628395;
       border-radius: 28px;
       position: relative;
       overflow: hidden;
@@ -207,8 +208,8 @@
     .phone-dynamic-island {
       width: 110px;
       height: 24px;
-      background: #094074;
-      border: 1px solid #5ADBFF;
+      background: #21292E;
+      border: 1px solid #DFD5A5;
       border-radius: 16px;
       margin: 6px auto 0;
       display: flex;
@@ -225,8 +226,8 @@
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: #5ADBFF;
-      box-shadow: 0 0 6px #5ADBFF;
+      background: #DFD5A5;
+      box-shadow: 0 0 6px #DFD5A5;
     }
 
     /* Phone Status Bar */
@@ -427,13 +428,13 @@
       font-size: 1.75rem;
       font-weight: 800;
       letter-spacing: 2px;
-      color: #0f172a;
+      color: #263339;
       text-transform: uppercase;
       line-height: 1;
     }
 
     .delta-brand-title span {
-      color: #3C6997;
+      color: #628395;
     }
 
     .delta-brand-subtitle {
@@ -441,7 +442,7 @@
       font-weight: 700;
       letter-spacing: 0.8px;
       text-transform: uppercase;
-      color: #3C6997;
+      color: #96897B;
       margin-top: 3px;
     }
 
@@ -458,9 +459,9 @@
       font-family: var(--font-mono);
       font-size: 0.72rem;
       font-weight: 700;
-      color: #094074;
-      background: #eef8ff;
-      border: 1.5px solid #5ADBFF;
+      color: #263339;
+      background: #EDE8D4;
+      border: 1.5px solid #DFD5A5;
       border-radius: 8px;
       padding: 5px 8px;
       display: flex;
@@ -472,14 +473,14 @@
 
     .btn-notification {
       background: #ffffff;
-      border: 1.5px solid #094074;
+      border: 1.5px solid #628395;
       border-radius: 8px;
       padding: 5px 9px;
       font-family: var(--font-mono);
       font-size: 0.72rem;
       font-weight: 800;
       letter-spacing: 0.5px;
-      color: #094074;
+      color: #263339;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
@@ -490,11 +491,11 @@
     }
 
     .btn-notification:hover {
-      background: #f0f6fc;
+      background: #F4EFE6;
     }
 
     .btn-notification .notif-badge {
-      background: #FE9000;
+      background: #CF995F;
       color: #ffffff;
       border-radius: 12px;
       font-size: 0.65rem;
@@ -511,9 +512,9 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      background: #edf4fa;
+      background: #EDEAE1;
       padding: 4px;
-      border: 1.5px solid #3C6997;
+      border: 1.5px solid #96897B;
       border-radius: 20px;
     }
     .role-btn {
@@ -525,7 +526,7 @@
       background: transparent;
       border: none;
       border-radius: 16px;
-      color: #3C6997;
+      color: #6B5E50;
       cursor: pointer;
       transition: all 0.15s ease;
       display: flex;
@@ -534,25 +535,25 @@
       gap: 4px;
     }
     .role-btn:hover {
-      color: #094074;
+      color: #263339;
     }
     .role-btn.active {
-      background: #094074;
+      background: #628395;
       color: #ffffff;
-      border: 1.5px solid #094074;
-      box-shadow: 0 2px 8px rgba(9, 64, 116, 0.28);
+      border: 1.5px solid #628395;
+      box-shadow: 0 2px 8px rgba(98, 131, 149, 0.35);
     }
 
     /* Feature 4: 1-Tap Quick Field Actions Grid */
     .quick-action-section {
       background: #ffffff;
-      border: 2px solid #094074;
+      border: 2px solid #628395;
       border-radius: 14px;
       padding: 10px 8px;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      box-shadow: 0 4px 14px rgba(9, 64, 116, 0.05);
+      box-shadow: 0 4px 14px rgba(98, 131, 149, 0.08);
     }
     .quick-action-header {
       display: flex;
@@ -562,7 +563,7 @@
       font-weight: 800;
       letter-spacing: 0.8px;
       text-transform: uppercase;
-      color: #094074;
+      color: #263339;
     }
     .quick-action-grid {
       display: grid;
@@ -604,32 +605,32 @@
       white-space: nowrap;
     }
     .quick-action-btn.action-gate {
-      background: #eef5fb;
-      border: 2px solid #3C6997;
+      background: #F3EFEA;
+      border: 2px solid #96897B;
     }
-    .quick-action-btn.action-gate .action-title { color: #3C6997; }
-    .quick-action-btn.action-gate .action-sub { color: #5a7d9f; }
+    .quick-action-btn.action-gate .action-title { color: #6E6153; }
+    .quick-action-btn.action-gate .action-sub { color: #96897B; }
 
     .quick-action-btn.action-surge {
-      background: #fff4e5;
-      border: 2px solid #FE9000;
+      background: #FAF0E4;
+      border: 2px solid #CF995F;
     }
-    .quick-action-btn.action-surge .action-title { color: #e07000; }
-    .quick-action-btn.action-surge .action-sub { color: #b35900; }
+    .quick-action-btn.action-surge .action-title { color: #9A5A1E; }
+    .quick-action-btn.action-surge .action-sub { color: #CF995F; }
 
     .quick-action-btn.action-audio {
-      background: #edf8fd;
-      border: 2px solid #094074;
+      background: #EEF4F7;
+      border: 2px solid #628395;
     }
-    .quick-action-btn.action-audio .action-title { color: #094074; }
-    .quick-action-btn.action-audio .action-sub { color: #3C6997; }
+    .quick-action-btn.action-audio .action-title { color: #3F5E6E; }
+    .quick-action-btn.action-audio .action-sub { color: #628395; }
 
     .quick-action-btn.action-support {
-      background: #fffde6;
-      border: 2px solid #d99b00;
+      background: #FBF4E4;
+      border: 2px solid #DBAD6A;
     }
-    .quick-action-btn.action-support .action-title { color: #9c7300; }
-    .quick-action-btn.action-support .action-sub { color: #7a5900; }
+    .quick-action-btn.action-support .action-title { color: #8F661E; }
+    .quick-action-btn.action-support .action-sub { color: #B88530; }
 
     /* Feature 2: Visual Room Capacity Meter Bars */
     .room-meter-wrap {
@@ -641,8 +642,8 @@
     .room-meter-track {
       flex: 1;
       height: 7px;
-      background: #e2eaf2;
-      border: 1px solid #cbd5e1;
+      background: #EAE6DB;
+      border: 1px solid #D5CEBE;
       border-radius: 6px;
       overflow: hidden;
       position: relative;
@@ -653,13 +654,13 @@
       transition: width 0.3s ease;
     }
     .room-meter-fill.meter-nominal {
-      background: #5ADBFF;
+      background: #628395;
     }
     .room-meter-fill.meter-busy {
-      background: #FFDD4A;
+      background: #DBAD6A;
     }
     .room-meter-fill.meter-alert {
-      background: #FE9000;
+      background: #CF995F;
       animation: meterPulse 1.5s infinite;
     }
     @keyframes meterPulse {
@@ -670,14 +671,14 @@
       font-family: var(--font-mono);
       font-size: 0.62rem;
       font-weight: 700;
-      color: #3C6997;
+      color: #628395;
       white-space: nowrap;
     }
     /* Feature 3: Cyber-Tactile Walkie-Talkie Visualizer */
     .voice-radar-container {
       width: 100%;
-      background: #092038;
-      border: 1.5px solid #5ADBFF;
+      background: #21292E;
+      border: 1.5px solid #628395;
       border-radius: 12px;
       padding: 8px 10px;
       display: flex;
@@ -698,15 +699,15 @@
       align-items: center;
       font-family: var(--font-mono);
       font-size: 0.65rem;
-      color: #5ADBFF;
+      color: #DFD5A5;
       font-weight: 700;
-      border-top: 1px dashed rgba(90, 219, 255, 0.35);
+      border-top: 1px dashed rgba(223, 213, 165, 0.35);
       padding-top: 4px;
     }
     /* Point 6: Live Event Phase Ticker */
     .event-phase-ticker {
-      background: #f0f6fc;
-      border: 1.5px solid #3C6997;
+      background: #F4EFE6;
+      border: 1.5px solid #96897B;
       border-radius: 10px;
       padding: 6px 10px;
       display: flex;
@@ -721,15 +722,15 @@
       width: 7px;
       height: 7px;
       border-radius: 50%;
-      background: #FE9000;
-      box-shadow: 0 0 0 0 rgba(254, 144, 0, 0.7);
+      background: #CF995F;
+      box-shadow: 0 0 0 0 rgba(207, 153, 95, 0.7);
       animation: tickerGlow 2s infinite;
       flex-shrink: 0;
     }
     @keyframes tickerGlow {
-      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(254, 144, 0, 0.7); }
-      70% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(254, 144, 0, 0); }
-      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(254, 144, 0, 0); }
+      0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(207, 153, 95, 0.7); }
+      70% { transform: scale(1.1); box-shadow: 0 0 0 5px rgba(207, 153, 95, 0); }
+      100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(207, 153, 95, 0); }
     }
     .ticker-content {
       display: flex;
@@ -740,17 +741,17 @@
     }
     .ticker-highlight {
       font-weight: 800;
-      color: #094074;
+      color: #263339;
       flex-shrink: 0;
     }
     .ticker-timer {
       margin-left: auto;
       font-weight: 800;
-      color: #b35900;
-      background: #fff6eb;
+      color: #9A5A1E;
+      background: #FAF0E4;
       padding: 2px 7px;
       border-radius: 6px;
-      border: 1px solid #FE9000;
+      border: 1px solid #CF995F;
       flex-shrink: 0;
     }
 
@@ -794,12 +795,12 @@
       align-items: center;
       gap: 10px;
       padding: 8px 10px;
-      background: #f8fafc;
+      background: #F8F7F3;
       border: var(--border-outline);
       border-radius: 8px;
       cursor: pointer;
       font-family: var(--font-main);
-      color: #094074;
+      color: #263339;
       transition: all 0.15s ease;
       width: 100%;
     }
@@ -807,13 +808,13 @@
       transform: scale(0.98);
     }
     .identity-select-btn.active {
-      background: #eef8ff;
-      border: 1.5px solid #5ADBFF;
+      background: #EDE8D4;
+      border: 1.5px solid #628395;
     }
     .identity-check-mark {
       font-size: 0.68rem;
       font-weight: 800;
-      color: #094074;
+      color: #628395;
       font-family: var(--font-mono);
     }
 
@@ -837,8 +838,8 @@
       font-weight: 800;
       letter-spacing: 1px;
       text-transform: uppercase;
-      color: #3C6997;
-      border-bottom: 1.5px solid #e2e8f0;
+      color: #96897B;
+      border-bottom: 1.5px solid #E5E0D5;
       padding-bottom: 6px;
       margin-bottom: 2px;
     }
@@ -862,7 +863,7 @@
       font-size: 0.95rem;
       white-space: nowrap;
       letter-spacing: 0.5px;
-      color: #094074;
+      color: #263339;
       min-width: 70px;
     }
 
@@ -877,17 +878,17 @@
       width: 100%;
       background: transparent;
       border: none;
-      border-bottom: 1.5px solid #cbd5e1;
+      border-bottom: 1.5px solid #D5CEBE;
       font-family: var(--font-main);
       font-size: 0.82rem;
       font-weight: 600;
-      color: #094074;
+      color: #263339;
       padding: 2px 4px 4px 2px;
       outline: none;
     }
 
     .room-line-input:focus {
-      border-bottom: 2px solid #5ADBFF;
+      border-bottom: 2px solid #628395;
     }
 
     .room-status-badge {
@@ -902,21 +903,21 @@
     }
 
     .badge-nominal {
-      background: #e0f8ff;
-      color: #094074;
-      border-color: #5ADBFF;
+      background: #EDE8D4;
+      color: #4A4022;
+      border-color: #DFD5A5;
     }
 
     .badge-busy {
-      background: #fff8cc;
-      color: #7a5800;
-      border-color: #FFDD4A;
+      background: #F7EAD0;
+      color: #734F12;
+      border-color: #DBAD6A;
     }
 
     .badge-alert {
-      background: #ffe8cc;
-      color: #b35900;
-      border-color: #FE9000;
+      background: #F9E7D4;
+      color: #8F4B12;
+      border-color: #CF995F;
     }
 
     .room-sub-row {
@@ -1051,7 +1052,7 @@
       font-family: var(--font-mono);
       font-size: 0.82rem;
       font-weight: 800;
-      color: #2563eb;
+      color: #628395;
       letter-spacing: 0.5px;
     }
 
@@ -1083,8 +1084,8 @@
     }
 
     .btn-action-icon.chat-trigger {
-      background: #2563eb;
-      border-color: #2563eb;
+      background: #628395;
+      border-color: #628395;
       color: #ffffff;
     }
 
@@ -1129,8 +1130,8 @@
     }
 
     .nav-tab-item.active {
-      color: #2563eb;
-      background: #eff6ff;
+      color: #628395;
+      background: #EDE8D4;
       border: var(--border-outline);
     }
 
@@ -1163,7 +1164,7 @@
       right: 14px;
       width: 50px;
       height: 50px;
-      background: #2563eb;
+      background: #628395;
       color: #ffffff;
       border: var(--border-outline-bold);
       border-radius: 50%;
@@ -1179,7 +1180,7 @@
       position: absolute;
       top: -2px;
       right: -2px;
-      background: #ef4444;
+      background: #CF995F;
       color: #ffffff;
       font-size: 0.62rem;
       font-weight: 900;
@@ -1219,9 +1220,9 @@
     }
 
     .channel-tab.active {
-      background: #2563eb;
+      background: #628395;
       color: #ffffff;
-      border-color: #2563eb;
+      border-color: #628395;
     }
 
     .messenger-chat-body {
@@ -1276,9 +1277,9 @@
     }
 
     .chat-bubble-row.outgoing .chat-bubble {
-      background: #2563eb;
+      background: #628395;
       color: #ffffff;
-      border-color: #2563eb;
+      border-color: #628395;
     }
 
     .chat-bubble-sender {
@@ -1286,11 +1287,11 @@
       font-weight: 800;
       font-family: var(--font-mono);
       margin-bottom: 2px;
-      color: #2563eb;
+      color: #628395;
     }
 
     .chat-bubble-row.outgoing .chat-bubble-sender {
-      color: #bfdbfe;
+      color: #DFD5A5;
       text-align: right;
     }
 
@@ -1306,7 +1307,7 @@
     }
 
     .chat-bubble-row.outgoing .chat-bubble-meta {
-      color: #bfdbfe;
+      color: #EDE8D4;
     }
 
     .typing-indicator-row {
@@ -1366,8 +1367,8 @@
     }
 
     .chip-btn:hover {
-      background: #eff6ff;
-      border-color: #2563eb;
+      background: #EDE8D4;
+      border-color: #628395;
     }
 
     .messenger-input-bar {
@@ -1408,17 +1409,17 @@
     }
 
     .msg-input-field:focus {
-      border-color: #2563eb;
+      border-color: #628395;
       background: #ffffff;
     }
 
     .btn-msg-send {
       width: 36px;
       height: 36px;
-      background: #2563eb;
+      background: #628395;
       color: #ffffff;
       border: var(--border-outline);
-      border-color: #2563eb;
+      border-color: #628395;
       border-radius: 8px;
       display: flex;
       align-items: center;
@@ -1458,10 +1459,10 @@
     }
 
     .voice-chan-btn.active {
-      background: #094074;
+      background: #628395;
       color: #ffffff;
-      border-color: #5ADBFF;
-      box-shadow: 0 2px 8px rgba(9, 64, 116, 0.25);
+      border-color: #DFD5A5;
+      box-shadow: 0 2px 8px rgba(98, 131, 149, 0.25);
     }
 
     .btn-push-to-talk {
@@ -1469,8 +1470,8 @@
       height: 140px;
       border-radius: 50%;
       background: #ffffff;
-      border: 4px solid #094074;
-      color: #094074;
+      border: 4px solid #628395;
+      color: #628395;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -1502,7 +1503,7 @@
     .eq-bar {
       width: 4px;
       height: 10px;
-      background: #2563eb;
+      background: #628395;
       border-radius: 2px;
     }
 
@@ -1574,13 +1575,13 @@
     }
 
     input:checked + .slider-round {
-      background-color: #eff6ff;
-      border-color: #2563eb;
+      background-color: #EDE8D4;
+      border-color: #628395;
     }
 
     input:checked + .slider-round:before {
       transform: translateX(20px);
-      background-color: #2563eb;
+      background-color: #628395;
     }
 
     /* Toast */
@@ -1589,9 +1590,9 @@
       top: 10px;
       left: 50%;
       transform: translateX(-50%) translateY(-20px);
-      background: #0f172a;
+      background: #21292E;
       color: #ffffff;
-      border: 1.5px solid #38bdf8;
+      border: 1.5px solid #DFD5A5;
       border-radius: 8px;
       padding: 6px 14px;
       font-size: 0.75rem;
@@ -1622,13 +1623,13 @@
       margin-bottom: 8px;
       font-size: 0.72rem;
       font-weight: 800;
-      color: #094074;
+      color: #263339;
       letter-spacing: 0.5px;
     }
     .task-count-badge {
-      background: #e0f6fc;
-      border: 1px solid #5ADBFF;
-      color: #094074;
+      background: #EDE8D4;
+      border: 1px solid #DFD5A5;
+      color: #4A4022;
       font-size: 0.65rem;
       padding: 1px 6px;
       border-radius: 10px;
@@ -1636,19 +1637,19 @@
       font-weight: 800;
     }
     .btn-new-task-trigger {
-      background: #FE9000;
+      background: #CF995F;
       color: #ffffff;
-      border: 1px solid #FE9000;
+      border: 1px solid #CF995F;
       border-radius: 6px;
       padding: 3px 9px;
       font-size: 0.68rem;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 2px 6px rgba(254, 144, 0, 0.35);
+      box-shadow: 0 2px 6px rgba(207, 153, 95, 0.35);
       transition: all 0.15s ease;
     }
     .btn-new-task-trigger:hover {
-      background: #e07d00;
+      background: #B8854D;
       transform: translateY(-1px);
     }
     .task-create-panel {
@@ -1684,7 +1685,7 @@
     }
     .btn-post-task {
       height: 28px;
-      background: #094074;
+      background: #628395;
       color: #ffffff;
       border: none;
       border-radius: 6px;
@@ -1709,17 +1710,17 @@
       transition: all 0.2s ease;
     }
     .task-card.task-urgent {
-      border-left: 3.5px solid #FE9000;
-      background: #fff8f0;
+      border-left: 3.5px solid #CF995F;
+      background: #FAF2E8;
     }
     .task-card.task-normal {
-      border-left: 3.5px solid #3C6997;
-      background: #f0f6fb;
+      border-left: 3.5px solid #96897B;
+      background: #F5F2EC;
     }
     .task-card.task-resolved {
-      opacity: 0.7;
-      border-left: 3.5px solid #5ADBFF;
-      background: #f0faff;
+      opacity: 0.75;
+      border-left: 3.5px solid #628395;
+      background: #EEF4F7;
     }
     .task-card-top {
       display: flex;
@@ -1730,7 +1731,7 @@
       font-family: var(--font-mono);
       font-size: 0.65rem;
       font-weight: 800;
-      color: #094074;
+      color: #263339;
     }
     .task-badge-pill {
       font-size: 0.62rem;
@@ -1739,14 +1740,14 @@
       border-radius: 4px;
       font-family: var(--font-mono);
     }
-    .pill-urgent { background: #ffe6cc; color: #b35900; }
-    .pill-normal { background: #dff0fa; color: #094074; }
-    .pill-claimed { background: #fff8cc; color: #855d00; }
-    .pill-resolved { background: #e0f8ff; color: #094074; }
+    .pill-urgent { background: #F9E7D4; color: #8F4B12; }
+    .pill-normal { background: #EDEAE1; color: #5B4E41; }
+    .pill-claimed { background: #F7EAD0; color: #734F12; }
+    .pill-resolved { background: #E2ECEF; color: #324C57; }
     .task-title-text {
       font-size: 0.75rem;
       font-weight: 700;
-      color: #094074;
+      color: #263339;
       line-height: 1.25;
     }
     .task-card-footer {
@@ -1755,12 +1756,12 @@
       justify-content: space-between;
       margin-top: 2px;
       font-size: 0.65rem;
-      color: #3C6997;
+      color: #96897B;
     }
     .btn-task-action {
-      border: 1px solid #094074;
+      border: 1px solid #628395;
       background: #ffffff;
-      color: #094074;
+      color: #263339;
       border-radius: 5px;
       padding: 2px 8px;
       font-size: 0.65rem;
@@ -1768,15 +1769,15 @@
       cursor: pointer;
     }
     .btn-task-action.btn-resolve {
-      border-color: #3C6997;
-      color: #3C6997;
+      border-color: #96897B;
+      color: #6E6153;
     }
 
     /* 2. QR Badge Scanner Modal */
     .qr-scanner-modal {
       position: absolute;
       inset: 0;
-      background: #092038;
+      background: #21292E;
       z-index: 1200;
       display: none;
       flex-direction: column;
@@ -1791,8 +1792,8 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-bottom: 1px solid rgba(90, 219, 255, 0.2);
-      background: rgba(9, 32, 56, 0.96);
+      border-bottom: 1px solid rgba(223, 213, 165, 0.25);
+      background: rgba(33, 41, 46, 0.96);
     }
     .qr-viewfinder-wrap {
       flex: 1;
@@ -1806,7 +1807,7 @@
     .qr-target-box {
       width: 220px;
       height: 220px;
-      border: 2px solid #5ADBFF;
+      border: 2px solid #DFD5A5;
       border-radius: 16px;
       position: relative;
       overflow: hidden;
@@ -1814,14 +1815,14 @@
       align-items: center;
       justify-content: center;
       background: rgba(0, 0, 0, 0.4);
-      box-shadow: 0 0 25px rgba(90, 219, 255, 0.35);
+      box-shadow: 0 0 25px rgba(223, 213, 165, 0.35);
     }
     .qr-laser-line {
       position: absolute;
       width: 100%;
       height: 2.5px;
-      background: linear-gradient(90deg, transparent, #5ADBFF, transparent);
-      box-shadow: 0 0 8px #5ADBFF;
+      background: linear-gradient(90deg, transparent, #DBAD6A, transparent);
+      box-shadow: 0 0 8px #DBAD6A;
       animation: qrLaserScan 2s ease-in-out infinite alternate;
     }
     @keyframes qrLaserScan {
@@ -1830,8 +1831,8 @@
     }
     .qr-result-card {
       margin: 10px 12px;
-      background: rgba(9, 32, 56, 0.95);
-      border: 1.5px solid #5ADBFF;
+      background: rgba(33, 41, 46, 0.95);
+      border: 1.5px solid #DFD5A5;
       border-radius: 12px;
       padding: 10px 12px;
       display: none;
@@ -1845,8 +1846,8 @@
     }
     .qr-chip-test {
       background: rgba(255, 255, 255, 0.1);
-      border: 1px solid rgba(90, 219, 255, 0.4);
-      color: #e2e8f0;
+      border: 1px solid rgba(223, 213, 165, 0.4);
+      color: #E2ECEF;
       border-radius: 14px;
       padding: 4px 9px;
       font-size: 0.68rem;
@@ -1855,9 +1856,9 @@
       cursor: pointer;
     }
     .btn-qr-scan-top {
-      background: #fff4e5;
-      border: 1.5px solid #FE9000;
-      color: #b35900;
+      background: #FAF0E4;
+      border: 1.5px solid #CF995F;
+      color: #9A5A1E;
       border-radius: 8px;
       padding: 4px 8px;
       font-size: 0.68rem;
@@ -1868,7 +1869,7 @@
       cursor: pointer;
     }
     .btn-qr-scan-top:hover {
-      background: #FE9000;
+      background: #CF995F;
       color: #ffffff;
     }
 
@@ -1878,7 +1879,7 @@
       align-items: center;
       gap: 5px;
       padding: 2px 8px;
-      background: #FE9000;
+      background: #CF995F;
       color: #ffffff;
       border-radius: 12px;
       font-size: 0.65rem;
@@ -1989,7 +1990,7 @@
               <section class="quick-action-section" id="quick-action-section">
                 <div class="quick-action-header">
                   <span>⚡ FAST FIELD DISPATCH</span>
-                  <span style="font-size:0.65rem; color:#2563eb; font-weight:700;">1-TAP MESH ACTION</span>
+                  <span style="font-size:0.65rem; color:#628395; font-weight:700;">1-TAP MESH ACTION</span>
                 </div>
                 <div class="quick-action-grid">
                   <button class="quick-action-btn action-gate" data-action="gate_clear" data-label="Gate A Clear">
@@ -2057,7 +2058,7 @@
               <section class="rooms-card-container">
                 <div class="section-eyebrow">
                   <span>🏛️ Venue Chambers</span>
-                  <span style="color:#2563eb;">● Live Sync</span>
+                  <span style="color:#628395;">● Live Sync</span>
                 </div>
 
                 <!-- ROOM 1 -->
@@ -2195,81 +2196,81 @@
               <section class="venue-blueprint-section" id="venue-blueprint-section">
                 <div class="section-eyebrow">
                   <span>🗺️ Interactive Venue Blueprint</span>
-                  <span style="color:#094074; font-weight:700;">● 5 Chambers Active</span>
+                  <span style="color:#628395; font-weight:700;">● 5 Chambers Active</span>
                 </div>
 
                 <div class="blueprint-map-container">
                   <svg viewBox="0 0 340 180" class="blueprint-svg" id="blueprint-svg">
                     <defs>
                       <pattern id="blueprint-grid" width="16" height="16" patternUnits="userSpaceOnUse">
-                        <path d="M 16 0 L 0 0 0 16" fill="none" stroke="rgba(9, 64, 116, 0.08)" stroke-width="0.8"/>
+                        <path d="M 16 0 L 0 0 0 16" fill="none" stroke="rgba(98, 131, 149, 0.12)" stroke-width="0.8"/>
                       </pattern>
                     </defs>
                     <rect width="340" height="180" fill="url(#blueprint-grid)" rx="8" />
 
                     <!-- Central Corridor -->
-                    <rect x="20" y="75" width="300" height="30" fill="#f8fafc" stroke="#3C6997" stroke-width="1.2" stroke-dasharray="3,3" rx="4"/>
-                    <text x="170" y="93" font-family="'Space Grotesk', monospace" font-size="7" font-weight="700" fill="#3C6997" text-anchor="middle">CENTRAL CORRIDOR CONCOURSE</text>
+                    <rect x="20" y="75" width="300" height="30" fill="#F4EFE6" stroke="#96897B" stroke-width="1.2" stroke-dasharray="3,3" rx="4"/>
+                    <text x="170" y="93" font-family="'Space Grotesk', monospace" font-size="7" font-weight="700" fill="#96897B" text-anchor="middle">CENTRAL CORRIDOR CONCOURSE</text>
 
                     <!-- Gate A Entrance -->
                     <g class="map-gate" id="map-gate-a">
-                      <rect x="5" y="77" width="15" height="26" fill="#e0f8ff" stroke="#094074" stroke-width="1.2" rx="2"/>
-                      <text x="12" y="93" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#094074" text-anchor="middle">GATE</text>
+                      <rect x="5" y="77" width="15" height="26" fill="#EDE8D4" stroke="#628395" stroke-width="1.2" rx="2"/>
+                      <text x="12" y="93" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#263339" text-anchor="middle">GATE</text>
                     </g>
 
                     <!-- Room 1 (Turing Hall - 250) -->
                     <g class="map-room" data-room="1" id="map-room-1">
-                      <rect x="20" y="10" width="85" height="55" fill="#fffdf0" stroke="#094074" stroke-width="1.5" rx="6"/>
-                      <circle cx="30" cy="22" r="3.5" fill="#FFDD4A"/>
-                      <text x="38" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 1</text>
-                      <text x="28" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Turing (250)</text>
-                      <rect x="28" y="46" width="69" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="28" y="46" width="56" height="4" fill="#FFDD4A" rx="2"/>
-                      <text x="28" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#7a5800">82% • Active</text>
+                      <rect x="20" y="10" width="85" height="55" fill="#FAF5E8" stroke="#DBAD6A" stroke-width="1.5" rx="6"/>
+                      <circle cx="30" cy="22" r="3.5" fill="#DBAD6A"/>
+                      <text x="38" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#263339">ROOM 1</text>
+                      <text x="28" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#6E6153">Turing (250)</text>
+                      <rect x="28" y="46" width="69" height="4" fill="#EAE6DB" stroke="#D5CEBE" stroke-width="0.5" rx="2"/>
+                      <rect x="28" y="46" width="56" height="4" fill="#DBAD6A" rx="2"/>
+                      <text x="28" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#734F12">82% • Active</text>
                     </g>
 
                     <!-- Room 2 (Lovelace Suite - 120) -->
                     <g class="map-room" data-room="2" id="map-room-2">
-                      <rect x="115" y="10" width="85" height="55" fill="#f0fbff" stroke="#094074" stroke-width="1.5" rx="6"/>
-                      <circle cx="125" cy="22" r="3.5" fill="#5ADBFF"/>
-                      <text x="133" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 2</text>
-                      <text x="123" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Lovelace (120)</text>
-                      <rect x="123" y="46" width="69" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="123" y="46" width="31" height="4" fill="#5ADBFF" rx="2"/>
-                      <text x="123" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#094074">45% • Nominal</text>
+                      <rect x="115" y="10" width="85" height="55" fill="#EEF4F7" stroke="#628395" stroke-width="1.5" rx="6"/>
+                      <circle cx="125" cy="22" r="3.5" fill="#628395"/>
+                      <text x="133" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#263339">ROOM 2</text>
+                      <text x="123" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#628395">Lovelace (120)</text>
+                      <rect x="123" y="46" width="69" height="4" fill="#EAE6DB" stroke="#D5CEBE" stroke-width="0.5" rx="2"/>
+                      <rect x="123" y="46" width="31" height="4" fill="#628395" rx="2"/>
+                      <text x="123" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#263339">45% • Nominal</text>
                     </g>
 
                     <!-- Room 3 (Hopper - 60) -->
                     <g class="map-room" data-room="3" id="map-room-3">
-                      <rect x="210" y="10" width="110" height="55" fill="#f0fbff" stroke="#094074" stroke-width="1.5" rx="6"/>
-                      <circle cx="220" cy="22" r="3.5" fill="#5ADBFF"/>
-                      <text x="228" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 3</text>
-                      <text x="218" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Hopper (60)</text>
-                      <rect x="218" y="46" width="94" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="218" y="46" width="56" height="4" fill="#5ADBFF" rx="2"/>
-                      <text x="218" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#094074">60% • Nominal</text>
+                      <rect x="210" y="10" width="110" height="55" fill="#F5F2EC" stroke="#96897B" stroke-width="1.5" rx="6"/>
+                      <circle cx="220" cy="22" r="3.5" fill="#96897B"/>
+                      <text x="228" y="25" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#263339">ROOM 3</text>
+                      <text x="218" y="38" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#6E6153">Hopper (60)</text>
+                      <rect x="218" y="46" width="94" height="4" fill="#EAE6DB" stroke="#D5CEBE" stroke-width="0.5" rx="2"/>
+                      <rect x="218" y="46" width="56" height="4" fill="#96897B" rx="2"/>
+                      <text x="218" y="58" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#5B4E41">60% • Nominal</text>
                     </g>
 
                     <!-- Room 4 (Keynote Arena - 500) -->
                     <g class="map-room" data-room="4" id="map-room-4">
-                      <rect x="20" y="115" width="140" height="55" fill="#fff5eb" stroke="#FE9000" stroke-width="1.5" rx="6"/>
-                      <circle cx="30" cy="127" r="3.5" fill="#FE9000"/>
-                      <text x="38" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 4 (ARENA)</text>
-                      <text x="28" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Keynote Arena (500)</text>
-                      <rect x="28" y="151" width="124" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="28" y="151" width="112" height="4" fill="#FE9000" rx="2"/>
-                      <text x="28" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#b35900">91% • HIGH SURGE</text>
+                      <rect x="20" y="115" width="140" height="55" fill="#FAF0E4" stroke="#CF995F" stroke-width="1.5" rx="6"/>
+                      <circle cx="30" cy="127" r="3.5" fill="#CF995F"/>
+                      <text x="38" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#263339">ROOM 4 (ARENA)</text>
+                      <text x="28" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#9A5A1E">Keynote Arena (500)</text>
+                      <rect x="28" y="151" width="124" height="4" fill="#EAE6DB" stroke="#D5CEBE" stroke-width="0.5" rx="2"/>
+                      <rect x="28" y="151" width="112" height="4" fill="#CF995F" rx="2"/>
+                      <text x="28" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="800" fill="#8F4B12">91% • HIGH SURGE</text>
                     </g>
 
                     <!-- Room 5 (Innovation Lab - 1200) -->
                     <g class="map-room" data-room="5" id="map-room-5">
-                      <rect x="170" y="115" width="150" height="55" fill="#f0fbff" stroke="#094074" stroke-width="1.5" rx="6"/>
-                      <circle cx="180" cy="127" r="3.5" fill="#5ADBFF"/>
-                      <text x="188" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#094074">ROOM 5 (LAB)</text>
-                      <text x="178" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#3C6997">Innovation Lab (1,200)</text>
-                      <rect x="178" y="151" width="134" height="4" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="0.5" rx="2"/>
-                      <rect x="178" y="151" width="46" height="4" fill="#5ADBFF" rx="2"/>
-                      <text x="178" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#094074">35% • Nominal</text>
+                      <rect x="170" y="115" width="150" height="55" fill="#F8F6EB" stroke="#628395" stroke-width="1.5" rx="6"/>
+                      <circle cx="180" cy="127" r="3.5" fill="#DFD5A5"/>
+                      <text x="188" y="130" font-family="'Space Grotesk', monospace" font-size="8.5" font-weight="800" fill="#263339">ROOM 5 (LAB)</text>
+                      <text x="178" y="143" font-family="'Outfit', sans-serif" font-size="6.5" font-weight="600" fill="#628395">Innovation Lab (1,200)</text>
+                      <rect x="178" y="151" width="134" height="4" fill="#EAE6DB" stroke="#D5CEBE" stroke-width="0.5" rx="2"/>
+                      <rect x="178" y="151" width="46" height="4" fill="#DFD5A5" rx="2"/>
+                      <text x="178" y="163" font-family="'Space Grotesk', monospace" font-size="6" font-weight="700" fill="#263339">35% • Nominal</text>
                     </g>
                   </svg>
                 </div>
@@ -2442,7 +2443,7 @@
               <div>
                 <div style="font-family:var(--font-mono); font-size:0.75rem; color:#64748b; text-transform:uppercase;">Connected Coordinator</div>
                 <div id="voice-target-name" style="font-size:1.25rem; font-weight:900; margin-top:2px;">Aryan Pandey (888777666)</div>
-                <div id="voice-connection-status" style="font-size:0.72rem; color:#2563eb; font-weight:700; margin-top:4px;">Frequency 433.10 MHz • Ready</div>
+                <div id="voice-connection-status" style="font-size:0.72rem; color:#628395; font-weight:700; margin-top:4px;">Frequency 433.10 MHz • Ready</div>
 
                 <div class="voice-channel-selector">
                   <button class="voice-chan-btn active" data-channel="1" data-target="Aryan Pandey (888777666)">Ch 1: Aryan</button>
@@ -2561,15 +2562,15 @@
 
                 <div class="settings-item" style="flex-direction:column; align-items:flex-start; gap:8px;">
                   <div style="display:flex; justify-content:space-between; width:100%; align-items:center;">
-                    <div style="font-size:0.75rem; font-weight:700; color:#094074;">🎨 5-Color Unified Palette</div>
-                    <span style="font-size:0.62rem; font-family:var(--font-mono); color:#094074; font-weight:800; background:#e0f6fc; padding:2px 6px; border-radius:6px; border:1px solid #5ADBFF;">ACTIVE</span>
+                    <div style="font-size:0.75rem; font-weight:700; color:#263339;">🎨 5-Color Unified Palette</div>
+                    <span style="font-size:0.62rem; font-family:var(--font-mono); color:#263339; font-weight:800; background:#EDE8D4; padding:2px 6px; border-radius:6px; border:1px solid #DFD5A5;">ACTIVE</span>
                   </div>
                   <div style="display:flex; gap:4px; width:100%;">
-                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#094074; color:#fff; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Yale<br>#094074</div>
-                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#3C6997; color:#fff; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Baltic<br>#3C6997</div>
-                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#5ADBFF; color:#094074; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Aqua<br>#5ADBFF</div>
-                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#FFDD4A; color:#094074; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Mustard<br>#FFDD4A</div>
-                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#FE9000; color:#fff; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Saffron<br>#FE9000</div>
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#628395; color:#fff; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Slate<br>#628395</div>
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#96897B; color:#fff; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Taupe<br>#96897B</div>
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#DFD5A5; color:#263339; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Sand<br>#DFD5A5</div>
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#DBAD6A; color:#263339; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Ochre<br>#DBAD6A</div>
+                    <div style="flex:1; text-align:center; padding:6px 2px; border-radius:6px; background:#CF995F; color:#fff; font-size:0.58rem; font-weight:800; font-family:var(--font-mono); line-height:1.2;">Caramel<br>#CF995F</div>
                   </div>
                 </div>
               </div>
@@ -2708,13 +2709,13 @@
               <div id="qr-placeholder-sim" style="text-align:center; padding:12px; color:#94a3b8; font-size:0.75rem;">
                 <div style="font-size:2.5rem; margin-bottom:6px;">📱</div>
                 <div>Align Attendee Pass</div>
-                <div style="font-size:0.65rem; color:#38bdf8; margin-top:4px;">Ready to Scan</div>
+                <div style="font-size:0.65rem; color:#DFD5A5; margin-top:4px;">Ready to Scan</div>
               </div>
               <div class="qr-laser-line"></div>
             </div>
 
             <!-- Total Checked In Bar -->
-            <div style="margin-top:14px; font-family:var(--font-mono); font-size:0.72rem; color:#38bdf8; font-weight:700;">
+            <div style="margin-top:14px; font-family:var(--font-mono); font-size:0.72rem; color:#DFD5A5; font-weight:700;">
               VERIFIED ENTRANCE COUNT: <span id="qr-verified-count" style="color:#ffffff;">3</span>
             </div>
           </div>
@@ -2735,7 +2736,7 @@
           <!-- Manual Ticket Input -->
           <div style="display:flex; gap:6px; padding:8px 12px;">
             <input type="text" id="qr-manual-code-input" placeholder="Enter badge # (e.g. DELTA-8492)" style="flex:1; height:32px; background:#1e293b; border:1px solid #475569; border-radius:6px; color:#ffffff; padding:0 8px; font-size:0.75rem; font-family:var(--font-mono); outline:none;">
-            <button id="btn-qr-manual-verify" style="height:32px; background:#2563eb; color:#ffffff; border:none; border-radius:6px; padding:0 12px; font-weight:700; font-size:0.75rem; cursor:pointer;">Verify</button>
+            <button id="btn-qr-manual-verify" style="height:32px; background:#628395; color:#ffffff; border:none; border-radius:6px; padding:0 12px; font-weight:700; font-size:0.75rem; cursor:pointer;">Verify</button>
           </div>
 
           <!-- Result Card -->
@@ -2746,7 +2747,7 @@
             </div>
             <div id="qr-attendee-name" style="font-size:0.95rem; font-weight:800; color:#ffffff; margin-top:6px;">Dr. Aditi Rao</div>
             <div id="qr-attendee-details" style="font-size:0.72rem; color:#94a3b8; margin-top:2px;">VIP Keynote • All Rooms (1-5)</div>
-            <button id="btn-qr-scan-next" style="width:100%; margin-top:8px; height:28px; background:#38bdf8; color:#0f172a; border:none; border-radius:6px; font-size:0.72rem; font-weight:800; cursor:pointer;">Scan Next Pass</button>
+            <button id="btn-qr-scan-next" style="width:100%; margin-top:8px; height:28px; background:#DBAD6A; color:#21292E; border:none; border-radius:6px; font-size:0.72rem; font-weight:800; cursor:pointer;">Scan Next Pass</button>
           </div>
         </div>
 
@@ -3442,14 +3443,14 @@
 
         // Baseline
         ctx.beginPath();
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+        ctx.strokeStyle = 'rgba(223, 213, 165, 0.35)';
         ctx.moveTo(0, h / 2);
         ctx.lineTo(w, h / 2);
         ctx.stroke();
 
         // Animated Radio Frequency Wave
         ctx.beginPath();
-        ctx.strokeStyle = isTransmitting ? '#ef4444' : '#38bdf8';
+        ctx.strokeStyle = isTransmitting ? '#CF995F' : '#DFD5A5';
         ctx.lineWidth = isTransmitting ? 2.5 : 1.5;
 
         const amplitude = isTransmitting ? (h * 0.35 + Math.sin(wavePhase * 3) * 6) : 3;
@@ -3791,7 +3792,7 @@
 
         if (animated) {
           row.style.transition = 'background 0.3s ease';
-          row.style.background = 'rgba(37, 99, 235, 0.08)';
+          row.style.background = 'rgba(98, 131, 149, 0.15)';
           setTimeout(() => {
             row.style.background = '';
           }, 1200);
@@ -4134,9 +4135,9 @@
         const activeCount = incidentTasksList.filter(t => t.status !== 'resolved').length;
         if (taskCountBadge) {
           taskCountBadge.textContent = `${activeCount} ACTIVE`;
-          taskCountBadge.style.background = activeCount > 0 ? '#eff6ff' : '#f0fdf4';
-          taskCountBadge.style.color = activeCount > 0 ? '#2563eb' : '#166534';
-          taskCountBadge.style.borderColor = activeCount > 0 ? '#2563eb' : '#16a34a';
+          taskCountBadge.style.background = activeCount > 0 ? '#F9E7D4' : '#EDE8D4';
+          taskCountBadge.style.color = activeCount > 0 ? '#8F4B12' : '#4A4022';
+          taskCountBadge.style.borderColor = activeCount > 0 ? '#CF995F' : '#DFD5A5';
         }
 
         if (incidentTasksList.length === 0) {
