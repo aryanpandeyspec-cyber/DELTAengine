@@ -24,6 +24,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
   bool _isLoading = true;
   bool _isWsConnected = false;
   String _taskFilter = 'ALL';
+  String? _selectedBlueprintRoomId;
 
   List<RoomTelemetry> _rooms = [];
   List<TaskItem> _tasks = [];
@@ -34,6 +35,18 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
   // Walkie talkie state
   String _activeChannel = '1';
   bool _isBroadcasting = false;
+
+  // Live Event Phase Countdown Ticker (from Suryansh)
+  int _tickerSeconds = 868; // 14 mins 28s
+  int _currentStageIdx = 0;
+  Timer? _tickerTimer;
+
+  final List<Map<String, dynamic>> _eventScheduleStages = [
+    {'title': 'KEYNOTE: "Autonomous AI Swarms"', 'stage': 'STAGE 2 / TURING', 'timer': 868},
+    {'title': 'WORKSHOP: "Edge Spatial Perception"', 'stage': 'STAGE 3 / LOVELACE', 'timer': 1200},
+    {'title': 'CROWD TRANSITION & LUNCH RELAY', 'stage': 'MAIN CONCOURSE', 'timer': 1800},
+    {'title': 'PANEL: "Future of Event Safety OS"', 'stage': 'STAGE 1 / HOPPER', 'timer': 2400},
+  ];
 
   // Scanner animation
   late AnimationController _scannerAnim;
@@ -57,12 +70,29 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
       CurvedAnimation(parent: _scannerAnim, curve: Curves.easeInOut),
     );
 
+    _startEventPhaseTicker();
     _loadInitialData();
     _setupWebSocketListeners();
   }
 
+  void _startEventPhaseTicker() {
+    _tickerTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        setState(() {
+          if (_tickerSeconds > 0) {
+            _tickerSeconds--;
+          } else {
+            _currentStageIdx = (_currentStageIdx + 1) % _eventScheduleStages.length;
+            _tickerSeconds = _eventScheduleStages[_currentStageIdx]['timer'] as int;
+          }
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
+    _tickerTimer?.cancel();
     _scannerAnim.dispose();
     _wsStateSub?.cancel();
     _taskSub?.cancel();
@@ -231,6 +261,96 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
             child: Text('ACKNOWLEDGE & DISPATCH', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold)),
           ),
         ],
+      ),
+    );
+  }
+
+  // Active Device Identity / Team Contacts Sheet (From Suryansh)
+  void _showTeamRosterDialog() {
+    final teamMembers = [
+      {'name': 'Suryansh', 'role': 'Lead Coordinator', 'phone': '+91 83030 09159', 'avatar': '🧑‍💻', 'ch': 'CH 1'},
+      {'name': 'Aryan Pandey', 'role': 'Core Systems Commander', 'phone': '+91 91542 76178', 'avatar': '💻', 'ch': 'CH 1'},
+      {'name': 'Shahid', 'role': 'Audio & AV Lead', 'phone': '+91 63035 70916', 'avatar': '🎧', 'ch': 'CH 4'},
+      {'name': 'Volunteer Runner', 'role': 'Field Gate Team', 'phone': 'Gate Desk #1', 'avatar': '🤝', 'ch': 'CH 2'},
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: DeltaColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        side: BorderSide(color: Colors.black, width: 2.5),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.people_alt, color: DeltaColors.mustard, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'COORDINATOR TEAM ROSTER',
+                      style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.white),
+                    ),
+                  ],
+                ),
+                NeubrutalistBadge(label: '4 ON-GROUND', backgroundColor: DeltaColors.neonCyan, textColor: Colors.black),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...teamMembers.map((m) => Container(
+              margin: const EdgeInsets.only(bottom: 8),
+              padding: const EdgeInsets.all(10),
+              decoration: Neubrutalism.boxDecoration(color: DeltaColors.surfaceLight, radius: 8),
+              child: Row(
+                children: [
+                  Text(m['avatar']!, style: const TextStyle(fontSize: 22)),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(m['name']!, style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 13)),
+                        Text('${m['role']} • ${m['phone']}', style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted, fontSize: 11)),
+                      ],
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _api.broadcastVoice(
+                        sender: widget.session.name,
+                        channel: m['ch']!.replaceAll('CH ', ''),
+                        text: 'Paging ${m['name']} over ${m['ch']}',
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Paging ${m['name']} on ${m['ch']}!')),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: DeltaColors.mustard,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.black, width: 1.5),
+                      ),
+                      child: Text(
+                        'PAGE ${m['ch']}',
+                        style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.black),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )),
+          ],
+        ),
       ),
     );
   }
@@ -613,9 +733,16 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
           ],
         ),
         actions: [
+          // Active Coordinator Roster Button (from Suryansh)
+          IconButton(
+            icon: const Icon(Icons.groups, size: 20, color: DeltaColors.mustard),
+            tooltip: 'Team Contacts',
+            onPressed: _showTeamRosterDialog,
+          ),
+
           // Quick Emergency SOS Header Button
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
             child: InkWell(
               onTap: _showSosConfirmationDialog,
               child: Container(
@@ -744,12 +871,62 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
     final totalIn = _rooms.fold<int>(0, (sum, r) => sum + r.doorCountIn);
     final totalOut = _rooms.fold<int>(0, (sum, r) => sum + r.doorCountOut);
 
+    final currentStage = _eventScheduleStages[_currentStageIdx];
+    final m = _tickerSeconds ~/ 60;
+    final s = _tickerSeconds % 60;
+    final timeStr = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+
     return RefreshIndicator(
       onRefresh: _loadInitialData,
       color: DeltaColors.mustard,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // POINT 6 (Suryansh): Live Event Phase Countdown Ticker
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: Neubrutalism.boxDecoration(
+              color: DeltaColors.surfaceLight,
+              radius: 8,
+              borderColor: DeltaColors.borderBlack,
+            ),
+            child: Row(
+              children: [
+                const PulsingDot(color: DeltaColors.mustard, size: 8),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        currentStage['stage']!.toString(),
+                        style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w900, color: DeltaColors.mustard),
+                      ),
+                      Text(
+                        currentStage['title']!.toString(),
+                        style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w800, color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: DeltaColors.skyAqua, width: 1.5),
+                  ),
+                  child: Text(
+                    '⏱️ $timeStr',
+                    style: GoogleFonts.spaceGrotesk(fontSize: 12, fontWeight: FontWeight.w900, color: DeltaColors.skyAqua),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 14),
+
           // Venue Global Pressure Index Card
           NeubrutalistCard(
             backgroundColor: DeltaColors.yaleBlue,
@@ -835,7 +1012,15 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
               ],
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
+
+          // POINT 5 (Suryansh): Interactive Venue Blueprint Floorplan
+          _buildInteractiveBlueprintFloorplan(),
+          const SizedBox(height: 14),
+
+          // Option 1 Store-and-Forward Mesh Relay Bar (Suryansh)
+          _buildStoreAndForwardMeshBar(),
+          const SizedBox(height: 14),
 
           // 1-Tap Emergency SOS Banner
           NeubrutalistCard(
@@ -940,6 +1125,201 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
           // Zone Density List
           ..._rooms.map((room) => _buildEnhancedRoomCard(room)),
           const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // POINT 5 (Suryansh): Interactive Venue Blueprint Floorplan
+  Widget _buildInteractiveBlueprintFloorplan() {
+    return NeubrutalistCard(
+      backgroundColor: DeltaColors.surface,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.map_outlined, color: DeltaColors.skyAqua, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    'INTERACTIVE VENUE BLUEPRINT',
+                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white),
+                  ),
+                ],
+              ),
+              NeubrutalistBadge(label: 'FLOOR 1', backgroundColor: DeltaColors.mustard, textColor: Colors.black),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Blueprint SVG-styled Grid Layout
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF07111E),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: DeltaColors.balticBlue, width: 2),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: _buildBlueprintChamber('room1', 'TURING HALL', '84%', DeltaColors.dangerRed),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      flex: 2,
+                      child: _buildBlueprintChamber('room2', 'LOVELACE', '65%', DeltaColors.mustard),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildBlueprintChamber('room3', 'HUB', '42%', DeltaColors.neonCyan),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildBlueprintChamber('room4', 'SHANNON', '52%', DeltaColors.neonCyan),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildBlueprintChamber('room5', 'PAVILION', '35%', DeltaColors.neonCyan),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          if (_selectedBlueprintRoomId != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: DeltaColors.surfaceLight,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: DeltaColors.skyAqua, width: 1.5),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.pin_drop, size: 14, color: DeltaColors.skyAqua),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Focused on ${_rooms.firstWhere((r) => r.id == _selectedBlueprintRoomId, orElse: () => _rooms.first).name}',
+                    style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBlueprintChamber(String id, String label, String density, Color heatColor) {
+    final isSelected = _selectedBlueprintRoomId == id;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedBlueprintRoomId = id),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? heatColor.withValues(alpha: 0.3) : const Color(0xFF0F1E33),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: isSelected ? heatColor : Colors.black, width: isSelected ? 2.5 : 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black,
+              offset: isSelected ? const Offset(2, 2) : const Offset(1, 1),
+              blurRadius: 0,
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: heatColor,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                density,
+                style: GoogleFonts.spaceGrotesk(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.black),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Option 1: Store-and-Forward Mesh Relay Bar (Suryansh)
+  Widget _buildStoreAndForwardMeshBar() {
+    final queuedCount = _api.offlineQueueCount;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: DeltaColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black, width: 2),
+        boxShadow: const [
+          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.wifi_tethering, size: 16, color: DeltaColors.neonCyan),
+              const SizedBox(width: 8),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('LOCAL HOTSPOT MESH RELAY', style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w900, color: DeltaColors.mustard)),
+                  Text(
+                    queuedCount == 0 ? '● Online (Area 1 Link • 0 pending)' : '○ Roaming ($queuedCount actions queued)',
+                    style: GoogleFonts.spaceGrotesk(fontSize: 10, color: queuedCount == 0 ? DeltaColors.successGreen : Colors.orangeAccent),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          InkWell(
+            onTap: () async {
+              final flushed = await _api.flushOfflineQueue();
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('⚡ Mesh Relay Synced ($flushed delivered)')),
+                );
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: DeltaColors.surfaceLight,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: DeltaColors.skyAqua, width: 1.5),
+              ),
+              child: Text(
+                'SYNC QUEUE',
+                style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w800, color: DeltaColors.skyAqua),
+              ),
+            ),
+          ),
         ],
       ),
     );
