@@ -426,6 +426,30 @@
       btn.addEventListener('click', () => stopWebcam());
     });
 
+    // Bind ALL Connect Real Camera Buttons (Top Hub & Modal)
+    document.querySelectorAll('#btn-cctv-connect-real, #btn-modal-cctv-connect-real, .btn-cctv-connect-real').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (hubBody && hubBody.classList.contains('collapsed')) {
+          hubBody.classList.remove('collapsed');
+          if (btnToggleView) btnToggleView.textContent = '🔼 Minimize View';
+        }
+        await connectRealCamera();
+      });
+    });
+
+    // Direct 1-click on CCTV canvas when in simulation mode to connect real hardware camera
+    setTimeout(() => {
+      [canvasEl, document.getElementById('modal-cctv-hud-canvas')].forEach(cEl => {
+        if (cEl) {
+          cEl.addEventListener('click', async () => {
+            if (isSimulatedFeed) {
+              await connectRealCamera();
+            }
+          });
+        }
+      });
+    }, 100);
+
     // Bind Tint Auto-Fix Toggle Buttons
     syncColorModeUI = () => {
       document.querySelectorAll('#btn-cctv-tint-fix, .btn-cctv-tint-fix').forEach(btn => {
@@ -975,19 +999,18 @@ Email: ${fromEmail}`;
         const prevVal = select.value || selectedCameraDeviceId;
         select.innerHTML = '';
 
-        if (videoDevices.length === 0) {
-          const opt = document.createElement('option');
-          opt.value = '';
-          opt.textContent = 'Integrated / USB Webcam';
-          select.appendChild(opt);
-          return;
-        }
+        // 1. Live Hardware Default Option
+        const optDefault = document.createElement('option');
+        optDefault.value = 'real-default';
+        optDefault.textContent = '📹 Live Hardware Camera (Auto-Detect Default)';
+        select.appendChild(optDefault);
 
+        // 2. Physical enumerated cameras
         videoDevices.forEach((dev, idx) => {
           const opt = document.createElement('option');
           opt.value = dev.deviceId;
           const rawLabel = dev.label ? dev.label.trim() : '';
-          let label = rawLabel || `Camera ${idx + 1}`;
+          let label = rawLabel || `Camera Device ${idx + 1}`;
           const lower = label.toLowerCase();
 
           if (lower.includes('720p') || lower.includes('integrated') || lower.includes('internal') || lower.includes('built-in')) {
@@ -995,28 +1018,28 @@ Email: ${fromEmail}`;
           } else if (rawLabel) {
             opt.textContent = `📹 ${label}`;
           } else {
-            opt.textContent = `📹 Video Input Device ${idx + 1}`;
+            opt.textContent = `📹 Physical Camera Device ${idx + 1}`;
           }
           select.appendChild(opt);
         });
 
-        // Restore selected value if valid or pick best default
-        if (prevVal && Array.from(select.options).some(o => o.value === prevVal)) {
+        // 3. Virtual Simulation Feed (Demo Mode)
+        const optSim = document.createElement('option');
+        optSim.value = 'simulated';
+        optSim.textContent = '🤖 Virtual Simulation Feed (Demo Mode)';
+        select.appendChild(optSim);
+
+        // Restore selected value if valid or set sensible default
+        if (isSimulatedFeed) {
+          select.value = 'simulated';
+        } else if (prevVal && Array.from(select.options).some(o => o.value === prevVal)) {
           select.value = prevVal;
-          selectedCameraDeviceId = prevVal;
-        } else if (videoDevices.length > 0) {
-          const extOpt = Array.from(select.options).find(o => !o.textContent.includes('Integrated'));
-          if (extOpt) {
-            select.value = extOpt.value;
-            selectedCameraDeviceId = extOpt.value;
-          } else {
-            select.value = videoDevices[0].deviceId;
-            selectedCameraDeviceId = videoDevices[0].deviceId;
-          }
+        } else {
+          select.value = 'real-default';
         }
       });
     } catch (e) {
-      console.warn('[CCTV] Device enumeration error:', e);
+      console.warn('[CCTV] Device enumeration notice:', e);
     }
   }
 
@@ -1034,13 +1057,22 @@ Email: ${fromEmail}`;
 
     const activeOptText = document.querySelector('.cctv-select:not(.cctv-venue-select) option:checked')?.textContent || 'Camera';
 
-    // Directly start/switch to selected camera so choosing from dropdown immediately displays feed
-    if (typeof createToast === 'function') createToast(`🔄 Switching camera to: ${activeOptText}...`, 'info');
+    if (deviceId === 'simulated') {
+      if (typeof createToast === 'function') createToast('🤖 Switched to Virtual Simulation Feed (Demo Mode)', 'info');
+      stopWebcam();
+      isSimulatedFeed = true;
+      isCameraActive = true;
+      updateCameraStateUI(true, true);
+      if (!animFrameId) animFrameId = requestAnimationFrame(processVideoFrame);
+      return;
+    }
+
+    if (typeof createToast === 'function') createToast(`🔄 Connecting camera: ${activeOptText}...`, 'info');
     stopWebcam();
-    await startWebcam(deviceId);
+    await connectRealCamera(deviceId === 'real-default' ? '' : deviceId);
   }
 
-  async function startWebcam(requestedDeviceId) {
+  async function connectRealCamera(targetDeviceId) {
     const hubBody = document.getElementById('cctv-hub-body');
     if (hubBody && hubBody.classList.contains('collapsed')) {
       hubBody.classList.remove('collapsed');
@@ -1049,7 +1081,7 @@ Email: ${fromEmail}`;
     }
 
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      if (typeof createToast === 'function') createToast('Webcam not supported in this browser. Activating Simulation Mode.', 'info');
+      if (typeof createToast === 'function') createToast('Webcam not supported in this browser. Running Virtual Simulation.', 'warning');
       isSimulatedFeed = true;
       isCameraActive = true;
       updateCameraStateUI(true, true);
@@ -1057,7 +1089,10 @@ Email: ${fromEmail}`;
       return;
     }
 
-    const deviceId = requestedDeviceId || selectedCameraDeviceId || document.querySelector('.cctv-select:not(.cctv-venue-select)')?.value;
+    const deviceId = (targetDeviceId === 'real-default' || targetDeviceId === 'simulated')
+      ? ''
+      : (targetDeviceId || selectedCameraDeviceId || '');
+
     if (deviceId) {
       selectedCameraDeviceId = deviceId;
       try { localStorage.setItem('delta_selected_camera_id', deviceId); } catch (e) { }
@@ -1076,39 +1111,32 @@ Email: ${fromEmail}`;
       frameRate: { ideal: 30 }
     };
 
-    if (deviceId) {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            ...baseVideo,
-            deviceId: { exact: deviceId }
-          },
-          audio: false
-        });
-      } catch (exactErr) {
-        console.warn('[CCTV] Exact deviceId constraint failed, trying ideal constraint:', exactErr);
+    try {
+      if (deviceId) {
         try {
           stream = await navigator.mediaDevices.getUserMedia({
-            video: {
-              ...baseVideo,
-              deviceId: { ideal: deviceId }
-            },
+            video: { ...baseVideo, deviceId: { exact: deviceId } },
             audio: false
           });
-        } catch (idealErr) {
-          console.warn('[CCTV] Ideal constraint failed, trying basic video:', idealErr);
+        } catch (exactErr) {
           try {
+            stream = await navigator.mediaDevices.getUserMedia({
+              video: { ...baseVideo, deviceId: { ideal: deviceId } },
+              audio: false
+            });
+          } catch (idealErr) {
             stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo, audio: false });
-          } catch (basicErr) {
-            try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); } catch (e) { }
           }
         }
-      }
-    } else {
-      try {
+      } else {
         stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo, audio: false });
-      } catch (err) {
-        try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); } catch (e) { }
+      }
+    } catch (primaryErr) {
+      console.warn('[CCTV] Standard camera constraints failed, attempting fallback:', primaryErr);
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      } catch (fallbackErr) {
+        console.warn('[CCTV] Real camera permission denied or unavailable:', fallbackErr);
       }
     }
 
@@ -1134,11 +1162,11 @@ Email: ${fromEmail}`;
         animFrameId = requestAnimationFrame(processVideoFrame);
       }
 
-      // Immediately re-enumerate now that getUserMedia has unlocked the true hardware device labels!
+      // Re-enumerate devices so true hardware labels are populated
       await enumerateCameras();
 
-      const activeLabel = document.querySelector('.cctv-select:not(.cctv-venue-select) option:checked')?.textContent || 'Zebronics 480p';
-      if (typeof createToast === 'function') createToast(`📹 ${activeLabel} feed connected!`, 'success');
+      const activeLabel = document.querySelector('.cctv-select:not(.cctv-venue-select) option:checked')?.textContent || 'Live Web Camera';
+      if (typeof createToast === 'function') createToast(`🟢 ${activeLabel} feed connected!`, 'success');
     } else {
       isSimulatedFeed = true;
       isCameraActive = true;
@@ -1146,8 +1174,22 @@ Email: ${fromEmail}`;
       if (!animFrameId) {
         animFrameId = requestAnimationFrame(processVideoFrame);
       }
-      if (typeof createToast === 'function') createToast('📹 Running in High-Fidelity CCTV Simulation Mode.', 'info');
+      if (typeof createToast === 'function') {
+        createToast('📷 Camera permission not granted or device in use. Running Virtual Simulation. Click [📷 Connect Real Camera] to retry.', 'warning');
+      }
     }
+  }
+
+  async function startWebcam(requestedDeviceId) {
+    if (requestedDeviceId === 'simulated') {
+      stopWebcam();
+      isSimulatedFeed = true;
+      isCameraActive = true;
+      updateCameraStateUI(true, true);
+      if (!animFrameId) animFrameId = requestAnimationFrame(processVideoFrame);
+      return;
+    }
+    await connectRealCamera(requestedDeviceId);
   }
 
   function stopWebcam() {
@@ -1176,13 +1218,14 @@ Email: ${fromEmail}`;
     const statusTexts = document.querySelectorAll('#cctv-stream-status, #modal-cctv-stream-status, .cctv-status-badge');
     const startBtns = document.querySelectorAll('#btn-cctv-start, .btn-cctv-start');
     const stopBtns = document.querySelectorAll('#btn-cctv-stop, .btn-cctv-stop');
+    const connectRealBtns = document.querySelectorAll('#btn-cctv-connect-real, #btn-modal-cctv-connect-real, .btn-cctv-connect-real');
 
     statusTexts.forEach(statusText => {
       if (active) {
         statusText.innerHTML = isSim
-          ? '🟢 <strong>VIRTUAL SENSOR FEED</strong> (640x480)'
-          : '🟢 <strong>CAMERA FEED LIVE</strong>';
-        statusText.style.color = '#10b981';
+          ? '🟡 <strong>VIRTUAL SIMULATION FEED</strong> (Click to Connect Real Webcam)'
+          : '🟢 <strong>LIVE HARDWARE CAMERA</strong> (640x480)';
+        statusText.style.color = isSim ? '#f59e0b' : '#10b981';
       } else {
         statusText.innerHTML = '⚪ <strong>CAMERA READY</strong>';
         statusText.style.color = '#9ca3af';
@@ -1191,6 +1234,16 @@ Email: ${fromEmail}`;
 
     startBtns.forEach(b => b.disabled = active);
     stopBtns.forEach(b => b.disabled = !active);
+
+    connectRealBtns.forEach(b => {
+      if (active && !isSim) {
+        b.innerHTML = '✅ Hardware Cam Active';
+        b.style.opacity = '0.75';
+      } else {
+        b.innerHTML = '📷 Connect Real Camera';
+        b.style.opacity = '1.0';
+      }
+    });
   }
 
   // --- ZERO-HALLUCINATION MULTI-SCALE HEAD & FACE PERCEPTION ENGINE ---
@@ -2424,11 +2477,13 @@ Email: ${fromEmail}`;
       const gaugeX = w - gaugeW - 12;
       const gaugeY = h - gaugeH - 12;
 
-      c.fillStyle = 'rgba(15, 23, 42, 0.94)';
-      c.fillRect(gaugeX, gaugeY, gaugeW, gaugeH);
-      c.strokeStyle = isCriticalPsi ? '#ef4444' : '#334155';
+      c.fillStyle = 'rgba(10, 15, 29, 0.58)';
+      c.beginPath();
+      c.roundRect ? c.roundRect(gaugeX, gaugeY, gaugeW, gaugeH, 6) : c.rect(gaugeX, gaugeY, gaugeW, gaugeH);
+      c.fill();
+      c.strokeStyle = isCriticalPsi ? 'rgba(239, 68, 68, 0.85)' : 'rgba(51, 65, 85, 0.55)';
       c.lineWidth = isCriticalPsi ? 2.5 : 1.5;
-      c.strokeRect(gaugeX, gaugeY, gaugeW, gaugeH);
+      c.stroke();
 
       // Gauge Title
       c.fillStyle = '#94a3b8';
@@ -2455,7 +2510,7 @@ Email: ${fromEmail}`;
       const barTrackH = 8;
       const fillPct = Math.min(1.0, psiVal / 15.0);
 
-      c.fillStyle = '#1e293b';
+      c.fillStyle = 'rgba(30, 41, 59, 0.5)';
       c.fillRect(barTrackX, barTrackY, barTrackW, barTrackH);
 
       c.fillStyle = psiColor;
@@ -2482,25 +2537,32 @@ Email: ${fromEmail}`;
       c.textAlign = 'left';
     }
 
-    // Draw bounding boxes around tracked attendees in all modes
+    // Draw semi-transparent, non-blocking bounding reticles around tracked attendees
     boxes.forEach((b, idx) => {
-      let boxColor = '#10b981'; // Green (Inside)
+      const isScanning = isSensorScanning;
+      const strokeColor = isScanning ? 'rgba(245, 158, 11, 0.65)' : 'rgba(16, 185, 129, 0.60)';
+      const fillColor = isScanning ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.07)';
+      const reticleColor = isScanning ? '#f59e0b' : '#34d399';
+      const textColor = isScanning ? '#fbbf24' : '#6ee7b7';
+
       let labelText = b.label === 'PERSON'
-        ? `👤 PERSON #${idx + 1} [${b.score || 95}%]`
-        : `HEAD #${idx + 1} [INSIDE]`;
+        ? `👤 PERSON #${idx + 1}`
+        : `HEAD #${idx + 1}`;
+      if (isScanning) labelText = '🎯 DOOR SCAN';
 
-      if (isSensorScanning) {
-        boxColor = '#f59e0b'; // Amber (Active Scan)
-        labelText = '🎯 SCANNING AT DOOR';
-      }
+      // 1. Ultra-light translucent fill (100% see-through to the face/person)
+      c.fillStyle = fillColor;
+      c.fillRect(b.x, b.y, b.w, b.h);
 
-      c.strokeStyle = boxColor;
-      c.lineWidth = 2.5;
+      // 2. Delicate translucent boundary stroke
+      c.strokeStyle = strokeColor;
+      c.lineWidth = 1.2;
       c.strokeRect(b.x, b.y, b.w, b.h);
 
-      // Corner reticles for high-tech HUD feel, dynamically sized to head box
-      const cornerLen = Math.min(14, Math.floor(b.w * 0.25));
-      c.lineWidth = 3.5;
+      // 3. Sleek corner reticles for high-tech perception feel
+      const cornerLen = Math.min(12, Math.floor(b.w * 0.22));
+      c.strokeStyle = reticleColor;
+      c.lineWidth = 2.0;
       c.beginPath();
       // Top-left
       c.moveTo(b.x, b.y + cornerLen); c.lineTo(b.x, b.y); c.lineTo(b.x + cornerLen, b.y);
@@ -2512,23 +2574,49 @@ Email: ${fromEmail}`;
       c.moveTo(b.x + b.w - cornerLen, b.y + b.h); c.lineTo(b.x + b.w, b.y + b.h); c.lineTo(b.x + b.w, b.y + b.h - cornerLen);
       c.stroke();
 
-      // Compact label badge directly above head box
-      const badgeW = Math.min(130, Math.max(76, b.w));
-      const badgeH = 18;
-      c.fillStyle = boxColor;
-      c.fillRect(b.x, Math.max(0, b.y - badgeH), badgeW, badgeH);
-      c.fillStyle = '#000000';
-      c.font = 'bold 10px "Space Grotesk", sans-serif';
-      c.fillText(labelText, b.x + 4, Math.max(13, b.y - 4));
+      // 4. Sleek translucent frosted pill label badge (never solid opaque)
+      const badgeW = Math.min(115, Math.max(68, b.w));
+      const badgeH = 16;
+      const badgeY = Math.max(2, b.y - badgeH - 2);
+
+      c.fillStyle = 'rgba(10, 15, 29, 0.60)';
+      c.strokeStyle = strokeColor;
+      c.lineWidth = 1.0;
+      c.beginPath();
+      c.roundRect ? c.roundRect(b.x, badgeY, badgeW, badgeH, 4) : c.rect(b.x, badgeY, badgeW, badgeH);
+      c.fill();
+      c.stroke();
+
+      // 5. Crisp, readable glowing text
+      c.fillStyle = textColor;
+      c.font = 'bold 9px "Space Grotesk", sans-serif';
+      c.fillText(labelText, b.x + 4, badgeY + 11);
     });
 
-  // Top Header Banner
+  // Top Header Banner (Semi-Transparent Frosted Glass)
   const bannerW = Math.max(420, Math.min(w - 24, 490));
-  c.fillStyle = 'rgba(17, 24, 39, 0.94)';
-  c.fillRect(12, 12, bannerW, isMegaModeActive ? 102 : 68);
-  c.strokeStyle = isSensorScanning ? '#f59e0b' : (isMegaModeActive && megaCrowdState.stampedeRisk >= 75 ? '#ef4444' : '#2563eb');
-  c.lineWidth = 2;
-  c.strokeRect(12, 12, bannerW, isMegaModeActive ? 102 : 68);
+  const bannerH = isMegaModeActive ? 102 : 68;
+  c.fillStyle = 'rgba(10, 15, 29, 0.58)';
+  c.beginPath();
+  c.roundRect ? c.roundRect(12, 12, bannerW, bannerH, 8) : c.rect(12, 12, bannerW, bannerH);
+  c.fill();
+  c.strokeStyle = isSensorScanning ? 'rgba(245, 158, 11, 0.75)' : (isMegaModeActive && megaCrowdState.stampedeRisk >= 75 ? 'rgba(239, 68, 68, 0.85)' : 'rgba(59, 130, 246, 0.45)');
+  c.lineWidth = 1.5;
+  c.stroke();
+
+  // Top Right Feed Mode Pill
+  const indicatorW = isSimulatedFeed ? 210 : 165;
+  const indicatorX = 12 + bannerW - indicatorW - 8;
+  c.fillStyle = isSimulatedFeed ? 'rgba(234, 179, 8, 0.22)' : 'rgba(16, 185, 129, 0.22)';
+  c.strokeStyle = isSimulatedFeed ? 'rgba(234, 179, 8, 0.7)' : 'rgba(16, 185, 129, 0.7)';
+  c.lineWidth = 1;
+  c.beginPath();
+  c.roundRect ? c.roundRect(indicatorX, 18, indicatorW, 18, 4) : c.rect(indicatorX, 18, indicatorW, 18);
+  c.fill();
+  c.stroke();
+  c.fillStyle = isSimulatedFeed ? '#fef08a' : '#a7f3d0';
+  c.font = 'bold 9px "Space Grotesk", sans-serif';
+  c.fillText(isSimulatedFeed ? '🤖 SIMULATION • [CLICK WEBCAM]' : '🟢 LIVE HARDWARE CAMERA', indicatorX + 6, 30);
 
   c.fillStyle = '#ffffff';
   c.font = 'bold 13px "Space Grotesk", sans-serif';

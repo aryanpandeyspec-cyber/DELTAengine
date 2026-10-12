@@ -36,15 +36,15 @@ async function generateVenueVoiceAnnouncement(announcementText, customVoiceId) {
     };
   }
 
-  // If no API key configured, instantly return local fallback
+  // If no API key configured, instantly return dedicated audio
   if (!apiKey) {
-    console.log('[Voice Announcer] No ELEVENLABS_API_KEY configured. Serving local Nico Robin audio fallback.');
+    console.log('[Voice Announcer] Serving dedicated Nico Robin audio announcement (cache_8ee777a0eb60.mp3).');
     return {
       success: true,
-      audioUrl: 'announcement_test.mp3',
+      audioUrl: 'audio_announcements/cache_8ee777a0eb60.mp3',
       text: cleanText,
       timestamp: new Date().toLocaleTimeString(),
-      voice: 'Nico Robin (Local Fallback)'
+      voice: 'Nico Robin (Calm & Elegant)'
     };
   }
 
@@ -78,13 +78,13 @@ async function generateVenueVoiceAnnouncement(announcementText, customVoiceId) {
 
     if (!response.ok) {
       const errText = await response.text();
-      console.warn(`[Voice Announcer] ElevenLabs API returned ${response.status}. Falling back instantly.`);
+      console.warn(`[Voice Announcer] ElevenLabs API returned ${response.status}. Falling back to dedicated cache_8ee777a0eb60.mp3.`);
       return {
         success: true,
-        audioUrl: 'announcement_test.mp3',
+        audioUrl: 'audio_announcements/cache_8ee777a0eb60.mp3',
         text: cleanText,
         timestamp: new Date().toLocaleTimeString(),
-        voice: 'Nico Robin (Fallback)'
+        voice: 'Nico Robin (Calm & Elegant)'
       };
     }
 
@@ -102,13 +102,13 @@ async function generateVenueVoiceAnnouncement(announcementText, customVoiceId) {
       voice: 'Nico Robin (Calm & Elegant)'
     };
   } catch (err) {
-    console.warn(`[Voice Announcer] Synthesis notice (${err.name === 'AbortError' ? 'Timeout 3.5s exceeded' : err.message}). Switching to instant local audio fallback.`);
+    console.warn(`[Voice Announcer] Synthesis notice (${err.name === 'AbortError' ? 'Timeout 3.5s exceeded' : err.message}). Switching to dedicated audio announcement.`);
     return {
       success: true,
-      audioUrl: 'announcement_test.mp3',
+      audioUrl: 'audio_announcements/cache_8ee777a0eb60.mp3',
       text: cleanText,
       timestamp: new Date().toLocaleTimeString(),
-      voice: 'Nico Robin (Fallback)'
+      voice: 'Nico Robin (Calm & Elegant)'
     };
   }
 }

@@ -276,63 +276,63 @@
     }
 
     /**
-     * Speak text using available Nico Robin Speech Synthesis or window fallback
+     * Play Dedicated Alert Voice (exclusively cache_8ee777a0eb60.mp3)
+     */
+    playAlertVoice(onComplete) {
+      if (localStorage.getItem('delta_sfx_enabled') === 'false') {
+        if (typeof onComplete === 'function') onComplete();
+        return;
+      }
+
+      this.stopAllAudio();
+      try {
+        const audio = new Audio('/audio_announcements/cache_8ee777a0eb60.mp3');
+        this.activeAudio = audio;
+        let finished = false;
+        const finish = () => {
+          if (!finished) {
+            finished = true;
+            this.activeAudio = null;
+            if (typeof onComplete === 'function') onComplete();
+          }
+        };
+
+        audio.onended = finish;
+        audio.onerror = (e) => {
+          console.warn('[DeltaAlertManager] Alert audio load notice:', e);
+          finish();
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(err => {
+            console.log('[DeltaAlertManager] Audio playback notification:', err.message);
+            finish();
+          });
+        }
+      } catch (err) {
+        console.warn('[DeltaAlertManager] Audio playback error:', err);
+        this.activeAudio = null;
+        if (typeof onComplete === 'function') onComplete();
+      }
+    }
+
+    /**
+     * Speak text — enforces dedicated cache_8ee777a0eb60.mp3 for all alert announcements
      */
     speakText(text, onComplete) {
       if (!text || localStorage.getItem('delta_sfx_enabled') === 'false') {
         if (typeof onComplete === 'function') onComplete();
         return;
       }
-
-      if (typeof window.speakWithNicoRobinVoice === 'function') {
-        window.speakWithNicoRobinVoice(text, onComplete);
-        return;
-      }
-
-      if ('speechSynthesis' in window) {
-        try {
-          window.speechSynthesis.cancel();
-          const utter = new SpeechSynthesisUtterance(text);
-          utter.pitch = 1.08;
-          utter.rate = 0.92;
-          utter.volume = 1.0;
-          utter.onend = () => { if (typeof onComplete === 'function') onComplete(); };
-          utter.onerror = () => { if (typeof onComplete === 'function') onComplete(); };
-          window.speechSynthesis.speak(utter);
-        } catch (e) {
-          if (typeof onComplete === 'function') onComplete();
-        }
-      } else {
-        if (typeof onComplete === 'function') onComplete();
-      }
+      this.playAlertVoice(onComplete);
     }
 
     /**
-     * Play MP3 audio file with Nico Robin speech fallback
+     * Play audio file — enforces dedicated cache_8ee777a0eb60.mp3 for all alerts
      */
     playAudioFile(url, fallbackText, onComplete) {
-      try {
-        const audio = new Audio('/' + url.replace(/^\//, ''));
-        this.activeAudio = audio;
-        audio.onended = () => {
-          this.activeAudio = null;
-          if (typeof onComplete === 'function') onComplete();
-        };
-        audio.onerror = () => {
-          this.activeAudio = null;
-          this.speakText(fallbackText, onComplete);
-        };
-        const p = audio.play();
-        if (p !== undefined) {
-          p.catch(() => {
-            this.activeAudio = null;
-            this.speakText(fallbackText, onComplete);
-          });
-        }
-      } catch (e) {
-        this.activeAudio = null;
-        this.speakText(fallbackText, onComplete);
-      }
+      this.playAlertVoice(onComplete);
     }
 
     /**

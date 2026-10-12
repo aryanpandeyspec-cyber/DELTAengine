@@ -811,38 +811,39 @@
   };
 
   function speakWithNicoRobinVoice(text, onComplete) {
-    if (!('speechSynthesis' in window) || !text) {
+    if (localStorage.getItem('delta_sfx_enabled') === 'false') {
       if (typeof onComplete === 'function') onComplete();
       return;
     }
+    if ('speechSynthesis' in window) {
+      try { window.speechSynthesis.cancel(); } catch (e) {}
+    }
     try {
-      window.speechSynthesis.cancel();
-      loadFemaleVoices();
-      const utter = new SpeechSynthesisUtterance(text);
-      // Nico Robin Persona: Confident, elegant, calm female
-      utter.pitch = 1.08;
-      utter.rate = 0.92;
-      utter.volume = 1.0;
-
-      const voices = window.speechSynthesis.getVoices();
-      const bestFemale = voices.find(v => /zira|samantha|victoria|karen|hazel|catherine|female/i.test(v.name))
-        || cachedFemaleVoices[0]
-        || voices.find(v => !/david|mark|george|male/i.test(v.name) && v.lang.startsWith('en'));
-
-      if (bestFemale) {
-        utter.voice = bestFemale;
+      if (activeAudioInstance) {
+        try { activeAudioInstance.pause(); activeAudioInstance.currentTime = 0; } catch (e) {}
+        activeAudioInstance = null;
       }
-
-      utter.onend = () => {
-        if (typeof onComplete === 'function') onComplete();
+      const audio = new Audio('/audio_announcements/cache_8ee777a0eb60.mp3');
+      activeAudioInstance = audio;
+      let completed = false;
+      const done = () => {
+        if (!completed) {
+          completed = true;
+          activeAudioInstance = null;
+          if (typeof onComplete === 'function') onComplete();
+        }
       };
-      utter.onerror = () => {
-        if (typeof onComplete === 'function') onComplete();
+      audio.onended = done;
+      audio.onerror = () => {
+        done();
       };
-
-      window.speechSynthesis.speak(utter);
+      const p = audio.play();
+      if (p !== undefined) {
+        p.catch(() => {
+          done();
+        });
+      }
     } catch (e) {
-      console.warn('[Nico Robin Speech Error]:', e);
       if (typeof onComplete === 'function') onComplete();
     }
   }
@@ -1225,10 +1226,10 @@
               window.handleVoiceAnnouncement(data);
             }
           } else {
-            // Instant speech synthesis fallback as Nico Robin
+            // Instant announcement fallback using cache_8ee777a0eb60.mp3
             if (typeof window.handleVoiceAnnouncement === 'function') {
               window.handleVoiceAnnouncement({
-                audioUrl: 'announcement_test.mp3',
+                audioUrl: 'audio_announcements/cache_8ee777a0eb60.mp3',
                 text: 'Attention attendees. DELTA Engine autonomous perception is active. All stage schedules and hall capacities are operating nominally.',
                 voice: 'Nico Robin (Local Voice)'
               });
@@ -1239,7 +1240,7 @@
           console.warn('[PA Fast Fallback]:', err.message);
           if (typeof window.handleVoiceAnnouncement === 'function') {
             window.handleVoiceAnnouncement({
-              audioUrl: 'announcement_test.mp3',
+              audioUrl: 'audio_announcements/cache_8ee777a0eb60.mp3',
               text: 'Attention attendees. DELTA Engine autonomous perception is active. All stage schedules and hall capacities are operating nominally.',
               voice: 'Nico Robin (Local Voice)'
             });
@@ -1253,7 +1254,7 @@
 
     if (btnReplay) {
       btnReplay.addEventListener('click', () => {
-        const audioUrl = lastPAAudioUrl || 'announcement_test.mp3';
+        const audioUrl = lastPAAudioUrl || 'audio_announcements/cache_8ee777a0eb60.mp3';
         const audio = new Audio('/' + audioUrl.replace(/^\//, ''));
         audio.play().catch(e => console.log('Replay note:', e));
       });

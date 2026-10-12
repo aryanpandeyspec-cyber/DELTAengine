@@ -10,6 +10,7 @@
 1. [Overview & Change Policy](#1-overview--change-policy)
 2. [Component-by-Component Change Ledger](#2-component-by-component-change-ledger)
 3. [Chronological Release History](#3-chronological-release-history)
+   - [v3.6.7 (October 2026) — Live Webcam Connectivity, Translucent Perception HUD & Dedicated ElevenLabs Alert Audio](#v367-october-2026--live-webcam-connectivity-translucent-perception-hud--dedicated-elevenlabs-alert-audio)
    - [v3.6.6 (October 2026) — Comprehensive Logical Errors Resolution & Architectural Resilience](#v366-october-2026--comprehensive-logical-errors-resolution--architectural-resilience)
    - [v3.6.5 (October 2026) — Exhaustive System Feature Audit, Browser Load Syntax Fix & IoT Door Telemetry Resiliency](#v365-october-2026--exhaustive-system-feature-audit-browser-load-syntax-fix--iot-door-telemetry-resiliency)
    - [v3.6.4 (October 2026) — High-Speed CCTV Optical Perception, Zero-Lag Cascade Optimization & Auto-Expanding Feed HUD](#v364-october-2026--high-speed-cctv-optical-perception-zero-lag-cascade-optimization--auto-expanding-feed-hud)
@@ -64,6 +65,28 @@ This ledger provides an unabridged audit trail for all engineering work on DELTA
 ---
 
 ## 3. Chronological Release History
+
+### v3.6.7 (October 2026) — Live Webcam Connectivity, Translucent Perception HUD & Dedicated ElevenLabs Alert Audio
+- **Objective**: Fix camera feed defaulting to virtual simulation mode and provide explicit controls to connect real hardware webcam; eliminate visual obstruction by redesigning solid opaque HUD boxes, banners, and alert toasts into modern translucent, non-blocking overlays; enforce dedicated studio-grade ElevenLabs voice audio (`frontend/audio_announcements/cache_8ee777a0eb60.mp3`) exclusively for all alert voicing without robotic browser TTS fallback.
+- **Key Deliverables**:
+  1. **Direct Live Hardware Camera Connection (`cctvPerception.js`)**:
+     - Added an explicit `[📷 Connect Real Camera]` toolbar button on the CCTV Perception Hub and modal (`#btn-cctv-connect-real` and `#btn-modal-cctv-connect-real`).
+     - Added 1-click canvas connection: Clicking anywhere on the CCTV canvas while in simulation mode immediately triggers `getUserMedia` hardware camera connection.
+     - Enhanced camera enumeration dropdown with explicit choices: `📹 Live Hardware Camera (Auto-Detect Default)`, enumerated hardware webcams (`💻 Integrated Webcam`, etc.), and `🤖 Virtual Simulation Feed (Demo Mode)`.
+     - Robust error handling: Clear, helpful toast guidance when browser permissions are denied, with graceful fallback and retry.
+  2. **Non-Blocking Translucent Perception HUD & Overlays (`cctvPerception.js` & `app.css`)**:
+     - **Attendee Detections**: Replaced opaque solid neon-green blocks (`0.94` opacity) with sleek, see-through corner reticles (`lineWidth: 2.0`, `#34d399`), delicate boundary stroke (`0.60` opacity), and frosted translucent pill badges (`rgba(10, 15, 29, 0.60)`) with glowing emerald text, providing 100% visibility to underlying faces and attendee movement.
+     - **Top Canvas Banner**: Transformed from solid `0.94` dark block to frosted glass (`rgba(10, 15, 29, 0.58)`) with rounded corners and live status pill.
+     - **Gate Barricade Pressure Gauge**: Transformed background to frosted glass (`rgba(10, 15, 29, 0.58)`).
+     - **Volunteer Alert Banner (`.volunteer-alert-banner`)**: Added `backdrop-filter: blur(16px)` with semi-transparent tinted backgrounds (`rgba(254, 226, 226, 0.84)` for critical siren, `rgba(254, 243, 199, 0.84)` for warning amber), ensuring underlying controls remain visible.
+     - **Toast Notification Cards (`.toast, .toast-card`)**: Added `backdrop-filter: blur(12px)` and translucent backgrounds (`rgba(255, 255, 255, 0.84)`).
+  3. **Exclusive Dedicated Alert Voice Audio Enforcement (`alertCoordinator.js`, `auth.js`, `voiceAnnouncer.js`)**:
+     - In `DeltaAlertManager.speakText` and `playAudioFile`, routed all alert speech to exclusively play `frontend/audio_announcements/cache_8ee777a0eb60.mp3`.
+     - Suppressed robotic `window.speechSynthesis` for alerts, eliminating robotic browser TTS fallbacks.
+     - Configured backend and frontend announcement fallback pipelines to serve `audio_announcements/cache_8ee777a0eb60.mp3`.
+  4. **100% System Audit Verification**:
+     - Verified all 82/82 regression tests pass in `tests/runAllTests.js`.
+     - Verified all 125/125 system audit tests pass in `tests/comprehensive_system_audit.js`.
 
 ### v3.6.6 (October 2026) — Comprehensive Logical Errors Resolution & Architectural Resilience
 - **Objective**: Fix logical inconsistencies, silent assignment failures, hardcoded time assumptions, missing setters, and parameter propagation dropouts across backend graph state, self-healing solvers, schedule importing/reverting, spatial twin calibration, and LLM agent models.
