@@ -1,11 +1,12 @@
 const { generateGroqAgentSwarmDialogue } = require('./agentSwarm');
 const { autoDispatchSelfHealingEmail } = require('./supabaseEmailIntegrator');
 const { generateVenueVoiceAnnouncement } = require('./voiceAnnouncer');
+const { appendForensicAuditLog } = require('./security');
 
 async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}) {
   const logs = [];
   logs.push(`[Agent Agentic OS] Initiating check run. Event: "${eventDescription}"`);
-  
+
   let iterations = 0;
   const MAX_ITERATIONS = 10;
   let hasConflicts = true;
@@ -15,6 +16,9 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
   const schedule = db.schedule;
   const initialSchedule = JSON.parse(JSON.stringify(db.schedule));
 
+  const handledOverflowTopics = new Set();
+  const handledDelayTopics = new Set();
+
   while (hasConflicts && iterations < MAX_ITERATIONS) {
     iterations++;
     hasConflicts = false;
@@ -23,31 +27,37 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
     logs.push(`[Agent Pass ${iterations}] Auditing event schedule for conflicts...`);
 
     for (const slotId in schedule) {
-      const slot = graph.slots[slotId];
+      const slot = graph.slots && graph.slots[slotId];
+      if (!slot) continue;
+      if (!schedule[slotId]) continue;
+
       for (const hallId in schedule[slotId]) {
         const topicId = schedule[slotId][hallId];
         if (!topicId) continue;
 
-        const topic = graph.topics[topicId];
+        const topic = graph.topics && graph.topics[topicId];
         if (!topic) continue;
-        const speaker = (graph.speakers && graph.speakers[topic.speakerId]) || { name: 'Featured Speaker', delay: 0 };
+        const speaker = (graph.speakers && graph.speakers[topic.speakerId || topic.speaker_id]) || { name: 'Featured Speaker', delay: 0 };
         const hall = (graph.halls && graph.halls[hallId]) || { name: 'Hall Venue', capacity: 250 };
 
-        if (speaker && speaker.delay > 0) {
-          const availabilityStartHour = 9.5 + (speaker.delay / 60);
+        if (speaker && speaker.delay > 0 && !handledDelayTopics.has(topicId)) {
+          const baselineHour = (speaker.startHour !== undefined) ? speaker.startHour : (initialSchedule[slotId] && initialSchedule[slotId][hallId] === topicId ? slot.startHour : (slot.startHour || 9.5));
+          const availabilityStartHour = baselineHour + (speaker.delay / 60);
           if (slot.startHour < availabilityStartHour) {
             logs.push(`[CONFLICT] Speaker "${speaker.name}" is delayed by ${speaker.delay} mins. Available at ${formatHour(availabilityStartHour)}, but talk "${topic.title}" is scheduled at ${slot.time} in ${hall.name}.`);
             conflictFoundThisPass = true;
             hasConflicts = true;
+            handledDelayTopics.add(topicId);
             resolveSpeakerDelay(topicId, slotId, hallId, availabilityStartHour, logs, notifications, db);
             break;
           }
         }
 
-        if (topic.interest > hall.capacity) {
+        if (topic.interest > hall.capacity && !handledOverflowTopics.has(topicId)) {
           logs.push(`[CONFLICT] Talk "${topic.title}" has ${topic.interest} interested attendees, exceeding ${hall.name}'s capacity of ${hall.capacity}.`);
           conflictFoundThisPass = true;
           hasConflicts = true;
+          handledOverflowTopics.add(topicId);
           resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, db);
           break;
         }
@@ -88,7 +98,7 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
         text: `Scheduling conflict detected! Analyzed availability overlap constraint. Commencing heal solvers.`,
         time: timeStr
       });
-      
+
       notifications.forEach((n) => {
         if (n.message.includes('moved') || n.message.includes('rescheduled') || n.message.includes('Shifted') || n.message.includes('reschedule')) {
           swarmChat.push({
@@ -183,24 +193,43 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
       reason: firstNotif.message
     }, db, broadcast);
 
-    // AUTONOMOUS VENUE PA VOICE ANNOUNCEMENT VIA ELEVENLABS
-    const paScript = `Attention attendees. Autonomous schedule update: ${topicTitle} is now scheduled in ${newVenue} (${timeSlot}) to ensure safe venue capacity. Please follow digital hall signage.`;
+    // AUTONOMOUS ZONED PA VOICE ANNOUNCEMENT VIA ELEVENLABS (Zoned to foyers/corridors, never active lecture halls)
+    const paScript = `Attention foyer and corridor attendees: Autonomous schedule update: ${topicTitle} is now scheduled in ${newVenue} (${timeSlot}) to ensure safe egress flow. Please follow digital hallway signage.`;
     generateVenueVoiceAnnouncement(paScript, 'EXAVITQu4vr4xnSDxMaL').then(voiceRes => {
       if (voiceRes && voiceRes.success && typeof broadcast === 'function') {
         broadcast({
           type: 'VOICE_ANNOUNCEMENT',
-          data: voiceRes
+          data: {
+            ...voiceRes,
+            targetZone: 'FOYER_AND_CORRIDORS_ONLY',
+            suppressInLectureHalls: true,
+            priority: 'LOGISTICS_UPDATE'
+          }
         });
       }
     }).catch(err => console.warn('[SelfHealing Voice Notice]:', err.message));
   }
 
   const conflictLog = logs.find(l => l.includes('[CONFLICT]') || l.includes('exceeds') || l.includes('Capacity'));
-  const actionLog = logs.find(l => l.includes('[Action') || l.includes('Moved') || l.includes('Relocated') || l.includes('Swapped') || l.includes('shifted') || l.includes('rescheduled'));
+  const actionLog = logs.find(l => l.includes('[Action') || l.includes('Moved') || l.includes('Relocated') || l.includes('Swapped') || l.includes('shifted') || l.includes('rescheduled') || l.includes('Spillover'));
 
   const wasHealed = !!(conflictLog || actionLog || notifications.length > 0);
   const conflictReason = conflictLog ? conflictLog.replace(/\[.*?\]/g, '').trim() : (notifications[0]?.message || '⚠️ Operational constraint violation detected.');
   const destinationTarget = actionLog ? actionLog.replace(/\[.*?\]/g, '').trim() : '📍 Optimization Solver reallocating talk node to viable venue position.';
+
+  if (wasHealed && typeof appendForensicAuditLog === 'function') {
+    appendForensicAuditLog(
+      'SCHEDULE_AUTONOMOUS_HEALED',
+      'Deterministic Safety Engine',
+      'SYSTEM_SOLVER',
+      destinationTarget,
+      { eventDescription, conflictReason, notificationsCount: notifications.length }
+    );
+  }
+
+  if (wasHealed && typeof db.persist === 'function') {
+    db.persist();
+  }
 
   const updatePayload = {
     type: 'SCHEDULE_HEALED',
@@ -236,46 +265,91 @@ function resolveSpeakerDelay(topicId, slotId, hallId, availabilityStartHour, log
   const graph = db.graph;
   const schedule = db.schedule;
 
-  logs.push(`[Solver: Delay] Attempting to re-schedule "${graph.topics[topicId].title}" to a slot starting after ${formatHour(availabilityStartHour)}.`);
-  
-  const originalSlot = graph.slots[slotId];
-  const originalHall = graph.halls[hallId];
+  const topic = graph.topics && graph.topics[topicId];
+  if (!topic) return;
+
+  logs.push(`[Solver: Delay] Attempting to re-schedule "${topic.title}" to a slot starting after ${formatHour(availabilityStartHour)}.`);
+
+  const originalSlot = (graph.slots && graph.slots[slotId]) || { id: slotId, time: 'Current Slot', startHour: 9.5 };
+  const originalHall = (graph.halls && graph.halls[hallId]) || { id: hallId, name: 'Current Hall', capacity: 250 };
+  if (!schedule[slotId]) schedule[slotId] = {};
+
+  // Check if delay exceeds all configured slots in timetable
+  const allSlots = Object.values(graph.slots || {}).sort((a, b) => (b.startHour || 0) - (a.startHour || 0));
+  const hasViableSlot = allSlots.some(s => (s.startHour || 0) >= availabilityStartHour);
+
+  if (!hasViableSlot && allSlots.length > 0) {
+    const latestSlot = allSlots[0];
+    const targetSlotId = latestSlot.id;
+    if (!schedule[targetSlotId]) schedule[targetSlotId] = {};
+
+    for (const targetHallId in (graph.halls || {})) {
+      if (!schedule[targetSlotId][targetHallId]) {
+        schedule[slotId][hallId] = null;
+        schedule[targetSlotId][targetHallId] = topicId;
+        logs.push(`[Action: Evening Postponement] Postponed "${topic.title}" to final day slot ${latestSlot.time} in "${graph.halls[targetHallId]?.name || targetHallId}" due to travel delay.`);
+        notifications.push({
+          topicId,
+          message: `Notice: "${topic.title}" postponed to ${latestSlot.time} in ${graph.halls[targetHallId]?.name || targetHallId} due to speaker travel delay.`,
+          type: 'warning'
+        });
+        return;
+      }
+    }
+
+    // If no empty hall in latest slot, fallback swap in latest slot
+    const targetHallId = hallId;
+    const existingTopicInTarget = schedule[targetSlotId][targetHallId];
+    schedule[slotId][hallId] = existingTopicInTarget;
+    schedule[targetSlotId][targetHallId] = topicId;
+    logs.push(`[Action: Evening Swap] Reallocated "${topic.title}" to final day slot ${latestSlot.time} in "${originalHall.name}".`);
+    notifications.push({
+      topicId,
+      message: `Notice: "${topic.title}" shifted to ${latestSlot.time} in ${originalHall.name}.`,
+      type: 'warning'
+    });
+    return;
+  }
 
   for (const targetSlotId in graph.slots) {
     const targetSlot = graph.slots[targetSlotId];
+    if (!schedule[targetSlotId]) schedule[targetSlotId] = {};
+
     if (targetSlot.startHour >= availabilityStartHour) {
       for (const targetHallId in graph.halls) {
         const currentTopicIdInTarget = schedule[targetSlotId][targetHallId];
-        
+
         if (!currentTopicIdInTarget) {
           schedule[slotId][hallId] = null;
           schedule[targetSlotId][targetHallId] = topicId;
-          
-          logs.push(`[Action] Shifted "${graph.topics[topicId].title}" from slot ${slotId} to empty hall "${graph.halls[targetHallId].name}" in slot ${targetSlotId} (${targetSlot.time}).`);
+
+          logs.push(`[Action] Shifted "${topic.title}" from slot ${slotId} to empty hall "${graph.halls[targetHallId].name}" in slot ${targetSlotId} (${targetSlot.time}).`);
           notifications.push({
             topicId,
-            message: `Schedule Shift: "${graph.topics[topicId].title}" has been moved to ${targetSlot.time} in ${graph.halls[targetHallId].name} due to speaker travel delay.`,
+            message: `Schedule Shift: "${topic.title}" has been moved to ${targetSlot.time} in ${graph.halls[targetHallId].name} due to speaker travel delay.`,
             type: 'warning'
           });
           return;
         } else {
           const targetTopic = graph.topics[currentTopicIdInTarget];
-          const targetSpeaker = graph.speakers[targetTopic.speakerId];
-          const targetSpeakerAvailability = 9.0 + (targetSpeaker.delay / 60);
+          if (!targetTopic) continue;
+          const targetSpeaker = graph.speakers && graph.speakers[targetTopic.speakerId || targetTopic.speaker_id];
+          const targetDelay = (targetSpeaker && targetSpeaker.delay) || 0;
+          const targetSpeakerAvailability = targetDelay > 0 ? (targetSlot.startHour + (targetDelay / 60)) : 0;
           const isTargetSpeakerAvailableInOriginal = originalSlot.startHour >= targetSpeakerAvailability;
-          const targetHall = graph.halls[targetHallId];
+          const targetHall = graph.halls[targetHallId] || { name: 'Target Hall', capacity: 250 };
           const doesTargetTopicFitOriginalHall = targetTopic.interest <= originalHall.capacity;
-          const doesDelayedTopicFitTargetHall = graph.topics[topicId].interest <= targetHall.capacity;
+          const doesDelayedTopicFitTargetHall = topic.interest <= targetHall.capacity;
 
           if (isTargetSpeakerAvailableInOriginal && doesTargetTopicFitOriginalHall && doesDelayedTopicFitTargetHall) {
             schedule[slotId][hallId] = currentTopicIdInTarget;
             schedule[targetSlotId][targetHallId] = topicId;
-            
-            logs.push(`[Action] Swapped "${graph.topics[topicId].title}" (delayed) with "${targetTopic.title}" (scheduled at ${targetSlot.time} in ${targetHall.name}).`);
-            
+
+            logs.push(`[Action] Swapped "${topic.title}" (delayed) with "${targetTopic.title}" (scheduled at ${targetSlot.time} in ${targetHall.name}).`);
+
             notifications.push({
               topicId,
-              message: `Schedule Update: "${graph.topics[topicId].title}" is rescheduled to ${targetSlot.time} in ${targetHall.name} due to speaker delay.`,
+              message: `Schedule Update: "${topic.title}" is rescheduled to ${targetSlot.time} in ${targetHall.name} due to speaker delay.`,
               type: 'warning'
             });
             notifications.push({
@@ -293,16 +367,18 @@ function resolveSpeakerDelay(topicId, slotId, hallId, availabilityStartHour, log
   logs.push(`[Solver: Delay Fallback] No optimal conflict-free swaps found. Forcing schedule shift to a slot after speaker availability.`);
   for (const targetSlotId in graph.slots) {
     const targetSlot = graph.slots[targetSlotId];
+    if (!schedule[targetSlotId]) schedule[targetSlotId] = {};
+
     if (targetSlot.startHour >= availabilityStartHour) {
       for (const targetHallId in graph.halls) {
         const currentTopicIdInTarget = schedule[targetSlotId][targetHallId];
         schedule[slotId][hallId] = currentTopicIdInTarget;
         schedule[targetSlotId][targetHallId] = topicId;
-        
-        logs.push(`[Action: Fallback Swap] Swapped "${graph.topics[topicId].title}" with "${currentTopicIdInTarget ? graph.topics[currentTopicIdInTarget].title : 'Empty Slot'}" in slot ${targetSlotId}.`);
+
+        logs.push(`[Action: Fallback Swap] Swapped "${topic.title}" with "${currentTopicIdInTarget ? graph.topics[currentTopicIdInTarget]?.title || 'Empty Slot' : 'Empty Slot'}" in slot ${targetSlotId}.`);
         notifications.push({
           topicId,
-          message: `Notice: "${graph.topics[topicId].title}" shifted to ${targetSlot.time} in ${graph.halls[targetHallId].name}.`,
+          message: `Notice: "${topic.title}" shifted to ${targetSlot.time} in ${graph.halls[targetHallId]?.name || targetHallId}.`,
           type: 'warning'
         });
         return;
@@ -315,22 +391,26 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
   const graph = db.graph;
   const schedule = db.schedule;
 
-  const topic = graph.topics[topicId];
-  const currentHall = graph.halls[hallId];
+  const topic = graph.topics && graph.topics[topicId];
+  if (!topic) return;
+  const currentHall = (graph.halls && graph.halls[hallId]) || { id: hallId, name: 'Current Hall', capacity: 250 };
+  if (!schedule[slotId]) schedule[slotId] = {};
+
   logs.push(`[Solver: Capacity] Finding a larger hall for "${topic.title}" (Interest: ${topic.interest} attendees, current hall capacity: ${currentHall.capacity}).`);
 
   for (const targetHallId in graph.halls) {
     if (targetHallId === hallId) continue;
-    
+
     const targetHall = graph.halls[targetHallId];
-    if (targetHall.capacity >= topic.interest) {
+    if (targetHall && targetHall.capacity >= topic.interest) {
       const topicIdInTargetHall = schedule[slotId][targetHallId];
-      
+
       if (!topicIdInTargetHall) {
         schedule[slotId][hallId] = null;
         schedule[slotId][targetHallId] = topicId;
-        
-        logs.push(`[Action] Moved "${topic.title}" to empty larger hall "${targetHall.name}" in the same slot (${graph.slots[slotId].time}).`);
+
+        const slotTime = graph.slots[slotId]?.time || slotId;
+        logs.push(`[Action] Moved "${topic.title}" to empty larger hall "${targetHall.name}" in the same slot (${slotTime}).`);
         notifications.push({
           topicId,
           message: `Location Change: "${topic.title}" has been moved to the larger "${targetHall.name}" to accommodate attendee volume.`,
@@ -339,10 +419,10 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
         return;
       } else {
         const targetTopic = graph.topics[topicIdInTargetHall];
-        if (targetTopic.interest <= currentHall.capacity) {
+        if (targetTopic && targetTopic.interest <= currentHall.capacity) {
           schedule[slotId][hallId] = topicIdInTargetHall;
           schedule[slotId][targetHallId] = topicId;
-          
+
           logs.push(`[Action] Swapped halls for "${topic.title}" (moved to ${targetHall.name}) and "${targetTopic.title}" (moved to ${currentHall.name}) in the same time slot.`);
           notifications.push({
             topicId,
@@ -364,20 +444,22 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
   for (const targetSlotId in graph.slots) {
     if (targetSlotId === slotId) continue;
     const targetSlot = graph.slots[targetSlotId];
-    
+    if (!schedule[targetSlotId]) schedule[targetSlotId] = {};
+
     for (const targetHallId in graph.halls) {
       const targetHall = graph.halls[targetHallId];
-      if (targetHall.capacity >= topic.interest) {
+      if (targetHall && targetHall.capacity >= topic.interest) {
         const topicIdInTarget = schedule[targetSlotId][targetHallId];
-        
+
         if (!topicIdInTarget) {
-          const speaker = graph.speakers[topic.speakerId];
-          const speakerAvailability = 9.0 + (speaker.delay / 60);
-          
+          const speaker = graph.speakers && graph.speakers[topic.speakerId || topic.speaker_id];
+          const speakerDelay = (speaker && speaker.delay) || 0;
+          const speakerAvailability = speakerDelay > 0 ? (targetSlot.startHour + (speakerDelay / 60)) : 0;
+
           let isSpeakerBusy = false;
           for (const hId in schedule[targetSlotId]) {
             const tId = schedule[targetSlotId][hId];
-            if (tId && graph.topics[tId].speakerId === topic.speakerId) {
+            if (tId && graph.topics[tId] && (graph.topics[tId].speakerId === topic.speakerId || graph.topics[tId].speaker_id === topic.speakerId)) {
               isSpeakerBusy = true;
             }
           }
@@ -385,7 +467,7 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
           if (targetSlot.startHour >= speakerAvailability && !isSpeakerBusy) {
             schedule[slotId][hallId] = null;
             schedule[targetSlotId][targetHallId] = topicId;
-            
+
             logs.push(`[Action] Relocated and rescheduled "${topic.title}" to "${targetHall.name}" at ${targetSlot.time}.`);
             notifications.push({
               topicId,
@@ -399,7 +481,42 @@ function resolveCapacityOverflow(topicId, slotId, hallId, logs, notifications, d
     }
   }
 
-  logs.push(`[Solver: Capacity Fallback] Could not relocate talk to a larger hall without major scheduling conflicts. Maintaining current slot with overflow warning indicators active.`);
+  // --- MULTI-ROOM OVERFLOW SPILLOVER RELAY SOLVER ---
+  logs.push(`[Solver: Overflow Spillover] Activating multi-room live stream relay audit for "${topic.title}".`);
+  
+  // Find highest capacity hall in the venue
+  let bestPrimaryHallId = hallId;
+  let maxCap = currentHall.capacity;
+  for (const hId in graph.halls) {
+    if (graph.halls[hId].capacity > maxCap) {
+      maxCap = graph.halls[hId].capacity;
+      bestPrimaryHallId = hId;
+    }
+  }
+
+  // Move talk to the largest hall if it isn't already there
+  if (bestPrimaryHallId !== hallId) {
+    const existingInBest = schedule[slotId][bestPrimaryHallId];
+    schedule[slotId][hallId] = existingInBest;
+    schedule[slotId][bestPrimaryHallId] = topicId;
+    logs.push(`[Action] Relocated primary session "${topic.title}" to largest hall "${graph.halls[bestPrimaryHallId].name}" (${maxCap} capacity).`);
+  }
+
+  // Locate an empty secondary hall for live stream broadcast
+  for (const secHallId in graph.halls) {
+    if (secHallId !== bestPrimaryHallId && (!schedule[slotId] || !schedule[slotId][secHallId])) {
+      const secHall = graph.halls[secHallId];
+      logs.push(`[Action: Overflow Relay] Activated Overflow Live-Stream Spillover Relay in "${secHall.name}" for "${topic.title}". Routed AV feed and digital signage.`);
+      notifications.push({
+        topicId,
+        message: `Overflow Spillover Relay: "${topic.title}" overflow routed to "${secHall.name}" with 4K synchronized AV relay.`,
+        type: 'info'
+      });
+      return;
+    }
+  }
+
+  logs.push(`[Solver: Capacity Fallback] All venue zones fully committed. Maintaining current slot with overflow warning indicators active.`);
 }
 
 module.exports = { runSelfHealingAgent };

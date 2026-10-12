@@ -1,4 +1,11 @@
-const todayDateStr = new Date().toISOString().split('T')[0];
+function getLocalDateStr(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+const todayDateStr = getLocalDateStr();
+const { hydrateStateFromDisk, persistStateDebounced, clearPersistentState } = require('./persistentStore');
 
 const db = {
   activeDate: todayDateStr,
@@ -32,7 +39,34 @@ const db = {
       { source: 'topic-1', target: 'speaker-1', type: 'SPEAKER_OF' },
       { source: 'topic-2', target: 'speaker-2', type: 'SPEAKER_OF' },
       { source: 'topic-3', target: 'speaker-3', type: 'SPEAKER_OF' }
-    ]
+    ],
+    // --- Generalized Spatial & Operations Graph Entities ---
+    venues: {
+      'venue-1': { id: 'venue-1', name: 'DELTA International Convention Center', totalCapacity: 830, type: 'CONVENTION_CENTER' }
+    },
+    zones: {
+      'hall-1': { id: 'hall-1', name: 'Turing Hall', capacity: 250, safeDensity: 1.2, venueId: 'venue-1', connectedZones: ['hall-2', 'foyer-1'] },
+      'hall-2': { id: 'hall-2', name: 'Lovelace Suite', capacity: 120, safeDensity: 1.0, venueId: 'venue-1', connectedZones: ['hall-1', 'hall-3', 'foyer-1'] },
+      'hall-3': { id: 'hall-3', name: 'Hopper Room', capacity: 60, safeDensity: 0.9, venueId: 'venue-1', connectedZones: ['hall-2', 'foyer-1'] },
+      'foyer-1': { id: 'foyer-1', name: 'Main Lobby & Exhibition Foyer', capacity: 400, safeDensity: 1.8, venueId: 'venue-1', connectedZones: ['hall-1', 'hall-2', 'hall-3', 'gate-a'] }
+    },
+    entryExits: {
+      'gate-a': { id: 'gate-a', name: 'Entrance Door A', direction: 'BIDIRECTIONAL', flowRateMax: 60, targetZone: 'foyer-1' },
+      'exit-east': { id: 'exit-east', name: 'Emergency Egress East', direction: 'OUT', flowRateMax: 100, targetZone: 'foyer-1' }
+    },
+    routes: [
+      { id: 'route-1', from: 'foyer-1', to: 'hall-1', distanceMeters: 25, transitTimeSeconds: 30 },
+      { id: 'route-2', from: 'foyer-1', to: 'hall-2', distanceMeters: 40, transitTimeSeconds: 45 },
+      { id: 'route-3', from: 'hall-2', to: 'hall-3', distanceMeters: 15, transitTimeSeconds: 20 },
+      { id: 'route-4', from: 'hall-1', to: 'hall-2', distanceMeters: 30, transitTimeSeconds: 35 }
+    ],
+    resources: {
+      'res-av-1': { id: 'res-av-1', name: '4K Ultra-Low-Latency Stream Rig', type: 'AV_EQUIPMENT', zoneId: 'hall-1' },
+      'res-hvac-1': { id: 'res-hvac-1', name: 'IoT Climate HVAC Controller', type: 'FACILITY_CONTROL', zoneId: 'hall-1' },
+      'res-signage-1': { id: 'res-signage-1', name: 'Dynamic LED Schedule Boards', type: 'SIGNAGE', zoneId: 'foyer-1' }
+    },
+    incidents: [],
+    actions: []
   },
   contacts: [
     { id: 'cnt_01', name: 'Aryan Pandey', role: 'Lead Event Coordinator & Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', hall: 'ALL VENUES (Central Command)', status: 'Online' },
@@ -43,11 +77,49 @@ const db = {
     { id: 'cnt_06', name: 'Priya Nair', role: 'Guest Speaker (DevOps Architect)', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room', status: 'Speaker Confirmed' }
   ],
   volunteers: [
-    { id: 'vol_01', name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', assignedEvent: 'topic-1', location: 'Turing Hall (Door Entrance A)', task: 'Scanning passes & door routing', status: 'ON DUTY' },
-    { id: 'vol_02', name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', assignedEvent: 'topic-1', location: 'Turing Hall (Stage Front)', task: 'Safety aisle clearance & mic checks', status: 'ON DUTY' },
-    { id: 'vol_03', name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', assignedEvent: 'topic-1', location: 'Central AV & IoT Control Desk', task: 'Perception monitoring & volunteer dispatch', status: 'ON DUTY' }
+    { id: 'vol_01', name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', email: 'suryansh@delta-engine.in', assignedHallId: 'hall-1', location: 'Turing Hall (Door Entrance A)', task: 'Scanning passes & door routing', status: 'ON DUTY' },
+    { id: 'vol_02', name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', assignedHallId: 'hall-2', location: 'Lovelace Suite (Stage Front)', task: 'Safety aisle clearance & mic checks', status: 'ON DUTY' },
+    { id: 'vol_03', name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', assignedHallId: 'ALL', location: 'Central AV & IoT Control Desk', task: 'Perception monitoring & volunteer dispatch', status: 'ON DUTY' },
+    { id: 'vol_04', name: 'Rohan Sharma', role: 'Aisle Marshal & Usher Lead', phone: '+91 98765 43210', email: 'rohan@delta-engine.in', assignedHallId: 'hall-1', location: 'Turing Hall (Center Aisle)', task: 'Seat row optimization & aisle clearance', status: 'ON DUTY' },
+    { id: 'vol_05', name: 'Ananya Iyer', role: 'AV & Presentation Specialist', phone: '+91 97654 32109', email: 'ananya@delta-engine.in', assignedHallId: 'hall-2', location: 'Lovelace Suite (AV Desk)', task: 'Slide projection & speaker timing', status: 'ON DUTY' },
+    { id: 'vol_06', name: 'Kabir Mehta', role: 'Rapid Response Crowd Marshal', phone: '+91 96543 21098', email: 'kabir@delta-engine.in', assignedHallId: 'hall-3', location: 'Hopper Room (Entrance)', task: 'Session flow & door monitoring', status: 'ON DUTY' },
+    { id: 'vol_07', name: 'Zoya Khan', role: 'Main Gate Flow Controller', phone: '+91 95432 10987', email: 'zoya@delta-engine.in', assignedHallId: 'hall-4', location: 'Keynote Arena (North Gate)', task: 'VIP passage & ingress management', status: 'ON DUTY' }
   ],
-  whatsappLogs: [],
+  whatsappLogs: [
+    {
+      id: 'wa_init_01',
+      timestamp: '09:00:00 AM',
+      recipientName: 'Suryansh',
+      phoneNumber: '+91 83030 09159',
+      messageText: '⚠️ Central Telemetry Active: Turing Hall entrance cameras online. Optical turnstiles monitoring headcount.',
+      status: 'DELIVERED (AI Dispatch)',
+      agent: '🤖 DELTA WhatsApp AI Liaison'
+    },
+    {
+      id: 'wa_init_02',
+      timestamp: '09:15:30 AM',
+      recipientName: 'Shahid',
+      phoneNumber: '+91 63035 70916',
+      messageText: '🎤 Stage Clearance Verified: Lovelace Suite audio-visual relay operational. Standby for session starts.',
+      status: 'DELIVERED (AI Dispatch)',
+      agent: '🤖 DELTA WhatsApp AI Liaison'
+    }
+  ],
+  emailLogs: [
+    {
+      id: 'em_init_01',
+      timestamp: '09:00:00 AM',
+      subject: '[DELTA ENGINE] Operational Schedule Locked & Egress Routes Certified',
+      topicTitle: 'Event Operating System Initialization',
+      speakerName: 'Central Command',
+      oldVenue: 'All Stages',
+      newVenue: 'All Stages',
+      timeSlot: 'Full Day',
+      reason: 'NFPA-101 compliant ingress monitoring initialized',
+      recipients: ['aryan.pandey777hyd@gmail.com', 'suryansh@delta-engine.in', 'shahid@delta-engine.in'],
+      status: 'DELIVERED (DKIM Signed via Supabase)'
+    }
+  ],
   limiters: {
     llmLimiter: false,
     dbLimiter: false
@@ -59,24 +131,6 @@ const db = {
       'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
       'slot-3': { 'hall-1': 'topic-3', 'hall-2': null, 'hall-3': null },
       'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
-    },
-    '2026-08-07': {
-      'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
-      'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
-      'slot-3': { 'hall-1': 'topic-3', 'hall-2': null, 'hall-3': null },
-      'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
-    },
-    '2026-08-08': {
-      'slot-1': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
-      'slot-2': { 'hall-1': 'topic-3', 'hall-2': null, 'hall-3': null },
-      'slot-3': { 'hall-1': null, 'hall-2': 'topic-1', 'hall-3': null },
-      'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
-    },
-    '2026-08-09': {
-      'slot-1': { 'hall-1': null, 'hall-2': 'topic-3', 'hall-3': null },
-      'slot-2': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
-      'slot-3': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
-      'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
     }
   },
   get schedule() {
@@ -85,22 +139,39 @@ const db = {
       const dateNum = Array.from(this.activeDate).reduce((acc, char) => acc + char.charCodeAt(0), 0);
       const shift = dateNum % 3;
       const topicIds = Object.keys(this.graph.topics);
+      const hallIds = Object.keys(this.graph.halls);
+      const slotIds = Object.keys(this.graph.slots);
 
-      this.schedulesByDate[this.activeDate] = {
-        'slot-1': { 'hall-1': topicIds[shift % topicIds.length] || null, 'hall-2': null, 'hall-3': null },
-        'slot-2': { 'hall-1': topicIds[(shift + 1) % topicIds.length] || null, 'hall-2': null, 'hall-3': null },
-        'slot-3': { 'hall-1': topicIds[(shift + 2) % topicIds.length] || null, 'hall-2': null, 'hall-3': null },
-        'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
-      };
+      const newSched = {};
+      slotIds.forEach((slotId, sIdx) => {
+        newSched[slotId] = {};
+        hallIds.forEach(hallId => {
+          newSched[slotId][hallId] = null;
+        });
+        if (sIdx < 3 && hallIds.length > 0 && topicIds.length > 0) {
+          const primaryHall = hallIds[0];
+          newSched[slotId][primaryHall] = topicIds[(shift + sIdx) % topicIds.length] || null;
+        }
+      });
+      this.schedulesByDate[this.activeDate] = newSched;
     }
     return this.schedulesByDate[this.activeDate];
+  },
+  set schedule(newSched) {
+    this.schedulesByDate[this.activeDate] = newSched;
+    this.syncScheduleEdges();
   },
   setDate(dateStr) {
     this.activeDate = dateStr;
     this.syncScheduleEdges();
   },
   syncScheduleEdges() {
-    this.graph.edges = this.graph.edges.filter(e => e.type !== 'SCHEDULED_IN' && e.type !== 'SCHEDULED_AT');
+    // Preserve speaker edges and static edges
+    const staticTypes = ['SPEAKER_OF'];
+    const preservedEdges = this.graph.edges.filter(e => staticTypes.includes(e.type));
+    this.graph.edges = preservedEdges;
+
+    // 1. Sync Conference Schedule Edges (Backward Compatibility)
     const sched = this.schedule;
     for (const slotId in sched) {
       for (const hallId in sched[slotId]) {
@@ -111,27 +182,223 @@ const db = {
         }
       }
     }
+
+    // 2. Sync Generalized Spatial Relationships
+    // ZONE -> LOCATED_IN -> VENUE
+    const primaryVenueId = Object.keys(this.graph.venues || {})[0] || 'venue-1';
+    for (const zId in this.graph.zones || {}) {
+      const zone = this.graph.zones[zId];
+      this.graph.edges.push({
+        source: zId,
+        target: zone.venueId || primaryVenueId,
+        type: 'LOCATED_IN'
+      });
+    }
+
+    // ZONE -> CONNECTED_TO -> ZONE (from routes)
+    (this.graph.routes || []).forEach(route => {
+      this.graph.edges.push({
+        source: route.from,
+        target: route.to,
+        type: 'CONNECTED_TO',
+        distance: route.distanceMeters
+      });
+    });
+
+    // PERSONNEL -> ASSIGNED_TO -> ZONE
+    (this.volunteers || []).forEach(v => {
+      const targetZone = v.location && v.location.includes('Turing') ? 'hall-1' :
+                         v.location && v.location.includes('Lovelace') ? 'hall-2' :
+                         v.location && v.location.includes('Door') ? 'gate-a' : 'hall-1';
+      this.graph.edges.push({
+        source: v.id,
+        target: targetZone,
+        type: 'ASSIGNED_TO'
+      });
+    });
+  },
+
+  // --- Generalized Operational Graph Query Helpers ---
+  getZone(zoneId) {
+    return (this.graph.zones && this.graph.zones[zoneId]) || 
+           (this.graph.halls && this.graph.halls[zoneId]) || null;
+  },
+
+  getConnectedZones(zoneId) {
+    const zone = this.getZone(zoneId);
+    if (!zone || !zone.connectedZones) {
+      // Fallback: search routes
+      const connected = (this.graph.routes || [])
+        .filter(r => r.from === zoneId || r.to === zoneId)
+        .map(r => (r.from === zoneId ? r.to : r.from));
+      return Array.from(new Set(connected)).map(id => this.getZone(id)).filter(Boolean);
+    }
+    return zone.connectedZones.map(id => this.getZone(id)).filter(Boolean);
+  },
+
+  findAlternativeZone(currentZoneId, neededCapacity = 0) {
+    const connected = this.getConnectedZones(currentZoneId);
+    // Sort by capacity that accommodates neededCapacity
+    const viable = connected.filter(z => z.id !== currentZoneId && (neededCapacity <= 0 || z.capacity >= neededCapacity));
+    if (viable.length > 0) {
+      return viable.sort((a, b) => b.capacity - a.capacity)[0];
+    }
+    // If no direct connected zone fits, search all other zones in graph
+    const combinedZones = { ...(this.graph.halls || {}), ...(this.graph.zones || {}) };
+    const allZones = Object.values(combinedZones);
+    const fallbackViable = allZones.filter(z => z.id !== currentZoneId && (neededCapacity <= 0 || z.capacity >= neededCapacity));
+    return fallbackViable.length > 0 ? fallbackViable.sort((a, b) => b.capacity - a.capacity)[0] : null;
+  },
+
+  getPersonnelForZone(zoneId) {
+    const target = zoneId ? zoneId.toLowerCase() : '';
+    const pool = [...(this.volunteers || []), ...(this.contacts || [])];
+    return pool.filter(p => {
+      const loc = (p.location || p.hall || '').toLowerCase();
+      return loc.includes(target) || loc.includes('all') || target.includes(loc);
+    });
+  },
+
+  recordIncident(incident) {
+    this.graph.incidents = this.graph.incidents || [];
+    this.graph.incidents.unshift(incident);
+    if (this.graph.incidents.length > 50) this.graph.incidents.pop();
+    return incident;
+  },
+
+  getIncidents(filter = {}) {
+    let list = this.graph.incidents || [];
+    if (filter.eventType) list = list.filter(i => i.eventType === filter.eventType);
+    if (filter.severity) list = list.filter(i => i.severity === filter.severity);
+    if (filter.resolutionState) list = list.filter(i => i.resolutionState === filter.resolutionState);
+    return list;
+  },
+
+  applyScenario(scenario) {
+    if (!scenario) return;
+    if (scenario.zones) {
+      this.graph.zones = {};
+      scenario.zones.forEach(z => {
+        this.graph.zones[z.id] = { ...z };
+      });
+    }
+    if (scenario.venue) {
+      this.graph.venues = {
+        [scenario.venue.id]: { ...scenario.venue }
+      };
+    }
+    if (scenario.entryExits) {
+      this.graph.entryExits = {};
+      scenario.entryExits.forEach(ee => {
+        this.graph.entryExits[ee.id] = { ...ee };
+      });
+    }
+    if (scenario.routes) {
+      this.graph.routes = [...scenario.routes];
+    }
+    if (scenario.resources) {
+      this.graph.resources = {};
+      scenario.resources.forEach(r => {
+        this.graph.resources[r.id] = { ...r };
+      });
+    }
+    this.syncScheduleEdges();
   },
   reset() {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateStr();
     this.activeDate = todayStr;
     for (const id in this.graph.speakers) {
       this.graph.speakers[id].delay = 0;
     }
-    this.graph.topics['topic-1'].interest = 210;
-    this.graph.topics['topic-2'].interest = 140;
-    this.graph.topics['topic-3'].interest = 180;
 
-    this.schedulesByDate[todayStr] = {
-      'slot-1': { 'hall-1': 'topic-1', 'hall-2': null, 'hall-3': null },
-      'slot-2': { 'hall-1': 'topic-2', 'hall-2': null, 'hall-3': null },
-      'slot-3': { 'hall-1': 'topic-3', 'hall-2': null, 'hall-3': null },
-      'slot-4': { 'hall-1': null, 'hall-2': null, 'hall-3': null }
+    // Restore clean baseline topics (purging any imported tournament topics like top-1, top-2, top-3)
+    this.graph.topics = {
+      'topic-1': { id: 'topic-1', title: 'Autonomous Agent Swarms: Coordination without Controllers', speakerId: 'speaker-1', tags: ['AI', 'Agentic', 'Swarms'], interest: 210, duration: 60, slidesUploaded: true, summary: 'Peer-to-peer LLM negotiation without central controllers.' },
+      'topic-2': { id: 'topic-2', title: 'WebGPU Deep Dive: Raytracing in the Browser', speakerId: 'speaker-2', tags: ['Graphics', 'WebGPU', 'JS'], interest: 140, duration: 60, slidesUploaded: true, summary: 'Rendering hardware-accelerated 3D graphs at 60 FPS.' },
+      'topic-3': { id: 'topic-3', title: 'Kubernetes Auto-Healing Runtimes under Load Stress', speakerId: 'speaker-3', tags: ['DevOps', 'K8s', 'Cloud'], interest: 180, duration: 60, slidesUploaded: true, summary: 'Self-correcting pod scheduling during high traffic spikes.' }
     };
+
+    // Restore baseline halls (purging any imported arena halls like hall-main, hall-stream, hall-expo, hall-vip)
+    this.graph.halls = {
+      'hall-1': { id: 'hall-1', name: 'Turing Hall', capacity: 250 },
+      'hall-2': { id: 'hall-2', name: 'Lovelace Suite', capacity: 120 },
+      'hall-3': { id: 'hall-3', name: 'Hopper Room', capacity: 60 },
+      'hall-4': { id: 'hall-4', name: 'Keynote Arena', capacity: 500 },
+      'hall-kumbh': { id: 'hall-kumbh', name: 'Kumbh Mela Sector A (Ghat)', capacity: 1200 },
+      'hall-rally': { id: 'hall-rally', name: 'Mega Election Rally Grounds', capacity: 2500 },
+      'hall-stadium': { id: 'hall-stadium', name: 'Olympic / Tech Stadium Arena', capacity: 5000 }
+    };
+
+    const resetHalls = Object.keys(this.graph.halls);
+    const resetSched = {
+      'slot-1': {},
+      'slot-2': {},
+      'slot-3': {},
+      'slot-4': {}
+    };
+    ['slot-1', 'slot-2', 'slot-3', 'slot-4'].forEach(sId => {
+      resetHalls.forEach(hId => {
+        resetSched[sId][hId] = null;
+      });
+    });
+    resetSched['slot-1']['hall-1'] = 'topic-1';
+    resetSched['slot-2']['hall-1'] = 'topic-2';
+    resetSched['slot-3']['hall-1'] = 'topic-3';
+
+    // Strictly keep ONLY the latest day's events in schedulesByDate
+    this.schedulesByDate = {
+      [todayStr]: resetSched
+    };
+
+    // Purge previous simulated incidents and actions
+    this.graph.incidents = [];
+    this.graph.actions = [];
+
+    // Purge accumulated test logs and restore initial baseline
+    this.whatsappLogs = [
+      {
+        id: 'wa_init_01',
+        timestamp: '09:00:00 AM',
+        recipientName: 'Suryansh',
+        phoneNumber: '+91 83030 09159',
+        messageText: '⚠️ Central Telemetry Active: Turing Hall entrance cameras online. Optical turnstiles monitoring headcount.',
+        status: 'DELIVERED (AI Dispatch)',
+        agent: '🤖 DELTA WhatsApp AI Liaison'
+      },
+      {
+        id: 'wa_init_02',
+        timestamp: '09:15:30 AM',
+        recipientName: 'Shahid',
+        phoneNumber: '+91 63035 70916',
+        messageText: '🎤 Stage Clearance Verified: Lovelace Suite audio-visual relay operational. Standby for session starts.',
+        status: 'DELIVERED (AI Dispatch)',
+        agent: '🤖 DELTA WhatsApp AI Liaison'
+      }
+    ];
+
+    this.emailLogs = [
+      {
+        id: 'em_init_01',
+        timestamp: '09:00:00 AM',
+        subject: '[DELTA ENGINE] Operational Schedule Locked & Egress Routes Certified',
+        topicTitle: 'Event Operating System Initialization',
+        speakerName: 'Central Command',
+        oldVenue: 'All Stages',
+        newVenue: 'All Stages',
+        timeSlot: 'Full Day',
+        reason: 'NFPA-101 compliant ingress monitoring initialized',
+        recipients: ['aryan.pandey777hyd@gmail.com', 'suryansh@delta-engine.in', 'shahid@delta-engine.in'],
+        status: 'DELIVERED (DKIM Signed via Supabase)'
+      }
+    ];
+
     this.syncScheduleEdges();
+    clearPersistentState();
   }
 };
 
 db.syncScheduleEdges();
+hydrateStateFromDisk(db);
+db.persist = () => persistStateDebounced(db);
 
 module.exports = db;

@@ -78,6 +78,15 @@ function initWebSockets() {
         graphState = payload.data.graph;
         scheduleState = payload.data.schedule;
 
+        if (payload.data.activeDate) {
+          if (graphState) graphState.activeDate = payload.data.activeDate;
+          const dp = document.getElementById('schedule-date-picker');
+          if (dp) {
+            dp.value = payload.data.activeDate;
+            dp.min = payload.data.activeDate;
+          }
+        }
+
         if (payload.data.autopilotEnabled !== undefined && typeof window.setAutopilotMode === 'function') {
           window.setAutopilotMode(payload.data.autopilotEnabled);
         }
@@ -273,6 +282,15 @@ function initWebSockets() {
           </div>`;
         if (typeof appendLog === 'function') appendLog('[SYSTEM] DB flushed. Schedules restored to default state.', 'success');
 
+        if (payload.data.activeDate) {
+          if (graphState) graphState.activeDate = payload.data.activeDate;
+          const dp = document.getElementById('schedule-date-picker');
+          if (dp) {
+            dp.value = payload.data.activeDate;
+            dp.min = payload.data.activeDate;
+          }
+        }
+
         safeSyncUI(null);
         if (typeof createToast === 'function') createToast('Conference layout reset to default settings!', 'success');
         break;
@@ -339,6 +357,12 @@ function initWebSockets() {
         }
         break;
 
+      case 'VOLUNTEERS_UPDATED':
+        if (typeof window.handleVolunteersUpdated === 'function') {
+          window.handleVolunteersUpdated(payload.data);
+        }
+        break;
+
       case 'DOOR_TRIGGER':
         if (typeof window.handleDoorSensorTrigger === 'function') {
           window.handleDoorSensorTrigger(payload.data);
@@ -364,6 +388,32 @@ function initWebSockets() {
         if (typeof createToast === 'function') {
           const occText = (payload.data && payload.data.occluded > 0) ? ` (${payload.data.occluded} occluded behind pillars)` : '';
           createToast(`🤖 Autonomous Vision: ${payload.data.hall || 'Venue'} verified at ${payload.data.count || 0} Pax${occText}. Self-healing active!`, 'info');
+        }
+        break;
+
+      case 'SCENARIO_CHANGED':
+        if (payload.data && payload.data.graph) graphState = payload.data.graph;
+        safeSyncUI(selectedNodeId);
+        const adminScnSelect = document.getElementById('admin-scenario-select');
+        if (adminScnSelect && payload.data && payload.data.activeScenario) {
+          adminScnSelect.value = payload.data.activeScenario;
+        }
+        if (typeof window.syncAdminDashboard === 'function' && payload.data) {
+          window.syncAdminDashboard(payload.data);
+        }
+        if (typeof createToast === 'function') {
+          createToast(`🌐 Operational Domain Switched: ${payload.data.scenarioName || payload.data.activeScenario}`, 'info');
+        }
+        break;
+
+      case 'OPERATIONAL_INCIDENT_RESOLVED':
+        if (payload.data && payload.data.notifications && payload.data.notifications.length > 0) {
+          payload.data.notifications.forEach(n => {
+            if (typeof createToast === 'function') createToast(n.message, n.type || 'warning');
+          });
+        }
+        if (payload.data && payload.data.swarmChat && typeof renderSwarmChat === 'function') {
+          renderSwarmChat(payload.data.swarmChat);
         }
         break;
     }

@@ -13,7 +13,8 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Josefin+Sans:wght@600;700&family=JetBrains+Mono:wght@500;700;800&display=swap"
     rel="stylesheet">
 
-  <link rel="stylesheet" href="app.css?v=cursorFix4">
+  <link rel="stylesheet" href="app.css">
+  <script src="components/customCursor.js"></script>
 </head>
 
 <body>
@@ -33,7 +34,7 @@
     <header class="main-header mb-6">
       <div class="auth-user-bar">
         <div class="user-status-pill">
-          <span class="user-role-badge admin">👑 Super Admin</span>
+          <span class="user-role-badge admin" id="admin-role-badge">👑 Super Admin</span>
           <span class="user-name-text" id="admin-user-name">Marcus Aurelius</span>
         </div>
         <!-- Live Dynamic Date & Time Clock Widget -->
@@ -122,6 +123,8 @@
             title="Toggle Camera Color Correction / IR Pink Fix">🎨 Tint: Auto-Fix</button>
           <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;"
             title="Toggle between Full Camera HUD and Compact Bar">🔼 Minimize View</button>
+          <button id="btn-cctv-popout-modal" class="btn btn-sm btn-white" style="font-weight:800;"
+            title="Open CCTV Perception in floating modal window">🔲 Popout</button>
         </div>
       </div>
 
@@ -130,7 +133,7 @@
         <!-- Left: Canvas & Video Display -->
         <div class="cctv-hub-video-col">
           <div class="cctv-canvas-frame">
-            <video id="cctv-hidden-video" style="display:none;" playsinline muted></video>
+            <video id="cctv-hidden-video" playsinline autoplay muted style="position: fixed; top: -9999px; left: -9999px; width: 320px; height: 240px; opacity: 0; pointer-events: none; z-index: -1;"></video>
             <canvas id="cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
           </div>
           <div class="cctv-hub-feed-sub">
@@ -139,7 +142,7 @@
           </div>
         </div>
 
-        <!-- Right: Real-time % Occupied vs % Empty Telemetry & Pitch Simulator -->
+        <!-- Right: Real-time % Occupied vs % Empty Telemetry -->
         <div class="cctv-hub-metrics-col">
           <!-- Big Dual Metric Banner -->
           <div class="cctv-gauge-card mb-4">
@@ -194,11 +197,11 @@
             </div>
           </div>
 
-          <!-- Attendance & Pitch Controls (Camera + Manual Fusion) -->
+          <!-- Attendance Telemetry & Threshold Calibration (Camera + Sensor Fusion) -->
           <div class="cctv-sim-controls mb-3">
             <div
               style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
-              <span class="sim-label">⚡ Attendance Controls (Camera + Sensor Fusion):</span>
+              <span class="sim-label">⚡ Attendance Thresholds (Camera + Sensor Fusion):</span>
               <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
                 <span>Manual Count:</span>
                 <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
@@ -211,16 +214,14 @@
               <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
                 style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Door Sensor (+1
                 Entry)</button>
-              <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
-              <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
-              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80%
-                Full</button>
-              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100%
-                Full</button>
-              <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
-              <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
+              <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow btn-cctv-add-pax">+1 Person</button>
+              <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white btn-cctv-sub-pax">-1 Person</button>
+              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
+                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ 80% Warning</button>
+              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red btn-cctv-trigger-full"
+                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 100% Breach</button>
+              <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white btn-cctv-trigger-empty">⚪ 0% Empty</button>
+              <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white btn-cctv-clear-pax">🧹 Reset</button>
             </div>
           </div>
         </div>
@@ -592,6 +593,19 @@
           <span class="card-badge red">ADMIN ONLY</span>
         </div>
         <div class="card-body" style="display:flex; flex-direction:column; gap:10px;">
+          <!-- Real-Time Operational Domain Scenario Switcher -->
+          <div style="background:#f3f4f6; padding:8px 10px; border:2px solid #000; border-radius:6px;">
+            <label for="admin-scenario-select" style="display:block; font-size:0.75rem; font-weight:800; font-family:var(--font-mono, monospace); margin-bottom:4px; color:#1f2937;">
+              🌐 ACTIVE OPERATIONAL DOMAIN SCENARIO:
+            </label>
+            <select id="admin-scenario-select" style="width:100%; padding:6px 8px; border:2px solid #000; border-radius:4px; font-weight:800; font-size:0.8rem; background:#fff; cursor:pointer;">
+              <option value="CONFERENCE">🏛️ Tech Conference & Summit (Default)</option>
+              <option value="PUBLIC_RALLY">📢 Civic Grounds Public Gathering & Rally</option>
+              <option value="LARGE_GATHERING">🎪 Mega Exhibition & Cultural Mela</option>
+              <option value="MOVIE_PROMO">🎬 Fan Surge & Movie Promotional Tour</option>
+              <option value="RELIGIOUS_GATHERING">🕉️ Pilgrimage & Sacred Concourse</option>
+            </select>
+          </div>
           <button id="btn-admin-stress-500" class="btn btn-red w-full btn-sm"
             style="font-weight:900; background:#ea4335; color:#fff; border:2px solid #000; box-shadow:2px 2px 0px #000; margin-bottom:4px;">
             🔥 RUN 500 HIGH-STRESS TEST CASES
@@ -616,6 +630,34 @@
         <span class="card-badge yellow">AUTOMATED WHATSAPP NOTIFICATIONS ACTIVE</span>
       </div>
       <div class="card-body">
+        <!-- Intelligent Hall-Targeted Volunteer Shielding Action Bar -->
+        <div style="background:#eff6ff; border:2px solid #3b82f6; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div style="font-size:0.83rem; color:#1e3a8a; font-weight:700;">
+            🛡️ <strong>Intelligent Hall-Targeted Routing:</strong> When an issue occurs at Hall X, DELTA automatically dispatches <em>ONLY</em> the volunteers assigned to Hall X. Volunteers at other venues are shielded from spam (supports 20+ volunteers across large events).
+          </div>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <button class="btn btn-sm btn-green" id="btn-open-add-vol-modal" style="font-size:0.75rem; font-weight:800; padding:5px 12px;">
+              ➕ Add Volunteer
+            </button>
+            <button class="btn btn-sm btn-yellow" id="btn-admin-test-turing-alert" style="font-size:0.75rem; font-weight:800; padding:5px 10px;">
+              🚨 Test Turing Hall (hall-1)
+            </button>
+            <button class="btn btn-sm btn-blue" id="btn-admin-test-lovelace-alert" style="font-size:0.75rem; font-weight:800; padding:5px 10px;">
+              🚨 Test Lovelace Suite (hall-2)
+            </button>
+          </div>
+        </div>
+
+        <!-- Hall Filter Tabs -->
+        <div id="volunteer-hall-filter-tabs-admin" style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+          <button class="btn btn-sm btn-tab active" data-hall-filter="ALL_PERSONNEL" style="font-size:0.75rem; font-weight:800;">All Personnel</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="hall-1" style="font-size:0.75rem; font-weight:800;">🏛️ Turing Hall (hall-1)</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="hall-2" style="font-size:0.75rem; font-weight:800;">💻 Lovelace Suite (hall-2)</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="hall-3" style="font-size:0.75rem; font-weight:800;">⚙️ Hopper Room (hall-3)</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="hall-4" style="font-size:0.75rem; font-weight:800;">🎤 Keynote Arena (hall-4)</button>
+          <button class="btn btn-sm btn-tab" data-hall-filter="CENTRAL" style="font-size:0.75rem; font-weight:800;">⚡ Central Command Lead</button>
+        </div>
+
         <table class="admin-table">
           <thead>
             <tr>
@@ -734,15 +776,14 @@
               <span style="color:#dc2626;">🚨 100% Alert: <strong class="cctv-100-threshold-lbl">25 Pax</strong></span>
               <span class="cctv-max-capacity-lbl">Max: 500 Pax</span>
             </div>
-            <span class="capacity-hint">💡 Tip for demo: Slide capacity down to 2 or 5 pax to demonstrate 80% & 100%
-              alerts live!</span>
+            <span class="capacity-hint">💡 Operational Guidance: Set target room capacity to calibrate automated 80% & 100% safety threshold alerts in real time.</span>
           </div>
 
-          <!-- Live Pitch Testing & Attendee Simulator -->
+          <!-- Operational Attendance Telemetry & Threshold Calibration -->
           <div class="cctv-sim-controls mb-4">
             <div
               style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
-              <span class="sim-label">⚡ Attendance & Pitch Controls (Camera + Manual Fusion):</span>
+              <span class="sim-label">⚡ Attendance Thresholds (Camera + Sensor Fusion):</span>
               <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
                 <span>Manual Count:</span>
                 <input type="number" class="cctv-manual-pax-input" min="0" max="1000" value="0"
@@ -751,16 +792,14 @@
               </div>
             </div>
             <div class="sim-btn-row">
-              <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
-              <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
-              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80%
-                Full</button>
-              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100%
-                Full</button>
-              <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
-              <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
+              <button id="btn-modal-cctv-add-pax" class="btn btn-sm btn-yellow btn-cctv-add-pax">+1 Person</button>
+              <button id="btn-modal-cctv-sub-pax" class="btn btn-sm btn-white btn-cctv-sub-pax">-1 Person</button>
+              <button id="btn-modal-cctv-trigger-80" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
+                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ 80% Warning</button>
+              <button id="btn-modal-cctv-trigger-full" class="btn btn-sm btn-red btn-cctv-trigger-full"
+                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 100% Breach</button>
+              <button id="btn-modal-cctv-trigger-empty" class="btn btn-sm btn-white btn-cctv-trigger-empty">⚪ 0% Empty</button>
+              <button id="btn-modal-cctv-clear-pax" class="btn btn-sm btn-white btn-cctv-clear-pax">🧹 Reset</button>
             </div>
           </div>
 
@@ -846,10 +885,54 @@
     </div>
   </div>
 
+  <!-- ADD VOLUNTEER REGISTRATION MODAL -->
+  <div id="modal-add-volunteer" class="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); z-index:99999; align-items:center; justify-content:center;">
+    <div class="modal-card" style="background:#ffffff; border:3px solid #000000; box-shadow:6px 6px 0px #000000; border-radius:12px; max-width:480px; width:92%; padding:22px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:14px;">
+        <h3 style="margin:0; font-family:var(--font-mono); font-size:1.05rem; font-weight:800;">➕ Register Venue Volunteer</h3>
+        <button type="button" class="btn btn-sm" id="btn-close-add-vol" style="background:#fee2e2; border:2px solid #000; font-weight:800; cursor:pointer;">✖</button>
+      </div>
+      <form id="form-add-volunteer">
+        <div style="margin-bottom:10px;">
+          <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">VOLUNTEER FULL NAME *</label>
+          <input type="text" id="add-vol-name" required placeholder="e.g. Vikramaditya Singhania" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-weight:600; font-size:0.85rem; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">PHONE NUMBER (WHATSAPP +91) *</label>
+          <input type="tel" id="add-vol-phone" required placeholder="+91 98765 43210" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-weight:600; font-size:0.85rem; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">ASSIGNED VENUE HALL *</label>
+          <select id="add-vol-hall" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-weight:700; font-size:0.85rem; box-sizing:border-box;">
+            <option value="hall-1">Turing Hall (hall-1)</option>
+            <option value="hall-2">Lovelace Suite (hall-2)</option>
+            <option value="hall-3">Hopper Room (hall-3)</option>
+            <option value="hall-4">Keynote Arena (hall-4)</option>
+            <option value="ALL">Central Command (All Halls - Lead)</option>
+            <option value="hall-kumbh">Kumbh Mela Sector A</option>
+            <option value="hall-rally">Mega Election Rally Grounds</option>
+          </select>
+        </div>
+        <div style="margin-bottom:10px;">
+          <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">ROLE & RESPONSIBILITY</label>
+          <input type="text" id="add-vol-role" placeholder="e.g. Door Entrance Marshal / Stage AV Lead" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-size:0.85rem; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:14px;">
+          <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">EMAIL ADDRESS</label>
+          <input type="email" id="add-vol-email" placeholder="volunteer@delta-engine.in" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-size:0.85rem; box-sizing:border-box;">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px;">
+          <button type="button" class="btn btn-sm" id="btn-cancel-add-vol" style="background:#e5e7eb; border:2px solid #000; font-weight:800; padding:6px 14px;">Cancel</button>
+          <button type="submit" class="btn btn-sm btn-green" style="font-weight:800; padding:6px 14px;">💾 Save Volunteer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="components/alertCoordinator.js"></script>
   <script src="components/websockets.js"></script>
   <script src="components/auth.js"></script>
   <script src="components/app.js"></script>
-  <script src="components/customCursor.js?v=cursorFix4"></script>
   <!-- REAL-TIME WEBGL OBJECT & PERSON DETECTION (100% FREE & ZERO LATENCY) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>

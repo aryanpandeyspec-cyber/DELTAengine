@@ -89,6 +89,21 @@ function initContentUploadPipeline() {
     });
   }
 
+  const btnCopySocial = document.getElementById('btn-copy-social');
+  if (btnCopySocial) {
+    btnCopySocial.addEventListener('click', () => {
+      const socialCopy = document.getElementById('result-social-copy');
+      if (socialCopy && socialCopy.value) {
+        navigator.clipboard.writeText(socialCopy.value).then(() => {
+          if (typeof createToast === 'function') createToast('📋 Social promo copy copied to clipboard!', 'success');
+          if (typeof playSuccessSfx === 'function') playSuccessSfx();
+        });
+      } else {
+        if (typeof createToast === 'function') createToast('No social copy generated yet.', 'info');
+      }
+    });
+  }
+
   initReviewModalListeners();
 }
 
@@ -165,6 +180,10 @@ function closeUploadReviewModal() {
   }
   const fileInput = document.getElementById('file-input');
   if (fileInput) fileInput.value = '';
+  if (typeof activeModalSpatialRenderer !== 'undefined' && activeModalSpatialRenderer) {
+    activeModalSpatialRenderer.destroy();
+    activeModalSpatialRenderer = null;
+  }
 }
 
 function setReviewModalTab(type) {
@@ -305,11 +324,22 @@ function initModalSpatialModel() {
 }
 
 function initReviewModalListeners() {
-  // Modal close buttons
   const btnClose = document.getElementById('btn-close-review-modal');
   const btnCancel = document.getElementById('btn-cancel-review');
   if (btnClose) btnClose.addEventListener('click', closeUploadReviewModal);
   if (btnCancel) btnCancel.addEventListener('click', closeUploadReviewModal);
+
+  const modal = document.getElementById('modal-upload-review');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeUploadReviewModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && modal.style.display !== 'none' && !modal.classList.contains('hidden')) {
+        closeUploadReviewModal();
+      }
+    });
+  }
 
   // Tab buttons
   const btnTabPlan = document.getElementById('tab-btn-room-plan');
@@ -320,12 +350,19 @@ function initReviewModalListeners() {
   // Dimension inputs live calculation
   const inpWidth = document.getElementById('edit-room-width');
   const inpLength = document.getElementById('edit-room-length');
+  const inpHeight = document.getElementById('edit-room-height');
   const inpDoors = document.getElementById('edit-room-doors');
   const inpHallName = document.getElementById('edit-room-hall-name');
   const inpCapacity = document.getElementById('edit-room-capacity');
 
   if (inpWidth) inpWidth.addEventListener('input', recalculatePeopleCapacity);
   if (inpLength) inpLength.addEventListener('input', recalculatePeopleCapacity);
+  if (inpHeight) inpHeight.addEventListener('input', () => {
+    recalculatePeopleCapacity();
+    if (activeModalSpatialRenderer) {
+      activeModalSpatialRenderer.setDimensions({ height: parseFloat(inpHeight.value) || 5.5 });
+    }
+  });
   if (inpDoors) inpDoors.addEventListener('input', recalculatePeopleCapacity);
   if (inpHallName) inpHallName.addEventListener('input', () => {
     if (activeModalSpatialRenderer) activeModalSpatialRenderer.setDimensions({ hallName: inpHallName.value });
@@ -745,7 +782,7 @@ function initVisualCustomizer() {
 
     ctx.font = 'bold 14px "Space Grotesk", Courier';
     ctx.fillStyle = (activeTheme === 'green' || activeTheme === 'red') ? '#ffffff' : '#4285f4';
-    ctx.fillText('#DedicatedHackIndia', 20, 260);
+    ctx.fillText('#DeltaEngineOS', 20, 260);
 
     const imgUrl = canvas.toDataURL("image/png");
     const dlLink = document.createElement('a');

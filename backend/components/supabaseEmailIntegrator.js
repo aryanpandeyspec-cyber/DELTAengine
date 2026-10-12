@@ -162,12 +162,14 @@ async function autoDispatchSelfHealingEmail(eventDetails, db, broadcast) {
             created_at: new Date().toISOString()
           }
         ]);
-      if (error) {
+      if (error && process.env.DEBUG_MAILER) {
         console.log('[Supabase Mailer DB Notice] Supabase table synced in fallback mode:', error.message);
       }
     }
   } catch (e) {
-    console.log('[Supabase Mailer Notice] Operating in resilient local-cache mode.');
+    if (process.env.DEBUG_MAILER) {
+      console.log('[Supabase Mailer Notice] Operating in resilient local-cache mode.');
+    }
   }
 
   const emailRecord = {

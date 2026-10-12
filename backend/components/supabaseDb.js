@@ -1,5 +1,5 @@
 // --- SUPABASE POSTGRESQL PERSISTENCE & HYDRATION CONNECTOR ---
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 
 const { createClient } = require('@supabase/supabase-js');
 
@@ -13,7 +13,6 @@ const supabase = (supabaseUrl && supabaseKey)
 // Hydrate In-Memory Graph from Supabase PostgreSQL on Server Boot
 async function loadGraphFromSupabase(dbContainer) {
   if (!supabase) {
-    console.log('[Supabase Sync] SUPABASE_ANON_KEY not set yet. Running in local graph mode.');
     return false;
   }
 
@@ -29,8 +28,14 @@ async function loadGraphFromSupabase(dbContainer) {
     }
 
     if (speakers && speakers.length > 0) {
-      speakers.forEach(s => { dbContainer.graph.speakers[s.id] = s; });
-      topics.forEach(t => { dbContainer.graph.topics[t.id] = t; });
+      speakers.forEach(s => { dbContainer.graph.speakers[s.id] = { ...s, delay: s.delay || 0 }; });
+      topics.forEach(t => { 
+        dbContainer.graph.topics[t.id] = { 
+          ...t, 
+          speakerId: t.speakerId || t.speaker_id,
+          slidesUploaded: t.slidesUploaded !== undefined ? t.slidesUploaded : (t.slides_uploaded ?? true)
+        }; 
+      });
       halls.forEach(h => { dbContainer.graph.halls[h.id] = h; });
       
       if (schedule && schedule.length > 0) {

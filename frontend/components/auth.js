@@ -2,14 +2,14 @@
 
 (function initAuthManager() {
   let currentUserRole = 'coordinator'; // 'coordinator' | 'admin'
-  let currentUserName = 'Suryansh (Lead Coordinator)';
+  let currentUserName = 'Operations Specialist';
   try {
     const savedRole = localStorage.getItem('delta_user_role');
     const savedName = localStorage.getItem('delta_user_name');
     if (savedRole) currentUserRole = savedRole;
     else if (window.location.pathname.includes('admin')) currentUserRole = 'admin';
     if (savedName) currentUserName = savedName;
-    else if (currentUserRole === 'admin') currentUserName = 'Marcus Aurelius (Super Admin)';
+    else if (currentUserRole === 'admin') currentUserName = 'System Administrator';
   } catch (e) { }
 
   window.addEventListener('DOMContentLoaded', () => {
@@ -38,12 +38,24 @@
       });
     }
 
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('hidden');
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+          modal.classList.add('hidden');
+        }
+      });
+    }
+
     // Role Tab Toggles
     const tabCoord = document.getElementById('tab-login-coordinator');
     const tabAdmin = document.getElementById('tab-login-admin');
     const hiddenRoleInput = document.getElementById('auth-selected-role');
     const usernameLabel = document.getElementById('auth-username-label');
     const inputUsername = document.getElementById('auth-input-username');
+    const errBanner = document.getElementById('auth-modal-error-banner');
 
     if (tabCoord && tabAdmin) {
       tabCoord.addEventListener('click', (e) => {
@@ -51,8 +63,9 @@
         tabCoord.classList.add('active');
         tabAdmin.classList.remove('active');
         if (hiddenRoleInput) hiddenRoleInput.value = 'coordinator';
-        if (usernameLabel) usernameLabel.textContent = 'Coordinator Username / ID';
-        if (inputUsername) inputUsername.value = 'Suryansh';
+        if (usernameLabel) usernameLabel.textContent = 'Coordinator Supabase Email / ID';
+        if (inputUsername) inputUsername.placeholder = 'e.g. coordinator@delta-engine.in';
+        if (errBanner) errBanner.style.display = 'none';
       });
 
       tabAdmin.addEventListener('click', (e) => {
@@ -60,36 +73,60 @@
         tabAdmin.classList.add('active');
         tabCoord.classList.remove('active');
         if (hiddenRoleInput) hiddenRoleInput.value = 'admin';
-        if (usernameLabel) usernameLabel.textContent = 'Super Admin Key / ID';
-        if (inputUsername) inputUsername.value = 'admin_marcus';
+        if (usernameLabel) usernameLabel.textContent = 'Super Admin Supabase Email / ID';
+        if (inputUsername) inputUsername.placeholder = 'e.g. admin@delta-engine.in';
+        if (errBanner) errBanner.style.display = 'none';
       });
     }
 
-    // Quick One-Click Demo Access Buttons
+    // Quick access hooks (safe handlers if legacy elements exist)
     const btnQuickCoord = document.getElementById('btn-quick-login-coord');
     const btnQuickAdmin = document.getElementById('btn-quick-login-admin');
 
     if (btnQuickCoord) {
       btnQuickCoord.addEventListener('click', () => {
-        loginUser('coordinator', 'Suryansh (Lead Coordinator)');
+        loginUser('coordinator', 'coordinator@delta-engine.in', 'DeltaCoord2026!');
       });
     }
 
     if (btnQuickAdmin) {
       btnQuickAdmin.addEventListener('click', () => {
-        loginUser('admin', 'Marcus Aurelius (Super Admin)');
+        loginUser('admin', 'admin@delta-engine.in', 'DeltaAdmin2026!');
       });
     }
 
-    // Form Submit Listener
+    // Form Submit Listener (Live Supabase Verification)
     const form = document.getElementById('auth-login-form');
+    const btnSubmitLogin = document.getElementById('btn-submit-auth-login');
     if (form) {
-      form.addEventListener('submit', (e) => {
+      form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const role = hiddenRoleInput ? hiddenRoleInput.value : 'coordinator';
-        const username = inputUsername ? inputUsername.value : 'User';
-        const name = role === 'admin' ? `Admin (${username})` : `Coordinator (${username})`;
-        loginUser(role, name);
+        const identifier = inputUsername ? inputUsername.value.trim() : '';
+        const passwordInput = document.getElementById('auth-input-password');
+        const password = passwordInput ? passwordInput.value.trim() : '';
+
+        if (!identifier || !password) {
+          const errBannerEl = document.getElementById('auth-modal-error-banner');
+          const errTextEl = document.getElementById('auth-modal-error-text');
+          if (errBannerEl && errTextEl) {
+            errTextEl.textContent = 'Please provide both your Supabase email and password.';
+            errBannerEl.style.display = 'block';
+          }
+          return;
+        }
+
+        if (btnSubmitLogin) {
+          btnSubmitLogin.disabled = true;
+          btnSubmitLogin.textContent = '⏳ Verifying Supabase Auth...';
+        }
+
+        await loginUser(role, identifier, password);
+
+        if (btnSubmitLogin) {
+          btnSubmitLogin.disabled = false;
+          btnSubmitLogin.textContent = '🚀 Sign In with Supabase Auth';
+        }
       });
     }
 
@@ -109,32 +146,121 @@
       });
     }
 
+    // Bind all logout triggers across the page (sidebar link, admin logout button, etc.)
+    const logoutTriggers = document.querySelectorAll('#btn-logout, a[href="login.html"], .btn-logout-trigger');
+    logoutTriggers.forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.preventDefault();
+        logoutUser();
+      });
+    });
+
     // Admin System Override Buttons
     bindAdminActionButtons();
   }
 
-  function loginUser(role, displayName) {
-    currentUserRole = role;
-    currentUserName = displayName;
+  async function logoutUser() {
+    const token = localStorage.getItem('delta_auth_token');
+    const role = currentUserRole;
+    const name = currentUserName;
+
     try {
-      localStorage.setItem('delta_user_role', role);
-      localStorage.setItem('delta_user_name', displayName);
-    } catch (e) { }
-
-    const modal = document.getElementById('auth-login-modal');
-    if (modal) modal.classList.add('hidden');
-
-    if (typeof createToast === 'function') {
-      createToast(`🔓 Authenticated cleanly as ${role.toUpperCase()}: ${displayName}`, 'success');
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({ role, username: name })
+      });
+    } catch (e) {
+      console.warn('[Auth] Offline mode during logout');
     }
 
-    updateAuthUI();
-    showView(role);
+    try {
+      localStorage.removeItem('delta_auth_token');
+      localStorage.removeItem('delta_user_role');
+      localStorage.removeItem('delta_user_name');
+    } catch (e) {}
+
+    currentUserRole = 'coordinator';
+    currentUserName = 'Guest';
+
+    if (typeof createToast === 'function') {
+      createToast('🚪 Logged out cleanly. Session and credentials terminated.', 'info');
+    }
+
+    // Redirect to login page
+    setTimeout(() => {
+      window.location.href = 'login.html';
+    }, 350);
+  }
+
+  window.logoutUser = logoutUser;
+  window.loginUser = loginUser;
+
+  async function loginUser(role, identifier, password = '') {
+    const errBanner = document.getElementById('auth-modal-error-banner');
+    const errText = document.getElementById('auth-modal-error-text');
+
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role, username: identifier, email: identifier, password })
+      });
+      const data = await res.json();
+
+      if (!res.ok || (data && !data.success)) {
+        const errorMsg = data?.error || 'Invalid credentials. Please verify your Supabase email and password.';
+        if (errBanner && errText) {
+          errText.textContent = errorMsg;
+          errBanner.style.display = 'block';
+        }
+        if (typeof createToast === 'function') {
+          createToast(`⛔ Auth Failed: ${errorMsg}`, 'warning');
+        }
+        return false;
+      }
+
+      if (errBanner) errBanner.style.display = 'none';
+
+      const user = data.user || {};
+      currentUserRole = (user.role ? user.role.toLowerCase() : (role || 'coordinator'));
+      currentUserName = user.name || identifier;
+
+      try {
+        if (data.token) localStorage.setItem('delta_auth_token', data.token);
+        localStorage.setItem('delta_user_role', currentUserRole);
+        localStorage.setItem('delta_user_name', currentUserName);
+      } catch (e) { }
+
+      const modal = document.getElementById('auth-login-modal');
+      if (modal) modal.classList.add('hidden');
+
+      if (typeof createToast === 'function') {
+        createToast(`🔓 Authenticated via Supabase PostgreSQL Auth: ${currentUserName} (${currentUserRole.toUpperCase()})`, 'success');
+      }
+
+      updateAuthUI();
+      showView(currentUserRole);
+      return true;
+    } catch (e) {
+      console.warn('[Auth] Error during login:', e.message);
+      if (errBanner && errText) {
+        errText.textContent = 'Connection error. Could not reach Supabase Auth server.';
+        errBanner.style.display = 'block';
+      }
+      if (typeof createToast === 'function') {
+        createToast('Connection error connecting to auth server.', 'warning');
+      }
+      return false;
+    }
   }
 
   function updateAuthUI() {
-    const badge = document.getElementById('user-role-badge');
-    const nameText = document.getElementById('user-name-text');
+    const badge = document.getElementById('user-role-badge') || document.getElementById('admin-role-badge');
+    const nameText = document.getElementById('user-name-text') || document.getElementById('admin-user-name');
     const btnAdminLink = document.getElementById('btn-admin-portal-link');
     const btnCoordLink = document.getElementById('btn-coordinator-portal-link');
 
@@ -218,50 +344,156 @@
     if (btnReindex) btnReindex.addEventListener('click', () => triggerAdminAction('reindex'));
     if (btnAlert) btnAlert.addEventListener('click', () => triggerAdminAction('broadcast'));
     if (btnPurge) btnPurge.addEventListener('click', () => triggerAdminAction('clear_locks'));
+
+    const scenarioSelect = document.getElementById('admin-scenario-select');
+    if (scenarioSelect) {
+      scenarioSelect.addEventListener('change', async (e) => {
+        const scenarioId = e.target.value;
+        try {
+          const res = await fetch('/api/scenarios/select', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ scenarioId })
+          });
+          const data = await res.json();
+          if (data && data.success) {
+            if (typeof createToast === 'function') {
+              createToast(`🎯 Scenario Switched: ${data.scenario?.name || scenarioId}`, 'success');
+            }
+            const auditBox = document.getElementById('admin-audit-log-container');
+            if (auditBox) {
+              const line = document.createElement('div');
+              line.className = 'admin-audit-line info';
+              line.textContent = `[${new Date().toLocaleTimeString()}] Switched active operational domain to ${data.scenario?.name || scenarioId}`;
+              auditBox.insertBefore(line, auditBox.firstChild);
+            }
+          } else {
+            if (typeof createToast === 'function') {
+              createToast(`Failed to switch scenario: ${data?.error || 'Unknown error'}`, 'error');
+            }
+          }
+        } catch (err) {
+          if (typeof createToast === 'function') {
+            createToast(`Network error switching scenario: ${err.message}`, 'error');
+          }
+        }
+      });
+    }
   }
 
   // Contacts & WhatsApp Notification State (Indian Personnel & +91 Format)
   const defaultContacts = [
-    { id: 'cnt_01', name: 'Aryan Pandey', role: 'Lead Event Coordinator & Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', hall: 'ALL VENUES (Central Command)' },
-    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'Suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A' },
-    { id: 'cnt_03', name: 'Shahid', role: 'Stage & Hall Operations Coordinator', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', hall: 'Lovelace Suite & Stage Front' },
-    { id: 'cnt_04', name: 'Dr. Aditi Sharma', role: 'Guest Keynote Speaker (AI Research Lead)', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall' },
-    { id: 'cnt_05', name: 'Vikramaditya Verma', role: 'Guest Keynote Speaker (Graphics Lead)', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite' },
-    { id: 'cnt_06', name: 'Priya Nair', role: 'Guest Speaker (DevOps Architect)', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room' }
+    { id: 'cnt_01', name: 'Aryan Pandey', role: 'Lead Event Coordinator & Systems Commander', phone: '+91 91542 76178', email: 'aryan.pandey777hyd@gmail.com', hall: 'ALL VENUES (Central Command)', assignedHallId: 'ALL' },
+    { id: 'cnt_02', name: 'Suryansh', role: 'Crowd Safety & Entrance Door Specialist', phone: '+91 83030 09159', email: 'Suryansh@delta-engine.in', hall: 'Turing Hall & Entrance A', assignedHallId: 'hall-1' },
+    { id: 'cnt_03', name: 'Shahid', role: 'Stage & Hall Operations Coordinator', phone: '+91 63035 70916', email: 'shahid@delta-engine.in', hall: 'Lovelace Suite & Stage Front', assignedHallId: 'hall-2' },
+    { id: 'cnt_04', name: 'Dr. Aditi Sharma', role: 'Guest Keynote Speaker (AI Research Lead)', phone: '+91 91234 56789', email: 'aditi.sharma@ai-research.in', hall: 'Turing Hall', assignedHallId: 'hall-1' },
+    { id: 'cnt_05', name: 'Vikramaditya Verma', role: 'Guest Keynote Speaker (Graphics Lead)', phone: '+91 99887 76655', email: 'vikram.verma@graphics.in', hall: 'Lovelace Suite', assignedHallId: 'hall-2' },
+    { id: 'cnt_06', name: 'Priya Nair', role: 'Guest Speaker (DevOps Architect)', phone: '+91 98112 23344', email: 'priya.nair@devops.in', hall: 'Hopper Room', assignedHallId: 'hall-3' }
   ];
+
+  let currentHallFilter = 'ALL_PERSONNEL';
+  let cachedVolunteers = [];
 
   window.addEventListener('DOMContentLoaded', () => {
     bindAuthEventListeners();
     updateAuthUI();
-    renderAdminContactsTable();
-    renderFeaturedVolunteers();
+    fetchVolunteersAndRender();
     bindAdminActionButtons();
     bindLimiterToggles();
     bindVoicePAControls();
     bindCloudIntegrationsControls();
+    bindVolunteerControls();
   });
+
+  async function fetchVolunteersAndRender() {
+    try {
+      const res = await fetch('/api/volunteers');
+      const data = await res.json();
+      if (data && Array.isArray(data.volunteers)) {
+        cachedVolunteers = data.volunteers;
+      }
+    } catch (e) {
+      console.warn('[Volunteers] Using default contacts fallback:', e);
+    }
+    renderAdminContactsTable(currentHallFilter);
+    renderFeaturedVolunteers();
+  }
+
+  window.handleVolunteersUpdated = function (data) {
+    if (data && Array.isArray(data.volunteers)) {
+      cachedVolunteers = data.volunteers;
+    }
+    renderAdminContactsTable(currentHallFilter);
+    renderFeaturedVolunteers();
+    if (typeof createToast === 'function') {
+      createToast('👥 Volunteer directory updated across all active stations.', 'info');
+    }
+  };
+
+  function normalizeHallString(val) {
+    if (!val) return '';
+    const str = String(val).toLowerCase();
+    if (str.includes('turing') || str === 'hall-1') return 'hall-1';
+    if (str.includes('lovelace') || str === 'hall-2') return 'hall-2';
+    if (str.includes('hopper') || str === 'hall-3') return 'hall-3';
+    if (str.includes('keynote') || str.includes('arena') || str === 'hall-4') return 'hall-4';
+    if (str.includes('kumbh')) return 'hall-kumbh';
+    if (str.includes('rally')) return 'hall-rally';
+    if (str === 'all' || str.startsWith('all ') || str.includes('central') || str.includes('all venue')) return 'ALL';
+    return str;
+  }
+
+  function getCombinedPersonnelList() {
+    // Merge db.volunteers with defaultContacts ensuring no duplicate phones
+    const combined = [];
+    const seen = new Set();
+
+    (cachedVolunteers || []).forEach(v => {
+      const cleanPhone = (v.phone || '').replace(/[^0-9]/g, '');
+      seen.add(cleanPhone);
+      combined.push({
+        id: v.id,
+        name: v.name,
+        role: v.role,
+        phone: v.phone,
+        email: v.email || `${v.name.toLowerCase().replace(/[^a-z]/g, '')}@delta-engine.in`,
+        hall: v.location || v.assignedHallId || 'Turing Hall',
+        assignedHallId: v.assignedHallId || 'hall-1',
+        isVolunteer: true
+      });
+    });
+
+    defaultContacts.forEach(c => {
+      const cleanPhone = (c.phone || '').replace(/[^0-9]/g, '');
+      if (!seen.has(cleanPhone)) {
+        seen.add(cleanPhone);
+        combined.push({
+          ...c,
+          assignedHallId: c.assignedHallId || normalizeHallString(c.hall)
+        });
+      }
+    });
+
+    return combined;
+  }
 
   function renderFeaturedVolunteers() {
     const container = document.getElementById('featured-volunteers-list');
     if (!container) return;
     container.innerHTML = '';
 
-    const volunteers = [
-      { name: 'Suryansh', role: 'Crowd Safety & Entrance Lead', phone: '+91 83030 09159', location: 'Door A', task: 'Scanning passes & door routing', status: 'ON DUTY' },
-      { name: 'Shahid', role: 'Stage & Operations Lead', phone: '+91 63035 70916', location: 'Stage Front', task: 'Safety aisle clearance & mic checks', status: 'ON DUTY' },
-      { name: 'Aryan Pandey', role: 'Lead Systems Commander', phone: '+91 91542 76178', location: 'Central AV Desk', task: 'Perception monitoring & volunteer dispatch', status: 'ON DUTY' }
-    ];
+    const list = getCombinedPersonnelList().filter(p => !p.role?.toLowerCase().includes('speaker')).slice(0, 6);
 
-    volunteers.forEach(v => {
+    list.forEach(v => {
       const card = document.createElement('div');
       card.style.cssText = 'background:#f8f9fa; border:2px solid #000; border-radius:10px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center;';
       card.innerHTML = `
         <div>
           <div style="font-size:0.85rem; font-weight:800; color:#000;">${v.name} <span style="font-size:0.72rem; color:#555; font-weight:600;">(${v.role})</span></div>
-          <div style="font-size:0.75rem; color:#444; font-weight:600;">📍 ${v.location} • 📋 ${v.task}</div>
+          <div style="font-size:0.75rem; color:#444; font-weight:600;">📍 ${v.hall} • 🛡️ ${v.assignedHallId === 'ALL' ? 'Central Command' : 'Hall-Targeted'}</div>
         </div>
         <button class="btn btn-sm btn-yellow btn-vol-ping" data-name="${v.name}" data-phone="${v.phone}" style="font-size:0.72rem; font-weight:800; padding:3px 8px;">
-          💬 WhatsApp Contact
+          💬 WhatsApp
         </button>
       `;
       container.appendChild(card);
@@ -271,27 +503,50 @@
       btn.addEventListener('click', (e) => {
         const name = e.target.getAttribute('data-name');
         const phone = e.target.getAttribute('data-phone');
-        triggerWhatsAppNotification(name, phone, `Hello ${name}, this is DELTA ENGINE Event Control. Please report to stage desk for session transition.`);
+        triggerWhatsAppNotification(name, phone, `Hello ${name}, this is DELTA ENGINE Event Control. Please report to station for hall operations.`);
       });
     });
   }
 
-  function renderAdminContactsTable() {
+  function renderAdminContactsTable(filter = 'ALL_PERSONNEL') {
     const tbody = document.getElementById('admin-contacts-table-body');
     if (!tbody) return;
     tbody.innerHTML = '';
 
-    defaultContacts.forEach(c => {
+    const allPersonnel = getCombinedPersonnelList();
+
+    // Update count in UI tab
+    const countEl = document.getElementById('count-all-vols');
+    if (countEl) countEl.textContent = allPersonnel.length;
+
+    // Filter logic
+    const filtered = allPersonnel.filter(item => {
+      if (!filter || filter === 'ALL_PERSONNEL') return true;
+      const itemHallNorm = normalizeHallString(item.assignedHallId || item.hall);
+      if (filter === 'CENTRAL') return itemHallNorm === 'ALL';
+      return itemHallNorm === filter || (filter === 'hall-1' && itemHallNorm === 'ALL');
+    });
+
+    filtered.forEach(c => {
       const tr = document.createElement('tr');
+      const normHall = normalizeHallString(c.assignedHallId || c.hall);
+      const isLead = normHall === 'ALL';
+      const hallBadgeColor = isLead ? '#dbeafe' : '#fef3c7';
+      const hallTextColor = isLead ? '#1e40af' : '#92400e';
+
       tr.innerHTML = `
         <td><strong>${c.name}</strong></td>
         <td><span class="role-chip coord">${c.role}</span></td>
         <td><code>💬 ${c.phone}</code></td>
         <td><a href="mailto:${c.email}" style="color:#4285f4; text-decoration:underline;">${c.email}</a></td>
-        <td>${c.hall}</td>
         <td>
-          <button class="btn btn-sm btn-yellow btn-wa-alert" data-name="${c.name}" data-phone="${c.phone}">
-            💬 WhatsApp Contact
+          <span style="background:${hallBadgeColor}; color:${hallTextColor}; border:1.5px solid #000; border-radius:6px; padding:2px 8px; font-weight:800; font-size:0.72rem; display:inline-block;">
+            ${isLead ? '⚡ Central Command (ALL)' : `📍 ${c.hall}`}
+          </span>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-yellow btn-wa-alert" data-name="${c.name}" data-phone="${c.phone}" style="font-weight:800; font-size:0.75rem;">
+            💬 WhatsApp
           </button>
         </td>
       `;
@@ -305,6 +560,139 @@
         triggerWhatsAppNotification(name, phone, `Hello ${name}, this is DELTA ENGINE Event OS. Operational alert regarding schedule matrix.`);
       });
     });
+  }
+
+  function bindVolunteerControls() {
+    // 1. Hall Filter Tabs (Dashboard)
+    const tabContainer = document.getElementById('volunteer-hall-filter-tabs');
+    if (tabContainer) {
+      tabContainer.querySelectorAll('button[data-hall-filter]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          tabContainer.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+          const targetBtn = e.target.closest('button');
+          targetBtn.classList.add('active');
+          currentHallFilter = targetBtn.getAttribute('data-hall-filter');
+          renderAdminContactsTable(currentHallFilter);
+        });
+      });
+    }
+
+    // Hall Filter Tabs (Admin Page)
+    const tabAdmin = document.getElementById('volunteer-hall-filter-tabs-admin');
+    if (tabAdmin) {
+      tabAdmin.querySelectorAll('button[data-hall-filter]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          tabAdmin.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+          const targetBtn = e.target.closest('button');
+          targetBtn.classList.add('active');
+          currentHallFilter = targetBtn.getAttribute('data-hall-filter');
+          renderAdminContactsTable(currentHallFilter);
+        });
+      });
+    }
+
+    // 2. Add Volunteer Modal Toggle
+    const btnOpenAddModal = document.getElementById('btn-open-add-vol-modal');
+    const modalAddVol = document.getElementById('modal-add-volunteer');
+    const btnCloseAddVol = document.getElementById('btn-close-add-vol');
+    const btnCancelAddVol = document.getElementById('btn-cancel-add-vol');
+    const formAddVol = document.getElementById('form-add-volunteer');
+
+    if (btnOpenAddModal && modalAddVol) {
+      btnOpenAddModal.addEventListener('click', () => {
+        modalAddVol.style.display = 'flex';
+      });
+    }
+
+    const closeModal = () => {
+      if (modalAddVol) modalAddVol.style.display = 'none';
+      if (formAddVol) formAddVol.reset();
+    };
+
+    if (btnCloseAddVol) btnCloseAddVol.addEventListener('click', closeModal);
+    if (btnCancelAddVol) btnCancelAddVol.addEventListener('click', closeModal);
+    if (modalAddVol) {
+      modalAddVol.addEventListener('click', (e) => {
+        if (e.target === modalAddVol) closeModal();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && modalAddVol.style.display !== 'none') closeModal();
+      });
+    }
+
+    // 3. Form Submit -> POST /api/volunteers
+    if (formAddVol) {
+      formAddVol.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('add-vol-name')?.value.trim();
+        const phone = document.getElementById('add-vol-phone')?.value.trim();
+        const assignedHallId = document.getElementById('add-vol-hall')?.value;
+        const role = document.getElementById('add-vol-role')?.value.trim();
+        const email = document.getElementById('add-vol-email')?.value.trim();
+
+        if (!name || !phone) return;
+
+        try {
+          const res = await fetch('/api/volunteers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, phone, assignedHallId, role, email })
+          });
+          const data = await res.json();
+          if (data.success) {
+            closeModal();
+            if (typeof createToast === 'function') {
+              createToast(`✅ Registered ${name} to ${data.volunteer.location}! Total: ${data.totalVolunteers} volunteers.`, 'success');
+            }
+            fetchVolunteersAndRender();
+          }
+        } catch (err) {
+          console.error('[Add Volunteer] Error:', err);
+          if (typeof createToast === 'function') {
+            createToast('❌ Failed to save volunteer: ' + err.message, 'conflict');
+          }
+        }
+      });
+    }
+
+    // 4. Test Hall Targeted Alert Buttons
+    const bindTestAlert = (btnId, hallId, hallName) => {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.addEventListener('click', async () => {
+          if (typeof createToast === 'function') {
+            createToast(`🚀 Simulating capacity breach at ${hallName}...`, 'info');
+          }
+          try {
+            const res = await fetch('/api/volunteers/test-hall-alert', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                hallId,
+                eventType: 'CAPACITY_BREACH',
+                count: hallId === 'hall-1' ? 250 : 180,
+                capacity: hallId === 'hall-1' ? 250 : 180
+              })
+            });
+            const data = await res.json();
+            if (data.success) {
+              const alertedNames = data.alertPayload.targetedVolunteers.map(v => v.name).join(', ');
+              const shielded = data.alertPayload.excludedCount;
+              if (typeof createToast === 'function') {
+                createToast(`🎯 [${hallName} Alert Dispatched] Alerted: ${alertedNames}. Shielded: ${shielded} volunteers at other halls!`, 'success');
+              }
+            }
+          } catch (err) {
+            console.error('[Test Alert] Error:', err);
+          }
+        });
+      }
+    };
+
+    bindTestAlert('btn-test-turing-alert', 'hall-1', 'Turing Hall');
+    bindTestAlert('btn-admin-test-turing-alert', 'hall-1', 'Turing Hall');
+    bindTestAlert('btn-test-lovelace-alert', 'hall-2', 'Lovelace Suite');
+    bindTestAlert('btn-admin-test-lovelace-alert', 'hall-2', 'Lovelace Suite');
   }
 
   function bindLimiterToggles() {
@@ -341,17 +729,17 @@
   }
 
   function triggerWhatsAppNotification(name, phone, msg) {
-    // 1. Call backend API for dispatch logging
-    fetch('/api/notify/whatsapp', {
+    // 1. Open real WhatsApp Web / Mobile chat with selected number pre-loaded!
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+
+    // 2. Call backend API for dispatch logging & verification
+    return fetch('/api/notify/whatsapp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ recipientName: name, phoneNumber: phone, messageText: msg })
     });
-
-    // 2. Open real WhatsApp Web / Mobile chat with selected number pre-loaded!
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, '_blank');
   }
 
   window.handleWhatsAppDispatch = function (data) {
@@ -396,19 +784,47 @@
     loadFemaleVoices();
   }
 
-  function speakWithNicoRobinVoice(text) {
-    if (!('speechSynthesis' in window) || !text) return;
+  // =========================================================================
+  // 🎙️ SINGLETON VOICE ANNOUNCEMENT ENGINE (ZERO OVERLAPPING VOICES)
+  // =========================================================================
+  let activeAudioInstance = null;
+  const voiceQueue = [];
+  let isVoicePlaying = false;
+  let lastSpokenText = '';
+  let lastSpokenTime = 0;
+
+  window.stopAllVoices = function () {
+    if (activeAudioInstance) {
+      try {
+        activeAudioInstance.pause();
+        activeAudioInstance.currentTime = 0;
+      } catch (e) {}
+      activeAudioInstance = null;
+    }
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+    voiceQueue.length = 0;
+    isVoicePlaying = false;
+  };
+
+  function speakWithNicoRobinVoice(text, onComplete) {
+    if (!('speechSynthesis' in window) || !text) {
+      if (typeof onComplete === 'function') onComplete();
+      return;
+    }
     try {
       window.speechSynthesis.cancel();
       loadFemaleVoices();
       const utter = new SpeechSynthesisUtterance(text);
       // Nico Robin Persona: Confident, elegant, calm female
-      utter.pitch = 1.08; // Clear, elegant female pitch (prevents male timbre)
-      utter.rate = 0.92;  // Composed, poised, deliberate tempo
+      utter.pitch = 1.08;
+      utter.rate = 0.92;
       utter.volume = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
-      // Specifically target Microsoft Zira, Samantha, or any confirmed female English voice
       const bestFemale = voices.find(v => /zira|samantha|victoria|karen|hazel|catherine|female/i.test(v.name))
         || cachedFemaleVoices[0]
         || voices.find(v => !/david|mark|george|male/i.test(v.name) && v.lang.startsWith('en'));
@@ -416,32 +832,132 @@
       if (bestFemale) {
         utter.voice = bestFemale;
       }
+
+      utter.onend = () => {
+        if (typeof onComplete === 'function') onComplete();
+      };
+      utter.onerror = () => {
+        if (typeof onComplete === 'function') onComplete();
+      };
+
       window.speechSynthesis.speak(utter);
     } catch (e) {
       console.warn('[Nico Robin Speech Error]:', e);
+      if (typeof onComplete === 'function') onComplete();
+    }
+  }
+
+  window.speakWithNicoRobinVoice = speakWithNicoRobinVoice;
+
+  function playNextVoiceInQueue() {
+    if (voiceQueue.length === 0) {
+      isVoicePlaying = false;
+      return;
+    }
+
+    // Respect user's sound toggle
+    if (localStorage.getItem('delta_sfx_enabled') === 'false') {
+      voiceQueue.length = 0;
+      isVoicePlaying = false;
+      return;
+    }
+
+    isVoicePlaying = true;
+    const currentItem = voiceQueue.shift();
+
+    // 1. Deduplication: Drop duplicate announcements if received within 6 seconds
+    const now = Date.now();
+    if (currentItem.text === lastSpokenText && (now - lastSpokenTime < 6000)) {
+      console.log('[Voice Queue] Suppressed duplicate announcement within 6s:', currentItem.text);
+      playNextVoiceInQueue();
+      return;
+    }
+    lastSpokenText = currentItem.text;
+    lastSpokenTime = now;
+
+    // 2. Cross-Tab Mutex: Ensure only 1 open browser tab plays sound
+    const announcementId = currentItem.id || `${(currentItem.text || '').slice(0, 32)}_${Math.floor(now / 5000)}`;
+    const lastPlayedAcrossTabs = localStorage.getItem('delta_last_voice_announcement_id');
+    const lastPlayedTimestamp = parseInt(localStorage.getItem('delta_last_voice_announcement_time') || '0', 10);
+
+    if (lastPlayedAcrossTabs === announcementId && (now - lastPlayedTimestamp < 5000)) {
+      console.log('[Voice Queue] Cross-tab synchronization: Another tab is already broadcasting this voice.');
+      isVoicePlaying = false;
+      return;
+    }
+
+    localStorage.setItem('delta_last_voice_announcement_id', announcementId);
+    localStorage.setItem('delta_last_voice_announcement_time', now.toString());
+
+    // 3. Stop any existing voice before starting next
+    if (activeAudioInstance) {
+      try {
+        activeAudioInstance.pause();
+        activeAudioInstance.currentTime = 0;
+      } catch (e) {}
+      activeAudioInstance = null;
+    }
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+
+    const onPlaybackComplete = () => {
+      activeAudioInstance = null;
+      // 2000ms gap between sequential announcements
+      setTimeout(() => {
+        playNextVoiceInQueue();
+      }, 2000);
+    };
+
+    if (currentItem.audioUrl) {
+      try {
+        const audio = new Audio('/' + currentItem.audioUrl.replace(/^\//, ''));
+        activeAudioInstance = audio;
+        audio.onended = onPlaybackComplete;
+        audio.onerror = () => {
+          console.warn('[PA Audio Player] Audio URL failed, falling back cleanly to Nico Robin speech synthesis.');
+          activeAudioInstance = null;
+          speakWithNicoRobinVoice(currentItem.text, onPlaybackComplete);
+        };
+
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(e => {
+            console.log('[PA Audio Player] Autoplay note:', e.message);
+            activeAudioInstance = null;
+            speakWithNicoRobinVoice(currentItem.text, onPlaybackComplete);
+          });
+        }
+      } catch (err) {
+        console.warn('[PA Audio Player] Play exception:', err);
+        activeAudioInstance = null;
+        speakWithNicoRobinVoice(currentItem.text, onPlaybackComplete);
+      }
+    } else {
+      speakWithNicoRobinVoice(currentItem.text, onPlaybackComplete);
     }
   }
 
   window.handleVoiceAnnouncement = function (data) {
     if (!data) return;
 
-    // Play announcement audio in browser
-    if (data.audioUrl) {
-      try {
-        const audio = new Audio('/' + data.audioUrl.replace(/^\//, ''));
-        audio.play().catch(e => {
-          console.log('[PA Audio Player] Autoplay note:', e.message);
-          speakWithNicoRobinVoice(data.text);
-        });
-      } catch (err) {
-        console.warn('[PA Audio Player] Play exception:', err);
-        speakWithNicoRobinVoice(data.text);
-      }
-    } else {
-      speakWithNicoRobinVoice(data.text);
+    const logBox = document.getElementById('admin-audit-log-container');
+    if (logBox) {
+      const line = document.createElement('div');
+      line.className = 'admin-audit-line success';
+      line.textContent = `[${data.timestamp || new Date().toLocaleTimeString()}] 🎙️ ElevenLabs PA Broadcast: "${data.text}" (${data.voice || 'Nico Robin (Calm & Elegant)'})`;
+      logBox.insertBefore(line, logBox.firstChild);
     }
 
-    // Update PA player widget if present
+    // Unified Alert Coordinator handles single-active alert, instant stop on dismiss, and 2s gap
+    if (window.DeltaAlertManager) {
+      window.DeltaAlertManager.enqueuePAAnnouncement(data);
+      return;
+    }
+
+    // Fallback if DeltaAlertManager not loaded
     const paBanner = document.getElementById('venue-pa-live-banner');
     if (paBanner) {
       paBanner.style.display = 'flex';
@@ -453,16 +969,17 @@
       if (voiceEl) voiceEl.textContent = data.voice || 'Nico Robin (Calm & Elegant)';
     }
 
-    const logBox = document.getElementById('admin-audit-log-container');
-    if (logBox) {
-      const line = document.createElement('div');
-      line.className = 'admin-audit-line success';
-      line.textContent = `[${data.timestamp || new Date().toLocaleTimeString()}] 🎙️ ElevenLabs PA Broadcast: "${data.text}" (${data.voice || 'Nico Robin (Calm & Elegant)'})`;
-      logBox.insertBefore(line, logBox.firstChild);
-    }
-
     if (typeof createToast === 'function') {
       createToast(`📢 [Nico Robin PA Broadcaster] ${data.text}`, 'success');
+    }
+
+    if (localStorage.getItem('delta_sfx_enabled') === 'false') {
+      return;
+    }
+
+    voiceQueue.push(data);
+    if (!isVoicePlaying) {
+      playNextVoiceInQueue();
     }
   };
 
@@ -501,7 +1018,7 @@
       // Determine currently active featured talk in Turing Hall (or current active slot)
       let activeTopicId = null;
       let activeSlotId = 'slot-1';
-      const slots = ['slot-1', 'slot-2', 'slot-3', 'slot-4'];
+      const slots = (graph && graph.slots) ? Object.keys(graph.slots) : (schedule ? Object.keys(schedule) : ['slot-1', 'slot-2', 'slot-3', 'slot-4']);
       for (const s of slots) {
         if (schedule[s] && schedule[s]['hall-1']) {
           activeTopicId = schedule[s]['hall-1'];
@@ -591,7 +1108,86 @@
       adminServerUptimeBase = data.uptimeSeconds;
       adminClientStartTime = Date.now();
     }
+
+    // Sync Limiters checkboxes
+    if (data.limiters) {
+      const toggleLlm = document.getElementById('toggle-llm-limiter');
+      const toggleDb = document.getElementById('toggle-db-limiter');
+      if (toggleLlm && typeof data.limiters.llm === 'boolean') {
+        toggleLlm.checked = data.limiters.llm;
+      }
+      if (toggleDb && typeof data.limiters.db === 'boolean') {
+        toggleDb.checked = data.limiters.db;
+      }
+    }
+
+    // Sync Active Scenario selector
+    const activeScn = data.activeScenario || data.currentScenario;
+    if (activeScn) {
+      const scnSelect = document.getElementById('admin-scenario-select');
+      if (scnSelect && scnSelect.value !== activeScn) {
+        scnSelect.value = activeScn;
+      }
+    }
+
+    // Hydrate Live WhatsApp Dispatches
+    if (data.whatsappLogs && Array.isArray(data.whatsappLogs)) {
+      const waBox = document.getElementById('admin-whatsapp-log-container');
+      if (waBox) {
+        waBox.innerHTML = '';
+        data.whatsappLogs.forEach(item => {
+          const line = document.createElement('div');
+          line.className = 'admin-audit-line success';
+          line.textContent = `[${item.timestamp}] 💬 WhatsApp Alert sent to ${item.recipientName} (${item.phoneNumber}): "${item.messageText}"`;
+          waBox.appendChild(line);
+        });
+      }
+    }
+
+    // Hydrate Live Email Dispatches
+    if (data.emailLogs && Array.isArray(data.emailLogs)) {
+      const emailBox = document.getElementById('admin-email-log-container');
+      if (emailBox) {
+        emailBox.innerHTML = '';
+        data.emailLogs.forEach(item => {
+          const line = document.createElement('div');
+          line.className = 'admin-audit-line info';
+          const recCount = item.recipients ? item.recipients.length : 3;
+          line.textContent = `[${item.timestamp}] 📧 Email Dispatched to ${recCount} personnel: "${item.subject || item.topicTitle}"`;
+          emailBox.appendChild(line);
+        });
+      }
+    }
+
+    // Fetch and hydrate real forensic cryptographic audit trail
+    fetchForensicAuditLogs();
   };
+
+  async function fetchForensicAuditLogs() {
+    const auditBox = document.getElementById('admin-audit-log-container');
+    if (!auditBox) return;
+    try {
+      const token = localStorage.getItem('delta_auth_token');
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const res = await fetch('/api/audit/forensic-logs?limit=30', { headers });
+      const data = await res.json();
+      if (data && data.success && Array.isArray(data.logs) && data.logs.length > 0) {
+        auditBox.innerHTML = '';
+        data.logs.forEach(log => {
+          const line = document.createElement('div');
+          const isErr = log.actionType && (log.actionType.includes('ERROR') || log.actionType.includes('BREACH'));
+          const isWarn = log.actionType && (log.actionType.includes('WARN') || log.actionType.includes('CONFLICT'));
+          line.className = `admin-audit-line ${isErr ? 'danger' : isWarn ? 'warning' : 'info'}`;
+          const time = log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : 'NOW';
+          const detailsStr = typeof log.details === 'object' ? JSON.stringify(log.details) : (log.details || '');
+          line.textContent = `[${time}] 🔒 [${log.actionType}] ${log.actorName || 'OPERATOR'} (${log.role || 'SYS'}): ${detailsStr}`;
+          auditBox.appendChild(line);
+        });
+      }
+    } catch (err) {
+      console.warn('[Admin Audit] Forensic logs offline/deferred:', err.message);
+    }
+  }
 
   let lastPAAudioUrl = null;
 
@@ -664,9 +1260,20 @@
     }
 
     if (btnDismiss) {
-      btnDismiss.addEventListener('click', () => {
-        const banner = document.getElementById('venue-pa-live-banner');
-        if (banner) banner.style.display = 'none';
+      btnDismiss.addEventListener('click', (e) => {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        if (window.DeltaAlertManager) {
+          window.DeltaAlertManager.dismissCurrent();
+        } else {
+          const banner = document.getElementById('venue-pa-live-banner');
+          if (banner) banner.style.display = 'none';
+          if (typeof window.stopAllVoices === 'function') {
+            window.stopAllVoices();
+          }
+        }
       });
     }
   }
@@ -764,12 +1371,24 @@
     };
 
     if (btnTwilio) {
-      btnTwilio.addEventListener('click', () => {
-        triggerWhatsAppNotification(
-          'Aryan Pandey (Lead Coordinator)',
-          '+91 91542 76178',
-          '⚠️ Operational update from DELTA Engine Central AV desk: Venue crowd nominal.'
-        );
+      btnTwilio.addEventListener('click', async () => {
+        btnTwilio.disabled = true;
+        btnTwilio.textContent = '💬 Dispatching...';
+        try {
+          await triggerWhatsAppNotification(
+            'Aryan Pandey (Lead Coordinator)',
+            '+91 91542 76178',
+            '⚠️ Operational update from DELTA Engine Central AV desk: Venue crowd nominal.'
+          );
+          if (typeof createToast === 'function') {
+            createToast('💬 Real WhatsApp alert dispatched to Lead Coordinator (+91 91542 76178)!', 'success');
+          }
+        } catch (e) {
+          console.error('[Admin Twilio Test Error]:', e);
+        } finally {
+          btnTwilio.disabled = false;
+          btnTwilio.textContent = '💬 Test WhatsApp Alert';
+        }
       });
     }
   }

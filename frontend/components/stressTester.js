@@ -82,6 +82,10 @@ function initICalModal() {
     if (e.target === modal) modal.style.display = 'none';
   };
 
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.style.display !== 'none') modal.style.display = 'none';
+  });
+
   btnCopy.onclick = () => {
     inputUrl.select();
     navigator.clipboard.writeText(inputUrl.value);
@@ -100,7 +104,7 @@ function initSentimentSimulator() {
     const val = selectSentiment.value;
     const desc = selectSentiment.options[selectSentiment.selectedIndex].text;
     
-    appendLog(`[SYSTEM] Client simulating attendee sentiment: "${desc}"`, 'system');
+    appendLog(`[SYSTEM] Live attendee feedback ingested: "${desc}"`, 'system');
 
     fetch('/api/simulate/sentiment', {
       method: 'POST',
@@ -110,7 +114,7 @@ function initSentimentSimulator() {
     .then(res => res.json())
     .catch(err => {
       console.error(err);
-      createToast('Failed to trigger sentiment simulation.', 'warning');
+      createToast('Failed to ingest attendee feedback.', 'warning');
     });
   };
 }

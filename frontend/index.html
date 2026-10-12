@@ -11,7 +11,8 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;600;800&family=Space+Grotesk:wght@400;700&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="app.css?v=cursorFix4">
+  <link rel="stylesheet" href="app.css">
+  <script src="components/customCursor.js"></script>
 </head>
 
 <body>
@@ -31,6 +32,15 @@
       </div>
     </div>
   </div>
+  <script>
+    setTimeout(function() {
+      var l = document.getElementById('global-loader');
+      if (l) {
+        l.classList.add('fade-out');
+        setTimeout(function() { if (l && l.parentNode) l.remove(); }, 600);
+      }
+    }, 800);
+  </script>
 
   <!-- Neubrutalist Grid Background overlay -->
   <div class="grid-overlay"></div>
@@ -47,59 +57,146 @@
     <img src="doodles/9566941.png" class="doodle-img doodle-956" alt="Doodle 9566941">
   </div>
 
-  <div class="container">
-    <!-- HEADER SECTION -->
-    <header class="main-header mb-8">
-      <!-- User Auth Role Navigation Bar -->
-      <div class="auth-user-bar">
+  <div class="app-layout">
+    <!-- EXECUTIVE LEFT SIDEBAR LIST -->
+    <aside class="app-sidebar" id="app-sidebar">
+      <!-- 1. Brand Identity -->
+      <div class="sidebar-brand-card">
+        <div class="sidebar-logo-wrap">
+          <img src="logo.jpeg" class="sidebar-logo" alt="DELTA ENGINE Logo">
+        </div>
+        <div class="sidebar-brand-info">
+          <h1 id="main-title" class="sidebar-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
+          <div class="sidebar-tagline">Autonomous Event OS</div>
+        </div>
+      </div>
+
+      <!-- 2. Active Operator & Dynamic Clock -->
+      <div class="sidebar-user-block">
         <div class="user-status-pill" id="user-status-pill">
           <span class="user-role-badge coordinator" id="user-role-badge">👤 Coordinator</span>
           <span class="user-name-text" id="user-name-text">Suryansh</span>
         </div>
-        <!-- Live Dynamic Date & Time Clock Widget -->
-        <div class="live-clock-pill" id="live-clock-pill" title="Live System Date & Universal Local Time">
+        <div class="live-clock-pill sidebar-clock" id="live-clock-pill" title="Live System Date & Universal Local Time">
           <span class="live-clock-pulse"></span>
           <span id="live-dynamic-date" class="live-dynamic-date">Wed, 23 Sep 2026</span>
           <span style="color:#9ca3af;">•</span>
           <span id="live-dynamic-time" class="live-dynamic-time" style="color:#2563eb;">--:--:--</span>
-        </div>
-        <div class="auth-nav-buttons">
-          <button id="btn-open-cctv" class="btn btn-sm btn-yellow"
-            style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
-            title="Open CCTV Room Density Perception HUD">📹 CCTV Density HUD <span
-              class="cctv-live-dot"></span></button>
-          <button id="btn-trigger-pa-test" class="btn btn-sm btn-yellow"
-            style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;"
-            title="Test ElevenLabs Voice PA Broadcast">🎙️ Test PA Voice</button>
-          <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Click to toggle between Tesla Autopilot (Zero-Touch Autonomous Mitigation) and Manual Co-Pilot">
-            <span class="autopilot-indicator-dot pulse"></span>
-            <span>⚡ AUTOPILOT: <strong class="autopilot-status-text">ENGAGED</strong></span>
-          </div>
-          <button id="btn-sound-toggle" class="btn btn-sm btn-white" style="font-weight:700;"
-            title="Toggle Synthesized Audio Feedback">🔊 SFX: ON</button>
-          <button id="btn-shortcuts-modal" class="btn btn-sm btn-white" style="font-weight:700;"
-            title="Keyboard Hotkeys [?]">⌨️ Hotkeys</button>
-          <a href="app.html" class="btn btn-sm btn-yellow" style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000; text-decoration:none;" title="Open DELTA Mobile Coordinator App">📱 Mobile App</a>
-          <a href="signage.html" target="_blank" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;" title="Open Dynamic Hallway TV Signage Display Portal">📺 Signage TV</a>
-          <a href="admin.html" class="btn btn-sm btn-yellow" style="font-weight:700; text-decoration:none;">👑 Admin
-            Portal</a>
-          <a href="login.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;">🚪 Switch
-            Role / Logout</a>
+      </div>
+
+      <!-- 3. Autopilot Master Switch -->
+      <div class="sidebar-autopilot-wrap">
+        <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Click to toggle between Tesla Autopilot (Zero-Touch Autonomous Mitigation) and Manual Co-Pilot">
+          <span class="autopilot-indicator-dot pulse"></span>
+          <span>⚡ AUTOPILOT: <strong class="autopilot-status-text">ENGAGED</strong></span>
         </div>
       </div>
 
-      <div class="header-logo-group">
-        <!-- Main Logo: Clean Polymorphic Logo without any braces or outlines -->
-        <div class="logo-polymorphic-wrapper">
-          <img src="logo.jpeg" class="delta-polymorphic-logo" alt="DELTA ENGINE Logo">
-        </div>
+      <!-- 4. Operations & Scenarios List -->
+      <div class="sidebar-nav-group">
+        <div class="sidebar-group-title">⚡ OPERATIONS & SCENARIOS</div>
+        <ul class="sidebar-nav-list">
+          <li>
+            <button id="btn-open-scenario-lab" class="sidebar-nav-btn btn-nav-purple" title="Operational Domain Registry & Dynamic Presets">
+              <span class="nav-icon">⚡</span>
+              <span class="nav-label">Operational Domain Registry</span>
+              <span class="pulse-indicator-red" style="width:7px; height:7px; display:inline-block; border-radius:50%; background:#ef4444; flex-shrink:0;"></span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-open-cctv" class="sidebar-nav-btn btn-nav-yellow" title="Open CCTV Room Density Perception HUD">
+              <span class="nav-icon">📹</span>
+              <span class="nav-label">CCTV Perception HUD</span>
+              <span class="cctv-live-dot" style="flex-shrink:0;"></span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-reset-db" class="sidebar-nav-btn btn-nav-green" title="Reset schedule and database to normal baseline">
+              <span class="nav-icon">🔄</span>
+              <span class="nav-label">Reset Baseline State</span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-open-ical" class="sidebar-nav-btn btn-nav-blue" title="Live iCal Subscription">
+              <span class="nav-icon">📅</span>
+              <span class="nav-label">Live iCal Sync</span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-show-tour" class="sidebar-nav-btn btn-nav-white" title="Interactive Sandbox Walkthrough">
+              <span class="nav-icon">🎯</span>
+              <span class="nav-label">Interactive Tour</span>
+            </button>
+          </li>
+        </ul>
       </div>
 
-      <div class="header-text">
-        <h1 id="main-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
-        <p class="subtitle">The Self-Healing & Agentic Conference Coordinator</p>
+      <!-- 5. Portals & Access List -->
+      <div class="sidebar-nav-group">
+        <div class="sidebar-group-title">📺 PORTALS & ACCESS</div>
+        <ul class="sidebar-nav-list">
+          <li>
+            <a href="app.html" class="sidebar-nav-link link-yellow" title="Open DELTA Mobile Coordinator PWA">
+              <span class="nav-icon">📱</span>
+              <span class="nav-label">Mobile Coordinator App</span>
+              <span class="nav-external">↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="signage.html" target="_blank" class="sidebar-nav-link link-yellow" title="Open Dynamic Hallway TV Signage Display Portal">
+              <span class="nav-icon">📺</span>
+              <span class="nav-label">Signage TV Portal</span>
+              <span class="nav-external">↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="admin.html" class="sidebar-nav-link link-yellow" title="Super Admin Command Center">
+              <span class="nav-icon">👑</span>
+              <span class="nav-label">Super Admin</span>
+              <span class="nav-external">↗</span>
+            </a>
+          </li>
+          <li>
+            <a href="login.html" class="sidebar-nav-link link-white" title="Sign out or switch role">
+              <span class="nav-icon">🚪</span>
+              <span class="nav-label">Switch Role / Logout</span>
+            </a>
+          </li>
+        </ul>
       </div>
-    </header>
+
+      <!-- 6. System Preferences List -->
+      <div class="sidebar-nav-group">
+        <div class="sidebar-group-title">⚙️ PREFERENCES</div>
+        <ul class="sidebar-nav-list">
+          <li>
+            <button id="btn-sound-toggle" class="sidebar-nav-btn btn-nav-white" title="Toggle Synthesized Audio Feedback">
+              <span class="nav-icon">🔊</span>
+              <span class="nav-label">Audio SFX: ON</span>
+            </button>
+          </li>
+          <li>
+            <button id="btn-shortcuts-modal" class="sidebar-nav-btn btn-nav-white" title="Keyboard Hotkeys [?]">
+              <span class="nav-icon">⌨️</span>
+              <span class="nav-label">Keyboard Hotkeys</span>
+              <kbd class="sidebar-kbd">?</kbd>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <!-- 7. Bottom Telemetry Indicator -->
+      <div class="sidebar-telemetry-badge">
+        <div class="telemetry-dot online"></div>
+        <div class="telemetry-info">
+          <span>LATENCY: <strong>&lt; 0.5ms</strong></span>
+          <span>ENGINE: <strong>SELF-HEALING</strong></span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- COMPACT OPERATIONS WORKSPACE -->
+    <main class="app-workspace" id="app-workspace">
 
     <!-- AUTONOMOUS VENUE PA VOICE BROADCASTER BANNER -->
     <div id="venue-pa-live-banner" class="venue-pa-live-banner" style="display:none;">
@@ -162,36 +259,44 @@
           <span id="cctv-stream-status" class="cctv-status-badge">⚪ <strong>CAMERA READY</strong></span>
         </div>
         <div class="cctv-hub-header-actions">
-          <select id="cctv-venue-select" class="cctv-select cctv-venue-select" title="Switch Conference Hall / Venue">
-            <option value="hall-1" data-capacity="250" data-name="Turing Hall">🏛️ Turing Hall (250)</option>
-            <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
-            <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
-            <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
-            <option value="hall-kumbh" data-capacity="1200" data-name="Kumbh Mela Sector A (Ghat)">🕉️ Kumbh Mela Sector A (1,200)</option>
-            <option value="hall-rally" data-capacity="2500" data-name="Mega Election Rally Grounds">🚩 Mega Election Rally (2,500)</option>
-            <option value="hall-stadium" data-capacity="5000" data-name="Olympic Stadium Arena">🏟️ Stadium Arena (5,000)</option>
-            <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
-          </select>
-          <select id="cctv-device-select" class="cctv-select">
-            <option value="">Detecting Available Cameras...</option>
-          </select>
-          <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
-          <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
-          <button id="btn-cctv-crowd-mode" class="btn btn-sm btn-white btn-cctv-crowd-mode" style="font-weight:800;"
-            title="Toggle between Eulerian Mega-Crowd (1,000+ Kumbh/Rally) and Precision Room mode">👥 Mode: Auto</button>
-          <button id="btn-cctv-tint-fix" class="btn btn-sm btn-white btn-cctv-tint-fix" style="font-weight:800;"
-            title="Toggle Camera Color Correction / IR Pink Fix">🎨 Tint: Auto-Fix</button>
+          <div class="cctv-header-cluster cctv-cluster-source">
+            <select id="cctv-venue-select" class="cctv-select cctv-venue-select" title="Switch Conference Hall / Venue">
+              <option value="hall-1" data-capacity="250" data-name="Turing Hall">🏛️ Turing Hall (250)</option>
+              <option value="hall-2" data-capacity="120" data-name="Lovelace Suite">🏢 Lovelace Suite (120)</option>
+              <option value="hall-3" data-capacity="60" data-name="Hopper Room">🚪 Hopper Room (60)</option>
+              <option value="hall-4" data-capacity="500" data-name="Keynote Arena">🎤 Keynote Arena (500)</option>
+              <option value="hall-kumbh" data-capacity="1200" data-name="Kumbh Mela Sector A (Ghat)">🕉️ Kumbh Mela Sector A (1,200)</option>
+              <option value="hall-rally" data-capacity="2500" data-name="Mega Election Rally Grounds">🚩 Mega Election Rally (2,500)</option>
+              <option value="hall-stadium" data-capacity="5000" data-name="Olympic Stadium Arena">🏟️ Stadium Arena (5,000)</option>
+              <option value="custom" data-capacity="50" data-name="Custom Venue">✨ Custom Hall...</option>
+            </select>
+            <select id="cctv-device-select" class="cctv-select">
+              <option value="">Detecting Available Cameras...</option>
+            </select>
+          </div>
+          <div class="cctv-header-cluster cctv-cluster-stream">
+            <button id="btn-cctv-start" class="btn btn-sm btn-green" style="font-weight:800;">▶️ Start Feed</button>
+            <button id="btn-cctv-stop" class="btn btn-sm btn-white" style="font-weight:800;">⏹️ Stop Feed</button>
+          </div>
+          <div class="cctv-header-cluster cctv-cluster-modes">
+            <button id="btn-cctv-crowd-mode" class="btn btn-sm btn-white btn-cctv-crowd-mode" style="font-weight:800;"
+              title="Toggle between Eulerian Mega-Crowd (1,000+ Kumbh/Rally) and Precision Room mode">👥 Mode: Auto</button>
+            <button id="btn-cctv-tint-fix" class="btn btn-sm btn-white btn-cctv-tint-fix" style="font-weight:800;"
+              title="Toggle Camera Color Correction / IR Pink Fix">🎨 Tint: Auto-Fix</button>
+          </div>
           <button id="btn-toggle-cctv-view" class="btn btn-sm btn-yellow" style="font-weight:800;"
-            title="Toggle between Full Camera HUD and Compact Bar">🔼 Minimize View</button>
+            title="Toggle between Full Camera HUD and Compact Bar">🔽 Expand View</button>
+          <button id="btn-cctv-popout-modal" class="btn btn-sm btn-white" style="font-weight:800;"
+            title="Open CCTV Perception in floating modal window">🔲 Popout</button>
         </div>
       </div>
 
       <!-- Main Hub Body: Left Live Feed, Right Gauges & Controls -->
-      <div id="cctv-hub-body" class="cctv-hub-body">
+      <div id="cctv-hub-body" class="cctv-hub-body collapsed">
         <!-- Left: Canvas & Video Display -->
         <div class="cctv-hub-video-col">
           <div class="cctv-canvas-frame">
-            <video id="cctv-hidden-video" style="display:none;" playsinline muted></video>
+            <video id="cctv-hidden-video" playsinline autoplay muted style="position: fixed; top: -9999px; left: -9999px; width: 320px; height: 240px; opacity: 0; pointer-events: none; z-index: -1;"></video>
             <canvas id="cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
           </div>
           <div class="cctv-hub-feed-sub">
@@ -200,7 +305,7 @@
           </div>
         </div>
 
-        <!-- Right: Real-time % Occupied vs % Empty Telemetry & Pitch Simulator -->
+        <!-- Right: Real-time % Occupied vs % Empty Telemetry -->
         <div class="cctv-hub-metrics-col">
           <!-- Big Dual Metric Banner -->
           <div class="cctv-gauge-card mb-4">
@@ -272,33 +377,42 @@
             </div>
           </div>
 
-          <!-- Attendance & Pitch Controls (Camera + Manual Fusion) -->
+          <!-- Attendance & Threshold Calibration (Camera + Sensor Fusion) -->
           <div class="cctv-sim-controls mb-3">
             <div
-              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
-              <span class="sim-label">⚡ Attendance Controls (Camera + Sensor Fusion):</span>
-              <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
-                <span>Manual Count:</span>
-                <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
-                  value="0"
-                  style="width:68px; padding:2px 6px; border:2px solid #000; border-radius:6px; font-weight:800; text-align:center; box-shadow:2px 2px 0px #000;"
-                  title="Directly set attendee headcount manually">
+              style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px;">
+              <span class="sim-label">⚡ Attendance Calibration:</span>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <div class="segmented-stepper">
+                  <button id="btn-cctv-sub-pax" class="stepper-btn btn-cctv-sub-pax" title="Decrease Headcount (-1)">－</button>
+                  <div class="stepper-display">
+                    <input type="number" id="cctv-manual-pax-input" class="cctv-manual-pax-input" min="0" max="1000"
+                      value="0" title="Directly set attendee headcount manually">
+                    <span style="font-size:0.75rem; color:#555;">Pax</span>
+                  </div>
+                  <button id="btn-cctv-add-pax" class="stepper-btn btn-cctv-add-pax" title="Increase Headcount (+1)">＋</button>
+                </div>
+                <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;"
+                  title="Hardware optical beam pulse (+1 Entry)">⚡ Tripwire (+1)</button>
               </div>
             </div>
-            <div class="sim-btn-row">
-              <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Door Sensor (+1
-                Entry)</button>
-              <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
-              <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
-              <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80%
-                Full</button>
-              <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
-                style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100%
-                Full</button>
-              <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
-              <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;">
+              <span style="font-size:0.75rem; font-weight:700; color:#555;">Direct Thresholds:</span>
+              <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
+                  title="Trigger 80% Occupancy Warning">⚠️ 80% Warning</button>
+                <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red btn-cctv-trigger-full"
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
+                  title="Trigger 100% Critical Capacity Breach">🚨 100% Breach</button>
+                <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white btn-cctv-trigger-empty"
+                  style="font-weight:700; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
+                  title="Reset to 0% Empty">⚪ 0% Empty</button>
+                <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white btn-cctv-clear-pax"
+                  style="font-weight:700; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:2px 8px; font-size:0.75rem;"
+                  title="Reset Manual Counter">🧹 Reset</button>
+              </div>
             </div>
           </div>
 
@@ -430,44 +544,74 @@
           </div>
         </div>
 
-        <!-- Quick Control Action -->
-        <div class="metric-card widget-controls">
-          <div class="widget-header">
-            <span class="widget-title">OS Sync Utilities</span>
+        <!-- Venue Flow & Safety Index (Data Abstraction & Fire Marshal Compliance) -->
+        <div class="metric-card widget-safety-index">
+          <div class="widget-header" style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="dot green"></span>
+              <span class="widget-title">Venue Flow & Life-Safety</span>
+            </div>
+            <span id="fire-marshal-compliance-badge" class="badge-mini-green" style="font-size:0.65rem; font-weight:800; font-family:var(--font-mono);">
+              NFPA-101 CERTIFIED
+            </span>
           </div>
-          <div class="widget-body" style="display:flex; flex-direction:column; gap:6px;">
-            <button id="btn-mass-disruption" class="btn w-full btn-sm"
-              style="background-color: #ea4335; color: #ffffff; font-weight: 800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
-              🔥 SIMULATE MASS DISRUPTION
-            </button>
-            <button id="btn-reset-db" class="btn w-full btn-sm"
-              style="background-color: #34a853; color: #ffffff; font-weight: 800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
-              🔄 RESET TO NORMAL STATUS
-            </button>
-            <button id="btn-open-ical" class="btn btn-blue w-full btn-sm">
-              📅 iCal Calendar Sync
-            </button>
-            <button id="btn-show-tour" class="btn btn-yellow w-full btn-sm">
-              ⚡ Tour Guide
+          <div class="widget-body" style="padding:10px 14px; display:flex; flex-direction:column; justify-content:space-between;">
+            <div class="safety-rating-box">
+              <div class="safety-badge-large" id="fire-marshal-letter-grade">A+</div>
+              <div class="safety-details">
+                <span class="safety-title" id="fire-marshal-status-text">NOMINAL FLOW (98.4%)</span>
+                <span class="safety-sub" id="fire-marshal-sub-text">All Emergency Egress Portals Clear</span>
+                <span style="font-size:0.72rem; font-family:var(--font-mono); color:#2563eb; font-weight:700;" id="fire-marshal-density-rate">Density: 1.8 m²/pax • Flow: 840 pax/min</span>
+              </div>
+            </div>
+            <button id="btn-download-fire-marshal-audit" class="btn btn-sm btn-green"
+              style="margin-top:8px; width:100%; font-weight:900; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;"
+              title="Inspect and download cryptographically sealed NFPA-101 / IBC-2024 Fire Marshal Egress Audit">
+              🛡️ FIRE MARSHAL AUDIT (NFPA-101) ↗
             </button>
           </div>
         </div>
 
-        <!-- Capacity Stress Tester (Heatmaps Slider) -->
-        <div class="metric-card widget-stress">
+        <!-- Real-Time Ingress & Sensor Tripwire (High-Utility Actionable KPI) -->
+        <div class="metric-card widget-ingress-kpi">
           <div class="widget-header">
-            <span class="widget-title">Registration Stress Tester</span>
+            <span class="dot yellow"></span>
+            <span class="widget-title">Live Ingress & Sensor Pulse</span>
           </div>
-          <div class="widget-body">
-            <div style="display:flex; flex-direction:column; gap:6px;">
-              <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:700;">
-                <span>Attendee Load Factor:</span>
-                <span id="stress-factor-label" style="color:var(--google-blue);">1.0x (Normal)</span>
+          <div class="widget-body widget-ingress-body">
+            <div class="ingress-kpi-top">
+              <div class="ingress-kpi-headline">
+                <span class="ingress-kpi-label">OPTICAL SENSOR COUNT:</span>
+                <div class="ingress-kpi-val">
+                  <strong id="cctv-metric-headcount">0 / 25 Pax</strong> <span class="ingress-kpi-status-tag">(NOMINAL)</span>
+                </div>
               </div>
-              <input type="range" id="stress-slider" min="0.5" max="3.0" step="0.1" value="1.0"
-                class="stress-slider-input" style="width:100%;">
-              <div style="font-size:0.72rem; color:#666; font-weight:600; line-height:1.2;">Surges registrations to
-                highlight venue congestion heatmaps.</div>
+              <button id="btn-cctv-trigger-sensor" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
+                style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:4px 8px;"
+                title="Hardware optical beam pulse (+1 Entry)">⚡ Tripwire (+1)</button>
+            </div>
+            <div class="ingress-kpi-subbar">
+              <span class="ingress-kpi-sublabel">MANUAL COUNT:</span>
+              <div class="segmented-stepper ingress-stepper">
+                <button id="btn-cctv-sub-pax-kpi" class="stepper-btn btn-cctv-sub-pax" title="Decrease Headcount (-1)">－</button>
+                <div class="stepper-display">
+                  <input type="number" class="cctv-manual-pax-input" min="0" max="1000"
+                    value="0" title="Directly set attendee headcount manually">
+                  <span style="font-size:0.7rem; color:#555;">Pax</span>
+                </div>
+                <button id="btn-cctv-add-pax-kpi" class="stepper-btn btn-cctv-add-pax" title="Increase Headcount (+1)">＋</button>
+              </div>
+            </div>
+            <div class="ingress-kpi-actions">
+              <button id="btn-cctv-trigger-80-kpi" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
+                style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 4px;"
+                title="Trigger 80% Occupancy Warning">⚠️ 80% Alert</button>
+              <button id="btn-cctv-trigger-full-kpi" class="btn btn-sm btn-red btn-cctv-trigger-full"
+                style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 4px;"
+                title="Trigger 100% Critical Capacity Breach">🚨 100% Alert</button>
+              <button id="btn-open-scenario-hub" class="btn btn-sm btn-purple"
+                style="font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 6px;"
+                title="Open Scenario & Stress Lab">⚡ Lab ↗</button>
             </div>
           </div>
         </div>
@@ -490,6 +634,11 @@
                   style="font-family:var(--font-mono); font-weight:700; font-size:0.82rem; padding:4px 8px;"
                   title="Select Calendar Date to View Schedule Matrix">
                 <span class="badge badge-blue">Dynamic Grid</span>
+                <button id="btn-open-importer" class="btn btn-sm btn-yellow"
+                  style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:4px 10px; cursor:pointer;"
+                  title="Import Custom Schedule (CSV / Presets / Zero Hardcoding)">
+                  📁 Import Schedule ↗
+                </button>
               </div>
             </div>
             <div class="card-body">
@@ -528,50 +677,14 @@
               </div>
             </div>
             <div class="card-body">
-              <div class="agent-simulation-controls mb-4">
-                <h3>Simulate Disruptive Incidents:</h3>
-                <div class="sim-grid">
-                  <div class="sim-row">
-                    <label for="select-speaker">Delay Speaker:</label>
-                    <select id="select-speaker" class="input-select">
-                      <!-- Loaded dynamically -->
-                    </select>
-                    <select id="select-delay" class="input-select select-short">
-                      <option value="60">60 mins</option>
-                      <option value="90">90 mins</option>
-                      <option value="120">120 mins</option>
-                    </select>
-                    <button id="btn-trigger-delay" class="btn btn-yellow">Trigger delay</button>
-                  </div>
-                  <div class="sim-row">
-                    <label for="select-topic">Surge Interest:</label>
-                    <select id="select-topic" class="input-select">
-                      <!-- Loaded dynamically -->
-                    </select>
-                    <input type="number" id="input-surge-count" class="input-text text-short" value="260" min="50"
-                      max="400">
-                    <button id="btn-trigger-surge" class="btn btn-blue">Trigger surge</button>
-                  </div>
-                  <div class="sim-row">
-                    <label for="select-sentiment">Simulate Feedback:</label>
-                    <select id="select-sentiment" class="input-select">
-                      <option value="hvac">"Lovelace Suite is freezing!" (HVAC Temp)</option>
-                      <option value="av">"Crackling speaker microphone in Lovelace Suite!" (A/V Setup)</option>
-                    </select>
-                    <button id="btn-trigger-sentiment" class="btn btn-red">Inject Feedback</button>
-                  </div>
-                </div>
-
-                <div class="sentiment-ticker mt-4">
-                  <h4
-                    style="font-size:0.8rem; font-weight:800; font-family:var(--font-mono); margin-bottom:4px; display:flex; justify-content:space-between;">
-                    <span>💬 ATTENDEE REACTION STREAM</span>
-                    <span class="pulse-indicator-red">● LIVE</span>
-                  </h4>
-                  <div class="ticker-box" id="sentiment-ticker-box">
-                    <div class="ticker-item">"The swarms keynote was absolute fire!" - @agentic_geek</div>
-                  </div>
-                </div>
+              <div class="console-incident-bar mb-3"
+                style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:2px solid #000; border-radius:8px; padding:6px 12px; box-shadow:2px 2px 0px #000;">
+                <span style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono); color:#1e293b;">⚡ MULTI-AGENT HEALING ENGINE</span>
+                <button id="btn-open-lab-console" class="btn btn-sm btn-purple"
+                  style="font-size:0.72rem; font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:3px 8px;"
+                  title="Open Unified Scenario & Stress Lab">
+                  ⚡ Open Scenario & Stress Lab ↗
+                </button>
               </div>
 
               <!-- Terminal-style Log Output -->
@@ -583,6 +696,18 @@
                   <span class="terminal-title">agent_decision_matrix.log</span>
                 </div>
                 <div class="terminal-body" id="agent-logs">
+                </div>
+              </div>
+
+              <!-- Live Attendee Reaction Stream Docked Neatly at Card Base -->
+              <div class="sentiment-ticker mt-3">
+                <h4
+                  style="font-size:0.78rem; font-weight:800; font-family:var(--font-mono); margin-bottom:4px; display:flex; justify-content:space-between;">
+                  <span>💬 ATTENDEE REACTION STREAM</span>
+                  <span class="pulse-indicator-red">● LIVE</span>
+                </h4>
+                <div class="ticker-box" id="sentiment-ticker-box">
+                  <div class="ticker-item">"The swarms keynote was absolute fire!" - @agentic_geek</div>
                 </div>
               </div>
             </div>
@@ -623,34 +748,36 @@
             </div>
           </section>
 
-          <!-- CONTENT PIPELINE -->
-          <section class="dash-card card-pipeline">
+          <!-- EVENT BROCHURE & SCHEDULE INGESTION PIPELINE -->
+          <section class="dash-card card-pipeline mb-8">
             <div class="card-header">
-              <h2><img src="ioncs/pipeline.png" class="header-icon-img" alt="Pipeline"> Automated Content Pipeline
-              </h2>
-              <span class="badge badge-red">Ingestion</span>
+              <h2><img src="ioncs/pipeline.png" class="header-icon-img" alt="Brochure"> 📄 Event Brochure & Presentation Ingestion</h2>
+              <span class="badge badge-red">Schedule AI</span>
             </div>
             <div class="card-body">
               <div class="pipeline-flow">
                 <div class="drag-zone" id="drag-zone">
-                  <svg class="upload-icon" viewBox="0 0 24 24" width="48" height="48">
-                    <path d="M12 5v14M5 12h14" fill="none" stroke="#ea4335" stroke-width="3" stroke-linecap="round" />
+                  <svg class="upload-icon" viewBox="0 0 24 24" width="46" height="46" style="margin: 0 auto 8px auto; display:block;">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="none" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="14 2 14 8 20 8" fill="none" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="12" y1="18" x2="12" y2="12" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round"/>
+                    <line x1="9" y1="15" x2="15" y2="15" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round"/>
                   </svg>
-                  <h3>Drag & Drop Slides or 3D Room Plan</h3>
-                  <p>Ingest .pdf, .pptx, or room blueprint photo / .png / .jpg (Max 20MB)</p>
-                  <input type="file" id="file-input" style="display:none;" accept=".pdf,.pptx,.ppt,.txt,.png,.jpg,.jpeg,.webp,.svg">
+                  <h3 style="font-size:1.05rem; font-weight:800; color:#0f172a;">Drag & Drop Event Brochure or Slides</h3>
+                  <p style="font-size:0.8rem; color:#64748b; margin-top:4px;">Ingests schedule matrix, talk titles, and speakers from PDF, PPTX, or timetable (.txt/.doc) (Max 20MB)</p>
+                  <input type="file" id="file-input" style="display:none;" accept=".pdf,.pptx,.ppt,.txt,.doc,.docx">
                 </div>
 
                 <!-- 1-Click Mock Sample Feed Actions -->
                 <div class="sample-feed-buttons" style="display: flex; gap: 8px; justify-content: center; margin-top: 10px; margin-bottom: 8px; flex-wrap: wrap;">
-                  <button type="button" class="btn btn-sm" id="btn-feed-sample-blueprint" title="Load sample architectural CAD blueprint PDF" style="font-size: 0.72rem; padding: 5px 12px; background: #eff6ff; border: 2px solid #2563eb; color: #1e40af; border-radius: 6px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;">
-                    📄 Load Blueprint PDF
+                  <button type="button" class="btn btn-sm" id="btn-feed-sample-slides" title="Load sample keynote presentation slides PDF" style="font-size: 0.75rem; padding: 5px 12px; background: #fefce8; border: 2px solid #ca8a04; color: #854d0e; border-radius: 6px; font-weight: 700; cursor: pointer; box-shadow:2px 2px 0px #000;">
+                    📊 Load Sample Keynote Slides
                   </button>
-                  <button type="button" class="btn btn-sm" id="btn-feed-sample-photo" title="Load sample architectural floor plan PNG photo" style="font-size: 0.72rem; padding: 5px 12px; background: #f0fdf4; border: 2px solid #16a34a; color: #15803d; border-radius: 6px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;">
-                    🖼️ Load Blueprint Photo
+                  <button type="button" class="btn btn-sm" id="btn-feed-sample-blueprint" title="Load sample conference schedule brochure PDF" style="font-size: 0.75rem; padding: 5px 12px; background: #eff6ff; border: 2px solid #2563eb; color: #1e40af; border-radius: 6px; font-weight: 700; cursor: pointer; box-shadow:2px 2px 0px #000;">
+                    📄 Load Summit Brochure PDF
                   </button>
-                  <button type="button" class="btn btn-sm" id="btn-feed-sample-slides" title="Load sample keynote presentation slides PDF" style="font-size: 0.72rem; padding: 5px 12px; background: #fefce8; border: 2px solid #ca8a04; color: #854d0e; border-radius: 6px; font-weight: 700; cursor: pointer; transition: transform 0.15s ease;">
-                    📊 Load Sample Slides
+                  <button type="button" class="btn btn-sm" id="btn-feed-sample-photo" title="Load sample architectural blueprint PNG" style="font-size: 0.75rem; padding: 5px 12px; background: #f0fdf4; border: 2px solid #16a34a; color: #15803d; border-radius: 6px; font-weight: 700; cursor: pointer; box-shadow:2px 2px 0px #000;">
+                    🖼️ Load Architectural Blueprint PNG
                   </button>
                 </div>
 
@@ -658,12 +785,9 @@
                 <div class="pipeline-loader mb-4" id="pipeline-loader" style="display: none;">
                   <div class="loader-stages">
                     <div class="stage-item" id="stage-1"><span class="stage-dot"></span> Ingesting slide data...</div>
-                    <div class="stage-item" id="stage-2"><span class="stage-dot"></span> Extracting semantic tags...
-                    </div>
-                    <div class="stage-item" id="stage-3"><span class="stage-dot"></span> Re-weaving graph database...
-                    </div>
-                    <div class="stage-item" id="stage-4"><span class="stage-dot"></span> Auto-generating promo copy...
-                    </div>
+                    <div class="stage-item" id="stage-2"><span class="stage-dot"></span> Extracting semantic tags...</div>
+                    <div class="stage-item" id="stage-3"><span class="stage-dot"></span> Re-weaving graph database...</div>
+                    <div class="stage-item" id="stage-4"><span class="stage-dot"></span> Auto-generating promo copy...</div>
                   </div>
                 </div>
 
@@ -687,18 +811,6 @@
                       <!-- Injected dynamically: Review & Edit Button -->
                     </div>
 
-                    <!-- 3D Spatial Room Model Result Card (Rendered for Room Plans) -->
-                    <div id="spatial-result-card" class="mb-4" style="display:none; background:#020617; border:2.5px solid #000; border-radius:8px; padding:12px; box-shadow:3px 3px 0px #000;">
-                      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <span style="font-size:0.85rem; font-weight:800; color:#38bdf8;">🏛️ LIVE 3D SPATIAL DIGITAL TWIN</span>
-                        <span class="badge-mini-green">Synced with Laser Tripwire</span>
-                      </div>
-                      <canvas id="dashboard-spatial-canvas" width="460" height="260" style="width:100%; height:220px; display:block; border-radius:6px; background:#0f172a;"></canvas>
-                      <div style="font-size:0.75rem; color:#94a3b8; margin-top:6px; text-align:center;">
-                        Interactive 3D Hall • Drag to rotate perspective angle • Egress & safe seating active
-                      </div>
-                    </div>
-
                     <!-- Generated Copy -->
                     <div class="copy-box mb-4">
                       <label>Social Promo Copy:</label>
@@ -706,7 +818,7 @@
                       <button id="btn-copy-social" class="btn btn-sm btn-yellow">Copy Copy text</button>
                     </div>
 
-                    <!-- Visual Exporter Bindings (QoL Refinement) -->
+                    <!-- Visual Exporter Bindings -->
                     <div class="graphics-customizer mb-4">
                       <label class="custom-label">Customize Visual Banner:</label>
                       <div class="customizer-inputs">
@@ -724,9 +836,17 @@
                       </div>
                     </div>
 
+                    <!-- Ingested 3D Spatial Room Model Preview Canvas -->
+                    <div id="spatial-result-card" class="mb-4" style="display:none; border:2.5px solid #000; border-radius:8px; overflow:hidden; background:#000;">
+                      <div style="background:#0f172a; padding:6px 10px; color:#38bdf8; font-size:0.75rem; font-weight:800; font-family:var(--font-mono, monospace); display:flex; justify-content:space-between; align-items:center;">
+                        <span>🌐 3D SPATIAL ROOM DIGITAL TWIN PREVIEW</span>
+                        <span style="font-size:0.7rem; color:#94a3b8;">WebGL Three.js Active</span>
+                      </div>
+                      <canvas id="dashboard-spatial-canvas" width="600" height="260" style="width:100%; height:260px; display:block;"></canvas>
+                    </div>
+
                     <!-- Generated Graphics Visualizer -->
                     <div class="social-graphic-card blue mb-4" id="social-graphic-card">
-                      <!-- Generated Canvas / Custom card visually matching the design -->
                       <div class="card-canvas-header">
                         <span class="pill-brand">DELTA ENGINE</span>
                       </div>
@@ -735,12 +855,10 @@
                         <p id="canvas-speaker-name">Dr. Evelyn Wright</p>
                       </div>
                       <div class="card-canvas-footer">
-                        <span class="tag-brand">#DedicatedHackIndia</span>
-                        <!-- Semicolon SVG visual decorator -->
+                        <span class="tag-brand">#DeltaEngineOS</span>
                         <svg class="canvas-decor-semicolon" viewBox="0 0 50 100" width="15" height="30">
                           <circle cx="25" cy="25" r="10" fill="#f9ab00" stroke="#000" stroke-width="2" />
-                          <path d="M25,60 C25,75 15,90 5,95 C15,85 25,75 25,60 Z" fill="#f9ab00" stroke="#000"
-                            stroke-width="2" />
+                          <path d="M25,60 C25,75 15,90 5,95 C15,85 25,75 25,60 Z" fill="#f9ab00" stroke="#000" stroke-width="2" />
                         </svg>
                       </div>
                     </div>
@@ -751,6 +869,202 @@
                   </div>
                 </div>
               </div>
+            </div>
+          </section>
+
+          <!-- DEDICATED 3D VENUE SPATIAL RECONSTRUCTION & DIGITAL TWIN BUILDER -->
+          <section class="dash-card card-spatial-builder mb-8" id="card-spatial-builder">
+            <div class="card-header" style="background:#f0f9ff; border-bottom:2.5px solid #000; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+              <h2><img src="ioncs/DB.png" class="header-icon-img" alt="3D"> 🏛️ 3D Venue Spatial Reconstruction & Digital Twin Builder</h2>
+              <span class="badge badge-purple" style="font-family:var(--font-mono); font-weight:800;">Gemini 2.0 Flash Vision</span>
+            </div>
+            <div class="card-body">
+              <div style="font-size:0.83rem; color:#475569; font-weight:600; margin-bottom:12px; line-height:1.4;">
+                Multi-angle photo triangulation engine. Upload multiple physical photos of a venue hall (entrance gates, stage front, seating rows, ceiling height) to automatically reconstruct a calibrated 3D architectural digital twin.
+              </div>
+
+              <!-- Multi-Image Dropzone -->
+              <div class="spatial-drop-zone" id="spatial-drop-zone">
+                <svg viewBox="0 0 24 24" width="44" height="44" style="margin: 0 auto 8px auto; display:block;">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="12" cy="13" r="4" fill="none" stroke="#0284c7" stroke-width="2.2"/>
+                </svg>
+                <h3 style="font-size:1.05rem; font-weight:800; margin-bottom:4px; color:#0f172a;">Drag & Drop Multiple Hall Photos Here</h3>
+                <p style="font-size:0.8rem; color:#64748b; margin:0;">Stage multiple photos (Doors, Stage, Seating, Ceiling) before processing • .jpg, .png, .webp</p>
+                <input type="file" id="spatial-file-input" style="display:none;" multiple accept="image/*,.png,.jpg,.jpeg,.webp">
+              </div>
+
+              <!-- Sample Photos Demo Buttons & Actions Row -->
+              <div class="spatial-actions-row">
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                  <button type="button" class="btn btn-sm spatial-sample-btn-lab" id="btn-load-sample-lab-photos">
+                    🖥️ Load St. Peter's College Lab (4 Real Photos)
+                  </button>
+                  <button type="button" class="btn btn-sm spatial-sample-btn-hall" id="btn-load-sample-hall-photos">
+                    📸 Load 3 Sample Auditorium Photos
+                  </button>
+                  <button type="button" class="btn btn-sm btn-white" id="btn-add-more-photos" style="font-size:0.75rem; padding:5px 10px; border:2px solid #000; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
+                    ➕ Add More Photos
+                  </button>
+                  <button type="button" class="btn btn-sm btn-red" id="btn-clear-staged-photos" style="display:none; font-size:0.75rem; padding:5px 10px; border:2px solid #000; font-weight:800; border-radius:6px; box-shadow:2px 2px 0px #000; cursor:pointer;">
+                    🧹 Clear Tray
+                  </button>
+                </div>
+              </div>
+
+              <!-- Multi-Photo Staging Tray Container (Holds multiple images before processing) -->
+              <div id="staged-photos-container" style="display:none; background:#f8fafc; border:2px solid #000; border-radius:10px; padding:12px; margin-bottom:14px; box-shadow:3px 3px 0px #000;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; border-bottom:1.5px dashed #cbd5e1; padding-bottom:6px;">
+                  <span style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800; color:#0f172a;">
+                    📸 MULTI-ANGLE STAGED PHOTOS TRAY
+                  </span>
+                  <span class="badge badge-blue" id="staged-photos-count-badge" style="font-size:0.7rem;">0 Photos Staged</span>
+                </div>
+                <!-- Gallery Tray of Staged Images -->
+                <div class="staged-photos-tray" id="staged-photos-tray">
+                  <!-- Injected dynamically by spatialReconstruction.js -->
+                </div>
+              </div>
+
+              <!-- Target Hall & Reconstruct Execution Row -->
+              <div class="spatial-config-bar">
+                <div class="spatial-select-group">
+                  <label for="spatial-target-hall-select" style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800;">TARGET VENUE:</label>
+                  <select id="spatial-target-hall-select" class="spatial-select-field">
+                    <option value="hall-lab" selected>St. Peter's Systems Lab (hall-lab)</option>
+                    <option value="hall-1">Turing Hall (hall-1)</option>
+                    <option value="hall-2">Lovelace Suite (hall-2)</option>
+                    <option value="hall-3">Hopper Room (hall-3)</option>
+                    <option value="hall-4">Keynote Arena (hall-4)</option>
+                    <option value="hall-kumbh">Kumbh Mela Sector A</option>
+                  </select>
+
+                  <label for="spatial-engine-select" style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800; margin-left:6px;">AI ENGINE:</label>
+                  <select id="spatial-engine-select" class="spatial-select-field">
+                    <option value="auto">🤖 Auto (Best Available Acceleration)</option>
+                    <option value="nvidia">🟢 NVIDIA Nemotron NVLM-1D-72B (NVIDIA NIM)</option>
+                    <option value="gemini">⚡ Google Gemini 3 Flash Vision</option>
+                    <option value="gemma">🟣 Google Gemma / PaliGemma 2 (Edge & On-Device VLM)</option>
+                  </select>
+                </div>
+                <button type="button" id="btn-execute-3d-reconstruction" class="btn btn-blue" style="font-weight:800; font-size:0.82rem; padding:8px 16px; border:2.5px solid #000; box-shadow:3px 3px 0px #000; opacity:0.5; cursor:not-allowed;" disabled>
+                  ✨ Reconstruct 3D Digital Twin (Nemotron / Gemini 3 / Gemma)
+                </button>
+              </div>
+
+              <!-- Processing Loading Stage Status -->
+              <div class="pipeline-loader mb-4" id="spatial-loader" style="display:none;">
+                <div class="loader-stages">
+                  <div class="stage-item" id="spatial-stage-1"><span class="stage-dot"></span> Ingesting multi-angle photos...</div>
+                  <div class="stage-item" id="spatial-stage-2"><span class="stage-dot"></span> Triangulating dimensions & ceiling via Gemini 2.0 Flash...</div>
+                  <div class="stage-item" id="spatial-stage-3"><span class="stage-dot"></span> Mapping doors, stage deck & laser tripwire sensors...</div>
+                  <div class="stage-item" id="spatial-stage-4"><span class="stage-dot"></span> Calibrating egress flow & life-safety capacity...</div>
+                </div>
+              </div>
+
+              <!-- Reconstructed 3D Digital Twin Results View -->
+              <div id="spatial-results-container" style="display:none;">
+                <!-- 3D Interactive Canvas Card -->
+                <div style="background:#0a0f1d; border:3px solid #000; border-radius:12px; padding:14px; box-shadow:5px 5px 0px #000; margin-bottom:14px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #1e293b; padding-bottom:8px;">
+                    <span id="spatial-twin-title" style="font-family:var(--font-mono); font-size:0.92rem; font-weight:800; color:#38bdf8;">
+                      🏛️ St. Peter's College Systems Lab — 3D Digital Twin
+                    </span>
+                    <span class="badge-mini-green" id="spatial-twin-engine-badge" style="background:#10b981; color:#000; font-weight:800; font-size:0.7rem; border:1px solid #000; border-radius:4px; padding:2px 8px;">
+                      NVIDIA Nemotron / Gemini 3 Vision (98% Confidence)
+                    </span>
+                  </div>
+
+                  <canvas id="spatial-reconstruction-canvas" width="600" height="320" style="width:100%; height:280px; display:block; border-radius:8px; background:#020617; border:2px solid #334155; cursor:grab;"></canvas>
+
+                  <!-- 3D Camera Controls -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; flex-wrap:wrap; gap:6px;">
+                    <div style="font-size:0.72rem; color:#94a3b8; font-family:var(--font-mono);">
+                      🖱️ Drag mouse to orbit 3D hall • Scroll wheel to zoom
+                    </div>
+                    <div style="display:flex; gap:4px;">
+                      <button type="button" id="btn-3d-rotate-left" class="btn btn-sm btn-white" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">↺ Yaw -</button>
+                      <button type="button" id="btn-3d-rotate-right" class="btn btn-sm btn-white" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">↻ Yaw +</button>
+                      <button type="button" id="btn-3d-tilt-up" class="btn btn-sm btn-white" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">⬆ Pitch -</button>
+                      <button type="button" id="btn-3d-tilt-down" class="btn btn-sm btn-white" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">⬇ Pitch +</button>
+                      <button type="button" id="btn-3d-reset-view" class="btn btn-sm btn-yellow" style="font-size:0.68rem; padding:2px 8px; font-weight:800;">🎯 Reset</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Detected Spatial Metrics Chips Grid -->
+                <div class="spatial-metrics-grid">
+                  <div class="spatial-metric-chip">
+                    <div class="label">📐 DIMENSIONS & AREA</div>
+                    <div class="value" id="spatial-metric-dim">20m × 26m (H: 5.8m)</div>
+                    <div style="font-size:0.75rem; color:#64748b; font-weight:700;" id="spatial-metric-area">520 m² Floor</div>
+                  </div>
+                  <div class="spatial-metric-chip">
+                    <div class="label">👥 LIFE-SAFETY CAPACITY</div>
+                    <div class="value" style="color:#16a34a;" id="spatial-metric-capacity">289 Pax (Safe Egress)</div>
+                    <div style="font-size:0.75rem; color:#64748b; font-weight:700;">Density: 1.8 m²/attendee</div>
+                  </div>
+                  <div class="spatial-metric-chip">
+                    <div class="label">🚪 ACCESS GATES & FLOW</div>
+                    <div class="value" id="spatial-metric-doors">3 Gates (180 pax/min)</div>
+                    <div style="font-size:0.75rem; color:#0284c7; font-weight:700;">Laser Tripwire Synced</div>
+                  </div>
+                  <div class="spatial-metric-chip">
+                    <div class="label">🎭 STAGE & PODIUM</div>
+                    <div class="value" id="spatial-metric-stage">12m × 4m Raised 0.85m</div>
+                    <div style="font-size:0.75rem; color:#64748b; font-weight:700;">Front North Wall</div>
+                  </div>
+                </div>
+
+                <!-- Architectural Features & Obstacle Detection -->
+                <div style="background:#f8fafc; border:2px solid #000; border-radius:10px; padding:12px; margin-bottom:14px; box-shadow:3px 3px 0px #000;">
+                  <div style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800; color:#0f172a; margin-bottom:6px;">
+                    👁️ MULTIMODAL VISION DETECTIONS & ARCHITECTURAL FEATURES:
+                  </div>
+                  <div id="spatial-features-list">
+                    <!-- Populated dynamically -->
+                  </div>
+                </div>
+
+                <!-- Manual Calibration Sliders (Safety Coordinator Oversight) -->
+                <div style="background:#fffbeb; border:2px solid #000; border-radius:10px; padding:12px; margin-bottom:14px; box-shadow:3px 3px 0px #000;">
+                  <div style="font-family:var(--font-mono); font-size:0.78rem; font-weight:800; color:#92400e; margin-bottom:8px;">
+                    ⚙️ HUMAN-IN-THE-LOOP CALIBRATION OVERRIDES:
+                  </div>
+                  <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:12px;">
+                    <div>
+                      <label style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono);">
+                        <span>ROOM WIDTH:</span><span id="val-calib-width">20m</span>
+                      </label>
+                      <input type="range" id="slider-calib-width" min="8" max="60" value="20" style="width:100%;">
+                    </div>
+                    <div>
+                      <label style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono);">
+                        <span>ROOM LENGTH:</span><span id="val-calib-length">26m</span>
+                      </label>
+                      <input type="range" id="slider-calib-length" min="10" max="80" value="26" style="width:100%;">
+                    </div>
+                    <div>
+                      <label style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono);">
+                        <span>DOORS COUNT:</span><span id="val-calib-doors">3 Gates</span>
+                      </label>
+                      <input type="range" id="slider-calib-doors" min="1" max="8" value="3" style="width:100%;">
+                    </div>
+                    <div>
+                      <label style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono);">
+                        <span>CAPACITY LIMIT:</span><span id="val-calib-capacity">289 Pax</span>
+                      </label>
+                      <input type="range" id="slider-calib-capacity" min="50" max="800" value="289" style="width:100%;">
+                    </div>
+                  </div>
+                  <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+                    <button type="button" id="btn-deploy-calibrated-twin" class="btn btn-sm btn-green" style="font-weight:800; padding:6px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                      💾 Deploy Calibrated Twin to Self-Healing Engine
+                    </button>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </section>
         </div>
@@ -780,17 +1094,73 @@
           </div>
         </section>
 
-      </main>
+        <!-- EVENT COORDINATORS & STAKEHOLDERS DIRECTORY -->
+        <section class="dash-card card-contacts mt-4" style="grid-column: 1 / -1; width: 100%;">
+          <div class="card-header">
+            <h2><img src="ioncs/DB.png" class="header-icon-img" alt="Contacts"> 📱 Event Coordinators & Stakeholders Contact Directory</h2>
+            <span class="badge badge-yellow">WhatsApp Dispatches Active</span>
+          </div>
+          <div class="card-body">
+            <!-- Intelligent Hall-Targeted Volunteer Shielding Action Bar -->
+            <div style="background:#eff6ff; border:2px solid #3b82f6; border-radius:8px; padding:10px 14px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+              <div style="font-size:0.83rem; color:#1e3a8a; font-weight:700;">
+                🛡️ <strong>Intelligent Hall-Targeted Routing:</strong> When an issue occurs at Hall X, DELTA automatically dispatches <em>ONLY</em> the volunteers assigned to Hall X. Volunteers at other venues are shielded from spam (supports 20+ volunteers across large events).
+              </div>
+              <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                <button class="btn btn-sm btn-green" id="btn-open-add-vol-modal" style="font-size:0.75rem; font-weight:800; padding:5px 12px;">
+                  ➕ Add Volunteer
+                </button>
+                <button class="btn btn-sm btn-yellow" id="btn-test-turing-alert" style="font-size:0.75rem; font-weight:800; padding:5px 10px;">
+                  🚨 Test Turing Hall (hall-1)
+                </button>
+                <button class="btn btn-sm btn-blue" id="btn-test-lovelace-alert" style="font-size:0.75rem; font-weight:800; padding:5px 10px;">
+                  🚨 Test Lovelace Suite (hall-2)
+                </button>
+              </div>
+            </div>
 
+            <!-- Hall Filter Tabs -->
+            <div id="volunteer-hall-filter-tabs" style="display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap;">
+              <button class="btn btn-sm btn-tab active" data-hall-filter="ALL_PERSONNEL" style="font-size:0.75rem; font-weight:800;">All Personnel (<span id="count-all-vols">7</span>)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="hall-1" style="font-size:0.75rem; font-weight:800;">🏛️ Turing Hall (hall-1)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="hall-2" style="font-size:0.75rem; font-weight:800;">💻 Lovelace Suite (hall-2)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="hall-3" style="font-size:0.75rem; font-weight:800;">⚙️ Hopper Room (hall-3)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="hall-4" style="font-size:0.75rem; font-weight:800;">🎤 Keynote Arena (hall-4)</button>
+              <button class="btn btn-sm btn-tab" data-hall-filter="CENTRAL" style="font-size:0.75rem; font-weight:800;">⚡ Central Command Lead</button>
+            </div>
 
-    </div>
+            <div class="table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>CONTACT NAME</th>
+                    <th>ROLE & RESPONSIBILITY</th>
+                    <th>PHONE NUMBER (WHATSAPP)</th>
+                    <th>EMAIL ADDRESS</th>
+                    <th>ASSIGNED VENUE HALLS</th>
+                    <th>ACTION</th>
+                  </tr>
+                </thead>
+                <tbody id="admin-contacts-table-body">
+                  <!-- Dynamically populated by auth.js -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main> <!-- END .dashboard-grid -->
+
+    </div> <!-- END #coordinator-dashboard-view -->
+  </main> <!-- END .app-workspace -->
+</div> <!-- END .app-layout -->
 
     <!-- TOAST NOTIFICATION CONTAINER -->
     <div class="toast-container" id="toast-container">
       <!-- Active notifications populate here -->
     </div>
 
-    <!-- Simulated user push alert display -->
+    <!-- Attendee push alert display -->
     <div class="push-alert-overlay" id="push-alert" style="display: none;">
       <div class="push-alert-card">
         <div class="push-header">
@@ -800,8 +1170,51 @@
         <div class="push-body" id="push-message">
           Schedule Update: Autonomous Agent Swarms shifted to slot 2 due to speaker delays.
         </div>
-        <button class="btn btn-sm btn-blue" onclick="document.getElementById('push-alert').style.display='none'">Dismiss
-          Alert</button>
+        <button class="btn btn-sm btn-blue" onclick="if(window.DeltaAlertManager){window.DeltaAlertManager.dismissCurrent();}else{document.getElementById('push-alert').style.display='none';}">Dismiss Alert</button>
+      </div>
+    </div>
+
+    <!-- ADD VOLUNTEER REGISTRATION MODAL -->
+    <div id="modal-add-volunteer" class="modal-backdrop" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); z-index:99999; align-items:center; justify-content:center;">
+      <div class="modal-card" style="background:#ffffff; border:3px solid #000000; box-shadow:6px 6px 0px #000000; border-radius:12px; max-width:480px; width:92%; padding:22px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:14px;">
+          <h3 style="margin:0; font-family:var(--font-mono); font-size:1.05rem; font-weight:800;">➕ Register Venue Volunteer</h3>
+          <button type="button" class="btn btn-sm" id="btn-close-add-vol" style="background:#fee2e2; border:2px solid #000; font-weight:800; cursor:pointer;">✖</button>
+        </div>
+        <form id="form-add-volunteer">
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">VOLUNTEER FULL NAME *</label>
+            <input type="text" id="add-vol-name" required placeholder="e.g. Vikramaditya Singhania" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-weight:600; font-size:0.85rem; box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">PHONE NUMBER (WHATSAPP +91) *</label>
+            <input type="tel" id="add-vol-phone" required placeholder="+91 98765 43210" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-weight:600; font-size:0.85rem; box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">ASSIGNED VENUE HALL *</label>
+            <select id="add-vol-hall" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-weight:700; font-size:0.85rem; box-sizing:border-box;">
+              <option value="hall-1">Turing Hall (hall-1)</option>
+              <option value="hall-2">Lovelace Suite (hall-2)</option>
+              <option value="hall-3">Hopper Room (hall-3)</option>
+              <option value="hall-4">Keynote Arena (hall-4)</option>
+              <option value="ALL">Central Command (All Halls - Lead)</option>
+              <option value="hall-kumbh">Kumbh Mela Sector A</option>
+              <option value="hall-rally">Mega Election Rally Grounds</option>
+            </select>
+          </div>
+          <div style="margin-bottom:10px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">ROLE & RESPONSIBILITY</label>
+            <input type="text" id="add-vol-role" placeholder="e.g. Door Entrance Marshal / Stage AV Lead" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-size:0.85rem; box-sizing:border-box;">
+          </div>
+          <div style="margin-bottom:14px;">
+            <label style="display:block; font-size:0.74rem; font-weight:800; font-family:var(--font-mono); margin-bottom:3px;">EMAIL ADDRESS</label>
+            <input type="email" id="add-vol-email" placeholder="volunteer@delta-engine.in" style="width:100%; padding:8px 10px; border:2px solid #000; border-radius:6px; font-size:0.85rem; box-sizing:border-box;">
+          </div>
+          <div style="display:flex; justify-content:flex-end; gap:8px;">
+            <button type="button" class="btn btn-sm" id="btn-cancel-add-vol" style="background:#e5e7eb; border:2px solid #000; font-weight:800; padding:6px 14px;">Cancel</button>
+            <button type="submit" class="btn btn-sm btn-green" style="font-weight:800; padding:6px 14px;">💾 Save Volunteer</button>
+          </div>
+        </form>
       </div>
     </div>
     <!-- Interactive Tour Walkthrough Card (Right-Edge Docked & 90° Rotated Minimized Bar) -->
@@ -866,128 +1279,244 @@
               Link</button>
           </div>
         </div>
-      </div> <!-- END #coordinator-dashboard-view -->
-    </div> <!-- END .container -->
+      </div>
+    </div> <!-- END #ical-modal -->
 
     <!-- ROLE-BASED AUTH LOGIN MODAL -->
     <div id="auth-login-modal" class="auth-modal-backdrop hidden">
       <div class="auth-modal-card">
         <div class="auth-modal-header">
-          <span class="auth-header-title">🔐 DELTA ENGINE Access Portal</span>
+          <span class="auth-header-title">🔐 DELTA ENGINE Enterprise Access Portal</span>
           <button id="btn-close-auth-modal" class="auth-close-btn">&times;</button>
         </div>
 
         <div class="auth-role-tabs">
-          <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Coordinator Login</button>
-          <button id="tab-login-admin" class="auth-tab-btn">👑 Super Admin Login</button>
+          <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Coordinator Sign In</button>
+          <button id="tab-login-admin" class="auth-tab-btn">👑 Super Admin Sign In</button>
         </div>
 
         <form id="auth-login-form" class="auth-form-body">
           <input type="hidden" id="auth-selected-role" value="coordinator">
 
-          <div class="form-group">
-            <label class="form-label" id="auth-username-label">Coordinator Username / ID</label>
-            <input type="text" id="auth-input-username" class="form-control" placeholder="e.g. coordinator_elena"
-              value="Suryansh" required>
+          <div id="auth-modal-error-banner" style="display:none; background:#fef2f2; border:2px solid #ef4444; border-radius:8px; padding:8px 12px; margin-bottom:12px; color:#b91c1c; font-size:0.8rem; font-weight:700; font-family:var(--font-mono, monospace);">
+            ⚠️ <span id="auth-modal-error-text">Authentication failed.</span>
           </div>
 
           <div class="form-group">
-            <label class="form-label">Password Key</label>
-            <input type="password" id="auth-input-password" class="form-control" value="••••••••" required>
+            <label class="form-label" id="auth-username-label">Coordinator Supabase Email / ID</label>
+            <input type="text" id="auth-input-username" class="form-control" placeholder="e.g. coordinator@delta-engine.in" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Supabase Account Password</label>
+            <input type="password" id="auth-input-password" class="form-control" placeholder="Enter your password" required>
           </div>
 
           <button type="submit" id="btn-submit-auth-login" class="btn btn-blue w-full btn-md mt-2"
-            style="font-size:1.05rem; font-weight:800;">
-            🚀 Log In to Portal
+            style="font-size:1.05rem; font-weight:800; border:2px solid #000; box-shadow:3px 3px 0px #000;">
+            🚀 Sign In with Supabase Auth
           </button>
 
-          <div class="auth-demo-divider">
-            <span>⚡ QUICK ONE-CLICK DEMO ACCESS</span>
+          <div style="margin-top:14px; text-align:center; font-size:0.82rem; font-family:var(--font-main);">
+            <a href="login.html" style="font-weight:700; color:var(--google-blue, #1a73e8); text-decoration:underline;">
+              Open Standalone Operator Portal & Register Account →
+            </a>
           </div>
 
-          <div class="auth-quick-buttons">
-            <button type="button" id="btn-quick-login-coord" class="btn btn-yellow btn-sm w-full">
-              👤 Quick Login as Coordinator
-            </button>
-            <button type="button" id="btn-quick-login-admin" class="btn btn-red btn-sm w-full">
-              👑 Quick Login as Super Admin
-            </button>
+          <!-- Hidden legacy elements preserved for backward compatibility -->
+          <div style="display:none;" aria-hidden="true">
+            <button type="button" id="btn-quick-login-coord"></button>
+            <button type="button" id="btn-quick-login-admin"></button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- EVENT COORDINATORS & STAKEHOLDERS DIRECTORY SECTION FOR COORDINATORS -->
-    <section class="container mb-8 mt-8">
-      <div class="dash-card card-contacts">
-        <div class="card-header">
-          <h2><img src="ioncs/DB.png" class="header-icon-img" alt="Contacts"> 📱 Event Coordinators & Stakeholders
-            Contact Directory</h2>
-          <span class="badge badge-yellow">WhatsApp Dispatches Active</span>
-        </div>
-        <div class="card-body">
-          <table class="admin-table">
-            <thead>
-              <tr>
-                <th>CONTACT NAME</th>
-                <th>ROLE & RESPONSIBILITY</th>
-                <th>PHONE NUMBER (WHATSAPP)</th>
-                <th>EMAIL ADDRESS</th>
-                <th>ASSIGNED VENUE HALLS</th>
-                <th>ACTION</th>
-              </tr>
-            </thead>
-            <tbody id="admin-contacts-table-body">
-              <!-- Dynamically populated by auth.js -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
 
     <!-- SELF-HEALING REALLOCATION COUNTDOWN OVERLAY CONTAINER (DIRECT BODY CHILD) -->
+    <!-- SUPERVISED AUTONOMY HUMAN-IN-THE-LOOP SLA MODAL (DIRECT BODY CHILD) -->
     <div id="reallocation-countdown-modal" class="reallocation-modal-backdrop hidden">
-      <div class="reallocation-modal-card">
-        <div class="reallocation-header">
-          <span class="reallocation-badge-icon">⚠️</span>
-          <span class="reallocation-badge-text">SELF-HEALING ENGINE ACTIVE</span>
+      <div class="reallocation-modal-card" style="max-width:540px; border:3px solid #000; box-shadow:8px 8px 0px #000; border-radius:12px; background:#fff; padding:20px;">
+        <div class="reallocation-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:2px solid #000; padding-bottom:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="reallocation-badge-icon" style="font-size:1.2rem;">🛡️</span>
+            <span class="reallocation-badge-text" style="font-weight:900; font-family:var(--font-mono); font-size:0.85rem; color:#0f172a;">
+              SUPERVISED AUTONOMY • HUMAN-IN-THE-LOOP SLA
+            </span>
+          </div>
+          <span style="font-size:0.68rem; font-weight:800; background:#fef08a; border:1px solid #000; padding:2px 6px; border-radius:4px; font-family:var(--font-mono);">
+            NFPA-101 § 12.7
+          </span>
         </div>
 
-        <div class="reallocation-conflict-box">
-          <div class="conflict-label">⚠️ DETECTED CONSTRAINT BREACH</div>
-          <div id="reallocation-conflict-text" class="conflict-text">
+        <div class="reallocation-conflict-box" style="background:#fee2e2; border:2px solid #ef4444; border-radius:8px; padding:10px; margin-bottom:10px;">
+          <div class="conflict-label" style="font-size:0.7rem; font-weight:900; color:#b91c1c; font-family:var(--font-mono); margin-bottom:2px;">
+            ⚠️ DETECTED CONSTRAINT BREACH
+          </div>
+          <div id="reallocation-conflict-text" class="conflict-text" style="font-size:0.82rem; font-weight:700; color:#7f1d1d; line-height:1.35;">
             ⚠️ Talk "WebGPU Deep Dive" attendance (260 pax) exceeds Turing Hall capacity (250 pax).
           </div>
         </div>
 
-        <div class="reallocation-destination-box">
-          <div class="destination-label">📍 PROPOSED HEALING TARGET</div>
-          <div id="reallocation-destination-text" class="destination-text">
+        <div class="reallocation-destination-box" style="background:#f0fdf4; border:2px solid #22c55e; border-radius:8px; padding:10px; margin-bottom:14px;">
+          <div class="destination-label" style="font-size:0.7rem; font-weight:900; color:#15803d; font-family:var(--font-mono); margin-bottom:2px;">
+            📍 PROPOSED MITIGATION & SCHEDULE HEALING
+          </div>
+          <div id="reallocation-destination-text" class="destination-text" style="font-size:0.82rem; font-weight:700; color:#14532d; line-height:1.35;">
             📍 Relocating to Lovelace Suite (11:00 AM - 12:00 PM)
           </div>
         </div>
 
-        <div class="countdown-timer-container">
-          <div class="countdown-timer-label">AUTOMATIC REALLOCATION IN</div>
-          <div id="reallocation-countdown-number" class="countdown-timer-number">5</div>
+        <div class="countdown-timer-container" style="text-align:center; margin-bottom:8px;">
+          <div class="countdown-timer-label" style="font-size:0.75rem; font-weight:900; font-family:var(--font-mono); color:#475569; letter-spacing:0.5px;">
+            SUPERVISORY WINDOW EXPIRES IN
+          </div>
+          <div id="reallocation-countdown-number" class="countdown-timer-number" style="font-size:2.8rem; font-weight:900; color:#0f172a; font-family:var(--font-mono); line-height:1.1;">
+            15
+          </div>
         </div>
 
-        <div class="reallocation-progress-track">
-          <div id="reallocation-progress-bar" class="reallocation-progress-fill"></div>
+        <div class="reallocation-progress-track" style="height:10px; background:#e2e8f0; border:2px solid #000; border-radius:6px; overflow:hidden; margin-bottom:14px;">
+          <div id="reallocation-progress-bar" class="reallocation-progress-fill" style="height:100%; background:#facc15; width:0%;"></div>
         </div>
 
-        <div style="display:flex; justify-content:center; gap:10px; margin-top:14px;">
-          <button id="btn-skip-countdown" class="btn btn-sm btn-yellow"
-            style="font-weight:800; font-family:var(--font-mono); font-size:0.8rem; padding:6px 16px; border:2px solid #000; box-shadow:2px 2px 0px #000;"
-            title="Fast-forward and execute reallocation immediately (Space / Esc)">
-            ⚡ Apply Immediately (Skip Wait)
+        <!-- Triple Action Oversight Controls (Approve / Hold / Abort) -->
+        <div style="display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin-bottom:10px;">
+          <button id="btn-skip-countdown" class="btn btn-sm btn-green"
+            style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; padding:7px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+            title="Approve and execute mitigation immediately">
+            ⚡ DISPATCH NOW (Approve)
+          </button>
+          <button id="btn-pause-countdown" class="btn btn-sm btn-yellow"
+            style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; padding:7px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+            title="Hold countdown for manual director evaluation">
+            ⏸️ HOLD FOR REVIEW
+          </button>
+          <button id="btn-abort-countdown" class="btn btn-sm btn-red"
+            style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; padding:7px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
+            title="Veto and cancel autonomous reallocation">
+            ⛔ VETO / ABORT ACTION
           </button>
         </div>
 
-        <div class="reallocation-footer-note">
-          ⚡ Swarm consensus locked • Press <kbd
-            style="background:#eee; padding:1px 5px; border-radius:3px; border:1px solid #ccc; font-size:0.7rem;">Space</kbd>
-          to skip
+        <div class="reallocation-footer-note" style="font-size:0.68rem; color:#64748b; font-family:var(--font-mono); text-align:center; line-height:1.3;">
+          🔒 All supervisor interventions are cryptographically signed via SHA-256 and committed to the compliance ledger.
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIFIED SCENARIO & STRESS LAB DRAWER -->
+    <div id="scenario-lab-drawer" class="scenario-lab-backdrop hidden">
+      <div class="scenario-lab-panel">
+        <div class="lab-header">
+          <div class="lab-title-group">
+            <span class="dot red"></span>
+            <span class="dot yellow"></span>
+            <span class="dot green"></span>
+            <h3>⚡ OPERATIONAL DOMAIN & CONTINGENCY REGISTRY</h3>
+          </div>
+          <button id="btn-close-scenario-lab" class="lab-close-btn" title="Close Registry">&times;</button>
+        </div>
+
+        <div class="lab-body">
+          <div style="background:#e0e7ff; border:2px solid #4338ca; border-radius:8px; padding:10px 14px; font-size:0.8rem; color:#312e81; font-weight:600;">
+            ⚡ <strong>Operational Domain & Contingency Registry:</strong> Monitor real-time multi-room crowd spikes, transit delays, emergency cascades, and registration heatmaps across operational domains.
+          </div>
+
+          <!-- Section 1: Emergency & Cascade Trigger -->
+          <div class="lab-section">
+            <div class="lab-section-title">
+              <span>🔥 1. Multi-Hall Emergency Cascades</span>
+              <span class="badge badge-red" style="font-size:0.65rem;">CRITICAL</span>
+            </div>
+            <button id="btn-mass-disruption" class="btn w-full btn-md btn-red"
+              style="background-color: #ea4335; color: #ffffff; font-weight: 900; border: 2px solid #000; box-shadow: 3px 3px 0px #000; margin-bottom:8px; font-size:0.88rem;">
+              🔥 TRIGGER MULTI-HALL CONTINGENCY PROTOCOL
+            </button>
+            <div style="font-size:0.75rem; color:#555; line-height:1.3;">
+              Dispatches multi-hall stress protocols to verify autonomous agent swarm mitigation, crowd rerouting, and real-time self-healing.
+            </div>
+          </div>
+
+          <!-- Section 2: Registration Load Stress Tester -->
+          <div class="lab-section">
+            <div class="lab-section-title">
+              <span>📊 2. Registration Congestion Stress</span>
+              <span id="stress-factor-label" style="color:var(--google-blue); font-weight:800;">1.0x (Normal)</span>
+            </div>
+            <input type="range" id="stress-slider" min="0.5" max="3.0" step="0.1" value="1.0"
+              class="stress-slider-input" style="width:100%; cursor:pointer; margin-bottom:6px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.72rem; color:#666; font-weight:700;">
+              <span>0.5x Low Load</span>
+              <span>1.0x Nominal</span>
+              <span style="color:#d97706;">2.0x High Surge</span>
+              <span style="color:#dc2626;">3.0x Max Critical</span>
+            </div>
+          </div>
+
+          <!-- Section 3: Targeted Incident Injectors -->
+          <div class="lab-section">
+            <div class="lab-section-title">
+              <span>🎯 3. Targeted Incident Injectors</span>
+              <span class="badge badge-yellow" style="font-size:0.65rem;">REAL-TIME</span>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:10px;">
+              <!-- Speaker Delay -->
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono);">SPEAKER FLIGHT DELAY:</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="select-speaker" class="input-select" style="flex:2; font-size:0.8rem;"></select>
+                  <select id="select-delay" class="input-select select-short" style="flex:1; font-size:0.8rem;">
+                    <option value="60">60 mins</option>
+                    <option value="90">90 mins</option>
+                    <option value="120">120 mins</option>
+                  </select>
+                  <button id="btn-trigger-delay" class="btn btn-yellow btn-sm" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                    Inject Delay
+                  </button>
+                </div>
+              </div>
+
+              <!-- Topic Surge -->
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono);">AUDIENCE DEMAND SURGE:</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="select-topic" class="input-select" style="flex:2; font-size:0.8rem;"></select>
+                  <input type="number" id="input-surge-count" class="input-text text-short" value="260" min="50" max="400"
+                    style="width:70px; font-weight:800; text-align:center;">
+                  <button id="btn-trigger-surge" class="btn btn-blue btn-sm" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                    Trigger Surge
+                  </button>
+                </div>
+              </div>
+
+              <!-- Sentiment Feedback -->
+              <div style="display:flex; flex-direction:column; gap:4px;">
+                <label style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono);">ATTENDEE LIVE FEEDBACK:</label>
+                <div style="display:flex; gap:6px;">
+                  <select id="select-sentiment" class="input-select" style="flex:1; font-size:0.8rem;">
+                    <option value="hvac">"Lovelace Suite is freezing!" (HVAC Temp)</option>
+                    <option value="av">"Crackling speaker microphone in Lovelace Suite!" (A/V Setup)</option>
+                  </select>
+                  <button id="btn-trigger-sentiment" class="btn btn-red btn-sm" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+                    Inject Reaction
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 4: Public Address & Voice Diagnostics -->
+          <div class="lab-section">
+            <div class="lab-section-title">
+              <span>🎙️ 4. Autonomous Audio PA Broadcast</span>
+              <span class="badge badge-green" style="font-size:0.65rem;">ELEVENLABS</span>
+            </div>
+            <button id="btn-trigger-pa-test" class="btn btn-yellow w-full btn-sm"
+              style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+              🎙️ Test Autonomous Venue PA Broadcast
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1014,15 +1543,15 @@
               </tr>
               <tr>
                 <td><kbd class="kbd-badge">D</kbd></td>
-                <td>Simulate Speaker Flight Delay</td>
+                <td>Inject Speaker Flight Delay Contingency</td>
               </tr>
               <tr>
                 <td><kbd class="kbd-badge">S</kbd></td>
-                <td>Simulate Room Capacity Surge</td>
+                <td>Trigger Room Capacity Surge Event</td>
               </tr>
               <tr>
                 <td><kbd class="kbd-badge">M</kbd></td>
-                <td>Simulate Mass Disruption Scenario</td>
+                <td>Execute Multi-Hall Disruption Contingency</td>
               </tr>
               <tr>
                 <td><kbd class="kbd-badge">C</kbd></td>
@@ -1038,6 +1567,190 @@
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DYNAMIC SCHEDULE & VENUE IMPORTER MODAL (ZERO HARDCODING) -->
+    <div id="modal-schedule-importer" class="modal-backdrop hidden" style="z-index: 10003;">
+      <div class="modal-card" style="max-width: 760px; width: 92%; max-height: 90vh; overflow-y: auto; border: 3px solid #000; box-shadow: 10px 10px 0px #000; border-radius: 12px; background: #fff; padding: 24px;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:1.4rem;">📁</span>
+              <h2 style="font-size:1.2rem; font-weight:900; margin:0; font-family:var(--font-mono); color:#0f172a;">
+                UNIVERSAL DYNAMIC SCHEDULE & VENUE IMPORTER
+              </h2>
+            </div>
+            <div style="font-size:0.75rem; color:#475569; font-weight:700; font-family:var(--font-mono); margin-top:2px;">
+              Zero hardcoding • Import real-world CSV schedules, load industry presets, or rollback snapshots
+            </div>
+          </div>
+          <button id="btn-close-importer" class="btn-close-modal" aria-label="Close" style="font-size:1.5rem; line-height:1; cursor:pointer; background:none; border:none; font-weight:900;">&times;</button>
+        </div>
+
+        <!-- 1-Click Industry Presets -->
+        <div style="background:#f8fafc; border:2px solid #000; border-radius:8px; padding:12px; margin-bottom:16px;">
+          <div style="font-size:0.72rem; font-weight:900; font-family:var(--font-mono); color:#0f172a; margin-bottom:8px;">
+            ⚡ 1-CLICK INDUSTRY DEMO PRESETS (INSTANT TRANSITION):
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:8px;">
+            <button class="btn btn-sm btn-white btn-preset-import" data-preset="TECH_SUMMIT" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; padding:8px;">
+              🏙️ Tech Summit (4 Halls)
+            </button>
+            <button class="btn btn-sm btn-white btn-preset-import" data-preset="ESPORTS_ARENA" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; padding:8px;">
+              🎮 Esports Arena (Championship)
+            </button>
+            <button class="btn btn-sm btn-white btn-preset-import" data-preset="BIOTECH_SYMPOSIUM" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; padding:8px;">
+              🧬 Biotech Symposium (Labs)
+            </button>
+          </div>
+        </div>
+
+        <!-- Custom CSV Ingestion Form -->
+        <div style="margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label style="font-size:0.75rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">
+              📄 PASTE OR DRAG CSV SCHEDULE DATA:
+            </label>
+            <a href="/api/schedule/template.csv" download="delta_schedule_template.csv" class="btn btn-sm btn-yellow" style="text-decoration:none; font-size:0.7rem; font-weight:800; font-family:var(--font-mono); padding:2px 8px; border:1.5px solid #000;">
+              ⬇️ Download Sample CSV Template
+            </a>
+          </div>
+          <textarea id="import-csv-textarea" rows="7" placeholder="Title,Speaker,Room,Capacity,TimeSlot,StartHour,Attendees&#10;Keynote: Future of Autonomous Venue Systems,Dr. Aditi Sharma,Turing Hall,250,09:30 AM - 10:30 AM,9.5,210&#10;WebGPU Hardware Acceleration & Raytracing,Vikramaditya Verma,Lovelace Suite,120,11:00 AM - 12:00 PM,11.0,140"
+            style="width:100%; box-sizing:border-box; font-family:var(--font-mono); font-size:0.78rem; padding:10px; border:2px solid #000; border-radius:8px; background:#fffbeb; resize:vertical;"></textarea>
+          <div style="font-size:0.68rem; color:#64748b; font-family:var(--font-mono); margin-top:4px;">
+            Expected columns: <code>Title, Speaker, Room, Capacity, TimeSlot, StartHour, Attendees</code> (comma separated).
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:2px solid #000; padding-top:14px;">
+          <button id="btn-revert-schedule" class="btn btn-sm btn-white" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+            ↩️ Revert to Previous Snapshot
+          </button>
+          <button id="btn-submit-csv-import" class="btn btn-sm btn-green" style="font-weight:900; font-family:var(--font-mono); font-size:0.8rem; border:2px solid #000; box-shadow:3px 3px 0px #000; padding:8px 18px; cursor:pointer;">
+            ⚡ INGEST & APPLY TO LIVE ENGINE
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFICIAL FIRE MARSHAL & LIFE-SAFETY AUDIT REPORT MODAL -->
+    <div id="modal-fire-marshal-audit" class="modal-backdrop hidden" style="z-index: 10002;">
+      <div class="modal-card" style="max-width: 880px; width: 92%; max-height: 90vh; overflow-y: auto; border: 3px solid #000; box-shadow: 10px 10px 0px #000; border-radius: 12px; background: #fff; padding: 24px;">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #000; padding-bottom: 14px; margin-bottom: 16px;">
+          <div>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span style="font-size:1.5rem;">🛡️</span>
+              <h2 style="font-size:1.25rem; font-weight:900; margin:0; font-family:var(--font-mono); color:#0f172a;">
+                OFFICIAL LIFE-SAFETY & FIRE MARSHAL EGRESS AUDIT
+              </h2>
+            </div>
+            <div style="font-size:0.78rem; font-weight:700; color:#475569; font-family:var(--font-mono);">
+              Jurisdiction Standard: <span style="background:#fef08a; padding:2px 6px; border:1px solid #000; border-radius:4px;">NFPA-101 (§ 12.7) / IBC-2024 Chapter 10</span> • St. Peter's Systems Complex
+            </div>
+          </div>
+          <button id="btn-close-fire-marshal-modal" class="btn-close-modal" aria-label="Close" style="font-size:1.5rem; line-height:1; cursor:pointer; background:none; border:none; font-weight:900;">&times;</button>
+        </div>
+
+        <!-- Seal & Timestamp Banner -->
+        <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:2px solid #000; border-radius:8px; padding:12px 16px; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div style="font-size:0.7rem; font-weight:800; color:#64748b; font-family:var(--font-mono);">CRYPTOGRAPHIC AUDIT SEAL:</div>
+            <div id="fm-modal-seal" style="font-family:var(--font-mono); font-weight:900; font-size:0.95rem; color:#0f172a;">SEAL-NFPA-CALCULATING...</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem; font-weight:800; color:#64748b; font-family:var(--font-mono);">GENERATED TIMESTAMP:</div>
+            <div id="fm-modal-timestamp" style="font-family:var(--font-mono); font-weight:800; font-size:0.85rem; color:#334155;">--</div>
+          </div>
+          <div>
+            <div style="font-size:0.7rem; font-weight:800; color:#64748b; font-family:var(--font-mono);">REGULATORY STATUS:</div>
+            <span id="fm-modal-status-pill" class="badge-mini-green" style="font-size:0.8rem; font-weight:900; padding:4px 10px; border:2px solid #000;">
+              CERTIFIED COMPLIANT
+            </span>
+          </div>
+        </div>
+
+        <!-- Top Metrics 4-Box Grid -->
+        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
+          <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+            <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">LICENSED CAPACITY</div>
+            <div id="fm-modal-metric-capacity" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">--</div>
+            <div style="font-size:0.7rem; color:#64748b; font-weight:600;">Approved Occupancy Load</div>
+          </div>
+          <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+            <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">LIVE OCCUPANCY</div>
+            <div id="fm-modal-metric-occupancy" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">--</div>
+            <div id="fm-modal-metric-pct" style="font-size:0.7rem; color:#16a34a; font-weight:800;">--% of Max Load</div>
+          </div>
+          <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+            <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">AVG EGRESS DENSITY</div>
+            <div id="fm-modal-metric-density" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">-- m²/pax</div>
+            <div style="font-size:0.7rem; color:#64748b; font-weight:600;">Min Req: ≥ 1.4 m²/pax</div>
+          </div>
+          <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+            <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">TOTAL PORTAL FLOW</div>
+            <div id="fm-modal-metric-flow" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">-- pax/min</div>
+            <div style="font-size:0.7rem; color:#64748b; font-weight:600;">Egress Discharge Rate</div>
+          </div>
+        </div>
+
+        <!-- Zone-by-Zone Egress Compliance Table -->
+        <div style="margin-bottom:18px;">
+          <div style="font-size:0.8rem; font-weight:900; font-family:var(--font-mono); color:#0f172a; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+            <span>ZONE-BY-ZONE OCCUPANCY & DENSITY MATRIX (IBC CHAPTER 10):</span>
+            <span style="font-size:0.7rem; color:#64748b;">Optical LiDAR Tripwires Active</span>
+          </div>
+          <div style="border:2px solid #000; border-radius:8px; overflow-x:auto;">
+            <table style="width:100%; border-collapse:collapse; font-size:0.78rem; text-align:left; font-family:var(--font-mono);">
+              <thead style="background:#e2e8f0; border-bottom:2px solid #000;">
+                <tr>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">ZONE / HALL NAME</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">CAPACITY</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">OCCUPANCY</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">LOAD %</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">DENSITY (m²/pax)</th>
+                  <th style="padding:8px 10px; border-right:1px solid #000;">EGRESS FLOW</th>
+                  <th style="padding:8px 10px;">LIFE-SAFETY STATUS</th>
+                </tr>
+              </thead>
+              <tbody id="fm-modal-table-body" style="background:#fff;">
+                <!-- Populated dynamically via JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Supervisor Interventions Audit Trail -->
+        <div style="background:#fefce8; border:2px solid #000; border-radius:8px; padding:12px; margin-bottom:18px;">
+          <div style="font-size:0.75rem; font-weight:900; color:#854d0e; font-family:var(--font-mono); margin-bottom:6px;">
+            🔒 HUMAN-IN-THE-LOOP INTERVENTION LOG (TAMPER-PROOF LEDGER):
+          </div>
+          <div id="fm-modal-interventions-log" style="font-size:0.73rem; font-family:var(--font-mono); color:#713f12; max-height:100px; overflow-y:auto; line-height:1.4;">
+            No emergency supervisor overrides recorded during this monitoring session.
+          </div>
+        </div>
+
+        <!-- Certified Inspector Note -->
+        <div style="font-size:0.72rem; color:#64748b; font-family:var(--font-mono); margin-bottom:18px; line-height:1.4; border-left:3px solid #22c55e; padding-left:10px;">
+          <strong>Auditor Statement:</strong> Autonomous real-time egress flow monitored via DELTA Engine optical sensor tripwires, IoT passage counters, and CCTV computer vision. All calculations adhere to NFPA-101 Life Safety Code Table 7.3.1.2 occupant load factors.
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:2px solid #000; padding-top:14px;">
+          <button id="btn-copy-fm-seal" class="btn btn-sm btn-white" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+            📋 Copy Verification Seal
+          </button>
+          <div style="display:flex; gap:8px;">
+            <button id="btn-download-fm-json" class="btn btn-sm btn-yellow" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+              ⬇️ Export JSON Seal
+            </button>
+            <button id="btn-print-fm-report" class="btn btn-sm btn-green" style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+              🖨️ Print / Save Official PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1147,11 +1860,11 @@
                 120, 250 Pax) to calibrate 80% & 100% capacity alerts live!</span>
             </div>
 
-            <!-- Live Pitch Testing & Attendee Simulator -->
+            <!-- Operational Attendance Telemetry & Threshold Calibration -->
             <div class="cctv-sim-controls mb-4">
               <div
                 style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:6px;">
-                <span class="sim-label">⚡ Attendance & Pitch Controls (Camera + Manual Fusion):</span>
+                <span class="sim-label">⚡ Attendance Thresholds (Camera + Sensor Fusion):</span>
                 <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem; font-weight:700;">
                   <span>Manual Count:</span>
                   <input type="number" class="cctv-manual-pax-input" min="0" max="1000" value="0"
@@ -1163,16 +1876,14 @@
                 <button class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
                   style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚡ Test Sensor (+1
                   Entry)</button>
-                <button id="btn-cctv-add-pax" class="btn btn-sm btn-yellow">+1 Person</button>
-                <button id="btn-cctv-sub-pax" class="btn btn-sm btn-white">-1 Person</button>
-                <button id="btn-cctv-trigger-80" class="btn btn-sm btn-yellow"
-                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ Simulate 80%
-                  Full</button>
-                <button id="btn-cctv-trigger-full" class="btn btn-sm btn-red"
-                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 Simulate 100%
-                  Full</button>
-                <button id="btn-cctv-trigger-empty" class="btn btn-sm btn-white">⚪ Simulate 0% Empty</button>
-                <button id="btn-cctv-clear-pax" class="btn btn-sm btn-white">🧹 Reset</button>
+                <button id="btn-modal-cctv-add-pax" class="btn btn-sm btn-yellow btn-cctv-add-pax">+1 Person</button>
+                <button id="btn-modal-cctv-sub-pax" class="btn btn-sm btn-white btn-cctv-sub-pax">-1 Person</button>
+                <button id="btn-modal-cctv-trigger-80" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">⚠️ 80% Occupancy</button>
+                <button id="btn-modal-cctv-trigger-full" class="btn btn-sm btn-red btn-cctv-trigger-full"
+                  style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;">🚨 100% Full</button>
+                <button id="btn-modal-cctv-trigger-empty" class="btn btn-sm btn-white btn-cctv-trigger-empty">⚪ 0% Empty</button>
+                <button id="btn-modal-cctv-clear-pax" class="btn btn-sm btn-white btn-cctv-clear-pax">🧹 Reset</button>
               </div>
             </div>
 
@@ -1433,7 +2144,7 @@
                   </div>
 
                   <!-- Dimensions Grid -->
-                  <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                  <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px;">
                     <div>
                       <label style="font-size:0.75rem; font-weight:800; color:#0f172a;">Width (m):</label>
                       <input type="number" id="edit-room-width" class="input-text w-full" value="18" min="6" max="150" step="1">
@@ -1441,6 +2152,10 @@
                     <div>
                       <label style="font-size:0.75rem; font-weight:800; color:#0f172a;">Length (m):</label>
                       <input type="number" id="edit-room-length" class="input-text w-full" value="24" min="6" max="200" step="1">
+                    </div>
+                    <div>
+                      <label style="font-size:0.75rem; font-weight:800; color:#0f172a;">Height (m):</label>
+                      <input type="number" id="edit-room-height" class="input-text w-full" value="5.5" min="2.5" max="25" step="0.5">
                     </div>
                     <div>
                       <label style="font-size:0.75rem; font-weight:800; color:#0f172a;">Doors (Gates):</label>
@@ -1704,16 +2419,20 @@
       </div>
     </div>
 
+    <script src="components/alertCoordinator.js"></script>
     <script src="components/app.js?v=cursorFix4"></script>
     <script src="components/websockets.js"></script>
     <script src="components/dragdrop.js"></script>
     <script src="components/graphVisualizer.js?v=cursorFix4"></script>
     <script src="components/tourGuide.js"></script>
+    <!-- THREE.JS 3D ENGINE & ORBIT CONTROLS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="components/roomSpatialModel.js"></script>
+    <script src="components/spatialReconstruction.js"></script>
     <script src="components/contentPipeline.js"></script>
     <script src="components/stressTester.js"></script>
     <script src="components/auth.js"></script>
-    <script src="components/customCursor.js?v=cursorFix4"></script>
     <!-- REAL-TIME WEBGL OBJECT & PERSON DETECTION (100% FREE & ZERO LATENCY) -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>

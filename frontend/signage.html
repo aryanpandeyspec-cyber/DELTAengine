@@ -13,6 +13,7 @@
     href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;600;800;900&family=Space+Grotesk:wght@400;600;700;800&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="app.css">
+  <script src="components/customCursor.js"></script>
 
   <style>
     /* Signage TV Dedicated Neubrutalist TV Display Styles */
@@ -697,7 +698,7 @@
             <span>ASSIGNED HALL COORDINATORS</span>
           </div>
 
-          <div class="side-card-body" style="gap:8px;">
+          <div class="side-card-body" id="signage-assigned-coordinators" style="gap:8px;">
             <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.8rem; font-weight:700;">
               <span>🚪 <strong>Suryansh</strong> (Entrance Lead)</span>
               <span class="badge-mini-green">ON DUTY</span>
@@ -765,6 +766,7 @@
     let scheduleData = null;
     let cctvState = null;
     let gatesMesh = null;
+    let volunteersData = [];
     let currentOccupancy = 0;
 
     const venuePicker = document.getElementById('venue-picker');
@@ -785,6 +787,7 @@
       url.searchParams.set('hall', activeHallId);
       window.history.replaceState({}, '', url);
       renderSignage();
+      renderSignageCoordinators();
     });
 
     // Dismiss Emergency Overlay
@@ -842,7 +845,7 @@
         featuredTopicId = scheduleData['slot-1'][activeHallId];
       } else {
         // Find first upcoming slot that has a session in this hall
-        const slotsOrder = ['slot-2', 'slot-3', 'slot-4'];
+        const slotsOrder = (graphData && graphData.slots) ? Object.keys(graphData.slots) : Object.keys(scheduleData);
         for (const sId of slotsOrder) {
           if (scheduleData[sId] && scheduleData[sId][activeHallId]) {
             featuredSlotId = sId;
@@ -920,6 +923,81 @@
 
       // Render Real Live Room Capacity Gauge (NO RANDOM FALLBACKS)
       renderRealCapacityGauge(hall.capacity);
+
+      // Render Dynamic Assigned Coordinators for this Hall
+      renderSignageCoordinators();
+    }
+
+    // Dynamic Hall-Targeted Coordinator Directory
+    const defaultSignageVolunteers = [
+      { name: 'Suryansh', role: 'Entrance & Crowd Lead', assignedHallId: 'hall-1', status: 'ON DUTY', icon: '🚪' },
+      { name: 'Shahid', role: 'Stage & Operations Coordinator', assignedHallId: 'hall-2', status: 'ON DUTY', icon: '🎤' },
+      { name: 'Aryan Pandey', role: 'Lead Systems Commander', assignedHallId: 'ALL', status: 'COMMAND DESK', icon: '🖥️' }
+    ];
+
+    function renderSignageCoordinators() {
+      const container = document.getElementById('signage-assigned-coordinators');
+      if (!container) return;
+
+      const list = (volunteersData && volunteersData.length > 0) ? volunteersData : defaultSignageVolunteers;
+      
+      const filtered = list.filter(v => {
+        const h = (v.assignedHallId || v.hall || v.assignedZone || '').toLowerCase();
+        return h === 'all' || h.includes('all') || h.includes('central') || h.includes(activeHallId.toLowerCase());
+      });
+
+      const displayList = filtered.length > 0 ? filtered : list;
+
+      container.innerHTML = displayList.map(v => {
+        const isCentral = (v.assignedHallId === 'ALL' || (v.hall && v.hall.includes('ALL')) || (v.role && v.role.includes('Commander')) || (v.role && v.role.includes('Systems')));
+        const badgeClass = isCentral ? 'badge-mini-blue' : 'badge-mini-green';
+        const badgeText = isCentral ? 'COMMAND DESK' : 'ON DUTY';
+        const icon = v.icon || (isCentral ? '🖥️' : v.role?.toLowerCase().includes('stage') ? '🎤' : '🚪');
+        return `
+          <div style="display:flex; align-items:center; justify-content:space-between; font-size:0.8rem; font-weight:700;">
+            <span>${icon} <strong>${escapeHtml(v.name)}</strong> <span style="font-weight:500; font-size:0.75rem; color:#555;">(${escapeHtml(v.role || 'Coordinator')})</span></span>
+            <span class="${badgeClass}">${badgeText}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function showSignagePABanner(data) {
+      if (!data || !data.text) return;
+      let banner = document.getElementById('signage-pa-broadcast-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'signage-pa-broadcast-banner';
+        banner.style.position = 'fixed';
+        banner.style.bottom = '20px';
+        banner.style.left = '50%';
+        banner.style.transform = 'translateX(-50%)';
+        banner.style.zIndex = '99999';
+        banner.style.background = '#2563eb';
+        banner.style.color = '#ffffff';
+        banner.style.border = '3px solid #000000';
+        banner.style.boxShadow = '5px 5px 0px #000000';
+        banner.style.borderRadius = '12px';
+        banner.style.padding = '12px 24px';
+        banner.style.display = 'flex';
+        banner.style.alignItems = 'center';
+        banner.style.gap = '14px';
+        banner.style.maxWidth = '90vw';
+        banner.style.fontFamily = "var(--font-mono, 'Space Grotesk', monospace)";
+        banner.style.fontWeight = '800';
+        document.body.appendChild(banner);
+      }
+      banner.innerHTML = `
+        <span style="font-size:1.4rem;">📢</span>
+        <div>
+          <div style="font-size:0.75rem; text-transform:uppercase; letter-spacing:1px; color:#bfdbfe;">PUBLIC ADDRESS BROADCAST • ${escapeHtml(data.voice || 'DELTA Synthesizer')}</div>
+          <div style="font-size:0.95rem; color:#ffffff; font-weight:700;">${escapeHtml(data.text)}</div>
+        </div>
+      `;
+      banner.style.display = 'flex';
+      setTimeout(() => {
+        if (banner) banner.style.display = 'none';
+      }, 12000);
     }
 
     // Render Upcoming Agenda for this specific hall
@@ -927,7 +1005,7 @@
       const container = document.getElementById('upcoming-sessions-container');
       container.innerHTML = '';
 
-      const allSlots = ['slot-1', 'slot-2', 'slot-3', 'slot-4'];
+      const allSlots = (graphData && graphData.slots) ? Object.keys(graphData.slots) : Object.keys(scheduleData);
       let upcomingFound = 0;
 
       allSlots.forEach(sId => {
@@ -966,9 +1044,11 @@
     function renderRealCapacityGauge(hallCapacity) {
       let occ = 0;
 
-      // 1. Check cctvState from server
+      // 1. Check cctvState from server or hall telemetry
       if (cctvState && cctvState[activeHallId] && cctvState[activeHallId].peopleDetected !== undefined) {
         occ = cctvState[activeHallId].peopleDetected;
+      } else if (graphData?.halls?.[activeHallId]?.currentOccupancy !== undefined) {
+        occ = graphData.halls[activeHallId].currentOccupancy;
       } else if (currentOccupancy > 0 && activeHallId === 'hall-1') {
         occ = currentOccupancy;
       }
@@ -1002,30 +1082,34 @@
       }
     }
 
-    // Emergency Reallocation Flip Detector
+    // Emergency Reallocation Flip Detector (Audits all slots dynamically)
     function checkReallocationFlip(prevSched, newSched) {
       if (!prevSched || !newSched || !graphData) return;
 
-      const prevTopicId = prevSched['slot-1']?.[activeHallId];
-      if (!prevTopicId) return;
+      for (const sId in prevSched) {
+        const prevTopicId = prevSched[sId]?.[activeHallId];
+        if (!prevTopicId) continue;
 
-      // Find where that topic was relocated to
-      let newLocationHallId = null;
-      let newLocationSlotId = null;
+        // Find where that topic was relocated to in newSched
+        let newLocationHallId = null;
+        let newLocationSlotId = null;
 
-      for (const sId in newSched) {
-        for (const hId in newSched[sId]) {
-          if (newSched[sId][hId] === prevTopicId) {
-            newLocationSlotId = sId;
-            newLocationHallId = hId;
-            break;
+        for (const targetSlot in newSched) {
+          for (const hId in newSched[targetSlot]) {
+            if (newSched[targetSlot][hId] === prevTopicId) {
+              newLocationSlotId = targetSlot;
+              newLocationHallId = hId;
+              break;
+            }
           }
+          if (newLocationHallId) break;
         }
-      }
 
-      // If moved away from this hall, trigger emergency wayfinding overlay!
-      if (newLocationHallId && newLocationHallId !== activeHallId) {
-        triggerEmergencyOverlay(prevTopicId, newLocationHallId, newLocationSlotId);
+        // If moved away from this hall, trigger emergency wayfinding overlay!
+        if (newLocationHallId && newLocationHallId !== activeHallId) {
+          triggerEmergencyOverlay(prevTopicId, newLocationHallId, newLocationSlotId);
+          break;
+        }
       }
     }
 
@@ -1086,13 +1170,29 @@
             scheduleData = payload.data.schedule;
             cctvState = payload.data.cctvState;
             gatesMesh = payload.data.gatesMesh;
+            volunteersData = payload.data.volunteers || [];
             renderSignage();
+            renderSignageCoordinators();
           } else if (payload.type === 'SCHEDULE_HEALED' || payload.type === 'SCHEDULE_UPDATED') {
             const prev = scheduleData;
             graphData = payload.data.graph || graphData;
             scheduleData = payload.data.schedule || scheduleData;
             checkReallocationFlip(prev, scheduleData);
             renderSignage();
+          } else if (payload.type === 'SCENARIO_CHANGED') {
+            if (payload.data && payload.data.graph) {
+              graphData = payload.data.graph;
+            }
+            populateVenueDropdown();
+            renderSignage();
+            renderSignageCoordinators();
+          } else if (payload.type === 'VOLUNTEERS_UPDATED') {
+            if (payload.data && Array.isArray(payload.data.volunteers)) {
+              volunteersData = payload.data.volunteers;
+            }
+            renderSignageCoordinators();
+          } else if (payload.type === 'VOICE_ANNOUNCEMENT') {
+            showSignagePABanner(payload.data);
           } else if (payload.type === 'ROOM_OCCUPANCY_UPDATE' || payload.type === 'CCTV_OCCUPANCY_UPDATE') {
             if (payload.data.hallId === activeHallId) {
               currentOccupancy = payload.data.peopleDetected ?? payload.data.occupancy ?? currentOccupancy;
@@ -1111,6 +1211,10 @@
               currentOccupancy = payload.data.occupancy ?? (currentOccupancy + 1);
               renderRealCapacityGauge();
             }
+          } else if (payload.type === 'EMERGENCY_EVACUATION' || payload.type === 'MASS_DISRUPTION' || (payload.data && payload.data.isMassDisruption)) {
+            triggerEmergencySignageInversion(payload.data || {});
+          } else if (payload.type === 'EMERGENCY_CLEAR' || payload.type === 'SYSTEM_RESET') {
+            clearEmergencySignageInversion();
           }
         } catch (err) {
           console.warn('[Signage WS]', err);
@@ -1142,15 +1246,77 @@
         scheduleData = data.schedule;
         cctvState = data.cctvState;
         gatesMesh = data.gatesMesh;
+        volunteersData = data.volunteers || [];
         renderSignage();
+        renderSignageCoordinators();
         initWebSocket();
       })
       .catch(err => {
         console.error('State load error:', err);
         initWebSocket();
       });
+
+    // --- LIFE SAFETY EMERGENCY SIGNAGE INVERSION ENGINE ---
+    function triggerEmergencySignageInversion(data = {}) {
+      let overlay = document.getElementById('signage-emergency-overlay');
+      if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'signage-emergency-overlay';
+        overlay.style.position = 'fixed';
+        overlay.style.top = '0';
+        overlay.style.left = '0';
+        overlay.style.width = '100vw';
+        overlay.style.height = '100vh';
+        overlay.style.zIndex = '999999';
+        overlay.style.background = '#0a0a0a';
+        overlay.style.color = '#ffffff';
+        overlay.style.display = 'flex';
+        overlay.style.flexDirection = 'column';
+        overlay.style.alignItems = 'center';
+        overlay.style.justifyContent = 'center';
+        overlay.style.padding = '40px';
+        overlay.style.boxSizing = 'border-box';
+        overlay.style.border = '12px solid #ef4444';
+        document.body.appendChild(overlay);
+      }
+
+      overlay.innerHTML = `
+        <div style="font-family:'Space Grotesk',sans-serif; text-align:center; max-width:1100px;">
+          <div style="background:#ef4444; color:#000000; font-weight:900; font-size:1.6rem; padding:10px 24px; border-radius:8px; display:inline-block; letter-spacing:2px; margin-bottom:24px;">
+            ⚠️ NFPA LIFE SAFETY: EMERGENCY EGRESS DIVERSION ACTIVE
+          </div>
+          <h1 style="font-size:3.2rem; font-weight:900; margin:0 0 16px 0; color:#ffffff; line-height:1.1;">
+            PROCEED CALMLY TO EAST WING & GATE B
+          </h1>
+          <p style="font-size:1.4rem; color:#9ca3af; margin:0 0 36px 0;">
+            Central corridor congestion threshold exceeded. Follow green illuminated arrows away from hazard zones.
+          </p>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-bottom:40px; text-align:left;">
+            <div style="background:#14532d; border:3px solid #22c55e; border-radius:12px; padding:24px;">
+              <div style="font-size:1.1rem; font-weight:800; color:#86efac; margin-bottom:8px;">🟢 CLEAR EGRESS ROUTE</div>
+              <div style="font-size:1.8rem; font-weight:900; color:#ffffff;">GATE B (EAST FOYER)</div>
+              <div style="font-size:1rem; color:#bbf7d0; margin-top:6px;">Flow Capacity: 100 pax/min • Direct Outdoor Access</div>
+            </div>
+            <div style="background:#7f1d1d; border:3px solid #ef4444; border-radius:12px; padding:24px;">
+              <div style="font-size:1.1rem; font-weight:800; color:#fca5a5; margin-bottom:8px;">⛔ CONGESTED / DO NOT ENTER</div>
+              <div style="font-size:1.8rem; font-weight:900; color:#ffffff;">TURING HALL MAIN CORRIDOR</div>
+              <div style="font-size:1rem; color:#fecaca; margin-top:6px;">Choke Point Detected • Marshals Diverting Flow</div>
+            </div>
+          </div>
+
+          <div style="font-size:1.1rem; color:#e5e7eb; background:#1f2937; padding:14px 28px; border-radius:8px; border:2px solid #374151; display:inline-block;">
+            📢 AUDIO RELAY: Automated PA instructions broadcasting on foyer speakers. Do not stop in doorway thresholds.
+          </div>
+        </div>
+      `;
+    }
+
+    function clearEmergencySignageInversion() {
+      const overlay = document.getElementById('signage-emergency-overlay');
+      if (overlay) overlay.remove();
+    }
   </script>
-  <script src="components/customCursor.js?v=cursorFix4"></script>
 </body>
 
 </html>

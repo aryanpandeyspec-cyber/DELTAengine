@@ -8,3 +8,6 @@ video_frames/
 extracted_assets/
 .venv/
 __pycache__/
+frontend/audio_announcements/*.mp3
+backend/data/*.json
+scratch/

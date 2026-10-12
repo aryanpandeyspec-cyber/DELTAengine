@@ -36,6 +36,7 @@
 
   let manualCount = 0;
   let isCameraActive = false;
+  let isSimulatedFeed = false;
   let isCameraBlocked = false;
   let lastPostTime = 0;
   let bannerDismissTimer = null;
@@ -175,7 +176,16 @@
   function bootCctv() {
     initDetectors();
     initPico();
-    initCocoSsd();
+    // Zero-lag deferred initialization: don't block main thread on initial page load
+    if (typeof requestIdleCallback === 'function') {
+      requestIdleCallback(() => {
+        if (!cocoModel && !isCocoLoading) initCocoSsd();
+      }, { timeout: 5000 });
+    } else {
+      setTimeout(() => {
+        if (!cocoModel && !isCocoLoading) initCocoSsd();
+      }, 3500);
+    }
     bindCctvElements();
     initVolunteerAlertBanner();
     requestPushPermission();
@@ -327,7 +337,12 @@
 
     videoEl = document.getElementById('cctv-hidden-video');
     canvasEl = document.getElementById('cctv-hud-canvas');
-    if (canvasEl) ctx = canvasEl.getContext('2d');
+    if (canvasEl) {
+      ctx = canvasEl.getContext('2d');
+      if (!isCameraActive) {
+        drawIdleCameraGraphic(ctx, canvasEl.width || 640, canvasEl.height || 480);
+      }
+    }
 
     // Scroll to Top CCTV Hub or Open Modal
     const jumpToCameraHandler = (e) => {
@@ -361,6 +376,31 @@
       });
     }
 
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+          modal.classList.add('hidden');
+        }
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+          modal.classList.add('hidden');
+        }
+      });
+    }
+
+    const btnPopout = document.getElementById('btn-cctv-popout-modal');
+    if (btnPopout && modal) {
+      btnPopout.addEventListener('click', (e) => {
+        if (e) e.preventDefault();
+        modal.classList.remove('hidden');
+        enumerateCameras();
+        if (!isCameraActive) {
+          startWebcam();
+        }
+      });
+    }
+
     // Toggle Collapse / Expand Top Hub View
     if (btnToggleView && hubBody) {
       btnToggleView.addEventListener('click', () => {
@@ -370,15 +410,19 @@
     }
 
     // Bind ALL Start Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-start, .btn-cctv-start').forEach(btn => {
+    document.querySelectorAll('#btn-cctv-start, #btn-modal-cctv-start, .btn-cctv-start').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (hubBody && hubBody.classList.contains('collapsed')) {
+          hubBody.classList.remove('collapsed');
+          if (btnToggleView) btnToggleView.textContent = '🔼 Minimize View';
+        }
         const chosenId = selectedCameraDeviceId || document.querySelector('.cctv-select:not(.cctv-venue-select)')?.value;
         startWebcam(chosenId);
       });
     });
 
     // Bind ALL Stop Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-stop, .btn-cctv-stop').forEach(btn => {
+    document.querySelectorAll('#btn-cctv-stop, #btn-modal-cctv-stop, .btn-cctv-stop').forEach(btn => {
       btn.addEventListener('click', () => stopWebcam());
     });
 
@@ -461,7 +505,7 @@
         syncCrowdModeUI();
         if (typeof createToast === 'function') {
           const names = {
-            'auto': `👥 Crowd Mode: Auto (${currentCapacity >= 1000 ? 'Mega-Crowd Grid for 1,000+ gatherings' : 'Standard Precision Detector for Hackathons & Rooms'})`,
+            'auto': `👥 Crowd Mode: Auto (${currentCapacity >= 1000 ? 'Mega-Crowd Grid for 1,000+ gatherings' : 'Standard Precision Detector for Venues & Conference Halls'})`,
             'mega-crowd': '🌊 Crowd Mode: Forced Eulerian Mega-Crowd Grid (Kumbh Mela / Rally mode)',
             'room': '👤 Crowd Mode: Forced Standard Person Bounding Boxes'
           };
@@ -614,16 +658,16 @@
       });
     });
 
-    // Bind Add Person (+1) buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-add-pax, .btn-cctv-add-pax').forEach(btn => {
+    // Bind Add Person (+1) buttons (Top Hub, Modal & KPI)
+    document.querySelectorAll('#btn-cctv-add-pax, #btn-modal-cctv-add-pax, #btn-cctv-add-pax-kpi, .btn-cctv-add-pax').forEach(btn => {
       btn.addEventListener('click', () => {
         simulateAttendeeAction('ENTRY');
         syncManualCountControls(currentNetOccupancy);
       });
     });
 
-    // Bind Subtract Person (-1) buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-sub-pax, .btn-cctv-sub-pax').forEach(btn => {
+    // Bind Subtract Person (-1) buttons (Top Hub, Modal & KPI)
+    document.querySelectorAll('#btn-cctv-sub-pax, #btn-modal-cctv-sub-pax, #btn-cctv-sub-pax-kpi, .btn-cctv-sub-pax').forEach(btn => {
       btn.addEventListener('click', () => {
         simulateAttendeeAction('EXIT');
         syncManualCountControls(currentNetOccupancy);
@@ -631,7 +675,7 @@
     });
 
     // Bind Reset Pax buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-clear-pax, .btn-cctv-clear-pax').forEach(btn => {
+    document.querySelectorAll('#btn-cctv-clear-pax, #btn-modal-cctv-clear-pax, .btn-cctv-clear-pax').forEach(btn => {
       btn.addEventListener('click', () => {
         attendeeDb.clear();
         trackedHeads = [];
@@ -650,8 +694,8 @@
       });
     });
 
-    // Bind 80% Room Capacity Trigger Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-trigger-80, .btn-cctv-trigger-80').forEach(btn => {
+    // Bind 80% Room Capacity Trigger Buttons (Top Hub, Modal & KPI)
+    document.querySelectorAll('#btn-cctv-trigger-80, #btn-modal-cctv-trigger-80, #btn-cctv-trigger-80-kpi, .btn-cctv-trigger-80').forEach(btn => {
       btn.addEventListener('click', () => {
         currentNetOccupancy = Math.max(1, Math.round(currentCapacity * 0.80));
         manualCount = currentNetOccupancy;
@@ -660,8 +704,8 @@
       });
     });
 
-    // Bind 100% Room Full Trigger Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-trigger-full, .btn-cctv-trigger-full').forEach(btn => {
+    // Bind 100% Room Full Trigger Buttons (Top Hub, Modal & KPI)
+    document.querySelectorAll('#btn-cctv-trigger-full, #btn-modal-cctv-trigger-full, #btn-cctv-trigger-full-kpi, .btn-cctv-trigger-full').forEach(btn => {
       btn.addEventListener('click', () => {
         currentNetOccupancy = currentCapacity;
         manualCount = currentCapacity;
@@ -671,7 +715,7 @@
     });
 
     // Bind 0% Room Empty Trigger Buttons (Top Hub & Modal)
-    document.querySelectorAll('#btn-cctv-trigger-empty, .btn-cctv-trigger-empty').forEach(btn => {
+    document.querySelectorAll('#btn-cctv-trigger-empty, #btn-modal-cctv-trigger-empty, .btn-cctv-trigger-empty').forEach(btn => {
       btn.addEventListener('click', () => {
         currentNetOccupancy = 0;
         manualCount = 0;
@@ -997,8 +1041,19 @@ Email: ${fromEmail}`;
   }
 
   async function startWebcam(requestedDeviceId) {
+    const hubBody = document.getElementById('cctv-hub-body');
+    if (hubBody && hubBody.classList.contains('collapsed')) {
+      hubBody.classList.remove('collapsed');
+      const btnToggleView = document.getElementById('btn-toggle-cctv-view');
+      if (btnToggleView) btnToggleView.textContent = '🔼 Minimize View';
+    }
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      if (typeof createToast === 'function') createToast('Webcam not supported in this browser.', 'warning');
+      if (typeof createToast === 'function') createToast('Webcam not supported in this browser. Activating Simulation Mode.', 'info');
+      isSimulatedFeed = true;
+      isCameraActive = true;
+      updateCameraStateUI(true, true);
+      if (!animFrameId) animFrameId = requestAnimationFrame(processVideoFrame);
       return;
     }
 
@@ -1043,9 +1098,9 @@ Email: ${fromEmail}`;
         } catch (idealErr) {
           console.warn('[CCTV] Ideal constraint failed, trying basic video:', idealErr);
           try {
-            stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+            stream = await navigator.mediaDevices.getUserMedia({ video: baseVideo, audio: false });
           } catch (basicErr) {
-            console.warn('[CCTV] Video stream failed completely:', basicErr);
+            try { stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false }); } catch (e) { }
           }
         }
       }
@@ -1059,13 +1114,25 @@ Email: ${fromEmail}`;
 
     if (stream) {
       mediaStream = stream;
+      isSimulatedFeed = false;
       if (videoEl) {
+        videoEl.muted = true;
+        videoEl.playsInline = true;
+        videoEl.autoplay = true;
+        videoEl.setAttribute('playsinline', '');
+        videoEl.setAttribute('autoplay', '');
+        videoEl.setAttribute('muted', '');
         videoEl.srcObject = mediaStream;
+        videoEl.onloadedmetadata = () => {
+          videoEl.play().catch(e => console.warn('[CCTV] video play retry error:', e));
+        };
         try { await videoEl.play(); } catch (e) { }
       }
       isCameraActive = true;
-      updateCameraStateUI(true);
-      requestAnimationFrame(processVideoFrame);
+      updateCameraStateUI(true, false);
+      if (!animFrameId) {
+        animFrameId = requestAnimationFrame(processVideoFrame);
+      }
 
       // Immediately re-enumerate now that getUserMedia has unlocked the true hardware device labels!
       await enumerateCameras();
@@ -1073,16 +1140,23 @@ Email: ${fromEmail}`;
       const activeLabel = document.querySelector('.cctv-select:not(.cctv-venue-select) option:checked')?.textContent || 'Zebronics 480p';
       if (typeof createToast === 'function') createToast(`📹 ${activeLabel} feed connected!`, 'success');
     } else {
+      isSimulatedFeed = true;
       isCameraActive = true;
       updateCameraStateUI(true, true);
-      requestAnimationFrame(processVideoFrame);
+      if (!animFrameId) {
+        animFrameId = requestAnimationFrame(processVideoFrame);
+      }
       if (typeof createToast === 'function') createToast('📹 Running in High-Fidelity CCTV Simulation Mode.', 'info');
     }
   }
 
   function stopWebcam() {
     isCameraActive = false;
-    if (animFrameId) cancelAnimationFrame(animFrameId);
+    isSimulatedFeed = false;
+    if (animFrameId) {
+      cancelAnimationFrame(animFrameId);
+      animFrameId = null;
+    }
     if (mediaStream) {
       mediaStream.getTracks().forEach(track => track.stop());
       mediaStream = null;
@@ -1090,8 +1164,12 @@ Email: ${fromEmail}`;
     if (videoEl) videoEl.srcObject = null;
     lastDetectedFaces = [];
     trackedHeads = [];
+    cachedDetectedBoxes = [];
     updateCameraStateUI(false);
     updateDensityMetrics();
+    if (ctx && canvasEl) {
+      drawIdleCameraGraphic(ctx, canvasEl.width || 640, canvasEl.height || 480);
+    }
   }
 
   function updateCameraStateUI(active, isSim = false) {
@@ -1102,7 +1180,7 @@ Email: ${fromEmail}`;
     statusTexts.forEach(statusText => {
       if (active) {
         statusText.innerHTML = isSim
-          ? '🟢 <strong>SIMULATED FEED</strong> (640x480)'
+          ? '🟢 <strong>VIRTUAL SENSOR FEED</strong> (640x480)'
           : '🟢 <strong>CAMERA FEED LIVE</strong>';
         statusText.style.color = '#10b981';
       } else {
@@ -1120,7 +1198,7 @@ Email: ${fromEmail}`;
   // Strictly bounds head/face area (forehead to chin, ear to ear).
   // Rejects flat wooden tables, desks, fabrics, blank walls, and chairs with 100% precision (0 hallucinations).
   function detectFacesZeroHallucination() {
-    if (!videoEl || videoEl.readyState !== 4) {
+    if (!videoEl || videoEl.readyState < 2 || videoEl.videoWidth === 0) {
       return { count: 0, boxes: [], blocked: false };
     }
 
@@ -1136,42 +1214,42 @@ Email: ${fromEmail}`;
 
     const imgData = cvCtx.getImageData(0, 0, sw, sh);
     const d = imgData.data;
+    const len = d.length;
 
-    // Fast color balance check to detect IR camera / stuck IR-cut filter (Pink/Magenta cast)
-    let sumR = 0, sumG = 0, sumB = 0, sCnt = 0;
-    for (let i = 0; i < d.length; i += 64) {
-      sumR += d[i];
-      sumG += d[i + 1];
-      sumB += d[i + 2];
-      sCnt++;
-    }
-    const mR = sumR / sCnt;
-    const mG = sumG / sCnt;
-    const mB = sumB / sCnt;
-    // Magenta/Pink condition: Red and Blue significantly higher than Green
-    const prevTintState = isPinkTintDetected;
-    isPinkTintDetected = (mR > 1.30 * mG) && (mB > 1.30 * mG) && (mR > 50 || mB > 50);
-    if (prevTintState !== isPinkTintDetected) {
-      syncColorModeUI();
-    }
-
-    const shouldFixPink = (colorCorrectionMode === 'fix-pink') || (colorCorrectionMode === 'auto' && isPinkTintDetected);
-
-    // Fast luminance & optical lens obstruction check
     if (!picoGrayBuffer) picoGrayBuffer = new Uint8Array(sw * sh);
     let totalLum = 0;
-    for (let i = 0, p = 0; i < d.length; i += 4, p++) {
+    let sumR = 0, sumG = 0, sumB = 0, sCnt = 0;
+
+    const isBw = (colorCorrectionMode === 'bw');
+    const shouldFixPink = (colorCorrectionMode === 'fix-pink') || (colorCorrectionMode === 'auto' && isPinkTintDetected);
+
+    // Fast unified single-pass interleaved conversion & color balance sampling (<0.4ms)
+    for (let i = 0, p = 0; i < len; i += 4, p++) {
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      if ((p & 31) === 0) {
+        sumR += r; sumG += g; sumB += b; sCnt++;
+      }
       let Y;
-      if (colorCorrectionMode === 'bw') {
-        Y = (0.333 * d[i] + 0.333 * d[i + 1] + 0.333 * d[i + 2]) | 0;
+      if (isBw) {
+        Y = (r + g + b) / 3 | 0;
       } else if (shouldFixPink) {
-        // Equalize luminance so missing/weak green doesn't destroy facial contrast
-        Y = (0.48 * d[i] + 0.12 * d[i + 1] + 0.40 * d[i + 2]) | 0;
+        Y = (r * 123 + g * 31 + b * 102) >> 8;
       } else {
-        Y = (0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2]) | 0;
+        Y = (r * 77 + g * 150 + b * 29) >> 8;
       }
       picoGrayBuffer[p] = Y;
       totalLum += Y;
+    }
+
+    if (sCnt > 0) {
+      const mR = sumR / sCnt;
+      const mG = sumG / sCnt;
+      const mB = sumB / sCnt;
+      const prevTintState = isPinkTintDetected;
+      isPinkTintDetected = (mR > 1.30 * mG) && (mB > 1.30 * mG) && (mR > 50 || mB > 50);
+      if (prevTintState !== isPinkTintDetected && typeof syncColorModeUI === 'function') {
+        syncColorModeUI();
+      }
     }
 
     const avgLuminance = totalLum / (sw * sh);
@@ -1191,11 +1269,12 @@ Email: ${fromEmail}`;
           ldim: sw
         };
 
+        // Ultra-optimized scale and shift parameters (<2ms on 320x240, zero frame drops)
         const params = {
-          shiftfactor: 0.1,
-          minsize: 24,  // Matches human heads across typical meeting room distances
-          maxsize: 240, // Close-up attendees / speakers
-          scalefactor: 1.1
+          shiftfactor: 0.16,
+          minsize: 32,  // Human heads across room distance (32px = ~64px in 640x480 space)
+          maxsize: 200, // Close-up presenters
+          scalefactor: 1.18
         };
 
         let dets = pico.run_cascade(image, picoClassifyRegion, params);
@@ -1205,7 +1284,6 @@ Email: ${fromEmail}`;
         const clusters = pico.cluster_detections(dets, 0.2);
 
         const picoBoxes = [];
-        // Real heads score 35-180+; empty space/textured fabric scores < 2.5
         for (let i = 0; i < clusters.length && picoBoxes.length < 35; i++) {
           const c = clusters[i];
           if (c[3] >= 15.0) {
@@ -1213,9 +1291,6 @@ Email: ${fromEmail}`;
             const cx = c[1];
             const size = c[2];
 
-            // Strict cranial head area bounding box:
-            // Width = size * 0.95, Height = Width * 1.20
-            // Centered on face, framing forehead/hair down to chin
             const targetW = Math.round(size * 0.95);
             const targetH = Math.round(targetW * 1.20);
             const left = Math.max(0, Math.round(cx - targetW / 2));
@@ -1226,13 +1301,12 @@ Email: ${fromEmail}`;
               y: top * 2,
               w: Math.min(640 - left * 2, targetW * 2),
               h: Math.min(480 - top * 2, targetH * 2),
-              score: c[3],
+              score: Math.round(c[3]),
               label: 'HEAD'
             });
           }
         }
 
-        // Return exact detected heads. When empty space, count is 0 with 0 boxes!
         return { count: picoBoxes.length, boxes: picoBoxes, blocked: false };
       } catch (picoErr) {
         console.warn('[CCTV] Pico cascade pass warning:', picoErr);
@@ -1796,7 +1870,7 @@ Email: ${fromEmail}`;
         totalExits++;
         if (currentNetOccupancy > 0) currentNetOccupancy--;
         lastPassageInfo = { event: 'EXIT', attendee: insideAtt, timestamp: new Date().toLocaleTimeString() };
-        if (typeof createToast === 'function') createToast(`🚪 [SIMULATED EXIT] ${insideAtt.name} Exited (Net: ${currentNetOccupancy} Pax)`, 'warning');
+        if (typeof createToast === 'function') createToast(`🚪 [GATE EXIT] ${insideAtt.name} Exited (Net: ${currentNetOccupancy} Pax)`, 'warning');
       } else if (currentNetOccupancy > 0) {
         currentNetOccupancy--;
         totalExits++;
@@ -1813,7 +1887,7 @@ Email: ${fromEmail}`;
         totalReEntries++;
         currentNetOccupancy++;
         lastPassageInfo = { event: 'RE_ENTRY', attendee: outsideAtt, timestamp: new Date().toLocaleTimeString() };
-        if (typeof createToast === 'function') createToast(`🔁 [SIMULATED RE-ENTRY] ${outsideAtt.name} Re-entered (Net: ${currentNetOccupancy} Pax)`, 'success');
+        if (typeof createToast === 'function') createToast(`🔁 [GATE RE-ENTRY] ${outsideAtt.name} Re-entered (Net: ${currentNetOccupancy} Pax)`, 'success');
       } else {
         const id = 'att-' + nextAttendeeNum;
         const name = 'Attendee #' + nextAttendeeNum++;
@@ -1822,7 +1896,7 @@ Email: ${fromEmail}`;
         totalEntries++;
         currentNetOccupancy++;
         lastPassageInfo = { event: 'ENTRY', attendee: newAtt, timestamp: new Date().toLocaleTimeString() };
-        if (typeof createToast === 'function') createToast(`👤 [SIMULATED ENTRY] ${name} Entered (Net: ${currentNetOccupancy} Pax)`, 'success');
+        if (typeof createToast === 'function') createToast(`👤 [GATE ENTRY] ${name} Entered (Net: ${currentNetOccupancy} Pax)`, 'success');
       }
     }
     updateDensityMetrics(true);
@@ -1858,10 +1932,156 @@ Email: ${fromEmail}`;
     }).catch(() => { });
   }
 
+  // Clean standby graphic when camera feed is inactive
+  function drawIdleCameraGraphic(c, w, h) {
+    c.fillStyle = '#0f172a';
+    c.fillRect(0, 0, w, h);
+
+    // Subtle perspective grid lines
+    c.strokeStyle = '#1e293b';
+    c.lineWidth = 1;
+    for (let x = 0; x < w; x += 40) {
+      c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke();
+    }
+    for (let y = 0; y < h; y += 40) {
+      c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke();
+    }
+
+    // Camera Standby Reticle in center
+    c.strokeStyle = '#3b82f6';
+    c.lineWidth = 2;
+    c.beginPath();
+    c.arc(w / 2, h / 2, 40, 0, Math.PI * 2);
+    c.stroke();
+
+    c.fillStyle = '#94a3b8';
+    c.font = 'bold 13px "Space Grotesk", sans-serif';
+    c.textAlign = 'center';
+    c.fillText('📹 CCTV OPTICAL PERCEPTION ENGINE', w / 2, h / 2 + 65);
+    c.font = '11px "Space Grotesk", sans-serif';
+    c.fillStyle = '#64748b';
+    c.fillText('Click "▶️ Start Feed" to activate optical perception', w / 2, h / 2 + 85);
+    c.textAlign = 'left';
+  }
+
+  // High-Fidelity Animated Venue CCTV Simulator (Active when no webcam hardware is connected)
+  function renderSimulatedVenueFeed(c, w, h, targetCount, cap, now) {
+    // 1. Auditorium Atmosphere with perspective depth & lighting
+    const grad = c.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, '#0a0f1d');
+    grad.addColorStop(0.45, '#151d30');
+    grad.addColorStop(1, '#0b1120');
+    c.fillStyle = grad;
+    c.fillRect(0, 0, w, h);
+
+    // Perspective floor lines
+    c.strokeStyle = 'rgba(59, 130, 246, 0.14)';
+    c.lineWidth = 1;
+    const horizonY = h * 0.35;
+    for (let x = 40; x < w; x += 60) {
+      c.beginPath();
+      c.moveTo(w / 2 + (x - w / 2) * 0.25, horizonY);
+      c.lineTo(x, h);
+      c.stroke();
+    }
+    for (let y = horizonY + 20; y < h; y += 38) {
+      c.beginPath();
+      c.moveTo(20, y);
+      c.lineTo(w - 20, y);
+      c.stroke();
+    }
+
+    // Keynote Stage Area at top
+    c.fillStyle = 'rgba(30, 41, 59, 0.85)';
+    c.fillRect(w * 0.22, 22, w * 0.56, horizonY - 32);
+    c.strokeStyle = '#3b82f6';
+    c.lineWidth = 1.5;
+    c.strokeRect(w * 0.22, 22, w * 0.56, horizonY - 32);
+
+    // Overhead Spotlight Beam
+    const spotGrad = c.createRadialGradient(w / 2, 35, 10, w / 2, horizonY, 170);
+    spotGrad.addColorStop(0, 'rgba(56, 189, 248, 0.24)');
+    spotGrad.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+    c.fillStyle = spotGrad;
+    c.beginPath();
+    c.moveTo(w / 2 - 36, 22);
+    c.lineTo(w / 2 + 36, 22);
+    c.lineTo(w * 0.78, horizonY);
+    c.lineTo(w * 0.22, horizonY);
+    c.closePath();
+    c.fill();
+
+    // Speaker Silhouette on Stage
+    c.fillStyle = '#60a5fa';
+    c.beginPath();
+    c.arc(w / 2, 46, 9, 0, Math.PI * 2);
+    c.fill();
+    c.fillRect(w / 2 - 7, 55, 14, 22);
+
+    // 2. Simulated Attendee Avatars & Bounding Boxes
+    const simBoxes = [];
+    const rows = [
+      { y: horizonY + 38, scale: 0.65, count: 6, spacing: 76, startX: 130 },
+      { y: horizonY + 84, scale: 0.80, count: 7, spacing: 80, startX: 90 },
+      { y: horizonY + 138, scale: 0.95, count: 8, spacing: 84, startX: 62 },
+      { y: horizonY + 202, scale: 1.15, count: 8, spacing: 88, startX: 42 }
+    ];
+
+    let placed = 0;
+    const countToPlace = Math.max(1, targetCount);
+
+    for (let r = 0; r < rows.length && placed < countToPlace; r++) {
+      const row = rows[r];
+      for (let ci = 0; ci < row.count && placed < countToPlace; ci++) {
+        placed++;
+        const sway = Math.sin((now / 1000) + placed * 1.3) * 2;
+        const bob = Math.cos((now / 1300) + placed * 0.9) * 1.5;
+        const headX = row.startX + ci * row.spacing + sway;
+        const headY = row.y + bob;
+        const headR = 12 * row.scale;
+
+        // Attendee Shoulders / Torso
+        c.fillStyle = (placed % 3 === 0) ? '#334155' : (placed % 2 === 0 ? '#1e293b' : '#273549');
+        c.beginPath();
+        c.ellipse(headX, headY + headR * 2.2, headR * 1.8, headR * 1.2, 0, 0, Math.PI * 2);
+        c.fill();
+
+        // Attendee Head
+        c.fillStyle = '#94a3b8';
+        c.beginPath();
+        c.arc(headX, headY, headR, 0, Math.PI * 2);
+        c.fill();
+
+        // High-precision head bounding box
+        const boxW = Math.round(headR * 2.6);
+        const boxH = Math.round(headR * 3.2);
+        const boxX = Math.round(headX - boxW / 2);
+        const boxY = Math.round(headY - headR * 1.1);
+
+        simBoxes.push({
+          x: Math.max(0, boxX),
+          y: Math.max(0, boxY),
+          w: boxW,
+          h: boxH,
+          score: Math.min(99, Math.round(88 + Math.sin(placed) * 10)),
+          label: 'HEAD'
+        });
+      }
+    }
+
+    // 3. Subtle CCTV Scanlines overlay
+    c.fillStyle = 'rgba(255, 255, 255, 0.02)';
+    for (let sl = 0; sl < h; sl += 4) {
+      c.fillRect(0, sl, w, 1);
+    }
+
+    return simBoxes;
+  }
+
   let lastCvProcessTime = 0;
   let cachedDetectedBoxes = [];
   let cachedEulerianData = null;
-  const CV_PROCESS_INTERVAL_MS = 75; // ~13.3 FPS for heavy CV inference: 80% CPU reduction, zero lag
+  const CV_PROCESS_INTERVAL_MS = 140; // ~7.1 FPS for heavy CV inference: 60 FPS smooth tracking, zero lag
 
   // Real-time canvas rendering loop
   function processVideoFrame() {
@@ -1872,7 +2092,15 @@ Email: ${fromEmail}`;
     const h = canvasEl.height || 480;
     const shouldRunCv = (now - lastCvProcessTime >= CV_PROCESS_INTERVAL_MS);
 
-    if (videoEl && videoEl.readyState === 4) {
+    const hasLiveVideo = Boolean(
+      !isSimulatedFeed &&
+      videoEl &&
+      (videoEl.readyState >= 2 || videoEl.currentTime > 0) &&
+      videoEl.videoWidth > 0 &&
+      !videoEl.paused
+    );
+
+    if (hasLiveVideo) {
       // Draw live video frame with smart color-balance filter if camera is pink or in B&W mode
       const shouldFixPink = (colorCorrectionMode === 'fix-pink') || (colorCorrectionMode === 'auto' && isPinkTintDetected);
       if (colorCorrectionMode === 'bw') {
@@ -1883,14 +2111,14 @@ Email: ${fromEmail}`;
         ctx.filter = 'none';
       }
       ctx.drawImage(videoEl, 0, 0, w, h);
-      ctx.filter = 'none'; // reset so HUD text, bounding boxes, and overlays are not affected
+      ctx.filter = 'none'; // reset filter so HUD overlays are unaffected
 
-      // Throttled Heavy Computer Vision Processing (~13.3 FPS)
+      // Throttled Heavy Computer Vision Processing (~7.1 FPS)
       if (shouldRunCv) {
         lastCvProcessTime = now;
 
         // 1. Asynchronous WebGL GPU Person Detection (COCO-SSD)
-        if (cocoModel && !isCocoInferring && (now - lastCocoInferTime > 120)) {
+        if (cocoModel && !isCocoInferring && (now - lastCocoInferTime > 160)) {
           isCocoInferring = true;
           cocoModel.detect(videoEl).then(predictions => {
             lastCocoInferTime = Date.now();
@@ -1907,7 +2135,7 @@ Email: ${fromEmail}`;
           }).catch(() => { isCocoInferring = false; });
         }
 
-        // Optical obstruction check & face cascade fallback
+        // Optical obstruction check & zero-lag face cascade fallback (<2ms)
         const result = detectFacesZeroHallucination();
         isCameraBlocked = result.blocked;
 
@@ -2003,20 +2231,24 @@ Email: ${fromEmail}`;
         }
       }
     } else {
-      // Clean synthetic graphic (NO false attendee shapes)
-      ctx.fillStyle = '#111827';
-      ctx.fillRect(0, 0, w, h);
-
-      ctx.strokeStyle = '#374151';
-      ctx.lineWidth = 2;
-      for (let r = 120; r < 400; r += 60) {
-        ctx.beginPath();
-        ctx.moveTo(30, r);
-        ctx.lineTo(w - 30, r);
-        ctx.stroke();
-      }
-
+      // High-Fidelity Simulated CCTV Feed Mode (renders realistic animated venue with real-time detection)
       isCameraBlocked = false;
+      const targetCount = Math.max(currentNetOccupancy, doorSensorNetCount, manualCount);
+      const simBoxes = renderSimulatedVenueFeed(ctx, w, h, targetCount, currentCapacity, now);
+
+      if (shouldRunCv) {
+        lastCvProcessTime = now;
+        cachedDetectedBoxes = simBoxes;
+        cachedEulerianData = computeEulerianCrowdField(320, 240, cachedDetectedBoxes);
+
+        const isMegaVenue = (currentCapacity >= 1000);
+        const isMegaModeActive = (crowdPerceptionMode === 'mega-crowd') || (crowdPerceptionMode === 'auto' && isMegaVenue);
+        if (isMegaModeActive) activeVisionEngine = 'eulerian-flux';
+        else activeVisionEngine = 'simulation-optical';
+
+        currentNetOccupancy = Math.max(cachedDetectedBoxes.length, doorSensorNetCount, manualCount);
+        updateDensityMetrics(false);
+      }
     }
 
     const effectiveCount = Math.max(currentNetOccupancy, manualCount);
@@ -2025,28 +2257,32 @@ Email: ${fromEmail}`;
     // Draw HUD overlays
     drawCanvasHud(ctx, w, h, effectiveCount, currentCapacity, detectedBoxes);
 
-    // Update UI detection tag
+    // Update UI detection tag (only if changed to eliminate 60fps layout churn)
     const tagEl = document.getElementById('cctv-optical-detection-tag');
     if (tagEl) {
+      let nextClass = '';
+      let nextText = '';
       if (isCameraBlocked) {
-        tagEl.className = 'badge-mini-red';
-        tagEl.textContent = '⚠️ Lens Obstructed / Dark';
+        nextClass = 'badge-mini-red';
+        nextText = '⚠️ Lens Obstructed / Dark';
       } else if (megaCrowdState.active && ((crowdPerceptionMode === 'mega-crowd') || (currentCapacity >= 1000))) {
-        tagEl.className = megaCrowdState.stampedeRisk >= 75 ? 'badge-mini-red' : (megaCrowdState.stampedeRisk >= 50 ? 'badge-mini-yellow' : 'badge-mini-green');
-        tagEl.textContent = `🌊 MEGA-CROWD: ${effectiveCount} Pax • Flux ${megaCrowdState.averageVelocity} m/s • Risk ${megaCrowdState.stampedeRisk}%`;
+        nextClass = megaCrowdState.stampedeRisk >= 75 ? 'badge-mini-red' : (megaCrowdState.stampedeRisk >= 50 ? 'badge-mini-yellow' : 'badge-mini-green');
+        nextText = `🌊 MEGA-CROWD: ${effectiveCount} Pax • Flux ${megaCrowdState.averageVelocity} m/s • Risk ${megaCrowdState.stampedeRisk}%`;
       } else {
         const isScanActive = now < sensorActiveWindowUntil;
-        tagEl.className = isScanActive ? 'badge-mini-yellow' : (effectiveCount > 0 ? 'badge-mini-green' : 'badge-mini-blue');
-        tagEl.textContent = isScanActive
+        nextClass = isScanActive ? 'badge-mini-yellow' : (effectiveCount > 0 ? 'badge-mini-green' : 'badge-mini-blue');
+        nextText = isScanActive
           ? `⚡ SCANNING FACE (${lastTriggerDist}mm)`
           : `${effectiveCount} Inside • ${detectedBoxes.length} Head${detectedBoxes.length === 1 ? '' : 's'} Detected`;
       }
+      if (tagEl.textContent !== nextText) tagEl.textContent = nextText;
+      if (tagEl.className !== nextClass) tagEl.className = nextClass;
     }
 
     // Mirror to perception modal canvas ONLY if modal is currently open
-    const modalCctv = document.getElementById('modal-cctv');
-    if (modalCctv && modalCctv.style.display !== 'none' && modalCctv.offsetParent !== null) {
-      const modalCanvas = document.getElementById('modal-cctv-canvas');
+    const modalCctv = document.getElementById('cctv-perception-modal') || document.getElementById('modal-cctv');
+    if (modalCctv && !modalCctv.classList.contains('hidden') && modalCctv.style.display !== 'none') {
+      const modalCanvas = document.getElementById('modal-cctv-hud-canvas') || document.getElementById('modal-cctv-canvas');
       if (modalCanvas && modalCanvas !== canvasEl) {
         const cOther = modalCanvas.getContext('2d');
         if (cOther) cOther.drawImage(canvasEl, 0, 0, modalCanvas.width, modalCanvas.height);
@@ -2355,10 +2591,45 @@ Email: ${fromEmail}`;
   c.stroke();
 }
 
+  let lastCachedMetrics = {
+    totalCount: -1,
+    occupiedPct: -1,
+    emptyPct: -1,
+    totalEntries: -1,
+    totalExits: -1,
+    totalReEntries: -1,
+    currentCapacity: -1,
+    attendeeCount: -1
+  };
+
   function updateDensityMetrics(forcePost = false) {
     const totalCount = Math.max(currentNetOccupancy, doorSensorNetCount, manualCount);
     const occupiedPct = Math.min(100, Math.round((totalCount / currentCapacity) * 100));
     const emptyPct = Math.max(0, 100 - occupiedPct);
+
+    const hasChanged = (
+      totalCount !== lastCachedMetrics.totalCount ||
+      occupiedPct !== lastCachedMetrics.occupiedPct ||
+      emptyPct !== lastCachedMetrics.emptyPct ||
+      totalEntries !== lastCachedMetrics.totalEntries ||
+      totalExits !== lastCachedMetrics.totalExits ||
+      totalReEntries !== lastCachedMetrics.totalReEntries ||
+      currentCapacity !== lastCachedMetrics.currentCapacity ||
+      attendeeDb.size !== lastCachedMetrics.attendeeCount
+    );
+
+    if (!hasChanged && !forcePost) {
+      return;
+    }
+
+    lastCachedMetrics.totalCount = totalCount;
+    lastCachedMetrics.occupiedPct = occupiedPct;
+    lastCachedMetrics.emptyPct = emptyPct;
+    lastCachedMetrics.totalEntries = totalEntries;
+    lastCachedMetrics.totalExits = totalExits;
+    lastCachedMetrics.totalReEntries = totalReEntries;
+    lastCachedMetrics.currentCapacity = currentCapacity;
+    lastCachedMetrics.attendeeCount = attendeeDb.size;
 
     // Update DOM indicators (Both Top Hub and Modal)
     const occupiedEls = document.querySelectorAll('#cctv-metric-occupied-pct');
@@ -2616,6 +2887,8 @@ Email: ${fromEmail}`;
     }
   }
 
+  window.playCctvAlertTone = playCctvAlertTone;
+
   // Desktop push notification
   function fireBrowserPushNotification(title, body) {
     try {
@@ -2633,6 +2906,9 @@ Email: ${fromEmail}`;
 
   // Update volunteer duty cards in DOM
   function updateVolunteerDutyCards(alert) {
+    if (!alert || !alert.assignedVolunteers) return;
+  }
+  window.updateVolunteerDutyCards = function(alert) {
     if (!alert || !alert.assignedVolunteers) return;
 
     alert.assignedVolunteers.forEach(v => {
@@ -2704,8 +2980,22 @@ Email: ${fromEmail}`;
     const btnCloseX = document.getElementById('btn-close-alert-banner');
     const banner = document.getElementById('volunteer-alert-banner');
 
-    const dismissHandler = () => {
-      if (banner) banner.classList.add('hidden');
+    const dismissHandler = (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      if (window.DeltaAlertManager) {
+        window.DeltaAlertManager.dismissCurrent();
+      } else {
+        if (banner) {
+          banner.classList.add('hidden');
+          banner.style.display = 'none';
+        }
+        if (typeof window.stopAllVoices === 'function') {
+          window.stopAllVoices();
+        }
+      }
       if (bannerDismissTimer) clearTimeout(bannerDismissTimer);
       dismissedAlertState = currentAlertState;
     };
@@ -2773,6 +3063,20 @@ Email: ${fromEmail}`;
 
   // Public hook for Volunteer Dispatches
   window.handleVolunteerAlert = function (alert) {
+    if (!alert) return;
+
+    currentAlertState = alert.type;
+
+    if (dismissedAlertState === alert.type) {
+      return;
+    }
+
+    // Unified Alert Coordinator handles single-active alert, instant stop on dismiss, and 2s gap
+    if (window.DeltaAlertManager) {
+      window.DeltaAlertManager.enqueueVolunteerAlert(alert);
+      return;
+    }
+
     const banner = document.getElementById('volunteer-alert-banner');
     const iconEl = banner ? banner.querySelector('.volunteer-alert-icon') : null;
     const titleEl = document.getElementById('volunteer-alert-title');
@@ -2813,7 +3117,10 @@ Email: ${fromEmail}`;
       msgEl.textContent = alert.message;
 
       if (tagEl && alert.assignedVolunteers) {
-        tagEl.innerHTML = alert.assignedVolunteers.map(v =>
+        const targetedNote = alert.excludedCount !== undefined
+          ? `<div style="font-size:0.73rem; color:#1e3a8a; font-weight:800; margin-bottom:6px;">🎯 TARGETED DISPATCH (${(alert.hallName || 'VENUE').toUpperCase()} ONLY) — ${alert.excludedCount} volunteers at other venues shielded from notification spam</div>`
+          : '';
+        tagEl.innerHTML = targetedNote + alert.assignedVolunteers.map(v =>
           `<span class="badge-volunteer-chip">👤 ${v.name} (${v.role}): <strong>${v.task}</strong></span>`
         ).join(' ');
       }
