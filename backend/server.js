@@ -3319,6 +3319,26 @@ app.post('/api/sensors/camera', async (req, res) => {
           sendWhatsAppNotification
         });
 
+        // Autonomous Venue Shift & Capacity Self-Healing Engine
+        if (db.autopilotEnabled !== false && currentCount > targetCap) {
+          let activeTopicId = null;
+          if (db.schedule) {
+            for (const slotId in db.schedule) {
+              if (db.schedule[slotId]?.[targetHallId]) {
+                activeTopicId = db.schedule[slotId][targetHallId];
+                break;
+              }
+            }
+          }
+          if (activeTopicId && db.graph?.topics?.[activeTopicId]) {
+            const oldInterest = db.graph.topics[activeTopicId].interest;
+            db.graph.topics[activeTopicId].interest = currentCount;
+            const eventDesc = `CCTV Automated Sensor Alert: ${hall.name} exceeded capacity (${currentCount}/${targetCap} attendees). Reallocating session "${db.graph.topics[activeTopicId].title}" to viable venue.`;
+            console.log(`[CCTV Autopilot] 🚨 ${eventDesc}`);
+            runSelfHealingAgent(eventDesc, db, broadcast).catch(e => console.warn('[CCTV Self-Healing Solver Error]:', e.message));
+          }
+        }
+
       } else if (currentStatus === 'NEAR_CAPACITY' || (occupiedPercent >= 80 && occupiedPercent < 95)) {
         await dispatchHallTargetedAlert({
           hallId: targetHallId,
