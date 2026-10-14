@@ -23,14 +23,32 @@ let saveTimeout = null;
  */
 function hydrateStateFromDisk(db) {
   try {
-    if (!fs.existsSync(STATE_FILE)) {
-      return false;
+    let targetPath = STATE_FILE;
+    if (!fs.existsSync(targetPath)) {
+      const bakFile = `${STATE_FILE}.bak`;
+      if (fs.existsSync(bakFile)) {
+        console.log('💾 [PersistentStore] Primary snapshot missing, recovering from backup snapshot (.bak)...');
+        targetPath = bakFile;
+      } else {
+        return false;
+      }
     }
-    const raw = fs.readFileSync(STATE_FILE, 'utf8');
+    let raw;
+    try {
+      raw = fs.readFileSync(targetPath, 'utf8');
+    } catch (e) {
+      const bakFile = `${STATE_FILE}.bak`;
+      if (fs.existsSync(bakFile) && targetPath !== bakFile) {
+        raw = fs.readFileSync(bakFile, 'utf8');
+      } else {
+        throw e;
+      }
+    }
     const snapshot = JSON.parse(raw);
     if (!snapshot || !snapshot.graph || !snapshot.schedulesByDate) {
       return false;
     }
+
 
     // Merge snapshot into live db object
     if (snapshot.graph.topics) db.graph.topics = { ...db.graph.topics, ...snapshot.graph.topics };
@@ -84,12 +102,26 @@ function persistStateDebounced(db, delayMs = 600) {
         volunteers: db.volunteers
       };
 
-      fs.writeFileSync(STATE_FILE, JSON.stringify(snapshot, null, 2), 'utf8');
+      const content = JSON.stringify(snapshot, null, 2);
+      const tmpFile = `${STATE_FILE}.tmp.${Date.now()}`;
+      const bakFile = `${STATE_FILE}.bak`;
+      
+      // 1. Atomic write to temporary file
+      fs.writeFileSync(tmpFile, content, 'utf8');
+      
+      // 2. Rotate previous snapshot to backup if it exists
+      if (fs.existsSync(STATE_FILE)) {
+        try { fs.copyFileSync(STATE_FILE, bakFile); } catch (e) {}
+      }
+      
+      // 3. Atomic rename to target state file (Guarantees zero 0-byte corruption on power loss)
+      fs.renameSync(tmpFile, STATE_FILE);
     } catch (err) {
-      console.warn('[PersistentStore] Failed to write state snapshot:', err.message);
+      console.warn('[PersistentStore] Failed to write atomic state snapshot:', err.message);
     }
   }, delayMs);
 }
+
 
 /**
  * Clears local snapshot when factory reset is triggered.

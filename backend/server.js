@@ -3260,12 +3260,37 @@ app.post('/api/sensors/camera', async (req, res) => {
     const hall = db.graph?.halls?.[targetHallId] || { name: 'Turing Hall', capacity: 250 };
 
     const rawCount = peopleDetected !== undefined ? peopleDetected : req.body?.occupancy;
-    const currentCount = Math.max(0, parseInt(rawCount, 10) || 0);
+    const reportedCount = Math.max(0, parseInt(rawCount, 10) || 0);
     const targetCap = Math.max(1, parseInt(capacity, 10) || hall.capacity || 250);
+
+    // Multi-Camera Registry & Fusion Engine (Prevents two cameras in same hall from fighting)
+    if (!db.cctvMultiCam) db.cctvMultiCam = {};
+    if (!db.cctvMultiCam[targetHallId]) db.cctvMultiCam[targetHallId] = {};
+
+    const camId = req.body.cameraId || req.body.source || 'default-cam';
+    db.cctvMultiCam[targetHallId][camId] = {
+      cameraId: camId,
+      count: reportedCount,
+      timestamp: Date.now()
+    };
+
+    // Filter active cameras updated in the last 20 seconds
+    const nowMs = Date.now();
+    const activeCams = Object.values(db.cctvMultiCam[targetHallId]).filter(c => (nowMs - c.timestamp) < 20000);
+    
+    // Aggregate: 'max' for overlapping room FOVs (default), 'sum' for segmented multi-zone rooms
+    const aggregationMode = req.body.aggregationMode || (activeCams.length > 1 ? 'max' : 'direct');
+    let currentCount = reportedCount;
+    if (activeCams.length > 1) {
+      currentCount = aggregationMode === 'sum'
+        ? activeCams.reduce((acc, c) => acc + c.count, 0)
+        : Math.max(...activeCams.map(c => c.count));
+    }
 
     // Calculate exact percentages
     const occupiedPercent = Math.min(100, Math.round((currentCount / targetCap) * 100));
     const emptyPercent = Math.max(0, 100 - occupiedPercent);
+
 
     let currentStatus = status;
     if (!currentStatus) {
@@ -3432,7 +3457,22 @@ if (require.main === module) {
     }
   });
 
-  server.listen(PORT, async () => {
+  const os = require('os');
+  let lanIp = 'localhost';
+  try {
+    const nets = os.networkInterfaces();
+    for (const name of Object.keys(nets)) {
+      for (const net of nets[name]) {
+        if (net.family === 'IPv4' && !net.internal) {
+          lanIp = net.address;
+          break;
+        }
+      }
+      if (lanIp !== 'localhost') break;
+    }
+  } catch (e) {}
+
+  server.listen(PORT, '0.0.0.0', async () => {
     if (!process.env.CI) {
       try {
         console.clear();
@@ -3444,17 +3484,19 @@ if (require.main === module) {
       '  ┌────────────────────────────────────────────────────────────────────────┐',
       '  │   ⚡ DELTA ENGINE v3.6 — Autonomous Spatial & Crowd Operating System    │',
       '  ├────────────────────────────────────────────────────────────────────────┤',
-      `  │   ➜ Local Web App:     http://localhost:${PORT}                           │`,
+      `  │   ➜ Local Dashboard:   http://localhost:${PORT}                           │`,
+      `  │   ➜ Mobile Field Link: http://${lanIp}:${PORT}/volunteer.html              │`,
+      `  │   ➜ Hallway Signage:   http://${lanIp}:${PORT}/signage.html                │`,
       `  │   ➜ Admin Console:     http://localhost:${PORT}/admin.html                     │`,
-      `  │   ➜ Digital Signage:   http://localhost:${PORT}/signage.html                   │`,
+      '  │   ➜ Edge Network:      Bound to 0.0.0.0 (Accepting Mobile LAN Clients) │',
       '  │   ➜ Active Domains:    5 Scenarios (Conference, Rally, Mela, ...)      │',
       '  │   ➜ Telemetry & Twin:  Three.js PBR Engine + IoT Laser Tripwires       │',
-      '  │   ➜ Dev Server:        Live Watcher Active (backend/)                  │',
       '  └────────────────────────────────────────────────────────────────────────┘',
       ''
     ].join('\n'));
     await loadGraphFromSupabase(db);
   });
 }
+
 
 module.exports = app;
