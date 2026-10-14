@@ -222,6 +222,21 @@
       </div>
     </header>
 
+    <!-- ROLE BRIEFING BANNER -->
+    <div id="vol-role-banner" style="display:none; background:#FFDD4A; border:3px solid #000; box-shadow:4px 4px 0px #000; border-radius:12px; padding:10px 14px; margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span id="vol-role-title" style="font-size:0.9rem; font-weight:900; font-family:var(--font-mono, monospace); color:#000;">
+            🔢 DOOR TALLY COUNTER
+          </span>
+          <div id="vol-role-duty" style="font-size:0.72rem; color:#475569; font-weight:600;">
+            1-Tap optical & manual headcount clicks at auditorium doors
+          </div>
+        </div>
+        <span class="badge-mini-green" style="font-size:0.65rem; background:#000; color:#fff;">1-SCAN ONBOARDED</span>
+      </div>
+    </div>
+
     <!-- OPERATOR & ZONE ASSIGNMENT -->
     <div class="vol-card">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -275,7 +290,7 @@
       </div>
     </div>
 
-    <!-- ONE-THUMB CLICKER BUTTONS -->
+    <!-- ONE-THUMB CLICKER BUTTONS (MODE A: HAPTIC CLICKER) -->
     <div class="clicker-grid">
       <button id="btn-vol-entry" class="btn-clicker btn-clicker-in">
         <span style="font-size:1.8rem; line-height:1;">＋</span>
@@ -285,6 +300,38 @@
         <span style="font-size:1.8rem; line-height:1;">－</span>
         <span>EXIT (-1)</span>
       </button>
+    </div>
+
+    <!-- MODE B: ZERO-HARDWARE OPTICAL TURNSTILE (PHONE CAMERA SENSOR) -->
+    <div class="vol-card" style="background:#f0fdf4; border:3px solid #000; margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:0.78rem; font-weight:900; font-family:var(--font-mono, monospace); color:#166534;">
+            📹 ZERO-HARDWARE OPTICAL TURNSTILE
+          </span>
+          <div style="font-size:0.68rem; color:#15803d;">
+            Turn any phone into an AI optical tripwire counter (₹0 hardware)
+          </div>
+        </div>
+        <button id="btn-toggle-camera-turnstile" class="btn btn-sm btn-green" style="font-size:0.72rem; font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;">
+          ▶ START CAMERA
+        </button>
+      </div>
+
+      <div id="camera-turnstile-container" style="display:none; margin-top:12px;">
+        <div style="position:relative; width:100%; border:2px solid #000; border-radius:8px; overflow:hidden; background:#000; height:220px; display:flex; justify-content:center; align-items:center;">
+          <video id="turnstile-video" playsinline autoplay muted style="width:100%; height:100%; object-fit:cover;"></video>
+          <canvas id="turnstile-canvas" style="display:none;"></canvas>
+          <div id="turnstile-beam" style="position:absolute; top:50%; left:0; right:0; height:3px; background:#ef4444; box-shadow:0 0 10px #ef4444; z-index:5; transition:background 0.2s, box-shadow 0.2s;"></div>
+          <div id="turnstile-overlay-badge" style="position:absolute; bottom:8px; left:8px; background:rgba(0,0,0,0.75); color:#4ade80; font-family:var(--font-mono, monospace); font-size:0.68rem; font-weight:800; padding:3px 8px; border-radius:4px; z-index:6;">
+            TRIPWIRE ACTIVE • PASSAGE ENTRY DETECTOR
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; font-size:0.72rem; font-family:var(--font-mono, monospace);">
+          <span style="color:#166534;">AUTO-PASSAGE CLICKS: <strong id="cam-detection-count">0</strong></span>
+          <span id="cam-status-pill" class="badge-mini-green">SCANNING 15 FPS</span>
+        </div>
+      </div>
     </div>
 
     <!-- 1-TAP CRITICAL SOS / PANIC SURGE BUTTON -->
@@ -321,7 +368,15 @@
     (function initVolunteerApp() {
       let ws = null;
       let currentHallId = 'hall-1';
-      let currentUserName = localStorage.getItem('delta_user_name') || 'Priya Sharma (Door Marshal)';
+
+      // Parse role and name URL parameters from Morning Briefing QR
+      const urlParams = new URLSearchParams(window.location.search);
+      const roleParam = urlParams.get('role'); // 'gate', 'tally', 'safety', 'coordinator'
+      const nameParam = urlParams.get('name');
+
+      let currentUserName = nameParam || localStorage.getItem('delta_user_name') || 'Priya Sharma (Door Marshal)';
+      if (nameParam) localStorage.setItem('delta_user_name', nameParam);
+
       let currentOccupancy = 180;
       let currentCapacity = 250;
       let selectedSosReason = 'Field Marshal reports critical crowd bottlenecking / barrier surge!';
@@ -339,6 +394,44 @@
       const btnExit = document.getElementById('btn-vol-exit');
       const btnSos = document.getElementById('btn-vol-sos');
       const btnLogout = document.getElementById('btn-vol-logout');
+
+      // Role Briefing Elements
+      const elRoleBanner = document.getElementById('vol-role-banner');
+      const elRoleTitle = document.getElementById('vol-role-title');
+      const elRoleDuty = document.getElementById('vol-role-duty');
+
+      // Optical Turnstile Elements
+      const btnToggleCamera = document.getElementById('btn-toggle-camera-turnstile');
+      const cameraContainer = document.getElementById('camera-turnstile-container');
+      const turnstileVideo = document.getElementById('turnstile-video');
+      const turnstileCanvas = document.getElementById('turnstile-canvas');
+      const turnstileBeam = document.getElementById('turnstile-beam');
+      const elCamCount = document.getElementById('cam-detection-count');
+      const elCamStatus = document.getElementById('cam-status-pill');
+
+      let cameraStream = null;
+      let opticalLoopActive = false;
+      let camDetections = 0;
+      let lastFrameData = null;
+      let lastDetectionTime = 0;
+
+      // Handle Role Customization
+      if (roleParam && elRoleBanner) {
+        elRoleBanner.style.display = 'block';
+        if (roleParam === 'tally') {
+          elRoleBanner.style.background = '#FFDD4A';
+          if (elRoleTitle) elRoleTitle.textContent = '🔢 DOOR TALLY COUNTER';
+          if (elRoleDuty) elRoleDuty.textContent = '1-Tap optical & manual headcount clicks at auditorium doors';
+        } else if (roleParam === 'gate') {
+          elRoleBanner.style.background = '#5ADBFF';
+          if (elRoleTitle) elRoleTitle.textContent = '🛡️ GATE & BADGE MARSHAL';
+          if (elRoleDuty) elRoleDuty.textContent = 'Attendee badge scanning, ticket verification & VIP escort';
+        } else if (roleParam === 'safety') {
+          elRoleBanner.style.background = '#FE9000';
+          if (elRoleTitle) elRoleTitle.textContent = '🚨 SAFETY & NFPA MARSHAL';
+          if (elRoleDuty) elRoleDuty.textContent = 'Chokepoint dispersal, emergency SOS alerts & evacuation path check';
+        }
+      }
 
       if (elOperatorBadge) {
         elOperatorBadge.textContent = `👤 ${currentUserName}`;
@@ -378,6 +471,87 @@
         } catch (e) {}
       }
 
+      // Haptic feedback
+      function triggerHaptic(duration = 40) {
+        try {
+          if ('vibrate' in navigator) {
+            navigator.vibrate(duration);
+          }
+        } catch (e) {}
+      }
+
+      // Store-and-Forward Offline Click Queue
+      const OFFLINE_CLICKS_KEY = 'delta_offline_clicks_queue';
+      function queueOfflineAction(endpoint, payload) {
+        try {
+          const q = JSON.parse(localStorage.getItem(OFFLINE_CLICKS_KEY) || '[]');
+          q.push({ endpoint, payload, time: Date.now() });
+          localStorage.setItem(OFFLINE_CLICKS_KEY, JSON.stringify(q));
+        } catch (e) {}
+      }
+
+      async function flushOfflineActions() {
+        try {
+          const q = JSON.parse(localStorage.getItem(OFFLINE_CLICKS_KEY) || '[]');
+          if (!q.length) return;
+          console.log(`[Offline Sync] Flushing ${q.length} stored actions...`);
+          while (q.length > 0) {
+            const item = q[0];
+            const res = await fetch(item.endpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(item.payload)
+            });
+            if (res.ok) {
+              q.shift();
+              localStorage.setItem(OFFLINE_CLICKS_KEY, JSON.stringify(q));
+            } else {
+              break;
+            }
+          }
+        } catch (e) {}
+      }
+
+      // Dispatch passage event with offline fallback
+      async function dispatchPassageEvent(type) {
+        const isEntry = type === 'ENTRY';
+        const passagePayload = {
+          hallId: currentHallId,
+          event: isEntry ? 'PASSAGE_ENTRY' : 'PASSAGE_EXIT',
+          attendeeId: `VOL_${Date.now()}`,
+          attendeeName: `${currentUserName} Clicker`,
+          netOccupancy: currentOccupancy,
+          totalEntries: isEntry ? 1 : 0,
+          totalExits: isEntry ? 0 : 1,
+          reEntries: 0,
+          capacity: currentCapacity
+        };
+
+        const doorPayload = {
+          hallId: currentHallId,
+          type: isEntry ? 'in' : 'out',
+          count: 1
+        };
+
+        try {
+          await Promise.all([
+            fetch('/api/sensors/face-passage', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(passagePayload)
+            }),
+            fetch('/api/sensors/door', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(doorPayload)
+            })
+          ]);
+        } catch (e) {
+          queueOfflineAction('/api/sensors/face-passage', passagePayload);
+          queueOfflineAction('/api/sensors/door', doorPayload);
+        }
+      }
+
       function updateUI() {
         if (elPaxCount) elPaxCount.textContent = currentOccupancy;
         if (elPaxCap) elPaxCap.textContent = currentCapacity;
@@ -406,7 +580,6 @@
           const res = await fetch('/api/state');
           if (res.ok) {
             const data = await res.json();
-            // Dynamically populate available venue halls if provided by graph
             if (data.graph?.halls && elZoneSelect) {
               const availableHalls = Object.keys(data.graph.halls);
               if (availableHalls.length > 0 && !elZoneSelect.dataset.synced) {
@@ -434,6 +607,7 @@
                 : (cctvOcc !== undefined ? cctvOcc : (currentHallId === 'hall-1' ? 180 : Math.round(currentCapacity * 0.45)));
               updateUI();
             }
+            flushOfflineActions();
           }
         } catch (e) {}
       }
@@ -445,55 +619,25 @@
         });
       }
 
-      // Clicker: Entry (+1)
+      // MODE A: HAPTIC CLICKER ENTRY (+1)
       if (btnEntry) {
-        btnEntry.addEventListener('click', async () => {
+        btnEntry.addEventListener('click', () => {
           currentOccupancy++;
           updateUI();
+          triggerHaptic(45);
           playTone(880, 0.08);
-          try {
-            await fetch('/api/sensors/face-passage', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                hallId: currentHallId,
-                event: 'PASSAGE_ENTRY',
-                attendeeId: `VOL_${Date.now()}`,
-                attendeeName: `${currentUserName} Gate Entry`,
-                netOccupancy: currentOccupancy,
-                totalEntries: 1,
-                totalExits: 0,
-                reEntries: 0,
-                capacity: currentCapacity
-              })
-            });
-          } catch (e) {}
+          dispatchPassageEvent('ENTRY');
         });
       }
 
-      // Clicker: Exit (-1)
+      // MODE A: HAPTIC CLICKER EXIT (-1)
       if (btnExit) {
-        btnExit.addEventListener('click', async () => {
+        btnExit.addEventListener('click', () => {
           if (currentOccupancy > 0) currentOccupancy--;
           updateUI();
+          triggerHaptic(25);
           playTone(440, 0.08);
-          try {
-            await fetch('/api/sensors/face-passage', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                hallId: currentHallId,
-                event: 'PASSAGE_EXIT',
-                attendeeId: `VOL_${Date.now()}`,
-                attendeeName: `${currentUserName} Gate Exit`,
-                netOccupancy: currentOccupancy,
-                totalEntries: 0,
-                totalExits: 1,
-                reEntries: 0,
-                capacity: currentCapacity
-              })
-            });
-          } catch (e) {}
+          dispatchPassageEvent('EXIT');
         });
       }
 
@@ -509,6 +653,7 @@
       // 1-Tap SOS
       if (btnSos) {
         btnSos.addEventListener('click', async () => {
+          triggerHaptic([100, 50, 100]);
           playTone(220, 0.3);
           const origText = btnSos.innerHTML;
           btnSos.innerHTML = '<span>⏳</span> <span>DISPATCHING SOS...</span>';
@@ -533,6 +678,99 @@
         });
       }
 
+      // MODE B: ZERO-HARDWARE OPTICAL TRIPWIRE HEAD-COUNTER
+      if (btnToggleCamera && cameraContainer && turnstileVideo) {
+        btnToggleCamera.addEventListener('click', async () => {
+          if (!cameraStream) {
+            btnToggleCamera.textContent = '⏳ STARTING OPTICS...';
+            try {
+              cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
+                audio: false
+              });
+              turnstileVideo.srcObject = cameraStream;
+              cameraContainer.style.display = 'block';
+              btnToggleCamera.textContent = '⏹ STOP CAMERA';
+              btnToggleCamera.style.background = '#fee2e2';
+              btnToggleCamera.style.color = '#dc2626';
+              opticalLoopActive = true;
+              startOpticalTripwireLoop();
+            } catch (err) {
+              console.warn('[Turnstile Camera] Could not access camera:', err);
+              btnToggleCamera.textContent = '⚠️ CAMERA DENIED';
+              setTimeout(() => {
+                btnToggleCamera.textContent = '▶ START CAMERA';
+                btnToggleCamera.style.background = '';
+                btnToggleCamera.style.color = '';
+              }, 2500);
+            }
+          } else {
+            // Stop Camera
+            opticalLoopActive = false;
+            cameraStream.getTracks().forEach(t => t.stop());
+            cameraStream = null;
+            cameraContainer.style.display = 'none';
+            btnToggleCamera.textContent = '▶ START CAMERA';
+            btnToggleCamera.style.background = '';
+            btnToggleCamera.style.color = '';
+          }
+        });
+      }
+
+      function startOpticalTripwireLoop() {
+        if (!turnstileCanvas) return;
+        const ctx = turnstileCanvas.getContext('2d', { willReadFrequently: true });
+        turnstileCanvas.width = 160;
+        turnstileCanvas.height = 120;
+
+        function checkFrame() {
+          if (!opticalLoopActive || !turnstileVideo) return;
+          if (turnstileVideo.readyState >= 2) {
+            ctx.drawImage(turnstileVideo, 0, 0, 160, 120);
+            // Sample horizontal tripwire strip (row 55 to 65)
+            const strip = ctx.getImageData(0, 55, 160, 10);
+            const data = strip.data;
+            let sumLuminance = 0;
+            for (let i = 0; i < data.length; i += 4) {
+              sumLuminance += (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+            }
+            const avgLuminance = sumLuminance / (data.length / 4);
+
+            if (lastFrameData !== null) {
+              const diff = Math.abs(avgLuminance - lastFrameData);
+              const now = Date.now();
+              // Tripwire crossing detected (motion across stripe)
+              if (diff > 14 && (now - lastDetectionTime) > 900) {
+                lastDetectionTime = now;
+                camDetections++;
+                if (elCamCount) elCamCount.textContent = camDetections;
+
+                // Visual Tripwire Flash
+                if (turnstileBeam) {
+                  turnstileBeam.style.background = '#22c55e';
+                  turnstileBeam.style.boxShadow = '0 0 16px #22c55e';
+                  setTimeout(() => {
+                    if (turnstileBeam) {
+                      turnstileBeam.style.background = '#ef4444';
+                      turnstileBeam.style.boxShadow = '0 0 10px #ef4444';
+                    }
+                  }, 400);
+                }
+
+                triggerHaptic(60);
+                playTone(880, 0.1);
+                currentOccupancy++;
+                updateUI();
+                dispatchPassageEvent('ENTRY');
+              }
+            }
+            lastFrameData = avgLuminance;
+          }
+          setTimeout(checkFrame, 66); // ~15 FPS analysis
+        }
+        checkFrame();
+      }
+
       // WebSocket listener
       function connectWs() {
         const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -543,6 +781,7 @@
             elWsBadge.className = 'badge-mini-green';
             elWsBadge.textContent = '🟢 LIVE';
           }
+          flushOfflineActions();
         };
 
         ws.onclose = () => {
@@ -571,6 +810,11 @@
             }
           } catch (e) {}
         };
+      }
+
+      // PWA Service Worker Registration
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
       }
 
       syncHallState();

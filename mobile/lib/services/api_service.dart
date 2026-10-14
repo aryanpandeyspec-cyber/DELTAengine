@@ -286,6 +286,36 @@ class ApiService {
     return response.statusCode == 200;
   }
 
+  /// Record Door Headcount Tally (Entry / Exit) with Store-and-Forward Mesh Fallback
+  Future<bool> recordDoorTally({
+    required String hallId,
+    required String type,
+    int count = 1,
+  }) async {
+    final payload = {
+      'hallId': hallId,
+      'type': type,
+      'count': count,
+      'source': 'flutter_field_clicker',
+    };
+    try {
+      final uri = Uri.parse('$_baseUrl/api/sensors/door');
+      final response = await http.post(
+        uri,
+        headers: _headers(),
+        body: jsonEncode(payload),
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return true;
+      }
+      await enqueueOfflineAction(endpoint: '/api/sensors/door', payload: payload);
+      return false;
+    } catch (_) {
+      await enqueueOfflineAction(endpoint: '/api/sensors/door', payload: payload);
+      return false;
+    }
+  }
+
   // ===============================================================
   // OPTION 1: STORE-AND-FORWARD MESH RELAY ENGINE (FROM SURYANSH)
   // ===============================================================

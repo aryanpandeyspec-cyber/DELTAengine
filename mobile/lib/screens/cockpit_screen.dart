@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
@@ -1062,6 +1063,175 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
                   ),
                 ),
                 const Icon(Icons.arrow_forward_ios, size: 14, color: DeltaColors.dangerRed),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // DEMAND 3: VIRTUAL TURNSTILE TALLY CLICKER (Zero-Hardware Mode)
+          NeubrutalistCard(
+            backgroundColor: DeltaColors.surfaceLight,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.touch_app, color: DeltaColors.skyAqua, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'VIRTUAL TURNSTILE CLICKER',
+                          style: GoogleFonts.outfit(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                    NeubrutalistBadge(
+                      label: 'HAPTIC ACTIVE',
+                      backgroundColor: DeltaColors.mustard,
+                      textColor: Colors.black,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '1-Tap tactile passage counting with instant edge store-and-forward sync.',
+                  style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textLight),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 3,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.heavyImpact();
+                          final targetHallId = _selectedBlueprintRoomId ?? (_rooms.isNotEmpty ? _rooms.first.id : 'hall-1');
+                          _api.recordDoorTally(hallId: targetHallId, type: 'in', count: 1);
+                          setState(() {
+                            final idx = _rooms.indexWhere((r) => r.id == targetHallId);
+                            if (idx != -1) {
+                              final r = _rooms[idx];
+                              final newOcc = r.currentOccupancy + 1;
+                              final newDensity = r.capacity > 0 ? (newOcc / r.capacity * 100.0) : r.currentDensity;
+                              _rooms[idx] = RoomTelemetry(
+                                id: r.id,
+                                name: r.name,
+                                currentDensity: newDensity,
+                                capacity: r.capacity,
+                                currentOccupancy: newOcc,
+                                status: newDensity > 85 ? 'CRITICAL' : (newDensity > 65 ? 'ELEVATED' : 'OPTIMAL'),
+                                predictedRisk: r.predictedRisk,
+                                trend: 'RISING',
+                                temperature: r.temperature,
+                                co2: r.co2,
+                                doorCountIn: r.doorCountIn + 1,
+                                doorCountOut: r.doorCountOut,
+                              );
+                            }
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Gate Passage Recorded (+1 IN)'),
+                              duration: Duration(milliseconds: 600),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: Neubrutalism.boxDecoration(
+                            color: const Color(0xFF22C55E),
+                            radius: 8,
+                            borderColor: Colors.black,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.add_circle, color: Colors.black, size: 20),
+                              const SizedBox(width: 8),
+                              Text(
+                                '+ ENTRY IN',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      flex: 2,
+                      child: InkWell(
+                        onTap: () {
+                          HapticFeedback.mediumImpact();
+                          final targetHallId = _selectedBlueprintRoomId ?? (_rooms.isNotEmpty ? _rooms.first.id : 'hall-1');
+                          _api.recordDoorTally(hallId: targetHallId, type: 'out', count: 1);
+                          setState(() {
+                            final idx = _rooms.indexWhere((r) => r.id == targetHallId);
+                            if (idx != -1 && _rooms[idx].currentOccupancy > 0) {
+                              final r = _rooms[idx];
+                              final newOcc = r.currentOccupancy - 1;
+                              final newDensity = r.capacity > 0 ? (newOcc / r.capacity * 100.0) : r.currentDensity;
+                              _rooms[idx] = RoomTelemetry(
+                                id: r.id,
+                                name: r.name,
+                                currentDensity: newDensity,
+                                capacity: r.capacity,
+                                currentOccupancy: newOcc,
+                                status: newDensity > 85 ? 'CRITICAL' : (newDensity > 65 ? 'ELEVATED' : 'OPTIMAL'),
+                                predictedRisk: r.predictedRisk,
+                                trend: 'FALLING',
+                                temperature: r.temperature,
+                                co2: r.co2,
+                                doorCountIn: r.doorCountIn,
+                                doorCountOut: r.doorCountOut + 1,
+                              );
+                            }
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Gate Passage Recorded (-1 OUT)'),
+                              duration: Duration(milliseconds: 600),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          decoration: Neubrutalism.boxDecoration(
+                            color: Colors.white,
+                            radius: 8,
+                            borderColor: Colors.black,
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(Icons.remove_circle_outline, color: Colors.black, size: 20),
+                              const SizedBox(width: 6),
+                              Text(
+                                '- EXIT',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),

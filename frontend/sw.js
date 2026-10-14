@@ -1,9 +1,20 @@
 // DELTA ENGINE - Progressive Web App Service Worker
-const CACHE_NAME = 'delta-app-v1.0.0';
+const CACHE_NAME = 'delta-app-v2.0.0';
 const ASSETS_TO_CACHE = [
+  '/',
+  '/index.html',
+  '/app.html',
   '/app',
+  '/volunteer.html',
+  '/volunteer',
+  '/signage.html',
+  '/admin.html',
+  '/app.css',
   '/logo.jpeg',
-  '/manifest.json'
+  '/manifest.json',
+  '/components/app.js',
+  '/components/alertCoordinator.js',
+  '/components/websockets.js'
 ];
 
 self.addEventListener('install', (event) => {
