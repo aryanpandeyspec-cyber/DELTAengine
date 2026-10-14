@@ -63,6 +63,38 @@
   let sensorActiveWindowUntil = 0; // Timestamp when 3.5s active scan window closes
   let lastTriggerDist = 750;       // mm threshold from ESP32
 
+  // --- SYSTEM SLEEP DEFENSE (WAKE LOCK API) ---
+  let screenWakeLock = null;
+  async function requestScreenWakeLock() {
+    if (typeof navigator !== 'undefined' && 'wakeLock' in navigator) {
+      try {
+        if (!screenWakeLock) {
+          screenWakeLock = await navigator.wakeLock.request('screen');
+          screenWakeLock.addEventListener('release', () => { screenWakeLock = null; });
+          console.log('🛡️ [CCTV] Screen Wake Lock Active (Preventing PC & Display Sleep)');
+        }
+      } catch (err) {
+        // Non-blocking fallback
+      }
+    }
+  }
+
+  function releaseScreenWakeLock() {
+    if (screenWakeLock) {
+      screenWakeLock.release().catch(() => {});
+      screenWakeLock = null;
+    }
+  }
+
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && isCameraActive && !screenWakeLock) {
+        requestScreenWakeLock();
+      }
+    });
+  }
+
+
   // Temporal tracking for stable face/head perception without flickering
   let trackedHeads = [];
   let nextTrackId = 1;
@@ -1157,6 +1189,7 @@ Email: ${fromEmail}`;
         try { await videoEl.play(); } catch (e) { }
       }
       isCameraActive = true;
+      requestScreenWakeLock();
       updateCameraStateUI(true, false);
       if (!animFrameId) {
         animFrameId = requestAnimationFrame(processVideoFrame);
@@ -1170,6 +1203,7 @@ Email: ${fromEmail}`;
     } else {
       isSimulatedFeed = true;
       isCameraActive = true;
+      requestScreenWakeLock();
       updateCameraStateUI(true, true);
       if (!animFrameId) {
         animFrameId = requestAnimationFrame(processVideoFrame);
@@ -1185,6 +1219,7 @@ Email: ${fromEmail}`;
       stopWebcam();
       isSimulatedFeed = true;
       isCameraActive = true;
+      requestScreenWakeLock();
       updateCameraStateUI(true, true);
       if (!animFrameId) animFrameId = requestAnimationFrame(processVideoFrame);
       return;
@@ -1195,6 +1230,8 @@ Email: ${fromEmail}`;
   function stopWebcam() {
     isCameraActive = false;
     isSimulatedFeed = false;
+    releaseScreenWakeLock();
+
     if (animFrameId) {
       cancelAnimationFrame(animFrameId);
       animFrameId = null;

@@ -44,6 +44,29 @@ def parse_args():
     return parser.parse_args()
 
 
+def enable_windows_keep_awake():
+    """Prevents Windows from entering system sleep, screen standby, or killing network interfaces."""
+    if sys.platform == 'win32':
+        try:
+            import ctypes
+            ES_CONTINUOUS = 0x80000000
+            ES_SYSTEM_REQUIRED = 0x00000001
+            ES_AWAYMODE_REQUIRED = 0x00000040
+            ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_AWAYMODE_REQUIRED)
+            print("🛡️ [Power Shield] Windows System Sleep & Network Standby: BLOCKED (24/7 Keep-Awake Active)")
+        except Exception as e:
+            print(f"⚠️ Keep-awake notice: {e}")
+
+def disable_windows_keep_awake():
+    """Restores default Windows power management behavior upon exit."""
+    if sys.platform == 'win32':
+        try:
+            import ctypes
+            ES_CONTINUOUS = 0x80000000
+            ctypes.windll.kernel32.SetThreadExecutionState(ES_CONTINUOUS)
+        except Exception:
+            pass
+
 def generate_anonymous_token(person_idx):
     """Produces a GDPR-compliant zero-knowledge hash token instead of biometric facial embeddings."""
     salt = "delta_privacy_salt_gdpr_2026"
@@ -51,6 +74,7 @@ def generate_anonymous_token(person_idx):
     return hashlib.sha256(raw).hexdigest()[:16]
 
 def run_health_check(api_url):
+
     """Probes the central DELTA Engine server for Kubernetes/Docker healthiness."""
     base_url = api_url.rsplit('/api', 1)[0]
     health_url = f"{base_url}/health"
@@ -67,6 +91,7 @@ def run_health_check(api_url):
         sys.exit(1)
 
 def run_edge_daemon(api_url, hall_id, publish_rate, base_count, surge_mode):
+    enable_windows_keep_awake()
     print(f"\n=======================================================")
     print(f"📹 DELTA ENGINE - Edge Video Analytics Daemon Active")
     print(f"🏛️ Monitoring Venue Hall: {hall_id}")
@@ -85,7 +110,9 @@ def run_edge_daemon(api_url, hall_id, publish_rate, base_count, surge_mode):
         nonlocal running
         print("\n🛑 Edge CCTV Daemon receiving termination signal. Exiting cleanly...")
         running = False
+        disable_windows_keep_awake()
         sys.exit(0)
+
 
     try:
         signal.signal(signal.SIGINT, handle_shutdown)
@@ -220,6 +247,7 @@ def test_rtsp_connection(rtsp_source):
         return False
 
 def run_rtsp_daemon(rtsp_source, api_url, hall_id, publish_rate, base_count, show_preview):
+    enable_windows_keep_awake()
     print(f"\n=======================================================")
     print(f"📹 DELTA ENGINE - Enterprise Edge CCTV Vision Pipeline")
     print(f"🏛️ Target Hall: {hall_id}")
@@ -251,6 +279,8 @@ def run_rtsp_daemon(rtsp_source, api_url, hall_id, publish_rate, base_count, sho
         nonlocal running
         print("\n🛑 Edge CCTV Daemon receiving termination signal. Exiting cleanly...")
         running = False
+        disable_windows_keep_awake()
+
 
     try:
         signal.signal(signal.SIGINT, handle_shutdown)
@@ -362,6 +392,7 @@ def run_rtsp_daemon(rtsp_source, api_url, hall_id, publish_rate, base_count, sho
             if show_preview:
                 cv2.destroyAllWindows()
 
+    disable_windows_keep_awake()
     print("✅ RTSP NVR Daemon stopped cleanly.")
 
 
