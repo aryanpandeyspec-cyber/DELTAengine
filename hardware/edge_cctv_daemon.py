@@ -21,9 +21,10 @@ import hashlib
 import requests
 
 if hasattr(sys.stdout, 'reconfigure'):
-    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
 if hasattr(sys.stderr, 'reconfigure'):
-    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+
 
 DEFAULT_API_URL = os.environ.get("DELTA_API_URL", "http://localhost:3000/api/sensors/camera")
 DEFAULT_HALL = os.environ.get("DELTA_HALL_ID", "hall-1")
