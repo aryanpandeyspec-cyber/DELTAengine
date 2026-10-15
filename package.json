@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "node --watch-path=backend backend/server.js",
     "start": "node backend/server.js",
-    "test": "node tests/runAllTests.js",
+    "test": "node tests/runAllTests.js && node tests/admin_auth_session_test.js && node tests/supabase_auth_suite_test.js && node tests/cad_blueprint_suite_test.js",
+    "test:cad": "node tests/cad_blueprint_suite_test.js",
+    "test:security": "node tests/admin_auth_session_test.js",
+    "test:supabase": "node tests/supabase_auth_suite_test.js",
     "test:audit": "node tests/comprehensive_system_audit.js",
     "mobile:analyze": "cd mobile && flutter analyze",
     "mobile:test": "cd mobile && flutter test"

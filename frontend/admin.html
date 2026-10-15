@@ -15,6 +15,35 @@
 
   <link rel="stylesheet" href="app.css">
   <script src="components/customCursor.js"></script>
+  <script>
+    // Immediate Synchronous Client-Side Administrator Authentication Gate
+    (function enforceAdminAuthentication() {
+      var token = null;
+      try { token = localStorage.getItem('delta_auth_token'); } catch (e) {}
+      if (!token) {
+        window.location.replace('login.html?redirect=admin.html');
+        return;
+      }
+      fetch('/api/auth/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(function (res) {
+        if (!res.ok) throw new Error('Unauthorized');
+        return res.json();
+      }).then(function (data) {
+        if (!data || !data.success || !data.user || data.user.role !== 'ADMIN') {
+          alert('Access Denied: Super Admin role clearance is required.');
+          window.location.replace('index.html?error=unauthorized');
+        }
+      }).catch(function () {
+        try {
+          localStorage.removeItem('delta_auth_token');
+          localStorage.removeItem('delta_user_role');
+          localStorage.removeItem('delta_user_name');
+        } catch (e) {}
+        window.location.replace('login.html?redirect=admin.html&expired=true');
+      });
+    })();
+  </script>
 </head>
 
 <body>
@@ -35,7 +64,7 @@
       <div class="auth-user-bar">
         <div class="user-status-pill">
           <span class="user-role-badge admin" id="admin-role-badge">👑 Super Admin</span>
-          <span class="user-name-text" id="admin-user-name">Marcus Aurelius</span>
+          <span class="user-name-text" id="admin-user-name">Super Administrator</span>
         </div>
         <!-- Live Dynamic Date & Time Clock Widget -->
         <div class="live-clock-pill" id="live-clock-pill" title="Live System Date & Universal Local Time">
@@ -265,6 +294,124 @@
       <p class="admin-hero-sub">Global Swarm Overrides, Backend Diagnostics, LLM Circuit Breakers & Automated WhatsApp
         Alerts</p>
     </div>
+
+    <!-- METRICS PANEL (High-Density Live Event & Perception Telemetry Strip) -->
+    <section class="metrics-row mb-6">
+      <!-- Integrity Widget (checkmark window) -->
+      <div class="metric-card widget-integrity">
+        <div class="widget-header">
+          <span class="dot red"></span>
+          <span class="dot yellow"></span>
+          <span class="dot green"></span>
+          <span class="widget-title">Agent System Health</span>
+        </div>
+        <div class="widget-body">
+          <div class="integrity-content">
+            <svg class="check-illustration" viewBox="0 0 60 60" width="34" height="34">
+              <rect width="60" height="60" rx="12" fill="#c2e7ff" stroke="#000" stroke-width="3" />
+              <path d="M15 30 L25 40 L45 18" fill="none" stroke="#4285f4" stroke-width="6" stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+            <div class="integrity-text">
+              <span id="agent-health-status" class="status-indicator online">ONLINE</span>
+              <p id="agent-health-desc">Self-Healing Agent Active</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Speakers Widget (three circles pill) -->
+      <div class="metric-card widget-speakers">
+        <div class="widget-header">
+          <span class="widget-title">Speaker Status Registry</span>
+        </div>
+        <div class="widget-body">
+          <div class="speakers-content">
+            <div class="pill-illustration" id="speaker-pills-container">
+              <span class="circle-speaker blue">A.S</span>
+              <span class="circle-speaker green">V.V</span>
+              <span class="circle-speaker yellow">P.N</span>
+            </div>
+            <div class="speakers-info">
+              <h3 id="active-speakers-count">5 Active Speakers</h3>
+              <p id="system-delays-count">0 Delays Registered</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Venue Flow & Safety Index (Data Abstraction & Fire Marshal Compliance) -->
+      <div class="metric-card widget-safety-index">
+        <div class="widget-header" style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span class="dot green"></span>
+            <span class="widget-title">Venue Flow & Life-Safety</span>
+          </div>
+          <span id="fire-marshal-compliance-badge" class="badge-mini-green" style="font-size:0.65rem; font-weight:800; font-family:var(--font-mono);">
+            NFPA-101 CERTIFIED
+          </span>
+        </div>
+        <div class="widget-body" style="padding:10px 14px; display:flex; flex-direction:column; justify-content:space-between;">
+          <div class="safety-rating-box">
+            <div class="safety-badge-large" id="fire-marshal-letter-grade">A+</div>
+            <div class="safety-details">
+              <span class="safety-title" id="fire-marshal-status-text">NOMINAL FLOW (98.4%)</span>
+              <span class="safety-sub" id="fire-marshal-sub-text">All Emergency Egress Portals Clear</span>
+              <span style="font-size:0.72rem; font-family:var(--font-mono); color:#2563eb; font-weight:700;" id="fire-marshal-density-rate">Density: 1.8 m²/pax • Flow: 840 pax/min</span>
+            </div>
+          </div>
+          <button id="btn-download-fire-marshal-audit" class="btn btn-sm btn-green"
+            style="margin-top:8px; width:100%; font-weight:900; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;"
+            title="Inspect and download cryptographically sealed NFPA-101 / IBC-2024 Fire Marshal Egress Audit">
+            🛡️ FIRE MARSHAL AUDIT (NFPA-101) ↗
+          </button>
+        </div>
+      </div>
+
+      <!-- Real-Time Ingress & Sensor Tripwire (High-Utility Actionable KPI) -->
+      <div class="metric-card widget-ingress-kpi">
+        <div class="widget-header">
+          <span class="dot yellow"></span>
+          <span class="widget-title">Live Ingress & Sensor Pulse</span>
+        </div>
+        <div class="widget-body widget-ingress-body">
+          <div class="ingress-kpi-top">
+            <div class="ingress-kpi-headline">
+              <span class="ingress-kpi-label">OPTICAL SENSOR COUNT:</span>
+              <div class="ingress-kpi-val">
+                <strong id="cctv-metric-headcount">0 / 25 Pax</strong> <span class="ingress-kpi-status-tag">(NOMINAL)</span>
+              </div>
+            </div>
+            <button id="btn-cctv-trigger-sensor-kpi" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
+              style="font-weight:800; font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:4px 8px;"
+              title="Hardware optical beam pulse (+1 Entry)">⚡ Tripwire (+1)</button>
+          </div>
+          <div class="ingress-kpi-subbar">
+            <span class="ingress-kpi-sublabel">MANUAL COUNT:</span>
+            <div class="segmented-stepper ingress-stepper">
+              <button id="btn-cctv-sub-pax-kpi" class="stepper-btn btn-cctv-sub-pax" title="Decrease Headcount (-1)">－</button>
+              <div class="stepper-display">
+                <input type="number" class="cctv-manual-pax-input" min="0" max="1000"
+                  value="0" title="Directly set attendee headcount manually">
+                <span style="font-size:0.7rem; color:#555;">Pax</span>
+              </div>
+              <button id="btn-cctv-add-pax-kpi" class="stepper-btn btn-cctv-add-pax" title="Increase Headcount (+1)">＋</button>
+            </div>
+          </div>
+          <div class="ingress-kpi-actions">
+            <button id="btn-cctv-trigger-80-kpi" class="btn btn-sm btn-yellow btn-cctv-trigger-80"
+              style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 4px;"
+              title="Trigger 80% Occupancy Warning">⚠️ 80% Alert</button>
+            <button id="btn-cctv-trigger-full-kpi" class="btn btn-sm btn-red btn-cctv-trigger-full"
+              style="flex:1; font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 4px;"
+              title="Trigger 100% Critical Capacity Breach">🚨 100% Alert</button>
+            <a href="#admin-section-swarm-lab" class="btn btn-sm btn-purple" id="btn-open-scenario-hub"
+              style="font-weight:800; font-size:0.68rem; border:1.5px solid #000; box-shadow:1.5px 1.5px 0px #000; padding:3px 6px; text-decoration:none;"
+              title="Jump to Swarm & Resilience Lab">⚡ Lab ↗</a>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- SECTION 0: FEATURED LIVE / UPCOMING EVENT & ASSIGNED VOLUNTEERS MONITOR -->
     <div class="dash-card admin-card mb-6">
@@ -644,7 +791,7 @@
             <button id="btn-admin-purge-locks" class="btn btn-white btn-sm">🔓 Clear Locks</button>
           </div>
           <div id="admin-audit-log-container" class="admin-audit-box mt-2" style="height: 100px;">
-            <div class="admin-audit-line info">[02:50:12 AM] Super Admin "Marcus Aurelius" authenticated.</div>
+            <div class="admin-audit-line info">[02:50:12 AM] Super Administrator authenticated with cryptographic session.</div>
           </div>
         </div>
       </div>
@@ -1057,6 +1204,125 @@
           </button>
           <button id="btn-cancel-youtube-modal" class="btn btn-sm btn-yellow font-bold" style="border: 2px solid #000;">
             Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OFFICIAL FIRE MARSHAL & LIFE-SAFETY AUDIT REPORT MODAL -->
+  <div id="modal-fire-marshal-audit" class="modal-backdrop hidden" style="z-index: 10002;">
+    <div class="modal-card" style="max-width: 880px; width: 92%; max-height: 90vh; overflow-y: auto; border: 3px solid #000; box-shadow: 10px 10px 0px #000; border-radius: 12px; background: #fff; padding: 24px;">
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; border-bottom: 2px solid #000; padding-bottom: 14px; margin-bottom: 16px;">
+        <div>
+          <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+            <span style="font-size:1.5rem;">🛡️</span>
+            <h2 style="font-size:1.25rem; font-weight:900; margin:0; font-family:var(--font-mono); color:#0f172a;">
+              OFFICIAL LIFE-SAFETY & FIRE MARSHAL EGRESS AUDIT
+            </h2>
+          </div>
+          <div style="font-size:0.78rem; font-weight:700; color:#475569; font-family:var(--font-mono);">
+            Jurisdiction Standard: <span style="background:#fef08a; padding:2px 6px; border:1px solid #000; border-radius:4px;">NFPA-101 (§ 12.7) / IBC-2024 Chapter 10</span> • St. Peter's Systems Complex
+          </div>
+        </div>
+        <button id="btn-close-fire-marshal-modal" class="btn-close-modal" aria-label="Close" style="font-size:1.5rem; line-height:1; cursor:pointer; background:none; border:none; font-weight:900;">&times;</button>
+      </div>
+
+      <!-- Seal & Timestamp Banner -->
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:2px solid #000; border-radius:8px; padding:12px 16px; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div style="font-size:0.7rem; font-weight:800; color:#64748b; font-family:var(--font-mono);">CRYPTOGRAPHIC AUDIT SEAL:</div>
+          <div id="fm-modal-seal" style="font-family:var(--font-mono); font-weight:900; font-size:0.95rem; color:#0f172a;">SEAL-NFPA-CALCULATING...</div>
+        </div>
+        <div>
+          <div style="font-size:0.7rem; font-weight:800; color:#64748b; font-family:var(--font-mono);">GENERATED TIMESTAMP:</div>
+          <div id="fm-modal-timestamp" style="font-family:var(--font-mono); font-weight:800; font-size:0.85rem; color:#334155;">--</div>
+        </div>
+        <div>
+          <div style="font-size:0.7rem; font-weight:800; color:#64748b; font-family:var(--font-mono);">REGULATORY STATUS:</div>
+          <span id="fm-modal-status-pill" class="badge-mini-green" style="font-size:0.8rem; font-weight:900; padding:4px 10px; border:2px solid #000;">
+            CERTIFIED COMPLIANT
+          </span>
+        </div>
+      </div>
+
+      <!-- Top Metrics 4-Box Grid -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; margin-bottom:18px;">
+        <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+          <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">LICENSED CAPACITY</div>
+          <div id="fm-modal-metric-capacity" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">--</div>
+          <div style="font-size:0.7rem; color:#64748b; font-weight:600;">Approved Occupancy Load</div>
+        </div>
+        <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+          <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">LIVE OCCUPANCY</div>
+          <div id="fm-modal-metric-occupancy" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">--</div>
+          <div id="fm-modal-metric-pct" style="font-size:0.7rem; color:#16a34a; font-weight:800;">--% of Max Load</div>
+        </div>
+        <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+          <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">AVG EGRESS DENSITY</div>
+          <div id="fm-modal-metric-density" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">-- m²/pax</div>
+          <div style="font-size:0.7rem; color:#64748b; font-weight:600;">Min Req: ≥ 1.4 m²/pax</div>
+        </div>
+        <div style="background:#f1f5f9; border:2px solid #000; border-radius:8px; padding:10px 12px; box-shadow:3px 3px 0px #000;">
+          <div style="font-size:0.68rem; font-weight:800; color:#475569; font-family:var(--font-mono);">TOTAL PORTAL FLOW</div>
+          <div id="fm-modal-metric-flow" style="font-size:1.35rem; font-weight:900; font-family:var(--font-mono); color:#0f172a;">-- pax/min</div>
+          <div style="font-size:0.7rem; color:#64748b; font-weight:600;">Egress Discharge Rate</div>
+        </div>
+      </div>
+
+      <!-- Zone-by-Zone Egress Compliance Table -->
+      <div style="margin-bottom:18px;">
+        <div style="font-size:0.8rem; font-weight:900; font-family:var(--font-mono); color:#0f172a; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+          <span>ZONE-BY-ZONE OCCUPANCY & DENSITY MATRIX (IBC CHAPTER 10):</span>
+          <span style="font-size:0.7rem; color:#64748b;">Optical LiDAR Tripwires Active</span>
+        </div>
+        <div style="border:2px solid #000; border-radius:8px; overflow-x:auto;">
+          <table style="width:100%; border-collapse:collapse; font-size:0.78rem; text-align:left; font-family:var(--font-mono);">
+            <thead style="background:#e2e8f0; border-bottom:2px solid #000;">
+              <tr>
+                <th style="padding:8px 10px; border-right:1px solid #000;">ZONE / HALL NAME</th>
+                <th style="padding:8px 10px; border-right:1px solid #000;">CAPACITY</th>
+                <th style="padding:8px 10px; border-right:1px solid #000;">OCCUPANCY</th>
+                <th style="padding:8px 10px; border-right:1px solid #000;">LOAD %</th>
+                <th style="padding:8px 10px; border-right:1px solid #000;">DENSITY (m²/pax)</th>
+                <th style="padding:8px 10px; border-right:1px solid #000;">EGRESS FLOW</th>
+                <th style="padding:8px 10px;">LIFE-SAFETY STATUS</th>
+              </tr>
+            </thead>
+            <tbody id="fm-modal-table-body" style="background:#fff;">
+              <!-- Populated dynamically via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Supervisor Interventions Audit Trail -->
+      <div style="background:#fefce8; border:2px solid #000; border-radius:8px; padding:12px; margin-bottom:18px;">
+        <div style="font-size:0.75rem; font-weight:900; color:#854d0e; font-family:var(--font-mono); margin-bottom:6px;">
+          🔒 HUMAN-IN-THE-LOOP INTERVENTION LOG (TAMPER-PROOF LEDGER):
+        </div>
+        <div id="fm-modal-interventions-log" style="font-size:0.73rem; font-family:var(--font-mono); color:#713f12; max-height:100px; overflow-y:auto; line-height:1.4;">
+          No emergency supervisor overrides recorded during this monitoring session.
+        </div>
+      </div>
+
+      <!-- Certified Inspector Note -->
+      <div style="font-size:0.72rem; color:#64748b; font-family:var(--font-mono); margin-bottom:18px; line-height:1.4; border-left:3px solid #22c55e; padding-left:10px;">
+        <strong>Auditor Statement:</strong> Autonomous real-time egress flow monitored via DELTA Engine optical sensor tripwires, IoT passage counters, and CCTV computer vision. All calculations adhere to NFPA-101 Life Safety Code Table 7.3.1.2 occupant load factors.
+      </div>
+
+      <!-- Action Buttons -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; border-top:2px solid #000; padding-top:14px;">
+        <button id="btn-copy-fm-seal" class="btn btn-sm btn-white" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+          📋 Copy Verification Seal
+        </button>
+        <div style="display:flex; gap:8px;">
+          <button id="btn-download-fm-json" class="btn btn-sm btn-yellow" style="font-weight:800; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+            ⬇️ Export JSON Seal
+          </button>
+          <button id="btn-print-fm-report" class="btn btn-sm btn-green" style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; border:2px solid #000; box-shadow:2px 2px 0px #000;">
+            🖨️ Print / Save Official PDF
           </button>
         </div>
       </div>

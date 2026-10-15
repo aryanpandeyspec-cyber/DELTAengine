@@ -108,10 +108,55 @@ function base64UrlDecode(str) {
   return Buffer.from(str, 'base64').toString('utf8');
 }
 
+const SESSION_DURATION_SECONDS = 3 * 60 * 60; // 10,800 seconds = 3 Hours Session Lifetime
+
+/**
+ * Parses HTTP Cookie header into key-value map.
+ * @param {object} req Express request
+ * @returns {object} Parsed cookie key-value object
+ */
+function parseCookies(req) {
+  const list = {};
+  const cookieHeader = req?.headers?.cookie;
+  if (!cookieHeader) return list;
+  cookieHeader.split(';').forEach(cookie => {
+    const parts = cookie.split('=');
+    const name = parts[0] ? parts[0].trim() : '';
+    if (!name) return;
+    const value = parts.slice(1).join('=').trim();
+    try {
+      list[name] = decodeURIComponent(value);
+    } catch (e) {
+      list[name] = value;
+    }
+  });
+  return list;
+}
+
+/**
+ * Extracts authentication token from Authorization header, x-access-token, or session cookie.
+ * @param {object} req Express request
+ * @returns {string|null} Token string or null
+ */
+function extractToken(req) {
+  const authHeader = req.headers?.['authorization'] || req.headers?.['x-access-token'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    return authHeader.substring(7).trim();
+  } else if (authHeader) {
+    return authHeader.trim();
+  }
+  const cookies = parseCookies(req);
+  if (cookies['delta_session_token']) {
+    return cookies['delta_session_token'];
+  }
+  return null;
+}
+
 /**
  * Generates an RFC-7519 standard HMAC-SHA256 signed JSON Web Token.
+ * Default lifetime: at least 3 hours (10,800 seconds).
  */
-function generateJwt(payload, expiresInSeconds = 86400) {
+function generateJwt(payload, expiresInSeconds = SESSION_DURATION_SECONDS) {
   const header = { alg: 'HS256', typ: 'JWT' };
   const exp = Math.floor(Date.now() / 1000) + expiresInSeconds;
   const fullPayload = { ...payload, exp, iat: Math.floor(Date.now() / 1000) };
@@ -129,6 +174,26 @@ function generateJwt(payload, expiresInSeconds = 86400) {
     .replace(/\//g, '_');
 
   return `${dataToSign}.${signature}`;
+}
+
+/**
+ * Refreshes an active session token for another 3 hours without requiring password re-entry.
+ * @param {string} token Current valid JWT token
+ * @param {number} expiresInSeconds New lifetime in seconds (default 3 hours)
+ * @returns {string|null} Refreshed JWT token or null if current token is invalid
+ */
+function refreshJwt(token, expiresInSeconds = SESSION_DURATION_SECONDS) {
+  const verified = verifyJwt(token);
+  if (!verified) return null;
+  const cleanPayload = {
+    id: verified.id,
+    name: verified.name,
+    role: verified.role,
+    title: verified.title,
+    email: verified.email,
+    authProvider: verified.authProvider
+  };
+  return generateJwt(cleanPayload, expiresInSeconds);
 }
 
 /**
@@ -168,26 +233,23 @@ function verifyJwt(token) {
 
 // Pre-seeded authorized operator accounts for live enterprise access
 const OPERATOR_CREDENTIALS = {
-  'admin_marcus': { id: 'usr_admin', name: 'Marcus Aurelius', role: 'ADMIN', title: 'Super Admin & Systems Commander', password: process.env.ADMIN_PASSWORD || 'deltaAdmin2026!' },
-  'Suryansh': { id: 'usr_coord', name: 'Suryansh', role: 'COORDINATOR', title: 'Lead Operations Coordinator', password: process.env.OPERATOR_PASSWORD || 'delta2026' },
-  'Aryan': { id: 'usr_safety', name: 'Aryan Pandey', role: 'SAFETY_DIRECTOR', title: 'Safety Director & Incident Commander', password: process.env.OPERATOR_PASSWORD || 'delta2026' },
-  'Shahid': { id: 'usr_ops', name: 'Shahid', role: 'COORDINATOR', title: 'Stage & Operations Coordinator', password: process.env.OPERATOR_PASSWORD || 'delta2026' },
+  'admin_marcus': { id: 'usr_admin', name: 'Super Administrator', role: 'ADMIN', title: 'Super Admin & Systems Commander', password: process.env.ADMIN_PASSWORD || 'deltaAdmin2026!' },
+  'admin': { id: 'usr_admin', name: 'Super Administrator', role: 'ADMIN', title: 'Super Admin & Systems Commander', password: process.env.ADMIN_PASSWORD || 'deltaAdmin2026!' },
+  'aryan': { id: 'usr_aryan', name: 'Aryan Pandey', role: 'ADMIN', title: 'Super Admin & Systems Commander', password: process.env.ADMIN_PASSWORD || 'deltaAdmin2026!' },
+  'aryan.pandey777hyd@gmail.com': { id: 'usr_aryan_email', name: 'Aryan Pandey', role: 'ADMIN', title: 'Super Admin & Systems Commander', password: process.env.ADMIN_PASSWORD || 'deltaAdmin2026!' },
+  'aryan.pandey.spec@gmail.com': { id: 'usr_aryan_spec', name: 'Aryan Pandey', role: 'ADMIN', title: 'Super Admin & Systems Commander', password: process.env.ADMIN_PASSWORD || 'deltaAdmin2026!' },
+  'Suryansh': { id: 'usr_coord', name: 'Operations Coordinator', role: 'COORDINATOR', title: 'Lead Operations Coordinator', password: process.env.OPERATOR_PASSWORD || 'delta2026' },
+  'Aryan': { id: 'usr_safety', name: 'Aryan Pandey', role: 'ADMIN', title: 'Super Admin & Systems Commander', password: process.env.OPERATOR_PASSWORD || 'delta2026' },
+  'Shahid': { id: 'usr_ops', name: 'Operations Lead', role: 'COORDINATOR', title: 'Stage & Operations Coordinator', password: process.env.OPERATOR_PASSWORD || 'delta2026' },
   'Volunteer': { id: 'usr_field', name: 'Field Marshal', role: 'VOLUNTEER', title: 'On-Ground Crowd Marshal', password: process.env.OPERATOR_PASSWORD || 'delta2026' }
 };
 
 /**
- * Express Middleware: Authenticates JWT from Authorization header.
- * Allows graceful fallback in test / demo loopback environments so automated suites run seamlessly.
+ * Express Middleware: Authenticates JWT from Authorization header or session cookie.
+ * Requires genuine cryptographic signature and valid expiration timestamp.
  */
 function authenticateToken(req, res, next) {
-  const authHeader = req.headers['authorization'] || req.headers['x-access-token'];
-  let token = null;
-
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    token = authHeader.substring(7).trim();
-  } else if (authHeader) {
-    token = authHeader.trim();
-  }
+  const token = extractToken(req);
 
   if (token) {
     const verified = verifyJwt(token);
@@ -201,20 +263,6 @@ function authenticateToken(req, res, next) {
         message: 'Invalid or expired cryptographic authentication token.'
       });
     }
-  }
-
-  // Graceful fallback for local development / test suites without active token
-  const ip = req.ip || req.connection.remoteAddress || '127.0.0.1';
-  const isLoopback = (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1');
-
-  if (isLoopback || process.env.NODE_ENV === 'test') {
-    req.user = {
-      id: 'usr_demo',
-      name: 'Suryansh (Demo Coordinator)',
-      role: 'ADMIN', // Allow demo coordinator full local operational capabilities
-      isDemoFallback: true
-    };
-    return next();
   }
 
   return res.status(401).json({
@@ -299,8 +347,12 @@ module.exports = {
   escapeHtml,
   rateLimiter,
   validateSlideFile,
+  SESSION_DURATION_SECONDS,
+  parseCookies,
+  extractToken,
   generateJwt,
   verifyJwt,
+  refreshJwt,
   OPERATOR_CREDENTIALS,
   authenticateToken,
   requireRole,

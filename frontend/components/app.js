@@ -153,11 +153,19 @@ function initAutopilotController() {
   pills.forEach(pill => {
     pill.addEventListener('click', () => {
       const nextState = !autopilotModeActive;
-      window.setAutopilotMode(nextState);
+      const token = localStorage.getItem('delta_auth_token');
       fetch('/api/admin/toggle-autopilot', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': 'Bearer ' + token } : {})
+        },
         body: JSON.stringify({ enabled: nextState })
+      }).then(res => {
+        if (res.status === 401 || res.status === 403) {
+          window.setAutopilotMode(!nextState);
+          if (typeof createToast === 'function') createToast('⛔ Access Denied: Administrator role required to toggle Autopilot.', 'warning');
+        }
       }).catch(() => {});
 
       if (nextState) {

@@ -321,7 +321,25 @@ async function runTest11_StressTest500() {
   // Reset conference baseline first
   await fetchJson('/api/reset', { method: 'POST' });
 
-  const stressResult = await fetchJson('/api/admin/stress-test-500', { method: 'POST' });
+  // 1. Verify unauthenticated call to admin API is rejected
+  const unauthRes = await fetch(`${BASE_URL}/api/admin/stress-test-500`, { method: 'POST' });
+  assert(unauthRes.status === 401, 'Unauthenticated call to /api/admin/stress-test-500 is rejected with HTTP 401');
+
+  // 2. Authenticate as authorized Super Admin (Marcus Aurelius)
+  const loginRes = await fetchJson('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      username: 'admin_marcus',
+      password: process.env.ADMIN_PASSWORD || 'deltaAdmin2026!'
+    })
+  });
+  assert(loginRes && loginRes.success && loginRes.user?.role === 'ADMIN', 'Super Admin Marcus Aurelius authenticated successfully');
+
+  // 3. Execute 500-stress test with valid admin authorization
+  const stressResult = await fetchJson('/api/admin/stress-test-500', { 
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${loginRes.token}` }
+  });
   assert(stressResult.success === true, '500 Stress-Test completed successfully');
   assert(stressResult.totalTests === 500, 'All 500 stress test iterations executed');
   assert(stressResult.passedCount === 500, `Passed 500/500 edge cases (100% pass rate, 0 failures)`);

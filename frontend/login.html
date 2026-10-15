@@ -28,6 +28,7 @@
       justify-content: center;
       background: radial-gradient(circle at center, #ffffff 0%, #faecd9 100%);
       padding: 20px;
+      font-family: var(--font-main, 'Inter', sans-serif);
     }
 
     .login-container {
@@ -47,11 +48,11 @@
 
     .login-header {
       text-align: center;
-      margin-bottom: 24px;
+      margin-bottom: 22px;
     }
 
     .login-logo {
-      height: 90px;
+      height: 86px;
       margin-bottom: 12px;
       object-fit: contain;
       mix-blend-mode: darken;
@@ -59,20 +60,57 @@
 
     .login-title {
       font-family: 'Josefin Sans', sans-serif;
-      font-size: 2.2rem;
+      font-size: 2.1rem;
       font-weight: 700;
       color: #000000;
       margin: 0;
     }
 
     .login-subtitle {
-      font-family: var(--font-main);
-      font-size: 0.92rem;
-      color: #555555;
+      font-family: var(--font-main, 'Inter', sans-serif);
+      font-size: 0.9rem;
+      color: #475569;
       font-weight: 600;
       margin-top: 4px;
     }
 
+    /* Tabs Styling */
+    .auth-role-tabs {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr !important;
+      gap: 10px !important;
+      margin-bottom: 18px !important;
+    }
+
+    .auth-tab-btn {
+      font-family: var(--font-main, 'Inter', sans-serif) !important;
+      font-weight: 800 !important;
+      font-size: 0.92rem !important;
+      padding: 12px 14px !important;
+      border: 3px solid #000000 !important;
+      border-radius: 12px !important;
+      background: #f1f5f9 !important;
+      color: #334155 !important;
+      box-shadow: 3px 3px 0px #000000 !important;
+      cursor: pointer !important;
+      transition: all 0.15s ease !important;
+      text-align: center !important;
+    }
+
+    .auth-tab-btn:hover {
+      background: #e2e8f0 !important;
+      transform: translate(-1px, -1px) !important;
+      box-shadow: 4px 4px 0px #000000 !important;
+    }
+
+    .auth-tab-btn.active {
+      background: #2563eb !important;
+      color: #ffffff !important;
+      box-shadow: 4px 4px 0px #000000 !important;
+      transform: translate(-1px, -1px) !important;
+    }
+
+    /* Google Button */
     .google-btn {
       display: flex;
       align-items: center;
@@ -84,23 +122,166 @@
       color: #000000;
       border: 3px solid #000000;
       border-radius: 14px;
-      font-family: var(--font-main);
+      font-family: var(--font-main, 'Inter', sans-serif);
       font-weight: 800;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
       box-shadow: 4px 4px 0px #000000;
       transition: all 0.15s ease;
-      margin-bottom: 20px;
+      cursor: pointer;
+      margin-bottom: 18px;
     }
 
     .google-btn:hover {
       transform: translate(-2px, -2px);
       box-shadow: 6px 6px 0px #000000;
-      background: #f8f9fa;
+      background: #f8fafc;
+    }
+
+    .google-btn:active {
+      transform: translate(2px, 2px);
+      box-shadow: 2px 2px 0px #000000;
     }
 
     .google-icon {
       width: 22px;
       height: 22px;
+      flex-shrink: 0;
+    }
+
+    /* Divider */
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      text-align: center;
+      margin: 18px 0 16px 0;
+      font-family: var(--font-mono, monospace);
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #64748b;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      border-bottom: 2px dashed #cbd5e1;
+    }
+
+    .auth-divider span {
+      padding: 0 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .form-group.is-hidden {
+      display: none !important;
+    }
+
+    .form-label {
+      display: block !important;
+      font-family: var(--font-main, 'Inter', sans-serif) !important;
+      font-size: 0.82rem !important;
+      font-weight: 800 !important;
+      color: #0f172a !important;
+      margin-bottom: 6px !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.5px !important;
+    }
+
+    .form-control {
+      display: block !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      padding: 12px 14px !important;
+      font-family: var(--font-main, 'Inter', sans-serif) !important;
+      font-size: 0.95rem !important;
+      font-weight: 600 !important;
+      color: #000000 !important;
+      background: #ffffff !important;
+      border: 3px solid #000000 !important;
+      border-radius: 12px !important;
+      box-shadow: 4px 4px 0px #000000 !important;
+      outline: none !important;
+      transition: all 0.15s ease !important;
+    }
+
+    .form-control:focus {
+      border-color: #2563eb !important;
+      box-shadow: 5px 5px 0px #2563eb !important;
+      transform: translate(-1px, -1px) !important;
+    }
+
+    .form-control::placeholder {
+      color: #94a3b8;
+      font-weight: 500;
+    }
+
+    .password-wrap {
+      position: relative;
+      width: 100%;
+    }
+
+    .password-toggle-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      font-size: 1.15rem;
+      cursor: pointer;
+      padding: 4px;
+      color: #64748b;
+      user-select: none;
+    }
+
+    .password-toggle-btn:hover {
+      color: #0f172a;
+    }
+
+    /* Submit Button */
+    .auth-submit-btn {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 100% !important;
+      padding: 14px 20px !important;
+      font-family: var(--font-main, 'Inter', sans-serif) !important;
+      font-size: 1.05rem !important;
+      font-weight: 800 !important;
+      color: #ffffff !important;
+      background: #2563eb !important;
+      border: 3px solid #000000 !important;
+      border-radius: 14px !important;
+      box-shadow: 4px 4px 0px #000000 !important;
+      cursor: pointer !important;
+      transition: all 0.15s ease !important;
+      margin-top: 6px !important;
+      margin-bottom: 16px !important;
+    }
+
+    .auth-submit-btn:hover {
+      background: #1d4ed8 !important;
+      transform: translate(-2px, -2px) !important;
+      box-shadow: 6px 6px 0px #000000 !important;
+    }
+
+    .auth-submit-btn:active {
+      transform: translate(2px, 2px) !important;
+      box-shadow: 2px 2px 0px #000000 !important;
+    }
+
+    .auth-submit-btn:disabled {
+      opacity: 0.65 !important;
+      cursor: not-allowed !important;
+      transform: none !important;
     }
   </style>
 </head>
@@ -123,14 +304,14 @@
         <p class="login-subtitle">Role Access Portal & Event OS Authentication</p>
       </div>
 
-      <!-- Top Mode Selection Tabs -->
+      <!-- Mode Selection Tabs: Sign In / Create Account -->
       <div class="auth-role-tabs mb-4">
-        <button id="tab-login-coordinator" class="auth-tab-btn active">👤 Sign In (Supabase)</button>
-        <button id="tab-login-admin" class="auth-tab-btn">⚡ Create Operator Account</button>
+        <button id="tab-login-coordinator" class="auth-tab-btn active" type="button">🔐 Sign In</button>
+        <button id="tab-login-admin" class="auth-tab-btn" type="button">⚡ Create Account</button>
       </div>
 
       <!-- Google Sign-In via Supabase Auth -->
-      <button id="btn-google-login" class="google-btn">
+      <button id="btn-google-login" class="google-btn" type="button">
         <svg class="google-icon" viewBox="0 0 24 24">
           <path fill="#4285F4"
             d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -144,60 +325,63 @@
         Sign in with Google (Supabase Auth)
       </button>
 
-      <div class="auth-demo-divider" style="margin: 18px 0 16px 0;">
+      <div class="auth-divider">
         <span>SUPABASE POSTGRESQL AUTHENTICATION</span>
       </div>
 
-      <!-- Real-Time Authentication Error Banner -->
-      <div id="auth-error-banner" style="display:none; background:#fef2f2; border:2px solid #ef4444; border-radius:8px; padding:10px 14px; margin-bottom:14px; color:#b91c1c; font-size:0.85rem; font-weight:700; font-family:var(--font-mono, monospace);">
+      <!-- Real-Time Error Banner -->
+      <div id="auth-error-banner" style="display:none; background:#fef2f2; border:3px solid #ef4444; border-radius:12px; padding:12px 14px; margin-bottom:16px; color:#b91c1c; font-size:0.86rem; font-weight:700; font-family:var(--font-mono, monospace); line-height:1.4; box-shadow:3px 3px 0px #ef4444;">
         ⚠️ <span id="auth-error-text">Authentication failed.</span>
       </div>
 
       <!-- Real-Time Success Banner -->
-      <div id="auth-success-banner" style="display:none; background:#ecfdf5; border:2px solid #10b981; border-radius:8px; padding:10px 14px; margin-bottom:14px; color:#047857; font-size:0.85rem; font-weight:700; font-family:var(--font-mono, monospace);">
-        ✅ <span id="auth-success-text">Account created successfully!</span>
+      <div id="auth-success-banner" style="display:none; background:#ecfdf5; border:3px solid #10b981; border-radius:12px; padding:12px 14px; margin-bottom:16px; color:#047857; font-size:0.86rem; font-weight:700; font-family:var(--font-mono, monospace); line-height:1.4; box-shadow:3px 3px 0px #10b981;">
+        ✅ <span id="auth-success-text">Operation completed successfully.</span>
       </div>
 
       <form id="standalone-login-form">
         <input type="hidden" id="auth-selected-role" value="coordinator">
 
-        <!-- Extra Name Field for Registration Mode -->
-        <div class="form-group mb-3" id="reg-name-group" style="display:none;">
-          <label class="form-label" style="font-weight:700;">Full Name</label>
-          <input type="text" id="input-fullname" class="form-control" placeholder="e.g. Marcus Aurelius"
-            style="border:2px solid #000; border-radius:10px; font-weight:600;">
+        <!-- Full Name (Only shown in Create Account mode) -->
+        <div class="form-group is-hidden" id="reg-name-group" style="display:none !important;">
+          <label class="form-label" for="input-fullname">Full Name</label>
+          <input type="text" id="input-fullname" class="form-control" placeholder="Enter your full name" autocomplete="name">
         </div>
 
-        <div class="form-group mb-3">
-          <label class="form-label" id="username-label" style="font-weight:700;">Operator Email / Identifier</label>
-          <input type="text" id="input-username" class="form-control" placeholder="e.g. admin@delta-engine.in or coordinator@delta-engine.in" required
-            style="border:2px solid #000; border-radius:10px; font-weight:600;">
+        <!-- Email Identifier -->
+        <div class="form-group">
+          <label class="form-label" id="username-label" for="input-username">Registered Email Address</label>
+          <input type="email" id="input-username" class="form-control" placeholder="Enter your registered email address" required autocomplete="email">
         </div>
 
-        <div class="form-group mb-4">
-          <label class="form-label" style="font-weight:700;">Account Password</label>
-          <input type="password" id="input-password" class="form-control" placeholder="Enter your Supabase password" required
-            style="border:2px solid #000; border-radius:10px; font-weight:600;">
+        <!-- Password -->
+        <div class="form-group">
+          <label class="form-label" id="password-label" for="input-password">Account Password</label>
+          <div class="password-wrap">
+            <input type="password" id="input-password" class="form-control" placeholder="Enter your password" required autocomplete="current-password" style="padding-right: 42px;">
+            <button type="button" id="btn-toggle-password" class="password-toggle-btn" title="Toggle password visibility">👁️</button>
+          </div>
         </div>
 
-        <!-- Role Select for Registration Mode -->
-        <div class="form-group mb-3" id="reg-role-group" style="display:none;">
-          <label class="form-label" style="font-weight:700;">Assigned Role</label>
-          <select id="input-new-role" class="form-control" style="border:2px solid #000; border-radius:10px; font-weight:700;">
+        <!-- Role Select (Only shown in Create Account mode) -->
+        <div class="form-group is-hidden" id="reg-role-group" style="display:none !important;">
+          <label class="form-label" for="input-new-role">Account Role</label>
+          <select id="input-new-role" class="form-control">
             <option value="COORDINATOR">Event Operations Coordinator</option>
-            <option value="ADMIN">Super Admin & Incident Commander</option>
             <option value="SAFETY_DIRECTOR">Safety & Life-Safety Director</option>
+            <option value="VOLUNTEER">Field Marshal / Crowd Volunteer</option>
           </select>
         </div>
 
-        <button type="submit" id="btn-submit-login" class="btn btn-blue w-full btn-md mb-3"
-          style="font-size:1.05rem; font-weight:800; border:2px solid #000; box-shadow:3px 3px 0px #000;">
-          🚀 Sign In with Supabase
+        <!-- Submit Button -->
+        <button type="submit" id="btn-submit-login" class="auth-submit-btn">
+          🚀 Sign In to Delta Engine
         </button>
 
-        <div style="background:#f8fafc; border:2px solid #000; border-radius:8px; padding:10px; font-size:0.75rem; text-align:center; font-family:var(--font-mono, monospace); line-height:1.4;">
-          🔒 <strong>Official Supabase Auth (PostgreSQL DB)</strong><br>
-          <span style="color:#64748b;">Enterprise RBAC & Signed JWT Verification</span>
+        <!-- Official Supabase Security Badge -->
+        <div style="background:#f8fafc; border:2px solid #000000; border-radius:12px; padding:12px; font-size:0.75rem; text-align:center; font-family:var(--font-mono, monospace); line-height:1.5; box-shadow:3px 3px 0px #000000;">
+          🔒 <strong>Live Supabase Auth (PostgreSQL DB)</strong><br>
+          <span style="color:#64748b;">Enterprise RBAC & Cryptographically Signed Sessions</span>
         </div>
       </form>
     </div>
@@ -215,41 +399,67 @@
     const tabCoord = document.getElementById('tab-login-coordinator');
     const tabAdmin = document.getElementById('tab-login-admin');
     const usernameLabel = document.getElementById('username-label');
+    const passwordLabel = document.getElementById('password-label');
     const inputUsername = document.getElementById('input-username');
     const inputPassword = document.getElementById('input-password');
     const inputFullname = document.getElementById('input-fullname');
     const inputNewRole = document.getElementById('input-new-role');
     const regNameGroup = document.getElementById('reg-name-group');
     const regRoleGroup = document.getElementById('reg-role-group');
-    const hiddenRole = document.getElementById('auth-selected-role');
     const errorBanner = document.getElementById('auth-error-banner');
     const errorText = document.getElementById('auth-error-text');
     const successBanner = document.getElementById('auth-success-banner');
     const successText = document.getElementById('auth-success-text');
     const btnSubmitLogin = document.getElementById('btn-submit-login');
+    const btnTogglePassword = document.getElementById('btn-toggle-password');
 
+    // Switch to Sign In Mode
     tabCoord.addEventListener('click', (e) => {
       e.preventDefault();
       authMode = 'login';
       tabCoord.classList.add('active');
       tabAdmin.classList.remove('active');
-      regNameGroup.style.display = 'none';
-      regRoleGroup.style.display = 'none';
-      btnSubmitLogin.textContent = '🚀 Sign In with Supabase';
+      regNameGroup.classList.add('is-hidden');
+      regRoleGroup.classList.add('is-hidden');
+      regNameGroup.style.setProperty('display', 'none', 'important');
+      regRoleGroup.style.setProperty('display', 'none', 'important');
+      usernameLabel.textContent = 'Registered Email Address';
+      inputUsername.placeholder = 'Enter your registered email address';
+      passwordLabel.textContent = 'Account Password';
+      inputPassword.placeholder = 'Enter your password';
+      btnSubmitLogin.innerHTML = '🚀 Sign In to Delta Engine';
       hideError();
       hideSuccess();
     });
 
+    // Switch to Create Account Mode
     tabAdmin.addEventListener('click', (e) => {
       e.preventDefault();
       authMode = 'register';
       tabAdmin.classList.add('active');
       tabCoord.classList.remove('active');
-      regNameGroup.style.display = 'block';
-      regRoleGroup.style.display = 'block';
-      btnSubmitLogin.textContent = '⚡ Register New Operator';
+      regNameGroup.classList.remove('is-hidden');
+      regRoleGroup.classList.remove('is-hidden');
+      regNameGroup.style.setProperty('display', 'flex', 'important');
+      regRoleGroup.style.setProperty('display', 'flex', 'important');
+      usernameLabel.textContent = 'Account Email Address';
+      inputUsername.placeholder = 'Enter your valid email address';
+      passwordLabel.textContent = 'Create Password (min 6 characters)';
+      inputPassword.placeholder = 'Create your password (min 6 chars)';
+      btnSubmitLogin.innerHTML = '⚡ Create Account & Launch';
       hideError();
       hideSuccess();
+    });
+
+    // Password Visibility Toggle
+    btnTogglePassword.addEventListener('click', () => {
+      if (inputPassword.type === 'password') {
+        inputPassword.type = 'text';
+        btnTogglePassword.textContent = '🙈';
+      } else {
+        inputPassword.type = 'password';
+        btnTogglePassword.textContent = '👁️';
+      }
     });
 
     function showError(msg) {
@@ -276,33 +486,114 @@
       if (successBanner) successBanner.style.display = 'none';
     }
 
-    // Google Login via Supabase
-    document.getElementById('btn-google-login').addEventListener('click', async () => {
-      if (supabaseClient) {
+    // Handle incoming OAuth callback parameters in URL
+    async function handleOAuthCallback() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const hashRaw = window.location.hash.startsWith('#') ? window.location.hash.substring(1) : window.location.hash;
+      const hashParams = new URLSearchParams(hashRaw);
+
+      const error = urlParams.get('error') || hashParams.get('error');
+      const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
+
+      if (error || errorDescription) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        const cleanMsg = errorDescription ? decodeURIComponent(errorDescription.replace(/\+/g, ' ')) : error;
+        showError(`Supabase OAuth Notice: ${cleanMsg}. Please use your registered email and password below.`);
+        return;
+      }
+
+      const accessToken = hashParams.get('access_token') || urlParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token') || urlParams.get('refresh_token');
+      const code = urlParams.get('code');
+
+      if (accessToken || code) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        showSuccess('Verifying Supabase OAuth credentials...');
         try {
+          const res = await fetch('/api/auth/oauth-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ accessToken, refreshToken, code })
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            showError(data?.error || 'Failed to authenticate via Supabase OAuth.');
+            return;
+          }
+          localStorage.setItem('delta_auth_token', data.token);
+          const verifiedRole = (data.user?.role || 'COORDINATOR').toLowerCase();
+          localStorage.setItem('delta_user_role', verifiedRole);
+          localStorage.setItem('delta_user_name', data.user?.name || 'OAuth Operator');
+          showSuccess('Authenticated via Supabase OAuth! Redirecting...');
+          setTimeout(() => {
+            window.location.href = verifiedRole === 'admin' ? 'admin.html' : 'index.html';
+          }, 500);
+        } catch (err) {
+          showError('OAuth session exchange failed: ' + err.message);
+        }
+      }
+    }
+
+    handleOAuthCallback();
+
+    // Google Login via Supabase Auth
+    document.getElementById('btn-google-login').addEventListener('click', async () => {
+      const btn = document.getElementById('btn-google-login');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ Verifying Google OAuth Provider...';
+      hideError();
+      hideSuccess();
+
+      try {
+        const checkRes = await fetch('/api/auth/provider-status?provider=google');
+        const checkData = await checkRes.json();
+
+        if (!checkData.enabled) {
+          btn.disabled = false;
+          btn.innerHTML = originalText;
+          showError(
+            `Google OAuth is currently not enabled in this Supabase project (frlrazzskbzmtlqrswjl). ` +
+            `Please sign in or create an account above using your email and password.`
+          );
+          if (inputUsername) inputUsername.focus();
+          return;
+        }
+
+        if (supabaseClient) {
           const { data, error } = await supabaseClient.auth.signInWithOAuth({
             provider: 'google',
-            options: { redirectTo: window.location.origin + '/index.html' }
+            options: { redirectTo: window.location.origin + '/login.html' }
           });
           if (error) throw error;
-        } catch (err) {
-          console.log('[Supabase OAuth Notice] Redirecting to portal:', err.message);
-          proceedToPortal('coordinator', 'Google Auth User', 'oauth_token');
+        } else {
+          showError('Supabase client is offline. Please sign in with email/password.');
+          btn.disabled = false;
+          btn.innerHTML = originalText;
         }
-      } else {
-        proceedToPortal('coordinator', 'Google User', 'oauth_token');
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+        showError('Google OAuth error: ' + err.message);
       }
     });
 
+    // Form Submission: Sign In or Register
     document.getElementById('standalone-login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       hideError();
       hideSuccess();
-      const identifier = inputUsername.value.trim();
+
+      let identifier = inputUsername.value.trim();
       const password = inputPassword.value.trim();
 
+      // Normalize common typo (e.g. @gmai -> @gmail.com)
+      if (identifier.endsWith('@gmai')) identifier += 'l.com';
+      else if (identifier.endsWith('@gmail')) identifier += '.com';
+      inputUsername.value = identifier;
+
       if (!identifier || !password) {
-        showError('Please fill in both your email and password.');
+        showError('Please fill in both your email address and password.');
         return;
       }
 
@@ -311,7 +602,14 @@
       if (authMode === 'register') {
         const fullname = inputFullname.value.trim() || identifier.split('@')[0];
         const newRole = inputNewRole.value || 'COORDINATOR';
-        btnSubmitLogin.textContent = '⏳ Registering in Supabase...';
+
+        if (password.length < 6) {
+          showError('Password must be at least 6 characters long for Supabase Auth.');
+          btnSubmitLogin.disabled = false;
+          return;
+        }
+
+        btnSubmitLogin.innerHTML = '⏳ Creating Account in Supabase...';
 
         try {
           const res = await fetch('/api/auth/register', {
@@ -321,25 +619,31 @@
           });
           const data = await res.json();
           if (!res.ok || !data.success) {
-            showError(data?.error || 'Registration failed.');
+            const errMsg = data?.error || 'Registration failed.';
+            if (errMsg.toLowerCase().includes('already registered')) {
+              showError('An account with this email already exists. Switch to "Sign In" above to log in.');
+            } else {
+              showError(errMsg);
+            }
             btnSubmitLogin.disabled = false;
-            btnSubmitLogin.textContent = '⚡ Register New Operator';
+            btnSubmitLogin.innerHTML = '⚡ Create Account & Launch';
             return;
           }
-          showSuccess('Account registered! Signing you in...');
+
+          showSuccess('Account registered successfully in Supabase! Logging you in...');
           setTimeout(() => {
             proceedToPortal(newRole.toLowerCase(), identifier, password);
-          }, 800);
+          }, 600);
         } catch (err) {
-          showError('Registration network failure: ' + err.message);
+          showError('Registration request failed: ' + err.message);
           btnSubmitLogin.disabled = false;
-          btnSubmitLogin.textContent = '⚡ Register New Operator';
+          btnSubmitLogin.innerHTML = '⚡ Create Account & Launch';
         }
       } else {
-        btnSubmitLogin.textContent = '⏳ Verifying via Supabase Auth...';
+        btnSubmitLogin.innerHTML = '⏳ Verifying Credentials...';
         await proceedToPortal(selectedRole, identifier, password);
         btnSubmitLogin.disabled = false;
-        btnSubmitLogin.textContent = '🚀 Sign In with Supabase';
+        btnSubmitLogin.innerHTML = '🚀 Sign In to Delta Engine';
       }
     });
 
@@ -351,29 +655,43 @@
           body: JSON.stringify({ role, username, email: username, password })
         });
         const data = await res.json();
-        
+
         if (!res.ok || (data && !data.success)) {
-          showError(data?.error || 'Invalid Supabase credentials. Access denied.');
+          showError(data?.error || 'Invalid credentials. Please verify your Supabase email and password.');
           return;
         }
 
         if (data && data.token) {
           localStorage.setItem('delta_auth_token', data.token);
-          localStorage.setItem('delta_user_role', data.user?.role?.toLowerCase() || role);
-          localStorage.setItem('delta_user_name', data.user?.name || username);
-        } else {
-          localStorage.setItem('delta_user_role', role);
-          localStorage.setItem('delta_user_name', username);
-        }
+          const verifiedRole = (data.user?.role || 'COORDINATOR').toLowerCase();
+          const verifiedName = data.user?.name || username;
+          localStorage.setItem('delta_user_role', verifiedRole);
+          localStorage.setItem('delta_user_name', verifiedName);
 
-        if (role === 'admin' || data.user?.role === 'ADMIN') {
-          window.location.href = 'admin.html';
+          if (supabaseClient && data.supabaseSession?.accessToken) {
+            try {
+              await supabaseClient.auth.setSession({
+                access_token: data.supabaseSession.accessToken,
+                refresh_token: ''
+              });
+            } catch (e) {}
+          }
+
+          showSuccess(`Authenticated as ${verifiedName} (${verifiedRole.toUpperCase()})! Redirecting...`);
+
+          setTimeout(() => {
+            if (verifiedRole === 'admin') {
+              window.location.href = 'admin.html';
+            } else {
+              window.location.href = 'index.html';
+            }
+          }, 400);
         } else {
-          window.location.href = 'index.html';
+          showError('Authentication succeeded but no secure token was returned.');
         }
       } catch (err) {
         console.warn('[Login Portal] Network error during auth:', err.message);
-        showError('Network connection error. Server offline.');
+        showError('Network error connecting to authentication server.');
       }
     }
   </script>

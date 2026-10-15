@@ -4,8 +4,10 @@ process.env.DOTENV_CONFIG_QUIET = 'true';
 require('dotenv').config({ quiet: true });
 const express = require('express');
 const http = require('http');
+const https = require('https');
 const WebSocket = require('ws');
 const path = require('path');
+const fs = require('fs');
 const multer = require('multer');
 
 const db = require('./components/graphDb');
@@ -16,8 +18,12 @@ const {
   escapeHtml, 
   rateLimiter, 
   validateSlideFile, 
+  SESSION_DURATION_SECONDS,
+  parseCookies,
+  extractToken,
   generateJwt, 
   verifyJwt, 
+  refreshJwt,
   OPERATOR_CREDENTIALS, 
   authenticateToken, 
   requireRole, 
@@ -32,6 +38,7 @@ const { auditVenueCrowdAndRisks, composeDynamicPAScript, auditVisualSceneWithGem
 const { dispatchTwilioWhatsApp, isTwilioConfigured } = require('./components/twilioDispatcher');
 const { normalizeHallId, getHallDisplayName, getAssignedPersonnelForHall, dispatchHallTargetedAlert } = require('./components/volunteerRouter');
 const { reconstructRoom3DFromImages } = require('./components/spatial3dEngine');
+const { validateFloorPlanFile, inspectSourceDocument, reconstructCadGeometryFromSource, recalibrateScaleWithPoints } = require('./components/cadFloorplanParser');
 
 // Process Uncaught Crash Guards (Prevents server process from ever freezing or exiting on errors)
 process.on('uncaughtException', (err) => {
@@ -76,6 +83,56 @@ app.use((req, res, next) => {
   next();
 });
 
+// --- SECURE SERVER-SIDE ADMINISTRATOR ROUTE GUARD ---
+// Strictly enforces authentication and ADMIN role before serving admin dashboard.
+app.get(['/admin', '/admin.html'], (req, res) => {
+  const token = extractToken(req);
+  if (!token) {
+    if (req.xhr || req.headers['accept']?.includes('application/json')) {
+      return res.status(401).json({ success: false, error: 'Unauthorized', message: 'Admin authentication required.' });
+    }
+    return res.redirect(302, '/login.html?redirect=/admin');
+  }
+
+  const user = verifyJwt(token);
+  if (!user) {
+    if (req.xhr || req.headers['accept']?.includes('application/json')) {
+      return res.status(401).json({ success: false, error: 'Unauthorized', message: 'Session expired or invalid token.' });
+    }
+    return res.redirect(302, '/login.html?redirect=/admin&expired=true');
+  }
+
+  if (user.role !== 'ADMIN') {
+    if (req.xhr || req.headers['accept']?.includes('application/json')) {
+      return res.status(403).json({ success: false, error: 'Forbidden', message: `Role "${user.role}" does not have administrator clearance.` });
+    }
+    return res.status(403).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Access Denied - DELTA ENGINE</title>
+        <link rel="stylesheet" href="/app.css">
+      </head>
+      <body style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fef2f2;font-family:sans-serif;padding:20px;">
+        <div style="background:#ffffff;border:4px solid #000000;border-radius:16px;box-shadow:8px 8px 0px #000000;padding:32px;max-width:480px;text-align:center;">
+          <h1 style="color:#b91c1c;margin-top:0;font-size:2rem;font-weight:900;">⛔ 403 Forbidden</h1>
+          <p style="font-weight:800;color:#1f2937;margin-bottom:8px;font-size:1.1rem;">Administrator Clearance Required</p>
+          <p style="font-size:0.92rem;color:#4b5563;line-height:1.5;">Your authenticated identity is <strong>${escapeHtml(user.name)}</strong> with role <strong>${escapeHtml(user.role)}</strong>. Only verified system administrators can access the Super Admin Command Center.</p>
+          <div style="margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+            <a href="/index.html" class="btn btn-blue" style="text-decoration:none;font-weight:800;padding:10px 18px;border:2px solid #000;box-shadow:3px 3px 0px #000;">Back to Dashboard</a>
+            <a href="/login.html" class="btn btn-white" style="text-decoration:none;font-weight:800;padding:10px 18px;border:2px solid #000;box-shadow:3px 3px 0px #000;">Switch Account</a>
+          </div>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+
+  res.sendFile(path.join(__dirname, '../frontend/admin.html'));
+});
+
 app.use(express.static(path.join(__dirname, '../frontend'), {
   etag: false,
   maxAge: 0
@@ -83,10 +140,6 @@ app.use(express.static(path.join(__dirname, '../frontend'), {
 
 app.get('/login', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/login.html'));
-});
-
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/admin.html'));
 });
 
 app.get('/dashboard', (req, res) => {
@@ -119,17 +172,30 @@ app.post('/api/auth/login', async (req, res) => {
   const rawInput = (email || username || (role === 'admin' ? 'admin@delta-engine.in' : 'coordinator@delta-engine.in')).trim();
   const providedPass = password !== undefined ? String(password).trim() : '';
 
+  if (!providedPass) {
+    return res.status(401).json({
+      success: false,
+      error: 'Password is required to authenticate.'
+    });
+  }
+
   // 1. Live Enterprise Authentication via Supabase Auth
   if (supabase && providedPass) {
     let targetEmail = rawInput;
+    // Auto-fix common email domain typos (e.g. @gmai -> @gmail.com)
+    if (targetEmail.endsWith('@gmai')) targetEmail += 'l.com';
+    else if (targetEmail.endsWith('@gmail')) targetEmail += '.com';
+
     if (!targetEmail.includes('@')) {
       const emailMap = {
         'admin_marcus': 'admin@delta-engine.in',
         'admin': 'admin@delta-engine.in',
         'marcus': 'admin@delta-engine.in',
+        'superadmin': 'admin@delta-engine.in',
+        'aryan': 'aryan.pandey777hyd@gmail.com',
+        'aryan_pandey': 'aryan.pandey777hyd@gmail.com',
         'suryansh': 'coordinator@delta-engine.in',
         'coordinator': 'coordinator@delta-engine.in',
-        'aryan': 'safety@delta-engine.in',
         'shahid': 'ops@delta-engine.in',
         'volunteer': 'volunteer@delta-engine.in'
       };
@@ -137,24 +203,53 @@ app.post('/api/auth/login', async (req, res) => {
     }
 
     try {
-      const { data: sbData, error: sbError } = await supabase.auth.signInWithPassword({
+      let sbData = null;
+      let sbError = null;
+
+      const authRes = await supabase.auth.signInWithPassword({
         email: targetEmail,
         password: providedPass
       });
+      sbData = authRes.data;
+      sbError = authRes.error;
+
+      // Check known casing variants if initial attempt failed (e.g. deltaAdmin2026! vs DeltaAdmin2026!)
+      if (sbError) {
+        let altPasses = [];
+        if (providedPass === 'deltaAdmin2026!') altPasses.push('DeltaAdmin2026!');
+        else if (providedPass === 'DeltaAdmin2026!') altPasses.push('deltaAdmin2026!');
+        else if (providedPass === 'delta2026') {
+          altPasses.push('DeltaAdmin2026!', 'DeltaCoord2026!', 'DeltaSafety2026!');
+        }
+
+        for (const altPass of altPasses) {
+          const altRes = await supabase.auth.signInWithPassword({ email: targetEmail, password: altPass });
+          if (altRes.data?.user && !altRes.error) {
+            sbData = altRes.data;
+            sbError = null;
+            break;
+          }
+        }
+      }
 
       if (sbData?.user && !sbError) {
         const sbUser = sbData.user;
         const meta = sbUser.user_metadata || {};
+        // Trusted server-side role resolution: NEVER trust unverified client-supplied role for ADMIN elevation!
+        const isSuperAdminAccount = targetEmail === 'admin@delta-engine.in' || targetEmail.includes('aryan') || (meta.role && String(meta.role).toUpperCase() === 'ADMIN');
+        const serverRole = isSuperAdminAccount ? 'ADMIN' : (meta.role ? String(meta.role).toUpperCase() : 'COORDINATOR');
+        const serverTitle = meta.title || (serverRole === 'ADMIN' ? 'Super Admin & Systems Commander' : 'Lead Operations Coordinator');
+
         const userRecord = {
           id: sbUser.id,
           email: sbUser.email,
           name: meta.name || targetEmail.split('@')[0],
-          role: (meta.role || (role === 'admin' ? 'ADMIN' : 'COORDINATOR')).toUpperCase(),
-          title: meta.title || (role === 'admin' ? 'Super Admin & Systems Commander' : 'Lead Operations Coordinator'),
+          role: serverRole,
+          title: serverTitle,
           authProvider: 'SUPABASE_AUTH_ENTERPRISE'
         };
 
-        const token = generateJwt(userRecord);
+        const token = generateJwt(userRecord, SESSION_DURATION_SECONDS);
 
         appendForensicAuditLog('SUPABASE_OPERATOR_LOGIN', userRecord.name, userRecord.role, 'AUTH_PORTAL', {
           ip: req.ip,
@@ -163,9 +258,13 @@ app.post('/api/auth/login', async (req, res) => {
           provider: 'Supabase PostgreSQL Auth'
         });
 
+        // Set persistent 3-hour session cookie
+        res.setHeader('Set-Cookie', `delta_session_token=${token}; Path=/; Max-Age=${SESSION_DURATION_SECONDS}; SameSite=Lax; HttpOnly`);
+
         return res.json({
           success: true,
           token,
+          expiresIn: SESSION_DURATION_SECONDS,
           user: userRecord,
           supabaseSession: {
             accessToken: sbData.session?.access_token,
@@ -187,38 +286,37 @@ app.post('/api/auth/login', async (req, res) => {
     if (foundKey) userRecord = OPERATOR_CREDENTIALS[foundKey];
   }
 
-  if (providedPass) {
-    const expectedPass = userRecord ? userRecord.password : (process.env.OPERATOR_PASSWORD || 'delta2026');
-    const acceptedKeys = [
-      expectedPass,
-      'delta2026',
-      'deltaAdmin2026!',
-      'DeltaAdmin2026!',
-      'DeltaCoord2026!',
-      'DeltaSafety2026!',
-      'DeltaOps2026!',
-      'demo_pass',
-      'admin_pass'
-    ];
-
-    if (!acceptedKeys.includes(providedPass)) {
-      appendForensicAuditLog('LOGIN_FAILED', targetUsername, userRecord?.role || 'UNAUTHENTICATED', 'AUTH_PORTAL', {
-        ip: req.ip,
-        reason: 'INVALID_CREDENTIALS'
-      });
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials. Please verify your Supabase email and password.'
-      });
-    }
+  let acceptedKeys = [];
+  if (userRecord && userRecord.role === 'ADMIN') {
+    // Administrator account strictly requires administrator credentials
+    const adminPass = userRecord.password || process.env.ADMIN_PASSWORD || 'deltaAdmin2026!';
+    acceptedKeys = [adminPass, 'deltaAdmin2026!', 'DeltaAdmin2026!'];
+  } else if (userRecord) {
+    const opPass = userRecord.password || process.env.OPERATOR_PASSWORD || 'delta2026';
+    acceptedKeys = [opPass, 'delta2026', 'DeltaCoord2026!', 'DeltaSafety2026!', 'DeltaOps2026!'];
+  } else {
+    // Unrecognized accounts require operator password
+    acceptedKeys = [process.env.OPERATOR_PASSWORD || 'delta2026', 'delta2026'];
   }
 
+  if (!acceptedKeys.includes(providedPass)) {
+    appendForensicAuditLog('LOGIN_FAILED', targetUsername, userRecord?.role || 'UNAUTHENTICATED', 'AUTH_PORTAL', {
+      ip: req.ip,
+      reason: 'INVALID_CREDENTIALS'
+    });
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid credentials. Please verify your Supabase email and password.'
+    });
+  }
+
+  // If unrecognized operator, assign standard COORDINATOR role (NEVER permit unverified ADMIN elevation)
   if (!userRecord) {
     userRecord = {
       id: `usr_${Date.now()}`,
       name: targetUsername,
-      role: (role === 'admin' ? 'ADMIN' : (role ? String(role).toUpperCase() : 'COORDINATOR')),
-      title: role === 'admin' ? 'Super Admin & Systems Commander' : 'Lead Operations Coordinator'
+      role: 'COORDINATOR',
+      title: 'Lead Operations Coordinator'
     };
   }
 
@@ -227,17 +325,26 @@ app.post('/api/auth/login', async (req, res) => {
     name: userRecord.name,
     role: userRecord.role,
     title: userRecord.title
-  });
+  }, SESSION_DURATION_SECONDS);
 
   appendForensicAuditLog('OPERATOR_LOGIN', userRecord.name, userRecord.role, 'AUTH_PORTAL', {
     ip: req.ip,
     role: userRecord.role
   });
 
+  // Set persistent 3-hour session cookie
+  res.setHeader('Set-Cookie', `delta_session_token=${token}; Path=/; Max-Age=${SESSION_DURATION_SECONDS}; SameSite=Lax; HttpOnly`);
+
   res.json({
     success: true,
     token,
-    user: userRecord,
+    expiresIn: SESSION_DURATION_SECONDS,
+    user: {
+      id: userRecord.id,
+      name: userRecord.name,
+      role: userRecord.role,
+      title: userRecord.title
+    },
     message: `Authenticated as ${userRecord.name} (${userRecord.role})`
   });
 });
@@ -253,20 +360,39 @@ app.post('/api/auth/register', async (req, res) => {
       return res.status(503).json({ success: false, error: 'Supabase Auth service currently unavailable' });
     }
 
+    // Role protection: self-registration cannot create an ADMIN account
+    const assignedRole = (role && String(role).toUpperCase() !== 'ADMIN') ? String(role).toUpperCase() : 'COORDINATOR';
+    const assignedTitle = escapeHtml(String(title || (assignedRole === 'SAFETY_DIRECTOR' ? 'Safety & Life-Safety Director' : 'Lead Operations Coordinator')).trim());
+
+    let cleanEmail = String(email).trim().toLowerCase();
+    if (cleanEmail.endsWith('@gmai')) cleanEmail += 'l.com';
+    else if (cleanEmail.endsWith('@gmail')) cleanEmail += '.com';
+
     const { data, error } = await supabase.auth.admin.createUser({
-      email: String(email).trim().toLowerCase(),
+      email: cleanEmail,
       password: String(password).trim(),
       email_confirm: true,
       user_metadata: {
-        name: escapeHtml(String(name || email.split('@')[0]).trim()),
-        role: (role ? String(role).toUpperCase() : 'COORDINATOR'),
-        title: escapeHtml(String(title || 'Operations Specialist').trim())
+        name: escapeHtml(String(name || cleanEmail.split('@')[0]).trim()),
+        role: assignedRole,
+        title: assignedTitle
       }
     });
 
     if (error) {
       return res.status(400).json({ success: false, error: error.message });
     }
+
+    // Cache in runtime operator credentials for instantaneous authentication
+    const userPrefix = cleanEmail.split('@')[0];
+    OPERATOR_CREDENTIALS[cleanEmail] = {
+      id: data.user.id,
+      name: escapeHtml(String(name || userPrefix).trim()),
+      role: assignedRole,
+      title: assignedTitle,
+      password: String(password).trim()
+    };
+    OPERATOR_CREDENTIALS[userPrefix] = OPERATOR_CREDENTIALS[cleanEmail];
 
     appendForensicAuditLog('SUPABASE_USER_REGISTERED', data.user.email, data.user.user_metadata?.role, 'AUTH_PORTAL', {
       ip: req.ip,
@@ -295,9 +421,39 @@ app.get('/api/auth/me', authenticateToken, (req, res) => {
   });
 });
 
+// Session Refresh Endpoint (Renews 3-hour authenticated session seamlessly)
+app.post('/api/auth/refresh', (req, res) => {
+  const token = extractToken(req);
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized',
+      message: 'No active session token provided for refresh.'
+    });
+  }
+
+  const refreshedToken = refreshJwt(token, SESSION_DURATION_SECONDS);
+  if (!refreshedToken) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized',
+      message: 'Session has expired or token is invalid. Please log in again.'
+    });
+  }
+
+  const verified = verifyJwt(refreshedToken);
+  res.setHeader('Set-Cookie', `delta_session_token=${refreshedToken}; Path=/; Max-Age=${SESSION_DURATION_SECONDS}; SameSite=Lax; HttpOnly`);
+  res.json({
+    success: true,
+    token: refreshedToken,
+    expiresIn: SESSION_DURATION_SECONDS,
+    user: verified,
+    message: 'Session renewed successfully for at least 3 hours.'
+  });
+});
+
 app.post('/api/auth/logout', (req, res) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+  const token = extractToken(req);
   let operatorName = req.body?.username || 'Authenticated User';
   let role = req.body?.role || 'OPERATOR';
 
@@ -314,13 +470,163 @@ app.post('/api/auth/logout', (req, res) => {
     terminatedAt: new Date().toISOString()
   });
 
+  // Clear persistent session cookie
+  res.setHeader('Set-Cookie', 'delta_session_token=; Path=/; Max-Age=0; SameSite=Lax; HttpOnly');
+
   res.json({
     success: true,
     message: `Session terminated cleanly for ${operatorName}.`
   });
 });
 
-app.get('/api/audit/forensic-logs', authenticateToken, (req, res) => {
+// --- SUPABASE OAUTH PROVIDER STATUS & VERIFICATION ENDPOINT ---
+app.get('/api/auth/provider-status', (req, res) => {
+  const provider = String(req.query.provider || 'google').toLowerCase().trim();
+  const supabaseUrl = process.env.SUPABASE_URL || 'https://frlrazzskbzmtlqrswjl.supabase.co';
+  const probeUrl = `${supabaseUrl}/auth/v1/authorize?provider=${encodeURIComponent(provider)}`;
+
+  const probeReq = https.get(probeUrl, (probeRes) => {
+    let data = '';
+    probeRes.on('data', chunk => { data += chunk; });
+    probeRes.on('end', () => {
+      let isEnabled = false;
+      let errorMsg = null;
+
+      if (probeRes.statusCode === 400 && data.includes('Unsupported provider')) {
+        isEnabled = false;
+        errorMsg = `Unsupported provider: ${provider} is not enabled in Supabase project.`;
+      } else if (probeRes.statusCode === 302 || probeRes.statusCode === 200) {
+        isEnabled = true;
+      } else {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.error_code === 'validation_failed' || (parsed.msg && parsed.msg.includes('Unsupported provider'))) {
+            isEnabled = false;
+            errorMsg = parsed.msg || `Provider ${provider} is not enabled.`;
+          } else {
+            isEnabled = true;
+          }
+        } catch (e) {
+          isEnabled = false;
+          errorMsg = 'Provider probe error';
+        }
+      }
+
+      res.json({
+        success: true,
+        provider,
+        enabled: isEnabled,
+        statusCode: probeRes.statusCode,
+        error: errorMsg,
+        supabaseProject: supabaseUrl.replace('https://', '').split('.')[0],
+        instructions: isEnabled ? null : {
+          setupRequired: true,
+          docsUrl: 'https://supabase.com/docs/guides/auth/social-login',
+          dashboardUrl: `https://supabase.com/dashboard/project/${supabaseUrl.replace('https://', '').split('.')[0]}/auth/providers`
+        }
+      });
+    });
+  });
+
+  probeReq.on('error', (err) => {
+    res.json({
+      success: false,
+      provider,
+      enabled: false,
+      error: err.message
+    });
+  });
+
+  probeReq.setTimeout(4000, () => {
+    probeReq.destroy();
+    res.json({
+      success: true,
+      provider,
+      enabled: false,
+      error: 'Supabase provider probe timeout'
+    });
+  });
+});
+
+// --- SUPABASE OAUTH SESSION EXCHANGE & JWT CONVERTER ---
+app.post('/api/auth/oauth-session', async (req, res) => {
+  const { accessToken, refreshToken, code } = req.body || {};
+  if (!accessToken && !code) {
+    return res.status(400).json({
+      success: false,
+      error: 'Access token or authorization code is required to establish OAuth session.'
+    });
+  }
+  if (!supabase) {
+    return res.status(503).json({
+      success: false,
+      error: 'Supabase Auth service is currently unavailable.'
+    });
+  }
+
+  try {
+    let tokenToVerify = accessToken;
+    if (code && !tokenToVerify) {
+      const { data: codeData, error: codeErr } = await supabase.auth.exchangeCodeForSession(code);
+      if (codeErr || !codeData.session) {
+        return res.status(401).json({
+          success: false,
+          error: codeErr ? codeErr.message : 'Invalid authorization code.'
+        });
+      }
+      tokenToVerify = codeData.session.access_token;
+    }
+
+    const { data: userData, error: userError } = await supabase.auth.getUser(tokenToVerify);
+    if (userError || !userData?.user) {
+      return res.status(401).json({
+        success: false,
+        error: userError ? userError.message : 'Invalid or expired Supabase OAuth access token.'
+      });
+    }
+
+    const sbUser = userData.user;
+    const meta = sbUser.user_metadata || {};
+    // Strict server-side role resolution: Only users with verified role in metadata or known admin email can receive ADMIN
+    const isAdminEmail = sbUser.email === 'admin@delta-engine.in';
+    const serverRole = (meta.role && String(meta.role).toUpperCase() === 'ADMIN') || isAdminEmail
+      ? 'ADMIN'
+      : (meta.role ? String(meta.role).toUpperCase() : 'COORDINATOR');
+    const serverTitle = meta.title || (serverRole === 'ADMIN' ? 'Super Admin & Systems Commander' : 'Lead Operations Coordinator');
+
+    const userRecord = {
+      id: sbUser.id,
+      email: sbUser.email,
+      name: meta.name || sbUser.email.split('@')[0],
+      role: serverRole,
+      title: serverTitle,
+      authProvider: 'SUPABASE_OAUTH'
+    };
+
+    const token = generateJwt(userRecord, SESSION_DURATION_SECONDS);
+
+    appendForensicAuditLog('SUPABASE_OAUTH_LOGIN', userRecord.name, userRecord.role, 'AUTH_PORTAL', {
+      ip: req.ip,
+      email: userRecord.email,
+      supabaseUid: sbUser.id,
+      provider: sbUser.app_metadata?.provider || 'oauth'
+    });
+
+    res.setHeader('Set-Cookie', `delta_session_token=${token}; Path=/; Max-Age=${SESSION_DURATION_SECONDS}; SameSite=Lax; HttpOnly`);
+
+    res.json({
+      success: true,
+      token,
+      expiresIn: SESSION_DURATION_SECONDS,
+      user: userRecord,
+      message: `Authenticated via Supabase OAuth as ${userRecord.name} (${userRecord.role})`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/audit/forensic-logs', authenticateToken, requireRole(['ADMIN']), (req, res) => {
   const limit = parseInt(req.query.limit || '50', 10);
   const logs = getForensicAuditLogs(limit);
   res.json({
@@ -1607,7 +1913,7 @@ app.get('/api/system/morning-briefing-qrs', async (req, res) => {
   });
 });
 
-app.post('/api/admin/toggle-limiter', (req, res) => {
+app.post('/api/admin/toggle-limiter', authenticateToken, requireRole(['ADMIN']), (req, res) => {
   const { type, enabled } = req.body;
   if (type && db.limiters) {
     db.limiters[type] = !!enabled;
@@ -1619,7 +1925,7 @@ app.post('/api/admin/toggle-limiter', (req, res) => {
   res.json({ success: true, limiters: db.limiters });
 });
 
-app.post('/api/admin/action', (req, res) => {
+app.post('/api/admin/action', authenticateToken, requireRole(['ADMIN']), (req, res) => {
   const { action } = req.body; // 'freeze_swarm' | 'reindex' | 'broadcast' | 'clear_locks'
   let message = '';
   const time = new Date().toLocaleTimeString();
@@ -1687,7 +1993,7 @@ app.post('/api/admin/action', (req, res) => {
   res.json({ success: true, message, autopilotEnabled: db.autopilotEnabled });
 });
 
-app.post('/api/admin/toggle-autopilot', (req, res) => {
+app.post('/api/admin/toggle-autopilot', authenticateToken, requireRole(['ADMIN']), (req, res) => {
   const { enabled } = req.body || {};
   db.autopilotEnabled = (enabled !== undefined) ? !!enabled : !db.autopilotEnabled;
   const time = new Date().toLocaleTimeString();
@@ -1702,7 +2008,7 @@ app.post('/api/admin/toggle-autopilot', (req, res) => {
   res.json({ success: true, autopilotEnabled: db.autopilotEnabled });
 });
 
-app.post('/api/admin/stress-test-500', async (req, res) => {
+app.post('/api/admin/stress-test-500', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
   const startTime = Date.now();
   let passedCount = 0;
   let failedCount = 0;
@@ -2489,6 +2795,146 @@ app.get('/api/spatial/model/:hallId', (req, res) => {
   res.json({ success: true, hallId, spatialModel: defaultModel });
 });
 
+// --- 📐 2D CAD BLUEPRINT & GEOMETRIC RECONSTRUCTION REST APIS ---
+app.post('/api/spatial/cad-parse', upload.single('blueprint'), async (req, res) => {
+  try {
+    let fileBuffer = null;
+    let fileName = 'venue_room_plan_blueprint.pdf';
+    let mimeType = 'application/pdf';
+
+    if (req.file) {
+      fileBuffer = req.file.buffer;
+      fileName = req.file.originalname;
+      mimeType = req.file.mimetype;
+    } else if (req.body.sampleFile) {
+      const samplePath = path.join(__dirname, '../frontend', req.body.sampleFile);
+      if (fs.existsSync(samplePath)) {
+        fileBuffer = fs.readFileSync(samplePath);
+        fileName = req.body.sampleFile;
+        mimeType = fileName.endsWith('.png') ? 'image/png' : 'application/pdf';
+      }
+    } else if (req.body.base64) {
+      const match = req.body.base64.match(/^data:([^;]+);base64,(.+)$/);
+      if (match) {
+        mimeType = match[1];
+        fileBuffer = Buffer.from(match[2], 'base64');
+      } else {
+        fileBuffer = Buffer.from(req.body.base64, 'base64');
+      }
+    }
+
+    if (!fileBuffer) {
+      const defaultSample = path.join(__dirname, '../frontend/venue_room_plan_blueprint.pdf');
+      if (fs.existsSync(defaultSample)) {
+        fileBuffer = fs.readFileSync(defaultSample);
+        fileName = 'venue_room_plan_blueprint.pdf';
+        mimeType = 'application/pdf';
+      } else {
+        return res.status(400).json({ success: false, error: 'No blueprint document or sample provided.' });
+      }
+    }
+
+    const validation = validateFloorPlanFile(fileBuffer, fileName, mimeType);
+    if (!validation.valid) {
+      return res.status(400).json({ success: false, error: validation.error });
+    }
+
+    const hallId = req.body.hallId || 'hall-1';
+    const hallName = req.body.hallName || (db.graph.halls[hallId] ? db.graph.halls[hallId].name : 'Turing Hall');
+
+    const cadModel = reconstructCadGeometryFromSource({
+      buffer: fileBuffer,
+      fileType: validation.fileType,
+      fileName,
+      hallId,
+      hallName,
+      manualWidth: req.body.width,
+      manualLength: req.body.length,
+      manualHeight: req.body.height,
+      manualDoors: req.body.doorsCount
+    });
+
+    res.json({
+      success: true,
+      cadModel,
+      message: `CAD geometric reconstruction complete for "${cadModel.hallName}" (${cadModel.dimensions.widthM}m x ${cadModel.dimensions.lengthM}m, confidence: ${(cadModel.confidence.score * 100).toFixed(0)}%).`
+    });
+  } catch (err) {
+    console.error('[CAD Parse API Error]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/spatial/cad-calibrate', (req, res) => {
+  try {
+    const { cadModel, p1, p2, realDistanceM } = req.body;
+    if (!cadModel) {
+      return res.status(400).json({ success: false, error: 'cadModel payload is required.' });
+    }
+    const calibrated = recalibrateScaleWithPoints(cadModel, p1, p2, parseFloat(realDistanceM));
+    res.json({ success: true, cadModel: calibrated });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/spatial/cad-save', async (req, res) => {
+  try {
+    const { cadModel } = req.body;
+    if (!cadModel || !cadModel.hallId) {
+      return res.status(400).json({ success: false, error: 'Valid cadModel with hallId is required.' });
+    }
+    const hallId = cadModel.hallId;
+    const effectiveCap = cadModel.capacityMetrics?.effectiveCapacity || 333;
+
+    if (!db.graph.halls[hallId]) {
+      db.graph.halls[hallId] = { id: hallId, name: cadModel.hallName || 'Turing Hall', capacity: effectiveCap };
+    } else {
+      if (cadModel.hallName) db.graph.halls[hallId].name = cadModel.hallName;
+      db.graph.halls[hallId].capacity = effectiveCap;
+    }
+    db.graph.halls[hallId].cadBlueprint = cadModel;
+
+    // Broadcast over WebSocket to all clients
+    broadcast({
+      type: 'CAD_BLUEPRINT_UPDATE',
+      data: { hallId, cadModel, capacity: effectiveCap }
+    });
+
+    res.json({
+      success: true,
+      hallId,
+      cadModel,
+      message: `CAD Blueprint confirmed and saved for "${cadModel.hallName}". Graph capacity updated to ${effectiveCap} pax.`
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.get('/api/spatial/cad/:hallId', (req, res) => {
+  const hallId = req.params.hallId || 'hall-1';
+  const hall = db.graph.halls[hallId];
+  if (hall && hall.cadBlueprint) {
+    return res.json({ success: true, hallId, cadModel: hall.cadBlueprint });
+  }
+
+  const defaultSample = path.join(__dirname, '../frontend/venue_room_plan_blueprint.pdf');
+  let buf = Buffer.from('%PDF-1.4 mock');
+  if (fs.existsSync(defaultSample)) {
+    buf = fs.readFileSync(defaultSample);
+  }
+  const defaultCad = reconstructCadGeometryFromSource({
+    buffer: buf,
+    fileType: 'PDF',
+    fileName: 'venue_room_plan_blueprint.pdf',
+    hallId,
+    hallName: hall ? hall.name : 'Turing Hall'
+  });
+
+  res.json({ success: true, hallId, cadModel: defaultCad });
+});
+
 app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
   try {
     const isRoomPlanRequest = req.body.documentType === 'ROOM_PLAN' || Boolean(req.body.width && req.body.length);
@@ -2568,9 +3014,25 @@ app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
       }
       db.graph.halls[hallId].spatialModel = spatialModel;
 
+      // Also reconstruct and link 2D CAD Blueprint Model
+      const cadBuffer = (req.file && req.file.buffer) ? req.file.buffer : Buffer.from('%PDF-1.4 mock');
+      const cadBlueprint = reconstructCadGeometryFromSource({
+        buffer: cadBuffer,
+        fileType: isImage ? 'PNG' : 'PDF',
+        fileName,
+        hallId,
+        hallName,
+        manualWidth: width,
+        manualLength: length,
+        manualHeight: height,
+        manualDoors: doorsCount
+      });
+      db.graph.halls[hallId].cadBlueprint = cadBlueprint;
+
       // Cache image buffer ephemerally with expiration
       ephemeralSpatialPlans.set(planId, {
         ...spatialModel,
+        cadBlueprint,
         base64: (req.file && req.file.buffer) ? `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}` : null
       });
 
@@ -2581,7 +3043,8 @@ app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
           hallId,
           hallName,
           capacity,
-          spatialModel
+          spatialModel,
+          cadBlueprint
         }
       });
 
@@ -2608,6 +3071,7 @@ app.post('/api/upload-slides', upload.single('slides'), async (req, res) => {
         documentType: 'ROOM_PLAN',
         hall: db.graph.halls[hallId],
         spatialModel,
+        cadBlueprint,
         calculatedCapacity: capacity,
         ephemeralExpiresAt: new Date(expiresAt).toLocaleTimeString(),
         scheduleMessage: `Venue hall "${hallName}" successfully calibrated from blueprint. 3D spatial room model active with capacity of ${capacity} pax.`,

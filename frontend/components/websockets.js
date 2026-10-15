@@ -303,9 +303,32 @@ function initWebSockets() {
           graphState.halls[payload.data.hallId].name = payload.data.hallName;
           graphState.halls[payload.data.hallId].capacity = payload.data.capacity;
           graphState.halls[payload.data.hallId].spatialModel = payload.data.spatialModel;
+          if (payload.data.cadBlueprint) {
+            graphState.halls[payload.data.hallId].cadBlueprint = payload.data.cadBlueprint;
+          }
+        }
+        if (typeof window.handleSpatialModelUpdate === 'function') {
+          window.handleSpatialModelUpdate(payload.data);
         }
         if (typeof createToast === 'function') {
           createToast(`🏛️ Spatial Blueprint Synced: "${payload.data.hallName}" capacity updated to ${payload.data.capacity} pax.`, 'info');
+        }
+        safeSyncUI(selectedNodeId);
+        break;
+
+      case 'CAD_BLUEPRINT_UPDATE':
+        if (graphState && graphState.halls && payload.data.hallId) {
+          if (!graphState.halls[payload.data.hallId]) {
+            graphState.halls[payload.data.hallId] = { id: payload.data.hallId, name: payload.data.cadModel?.hallName || 'Turing Hall', capacity: payload.data.capacity };
+          }
+          graphState.halls[payload.data.hallId].capacity = payload.data.capacity;
+          graphState.halls[payload.data.hallId].cadBlueprint = payload.data.cadModel;
+        }
+        if (typeof window.handleCadBlueprintUpdate === 'function') {
+          window.handleCadBlueprintUpdate(payload.data);
+        }
+        if (typeof createToast === 'function') {
+          createToast(`📐 CAD Blueprint Synced: "${payload.data.cadModel?.hallName || payload.data.hallId}" updated.`, 'info');
         }
         safeSyncUI(selectedNodeId);
         break;

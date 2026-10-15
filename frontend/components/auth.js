@@ -7,15 +7,120 @@
     const savedRole = localStorage.getItem('delta_user_role');
     const savedName = localStorage.getItem('delta_user_name');
     if (savedRole) currentUserRole = savedRole;
-    else if (window.location.pathname.includes('admin')) currentUserRole = 'admin';
     if (savedName) currentUserName = savedName;
-    else if (currentUserRole === 'admin') currentUserName = 'System Administrator';
   } catch (e) { }
 
-  window.addEventListener('DOMContentLoaded', () => {
+  function getAuthHeaders() {
+    const token = localStorage.getItem('delta_auth_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  }
+
+  async function revalidateServerSession() {
+    const token = localStorage.getItem('delta_auth_token');
+    const isAdminPage = window.location.pathname.includes('admin');
+
+    if (!token) {
+      if (isAdminPage) {
+        window.location.replace('login.html?redirect=admin.html');
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (res.ok && data && data.success && data.user) {
+        currentUserRole = String(data.user.role || 'COORDINATOR').toLowerCase();
+        currentUserName = data.user.name || currentUserName;
+        localStorage.setItem('delta_user_role', currentUserRole);
+        localStorage.setItem('delta_user_name', currentUserName);
+        updateAuthUI();
+
+        if (isAdminPage && currentUserRole !== 'admin') {
+          alert('Access Denied: Super Admin clearance is required.');
+          window.location.replace('index.html?error=unauthorized');
+        }
+      } else {
+        localStorage.removeItem('delta_auth_token');
+        localStorage.removeItem('delta_user_role');
+        localStorage.removeItem('delta_user_name');
+        if (isAdminPage) {
+          window.location.replace('login.html?redirect=admin.html&expired=true');
+        }
+      }
+    } catch (e) {
+      console.warn('[Auth] Server revalidation check deferred:', e.message);
+    }
+  }
+
+  function setupSessionAutoRefresh() {
+    // Proactively renew 3-hour session every 20 minutes while active
+    setInterval(async () => {
+      const token = localStorage.getItem('delta_auth_token');
+      if (!token) return;
+      try {
+        const res = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok && data && data.success && data.token) {
+          localStorage.setItem('delta_auth_token', data.token);
+          if (data.user?.role) {
+            currentUserRole = String(data.user.role).toLowerCase();
+            localStorage.setItem('delta_user_role', currentUserRole);
+          }
+        }
+      } catch (err) {
+        console.warn('[Auth] Session auto-refresh:', err.message);
+      }
+    }, 20 * 60 * 1000);
+  }
+
+  async function checkOAuthCallback() {
+    const hash = window.location.hash.startsWith('#') ? window.location.hash.substring(1) : window.location.hash;
+    const hashParams = new URLSearchParams(hash);
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessToken = hashParams.get('access_token') || urlParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token') || urlParams.get('refresh_token');
+    const code = urlParams.get('code');
+
+    if (accessToken || code) {
+      window.history.replaceState({}, document.title, window.location.pathname);
+      try {
+        const res = await fetch('/api/auth/oauth-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ accessToken, refreshToken, code })
+        });
+        const data = await res.json();
+        if (res.ok && data && data.success && data.token) {
+          localStorage.setItem('delta_auth_token', data.token);
+          if (data.user?.role) {
+            currentUserRole = String(data.user.role).toLowerCase();
+            localStorage.setItem('delta_user_role', currentUserRole);
+          }
+          if (data.user?.name) {
+            currentUserName = data.user.name;
+            localStorage.setItem('delta_user_name', currentUserName);
+          }
+          updateAuthUI();
+        }
+      } catch (e) {
+        console.warn('[Auth] OAuth token exchange error:', e.message);
+      }
+    }
+  }
+
+  window.addEventListener('DOMContentLoaded', async () => {
     bindAuthEventListeners();
     updateAuthUI();
     startLiveAdminTimers();
+    await checkOAuthCallback();
+    revalidateServerSession();
+    setupSessionAutoRefresh();
     fetch('/api/state').then(r => r.json()).then(data => {
       if (typeof window.syncAdminDashboard === 'function') window.syncAdminDashboard(data);
     }).catch(() => { });
@@ -309,12 +414,21 @@
   }
 
   function triggerAdminAction(action) {
+    const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
     fetch('/api/admin/action', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers,
       body: JSON.stringify({ action })
-    }).then(res => res.json()).then(data => {
-      if (typeof createToast === 'function' && data.message) {
+    }).then(res => {
+      if (res.status === 401 || res.status === 403) {
+        if (typeof createToast === 'function') {
+          createToast('⛔ Access Denied: Administrator role clearance required for this operation.', 'warning');
+        }
+        return res.json().catch(() => ({}));
+      }
+      return res.json();
+    }).then(data => {
+      if (typeof createToast === 'function' && data?.message) {
         createToast(data.message, action === 'freeze_swarm' ? 'conflict' : 'info');
       }
     });
@@ -330,10 +444,19 @@
     if (btnStress500) {
       btnStress500.addEventListener('click', () => {
         if (typeof createToast === 'function') createToast('🔥 Executing 500 High-Stress Test Cases against Admin Engine...', 'info');
-        fetch('/api/admin/stress-test-500', { method: 'POST' })
-          .then(res => res.json())
+        fetch('/api/admin/stress-test-500', { 
+          method: 'POST',
+          headers: { ...getAuthHeaders() }
+        })
+          .then(res => {
+            if (res.status === 401 || res.status === 403) {
+              if (typeof createToast === 'function') createToast('⛔ Access Denied: Administrator authorization required.', 'warning');
+              return { success: false, passedCount: 0, totalTests: 500, successRate: '0%', durationMs: 0 };
+            }
+            return res.json();
+          })
           .then(data => {
-            if (typeof createToast === 'function') {
+            if (typeof createToast === 'function' && data && data.success) {
               createToast(`✅ 500 STRESS TEST COMPLETE: ${data.passedCount}/500 Passed (${data.successRate}) in ${data.durationMs}ms!`, 'success');
             }
           });
@@ -704,8 +827,13 @@
         const enabled = e.target.checked;
         fetch('/api/admin/toggle-limiter', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({ type: 'llmLimiter', enabled })
+        }).then(res => {
+          if (res.status === 401 || res.status === 403) {
+            e.target.checked = !enabled;
+            if (typeof createToast === 'function') createToast('⛔ Access Denied: Administrator role required to toggle limiters.', 'warning');
+          }
         });
         if (typeof createToast === 'function') {
           createToast(enabled ? '🛑 LLM Token Usage Limiter ACTIVATED.' : '🟢 LLM Token Usage Limiter DISABLED.', enabled ? 'conflict' : 'success');
@@ -718,8 +846,13 @@
         const enabled = e.target.checked;
         fetch('/api/admin/toggle-limiter', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
           body: JSON.stringify({ type: 'dbLimiter', enabled })
+        }).then(res => {
+          if (res.status === 401 || res.status === 403) {
+            e.target.checked = !enabled;
+            if (typeof createToast === 'function') createToast('⛔ Access Denied: Administrator role required to toggle limiters.', 'warning');
+          }
         });
         if (typeof createToast === 'function') {
           createToast(enabled ? '🔒 Backend DB Write Limiter ACTIVATED.' : '🟢 Backend DB Write Limiter DISABLED.', enabled ? 'conflict' : 'success');

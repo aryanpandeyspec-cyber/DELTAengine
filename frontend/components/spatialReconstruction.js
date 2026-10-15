@@ -5,6 +5,7 @@
 (function () {
   let stagedRoomPhotos = [];
   let active3dRenderer = null;
+  let activeCadEngine = null;
   let currentSpatialModel = null;
 
   // Initialize once DOM is ready
@@ -95,29 +96,63 @@
       });
     }
 
+    // 2D CAD / 3D Spatial Mode Switcher Controls
+    bindModeSwitcherControls();
+
     // 3D Canvas View Controls
     bindCanvas3dControls();
 
     // Calibration Sliders
     bindCalibrationSliders();
 
-    // Auto-initialize default 3D canvas view on load
+    // Auto-initialize default 2D CAD blueprint and 3D canvas view on load
     setTimeout(() => {
+      initDefaultCadEngine();
       initDefault3dCanvas();
     }, 200);
+  }
+
+  /**
+   * Cleans file names into human-readable room/venue titles
+   */
+  function formatTitleFromFilename(fileName) {
+    if (!fileName || typeof fileName !== 'string') return null;
+    const base = fileName.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (!base || base.toLowerCase() === 'blob') return null;
+    return base.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 
   /**
    * Reads selected image files into staged photos array
    */
   function handleFilesSelected(files) {
-    const validImageFiles = files.filter(f => f.type.startsWith('image/') || /\.(png|jpe?g|webp|svg)$/i.test(f.name));
+    const validImageFiles = files.filter(f => f.type.startsWith('image/') || /\.(png|jpe?g|webp|svg|pdf)$/i.test(f.name));
 
     if (validImageFiles.length === 0) {
       if (typeof createToast === 'function') {
-        createToast('⚠️ Please upload image files (.jpg, .png, .webp) for 3D room reconstruction.', 'warning');
+        createToast('⚠️ Please upload architectural drawings or photos (.png, .jpg, .webp, .pdf).', 'warning');
       }
       return;
+    }
+
+    // Automatically derive room and venue name from the first uploaded image name
+    const primaryFile = validImageFiles[0];
+    const derivedName = formatTitleFromFilename(primaryFile.name);
+    if (derivedName) {
+      const hallSelect = document.getElementById('spatial-target-hall-select');
+      if (hallSelect) {
+        let opt = Array.from(hallSelect.options).find(o => o.text.includes(derivedName));
+        if (!opt) {
+          opt = document.createElement('option');
+          opt.value = 'hall-custom-' + Date.now();
+          opt.text = `${derivedName}`;
+          hallSelect.add(opt);
+        }
+        hallSelect.value = opt.value;
+      }
+      if (activeCadEngine && typeof activeCadEngine.updateNamesFromImageName === 'function') {
+        activeCadEngine.updateNamesFromImageName(primaryFile.name);
+      }
     }
 
     const defaultLabels = [
@@ -148,7 +183,7 @@
     });
 
     if (typeof createToast === 'function') {
-      createToast(`📸 Staged ${validImageFiles.length} photo(s). Ready for multi-angle 3D spatial analysis.`, 'info');
+      createToast(`📸 Loaded "${derivedName || primaryFile.name}". Rooms updated to match image name.`, 'info');
     }
   }
 
@@ -268,6 +303,10 @@
         if (labOpt) {
           hallSelect.value = labOpt.value;
         }
+      }
+
+      if (activeCadEngine && typeof activeCadEngine.updateNamesFromImageName === 'function') {
+        activeCadEngine.updateNamesFromImageName("St. Peter's College Systems Lab");
       }
 
       if (typeof createToast === 'function') {
@@ -393,6 +432,10 @@
     ];
 
     renderStagedPhotosTray();
+
+    if (activeCadEngine && typeof activeCadEngine.updateNamesFromImageName === 'function') {
+      activeCadEngine.updateNamesFromImageName("Turing Hall");
+    }
 
     if (typeof createToast === 'function') {
       createToast('📸 Loaded 3 multi-angle venue photos! Ready to reconstruct 3D twin.', 'success');
@@ -581,6 +624,107 @@
       }
       active3dRenderer.requestRender();
     }
+
+    // Render & Sync with 2D CAD Blueprint Engine
+    if (typeof CadBlueprint2DEngine === 'function') {
+      const mount = document.getElementById('spatial-cad-mount');
+      if (mount) {
+        if (!activeCadEngine) {
+          activeCadEngine = new CadBlueprint2DEngine(mount, {
+            hallId: sm.hallId || 'hall-1',
+            hallName: sm.hallName || 'Turing Hall'
+          });
+        }
+        if (sm.cadBlueprint) {
+          activeCadEngine.loadCadModel(sm.cadBlueprint);
+        } else {
+          fetch(`/api/spatial/cad/${sm.hallId || 'hall-1'}`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.success && data.cadModel && activeCadEngine) {
+                data.cadModel.dimensions.widthM = sm.dimensions.width;
+                data.cadModel.dimensions.lengthM = sm.dimensions.length;
+                data.cadModel.capacityMetrics.effectiveCapacity = sm.capacityMetrics.capacity;
+                data.cadModel.hallName = sm.hallName;
+                activeCadEngine.loadCadModel(data.cadModel);
+                activeCadEngine.updateNamesFromImageName(sm.hallName);
+              }
+            })
+            .catch(e => console.warn('[CAD Blueprint Sync Warning]', e));
+        }
+      }
+    }
+  }
+
+  function initDefaultCadEngine() {
+    const mount = document.getElementById('spatial-cad-mount');
+    if (mount && typeof CadBlueprint2DEngine === 'function' && !activeCadEngine) {
+      activeCadEngine = new CadBlueprint2DEngine(mount, {
+        hallId: 'hall-1',
+        hallName: 'Turing Hall'
+      });
+    }
+  }
+
+  function bindModeSwitcherControls() {
+    const modeSelect = document.getElementById('blueprint-view-mode-select');
+    const btn2D = document.getElementById('btn-toggle-view-2d');
+    const btn3D = document.getElementById('btn-toggle-view-3d');
+    const container2D = document.getElementById('spatial-cad-view-container');
+    const container3D = document.getElementById('spatial-3d-view-container');
+
+    function applyViewMode(mode) {
+      if (mode === '3d') {
+        if (container2D) container2D.style.display = 'none';
+        if (container3D) container3D.style.display = 'block';
+        if (modeSelect) modeSelect.value = '3d';
+        if (btn2D) {
+          btn2D.className = 'btn btn-sm btn-white font-bold';
+          btn2D.textContent = '📐 2D CAD Blueprint';
+        }
+        if (btn3D) {
+          btn3D.className = 'btn btn-sm btn-blue font-bold';
+          btn3D.textContent = '🌐 3D Spatial Perspective (Active)';
+        }
+        if (active3dRenderer) {
+          active3dRenderer.requestRender();
+        }
+      } else {
+        // Default: 2D CAD Blueprint
+        if (container2D) container2D.style.display = 'block';
+        if (container3D) container3D.style.display = 'none';
+        if (modeSelect) modeSelect.value = '2d';
+        if (btn2D) {
+          btn2D.className = 'btn btn-sm btn-blue font-bold';
+          btn2D.textContent = '📐 2D CAD Blueprint (Active)';
+        }
+        if (btn3D) {
+          btn3D.className = 'btn btn-sm btn-white font-bold';
+          btn3D.textContent = '🌐 3D Spatial Perspective';
+        }
+        if (activeCadEngine) {
+          activeCadEngine.fitToScreen();
+          requestAnimationFrame(() => activeCadEngine.fitToScreen());
+          setTimeout(() => activeCadEngine.fitToScreen(), 80);
+        }
+      }
+    }
+
+    if (modeSelect) {
+      modeSelect.addEventListener('change', (e) => {
+        applyViewMode(e.target.value);
+      });
+    }
+
+    if (btn2D) {
+      btn2D.addEventListener('click', () => applyViewMode('2d'));
+    }
+    if (btn3D) {
+      btn3D.addEventListener('click', () => applyViewMode('3d'));
+    }
+
+    // Default to 2D view on load
+    applyViewMode('2d');
   }
 
   function initDefault3dCanvas() {
@@ -649,6 +793,14 @@
           capacity: cap
         });
       }
+
+      if (activeCadEngine && activeCadEngine.cadModel) {
+        activeCadEngine.cadModel.dimensions.widthM = width;
+        activeCadEngine.cadModel.dimensions.lengthM = length;
+        activeCadEngine.cadModel.dimensions.areaM2 = Math.round(width * length);
+        activeCadEngine.cadModel.capacityMetrics.effectiveCapacity = cap;
+        activeCadEngine.renderAll();
+      }
     };
 
     if (sWidth) sWidth.addEventListener('input', onSliderChange);
@@ -711,6 +863,16 @@
   window.handleSpatialModelUpdate = function (data) {
     if (data && data.spatialModel) {
       displayReconstructedTwin(data.spatialModel);
+    }
+    if (data && data.cadBlueprint && activeCadEngine) {
+      activeCadEngine.loadCadModel(data.cadBlueprint);
+    }
+  };
+
+  // Hook for dedicated CAD Blueprint WebSocket broadcasts
+  window.handleCadBlueprintUpdate = function (data) {
+    if (data && data.cadModel && activeCadEngine) {
+      activeCadEngine.loadCadModel(data.cadModel);
     }
   };
 })();

@@ -162,6 +162,39 @@ function openUploadReviewModal(file, isReEdit = false) {
   // Pre-fill editable inputs
   prefillReviewForm(fileName, isLikelyRoomPlan);
 
+  // If Room Plan blueprint, asynchronously parse CAD geometry to populate exact architectural dimensions
+  if (isLikelyRoomPlan && file) {
+    const formData = new FormData();
+    formData.append('blueprint', file);
+    formData.append('fileName', fileName);
+    fetch('/api/spatial/cad-parse', {
+      method: 'POST',
+      body: formData
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && data.cadModel) {
+          const inpW = document.getElementById('edit-room-width');
+          const inpL = document.getElementById('edit-room-length');
+          const inpH = document.getElementById('edit-room-height');
+          const inpD = document.getElementById('edit-room-doors');
+          const inpHall = document.getElementById('edit-room-hall-name');
+
+          if (inpW && data.cadModel.dimensions?.widthM) inpW.value = data.cadModel.dimensions.widthM;
+          if (inpL && data.cadModel.dimensions?.lengthM) inpL.value = data.cadModel.dimensions.lengthM;
+          if (inpH && data.cadModel.dimensions?.heightM) inpH.value = data.cadModel.dimensions.heightM;
+          if (inpD && data.cadModel.doorsCount) inpD.value = data.cadModel.doorsCount;
+          if (inpHall && data.cadModel.hallName && inpHall.value.includes('Turing')) inpHall.value = data.cadModel.hallName;
+
+          recalculatePeopleCapacity();
+          if (typeof createToast === 'function') {
+            createToast(`📐 CAD Blueprint Analyzed: ${data.cadModel.dimensions.widthM}m × ${data.cadModel.dimensions.lengthM}m (${data.cadModel.dimensions.areaM2} m²).`, 'info');
+          }
+        }
+      })
+      .catch(e => console.warn('[CAD Blueprint Auto-Parse]', e));
+  }
+
   // Display modal
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
@@ -641,6 +674,10 @@ function renderPipelineResults(data, isRoomPlan, file) {
           });
         }
       }
+    }
+
+    if (data.cadBlueprint && typeof window.handleCadBlueprintUpdate === 'function') {
+      window.handleCadBlueprintUpdate({ hallId: data.hall?.id || 'hall-1', cadModel: data.cadBlueprint });
     }
   } else if (data.topic) {
     // Presentation Slides Mode
