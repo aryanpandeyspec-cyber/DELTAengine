@@ -49,6 +49,7 @@ def parse_args():
     parser.add_argument("--rtsp", "--camera", dest="rtsp", type=str, default=None, help="RTSP Stream URL (e.g., rtsp://admin:pass@ip:554/cam/realmonitor?channel=1&subtype=0) or webcam index (e.g., 0)")
     parser.add_argument("--preview", action="store_true", help="Display OpenCV live video feed window with detection bounding boxes")
     parser.add_argument("--test", "--diagnose", dest="test_mode", action="store_true", help="Run 3-second instant pre-flight diagnostic on RTSP stream without posting telemetry")
+    parser.add_argument("--templates", action="store_true", help="Print standard RTSP sub-stream templates for Indian NVR brands (CP PLUS, Hikvision, Dahua, Tapo)")
     parser.add_argument("--health-check", action="store_true", help="Check server health and exit immediately with status code")
     return parser.parse_args()
 
@@ -603,9 +604,31 @@ def run_multicam_daemon(config_file, api_url):
     print("✅ All camera workers shut down cleanly.")
 
 
+def print_rtsp_templates():
+    print("""
+================================================================================
+   DELTA ENGINE — NVR & CCTV RTSP SUB-STREAM CONFIGURATION TEMPLATES
+================================================================================
+  Vendor         RTSP Sub-Stream URL Pattern
+  ----------     ---------------------------------------------------------------
+  CP PLUS:       rtsp://admin:<pass>@<ip>:554/cam/realmonitor?channel=1&subtype=1
+  Dahua:         rtsp://admin:<pass>@<ip>:554/cam/realmonitor?channel=1&subtype=1
+  Hikvision:     rtsp://admin:<pass>@<ip>:554/Streaming/Channels/102
+  TP-Link Tapo:  rtsp://admin:<pass>@<ip>:554/stream2
+  Uniview (UNV): rtsp://admin:<pass>@<ip>:554/unicast/c1/s1/live
+  Generic/ONVIF: rtsp://admin:<pass>@<ip>:554/live/sub
+================================================================================
+  💡 TIP: Always configure sub-streams (subtype=1, Channels/102, stream2) for
+          commodity edge deployment. Saves 85-90% CPU and network bandwidth!
+================================================================================
+""")
+
+
 if __name__ == "__main__":
     args = parse_args()
-    if args.health_check:
+    if args.templates:
+        print_rtsp_templates()
+    elif args.health_check:
         run_health_check(args.api)
     elif args.rtsp and args.test_mode:
         test_rtsp_connection(args.rtsp)

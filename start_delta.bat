@@ -55,7 +55,10 @@ echo  [0] Exit Launcher (Server continues running in background)
 echo ===============================================================================
 echo.
 
-set /p choice="Select an option [0-9]: "
+set choice=%1
+if "%choice%"=="" (
+    set /p choice="Select an option [0-9]: "
+)
 
 if "%choice%"=="1" (
     echo.

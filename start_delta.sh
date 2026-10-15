@@ -53,7 +53,10 @@ echo " [0] Exit Launcher (Server continues running in background)"
 echo "==============================================================================="
 echo ""
 
-read -p "Select an option [0-8]: " choice
+choice=${1:-}
+if [ -z "$choice" ]; then
+    read -p "Select an option [0-8]: " choice
+fi
 
 case "$choice" in
     1)

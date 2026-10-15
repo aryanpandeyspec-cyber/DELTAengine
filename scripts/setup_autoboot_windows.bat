@@ -22,7 +22,7 @@ if %errorLevel% neq 0 (
 )
 
 echo [STEP 2] Creating scheduled appliance boot task...
-schtasks /create /tn "%TASK_NAME%" /tr "\"%SCRIPT_PATH%\"" /sc ONSTART /ru "SYSTEM" /rl HIGHEST /f
+schtasks /create /tn "%TASK_NAME%" /tr "\"%SCRIPT_PATH%\" 1" /sc ONSTART /ru "SYSTEM" /rl HIGHEST /f
 
 if %errorLevel% equ 0 (
     echo.

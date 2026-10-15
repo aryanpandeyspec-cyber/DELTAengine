@@ -1777,12 +1777,17 @@ app.get('/api/system/integrations', (req, res) => {
     groq: {
       connected: !!(process.env.GROQ_API_KEY || getGroqApiKey()),
       provider: 'Groq Cloud High-Speed LPU',
-      models: ['qwen/qwen3.8-27b', 'openai/gpt-oss-20b']
+      models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
     },
-    supabase: {
-      connected: !!(process.env.SUPABASE_URL && (process.env.SUPABASE_KEY || process.env.SUPABASE_ANON_KEY)),
-      provider: 'Supabase PostgreSQL & Cloud Auth',
-      url: process.env.SUPABASE_URL || 'Disconnected'
+    sqlite: {
+      connected: true,
+      provider: 'Embedded SQLite WAL Engine (Node 24)',
+      mode: 'ACID Crash-Proof WAL'
+    },
+    cloudSync: {
+      connected: typeof cloudSyncWorker !== 'undefined',
+      provider: 'Autonomous Outbox Reconciler',
+      status: 'Active'
     },
     twilio: {
       connected: isTwilioConfigured(),
