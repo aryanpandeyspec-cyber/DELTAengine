@@ -439,6 +439,185 @@ function initWebSockets() {
           renderSwarmChat(payload.data.swarmChat);
         }
         break;
+
+      case 'VOLUNTEER_SOS_ALERT': {
+        const sosData = payload.data || {};
+        if (typeof createToast === 'function') {
+          createToast(`🚨 [EMERGENCY SOS] ${sosData.volunteerName || 'Field Marshal'} (${sosData.hallName || 'Hall'}): ${sosData.note || 'Urgent escalation'}`, 'conflict');
+        }
+        if (typeof appendLog === 'function') {
+          appendLog(`[SOS ALERT] 🚨 Field Marshal ${sosData.volunteerName || 'Volunteer'} triggered emergency panic at ${sosData.hallName || 'Venue'}: ${sosData.note || 'Assistance requested'}`, 'conflict');
+        }
+        if (typeof window.handleVolunteerSosAlert === 'function') {
+          window.handleVolunteerSosAlert(sosData);
+        }
+        const auditBox = document.getElementById('admin-audit-log-container');
+        if (auditBox) {
+          const line = document.createElement('div');
+          line.className = 'admin-audit-line conflict';
+          line.textContent = `[${sosData.timestamp || new Date().toLocaleTimeString()}] 🚨 EMERGENCY SOS: ${sosData.volunteerName} (${sosData.hallName}): ${sosData.note}`;
+          auditBox.insertBefore(line, auditBox.firstChild);
+        }
+        break;
+      }
+
+      case 'GATE_RELEASE_PULSE': {
+        const pulse = payload.data || {};
+        if (typeof createToast === 'function') {
+          createToast(`🚨 BARRICADE PRESSURE RELIEF: ${pulse.gateName || 'Egress Gate'} at ${pulse.hallName || 'Venue'} surge (${pulse.pressurePsi || 8.5} PSI). Automated latch disengaged!`, 'warning');
+        }
+        if (typeof appendLog === 'function') {
+          appendLog(`[GATE RELIEF PULSE] Automated crowd relief latch triggered at ${pulse.gateName || 'Gate'} (${pulse.pressurePsi || 8.5} PSI) — ${pulse.reason || 'Stampede prevention'}`, 'action');
+        }
+        if (typeof window.handleGateReleasePulse === 'function') {
+          window.handleGateReleasePulse(pulse);
+        }
+        break;
+      }
+
+      case 'VOLUNTEER_OVERFLOW_OPEN': {
+        const ofData = payload.data || {};
+        if (typeof createToast === 'function') {
+          createToast(`🏛️ OVERFLOW ACTIVATED: Secondary zone & broadcast feeds opened by ${ofData.volunteer || 'Operations'}!`, 'info');
+        }
+        if (typeof appendLog === 'function') {
+          appendLog(`[OVERFLOW ACTIVATED] ${ofData.volunteer || 'Operations'}: ${ofData.note || 'Secondary venue capacity online'}`, 'success');
+        }
+        if (typeof window.handleOverflowOpen === 'function') {
+          window.handleOverflowOpen(ofData);
+        }
+        break;
+      }
+
+      case 'VOLUNTEER_ALERT_ACK': {
+        const ackData = payload.data || {};
+        if (typeof createToast === 'function') {
+          createToast(`✅ Chokepoint Cleared: ${ackData.volunteer || 'Marshal'} reported ${ackData.message || 'Nominal flow restored'}`, 'success');
+        }
+        if (typeof appendLog === 'function') {
+          appendLog(`[CHOKEPOINT CLEARED] ${ackData.volunteer || 'Marshal'}: ${ackData.message || 'Door chokepoint cleared'}`, 'success');
+        }
+        if (typeof window.handleVolunteerAlertAck === 'function') {
+          window.handleVolunteerAlertAck(ackData);
+        }
+        break;
+      }
+
+      case 'SUPERVISOR_ACTION_LOGGED': {
+        const supData = payload.data || {};
+        if (typeof appendLog === 'function') {
+          appendLog(`[SUPERVISOR ACTION] ${supData.overriddenBy || 'Supervisor'}: ${supData.decision || 'Action logged'} (${supData.cryptoSignature || 'SHA-256'})`, 'action');
+        }
+        const auditBox = document.getElementById('admin-audit-log-container');
+        if (auditBox) {
+          const line = document.createElement('div');
+          line.className = 'admin-audit-line success';
+          line.textContent = `[${supData.timestamp || new Date().toLocaleTimeString()}] 🛡️ SUPERVISOR ACTION: ${supData.decision} by ${supData.overriddenBy} (${supData.cryptoSignature})`;
+          auditBox.insertBefore(line, auditBox.firstChild);
+        }
+        if (typeof window.handleSupervisorActionLogged === 'function') {
+          window.handleSupervisorActionLogged(supData);
+        }
+        break;
+      }
+
+      case 'SWARM_CHAT': {
+        if (payload.data) {
+          const chatItems = Array.isArray(payload.data) ? payload.data : [payload.data];
+          if (typeof renderSwarmChat === 'function') {
+            renderSwarmChat(chatItems);
+          }
+        }
+        break;
+      }
+
+      case 'TOAST': {
+        const toastMsg = payload.data?.message || payload.message;
+        const toastType = payload.data?.type || payload.type || 'info';
+        if (toastMsg && typeof createToast === 'function') {
+          createToast(toastMsg, toastType);
+        }
+        break;
+      }
+
+      case 'GRAPH_UPDATED': {
+        previousSchedule = scheduleState ? JSON.parse(JSON.stringify(scheduleState)) : null;
+        if (payload.data?.graph) graphState = payload.data.graph;
+        if (payload.data?.schedule) scheduleState = payload.data.schedule;
+        if (payload.data?.activeDate) {
+          if (graphState) graphState.activeDate = payload.data.activeDate;
+          const dp = document.getElementById('schedule-date-picker');
+          if (dp) {
+            dp.value = payload.data.activeDate;
+            dp.min = payload.data.activeDate;
+          }
+        }
+        if (payload.data?.logs && typeof appendLog === 'function') {
+          payload.data.logs.forEach(log => appendLog(log, 'system'));
+        }
+        safeSyncUI(selectedNodeId);
+        break;
+      }
+
+      case 'MESH_MESSAGE':
+      case 'CHAT_MESSAGE': {
+        if (typeof window.handleMeshMessage === 'function') {
+          window.handleMeshMessage(payload.data);
+        }
+        break;
+      }
+
+      case 'GATE_MESH_UPDATE': {
+        if (typeof window.handleGateMeshUpdate === 'function') {
+          window.handleGateMeshUpdate(payload.data);
+        }
+        break;
+      }
+
+      case 'SYSTEM_LOG': {
+        const sysText = payload.data?.text || payload.data?.message || payload.data;
+        const sysType = payload.data?.type || 'system';
+        if (sysText && typeof appendLog === 'function') {
+          appendLog(sysText, sysType);
+        }
+        break;
+      }
+
+      case 'TASK_CREATED':
+      case 'TASK_UPDATED': {
+        if (typeof window.handleTaskUpdate === 'function') {
+          window.handleTaskUpdate(payload.data);
+        }
+        break;
+      }
+
+      case 'VOICE_BROADCAST': {
+        if (typeof window.handleVoiceAnnouncement === 'function') {
+          window.handleVoiceAnnouncement(payload.data);
+        }
+        break;
+      }
+
+      case 'ROOMS_UPDATE': {
+        if (typeof window.handleRoomsUpdate === 'function') {
+          window.handleRoomsUpdate(payload.data);
+        }
+        break;
+      }
+
+      case 'BADGE_SCANNED': {
+        if (typeof window.handleBadgeScanned === 'function') {
+          window.handleBadgeScanned(payload.data);
+        }
+        break;
+      }
+
+      case 'QUICK_ACTION_DISPATCH': {
+        if (typeof window.handleQuickActionDispatch === 'function') {
+          window.handleQuickActionDispatch(payload.data);
+        }
+        break;
+      }
     }
   };
 

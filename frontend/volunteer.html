@@ -822,10 +822,73 @@
             if (msg.type === 'SYSTEM_LOG' && elOrdersLog) {
               const div = document.createElement('div');
               div.className = 'order-item';
-              div.innerHTML = `<strong>[${msg.data.timestamp || new Date().toLocaleTimeString()}]</strong> ${msg.data.text}`;
+              div.innerHTML = `<strong>[${msg.data?.timestamp || new Date().toLocaleTimeString()}]</strong> ${msg.data?.text || msg.data?.message || msg.data}`;
               elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
             }
-            if (['STATE_UPDATE', 'INIT_STATE', 'SCHEDULE_UPDATED', 'CCTV_OCCUPANCY_UPDATE', 'ROOM_OCCUPANCY_UPDATE', 'DOOR_TRIGGER', 'SCENARIO_CHANGED'].includes(msg.type)) {
+            if (msg.type === 'VOLUNTEER_SOS_ALERT' && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.style.background = '#fee2e2';
+              div.style.borderLeft = '4px solid #ef4444';
+              div.style.padding = '6px';
+              div.style.color = '#991b1b';
+              div.innerHTML = `🚨 <strong>EMERGENCY SOS:</strong> ${msg.data?.volunteerName || 'Field Marshal'} (${msg.data?.hallName || 'Hall'}): ${msg.data?.note || 'Urgent escalation'}`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+              triggerHaptic([150, 80, 150, 80, 200]);
+              playTone(220, 0.4);
+            }
+            if (msg.type === 'GATE_RELEASE_PULSE' && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.style.background = '#fef3c7';
+              div.style.borderLeft = '4px solid #f59e0b';
+              div.style.padding = '6px';
+              div.style.color = '#92400e';
+              div.innerHTML = `⚡ <strong>BARRICADE PULSE RELEASE:</strong> ${msg.data?.gateName || 'Gate'} (${msg.data?.pressurePsi || 8.5} PSI) — ${msg.data?.reason || 'Surge relief'}`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+              playTone(550, 0.2);
+              syncHallState();
+            }
+            if (msg.type === 'VOLUNTEER_OVERFLOW_OPEN' && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.style.background = '#eff6ff';
+              div.style.borderLeft = '4px solid #3b82f6';
+              div.style.padding = '6px';
+              div.style.color = '#1e40af';
+              div.innerHTML = `🏛️ <strong>OVERFLOW ROUTING ACTIVE:</strong> Direct attendees to overflow zone. (By: ${msg.data?.volunteer || 'Coordinator'})`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+              syncHallState();
+            }
+            if (msg.type === 'VOLUNTEER_ALERT_ACK' && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.style.background = '#f0fdf4';
+              div.style.borderLeft = '4px solid #22c55e';
+              div.style.padding = '6px';
+              div.style.color = '#166534';
+              div.innerHTML = `✅ <strong>ACK:</strong> ${msg.data?.volunteer || 'Marshal'}: ${msg.data?.message || 'Nominal status'}`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+            }
+            if (msg.type === 'VOLUNTEER_ALERT' && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.style.background = '#fef2f2';
+              div.style.borderLeft = '4px solid #dc2626';
+              div.style.padding = '6px';
+              div.style.color = '#b91c1c';
+              div.innerHTML = `⚠️ <strong>DIRECTIVE:</strong> ${msg.data?.message || msg.data?.text || 'Check zone density'}`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+              triggerHaptic(100);
+              playTone(440, 0.2);
+            }
+            if ((msg.type === 'CHAT_MESSAGE' || msg.type === 'MESH_MESSAGE') && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.innerHTML = `📻 <strong>${msg.data?.sender || 'Mesh'}:</strong> ${msg.data?.text || msg.data?.message || ''}`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+            }
+            if (['STATE_UPDATE', 'INIT_STATE', 'SCHEDULE_UPDATED', 'CCTV_OCCUPANCY_UPDATE', 'ROOM_OCCUPANCY_UPDATE', 'DOOR_TRIGGER', 'GATE_MESH_UPDATE', 'SCENARIO_CHANGED', 'GRAPH_UPDATED'].includes(msg.type)) {
               syncHallState();
             }
           } catch (e) {}

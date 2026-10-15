@@ -1450,6 +1450,24 @@
               currentOccupancy = payload.data.occupancy ?? (currentOccupancy + 1);
               renderRealCapacityGauge();
             }
+          } else if (payload.type === 'GATE_RELEASE_PULSE') {
+            if (payload.data.hallId === activeHallId || !payload.data.hallId) {
+              showSignagePABanner({
+                text: `🚨 BARRICADE PRESSURE RELIEF PULSE ACTIVE AT ${payload.data.gateName ? payload.data.gateName.toUpperCase() : 'MAIN EGRESS GATES'} • PROCEED WITH CALM, STEADY FLOW`,
+                voice: 'Life-Safety System'
+              });
+              renderRealCapacityGauge();
+            }
+          } else if (payload.type === 'VOLUNTEER_OVERFLOW_OPEN') {
+            showSignagePABanner({
+              text: `🏛️ ATTENDEE OVERFLOW LOUNGE IS NOW OPEN • LIVE 4K BROADCAST RELAY IN SECONDARY VENUES`,
+              voice: 'Venue Direction'
+            });
+            renderRealCapacityGauge();
+          } else if (payload.type === 'GRAPH_UPDATED') {
+            graphData = payload.data.graph || graphData;
+            scheduleData = payload.data.schedule || scheduleData;
+            renderSignage();
           } else if (payload.type === 'EMERGENCY_EVACUATION' || payload.type === 'MASS_DISRUPTION' || (payload.data && payload.data.isMassDisruption)) {
             triggerEmergencySignageInversion(payload.data || {});
           } else if (payload.type === 'EMERGENCY_CLEAR' || payload.type === 'SYSTEM_RESET') {
