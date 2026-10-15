@@ -540,6 +540,9 @@
     }
     renderAdminContactsTable(currentHallFilter);
     renderFeaturedVolunteers();
+    if (typeof window.renderVolunteersDutyList === 'function') {
+      window.renderVolunteersDutyList();
+    }
   }
 
   window.handleVolunteersUpdated = function (data) {
@@ -548,6 +551,9 @@
     }
     renderAdminContactsTable(currentHallFilter);
     renderFeaturedVolunteers();
+    if (typeof window.renderVolunteersDutyList === 'function') {
+      window.renderVolunteersDutyList();
+    }
     if (typeof createToast === 'function') {
       createToast('👥 Volunteer directory updated across all active stations.', 'info');
     }
@@ -630,6 +636,58 @@
       });
     });
   }
+
+  // Dynamic Hall-Targeted Volunteer Duty List Renderer
+  window.renderVolunteersDutyList = function (targetHallId) {
+    const hallId = targetHallId || localStorage.getItem('delta_current_venue_id') || 'hall-1';
+    const normHallId = normalizeHallString(hallId);
+
+    const allPersonnel = getCombinedPersonnelList().filter(p => !p.role?.toLowerCase().includes('speaker'));
+    
+    // Filter for volunteers assigned to this hall or to ALL (Central Command)
+    const matching = allPersonnel.filter(v => {
+      const vHall = normalizeHallString(v.assignedHallId || v.hall);
+      return vHall === 'ALL' || vHall === normHallId || (normHallId === 'hall-1' && vHall === 'hall-1');
+    });
+
+    const displayList = matching.length > 0 ? matching : allPersonnel.slice(0, 3);
+
+    // Update all .vol-duty-list containers across the page (main dashboard, perception modal, admin panel)
+    document.querySelectorAll('.vol-duty-list').forEach(container => {
+      container.innerHTML = '';
+      displayList.forEach(v => {
+        const cleanPhone = (v.phone || '').replace(/[^0-9]/g, '');
+        const isCentral = (normalizeHallString(v.assignedHallId || v.hall) === 'ALL');
+        const avatar = v.avatar || (isCentral ? '🖥️' : (v.role && v.role.toLowerCase().includes('stage')) ? '🎤' : '🚪');
+        const roleLabel = v.role ? `(${v.role})` : '';
+        const taskText = v.task || (isCentral ? 'Central Command Desk — Incident monitoring & dispatch' : `${v.hall || 'Venue Station'} — Crowd routing & badge check`);
+        
+        const item = document.createElement('div');
+        item.className = 'vol-duty-item';
+        item.style.cssText = 'display:flex; justify-content:space-between; align-items:center; gap:8px;';
+        item.innerHTML = `
+          <div style="display:flex; align-items:center; gap:8px; overflow:hidden;">
+            <span class="vol-avatar">${avatar}</span>
+            <div class="vol-info" style="min-width:0;">
+              <strong style="white-space:nowrap; text-overflow:ellipsis; overflow:hidden;">${v.name}</strong> <em style="font-size:0.75rem; color:#555;">${roleLabel}</em>
+              <span class="vol-task" style="font-size:0.72rem; color:#475569; display:block; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${taskText}</span>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-yellow btn-wa-single" data-name="${v.name}" data-phone="${cleanPhone}"
+            style="font-size:0.72rem; font-weight:800; padding:3px 8px; white-space:nowrap; flex-shrink:0;"
+            title="Open WhatsApp chat with ${v.name}">
+            💬 WhatsApp
+          </button>
+        `;
+        container.appendChild(item);
+      });
+    });
+
+    // Update synced count badge above duty lists
+    document.querySelectorAll('.cctv-vol-duty-header .badge-mini-green, .vol-duty-list-header .badge-mini-green, #badge-vol-count, .cctv-vol-count-badge').forEach(b => {
+      b.textContent = `${displayList.length} SYNCED`;
+    });
+  };
 
   function renderAdminContactsTable(filter = 'ALL_PERSONNEL') {
     const tbody = document.getElementById('admin-contacts-table-body');

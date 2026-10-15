@@ -737,6 +737,7 @@ wss.on('connection', ws => {
         scenarios: getScenarios(),
         rooms: db.roomsState,
         tasks: db.incidentTasks,
+        messages: db.meshMessages || [],
         checkinsCount: db.attendeeCheckins ? db.attendeeCheckins.length : 0
       }
     }));
@@ -916,6 +917,42 @@ app.post('/api/action/dispatch', (req, res) => {
   });
 
   res.json({ success: true, action: dispatchData });
+});
+
+// Real-Time Mesh Walkie-Talkie & Chat Messaging Endpoint
+app.post('/api/messages/send', (req, res) => {
+  const { id, sender, recipient, recipientPhone, text, timestamp } = req.body || {};
+  if (!text || !text.trim()) {
+    return res.status(400).json({ error: 'Message text is required' });
+  }
+  const msg = {
+    id: id || `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    sender: sender || 'Coordinator',
+    recipient: recipient || 'All Coordinators',
+    recipientPhone: recipientPhone || '',
+    text: text.trim(),
+    timestamp: timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  };
+
+  if (!Array.isArray(db.meshMessages)) db.meshMessages = [];
+  db.meshMessages.push(msg);
+  if (db.meshMessages.length > 200) db.meshMessages.shift();
+
+  // Broadcast to all WebSocket clients (supporting both CHAT_MESSAGE and MESH_MESSAGE handlers)
+  broadcast({
+    type: 'CHAT_MESSAGE',
+    data: msg
+  });
+  broadcast({
+    type: 'MESH_MESSAGE',
+    data: msg
+  });
+
+  res.json({ success: true, message: msg, delivered: true });
+});
+
+app.get('/api/messages', (req, res) => {
+  res.json({ success: true, messages: db.meshMessages || [] });
 });
 
 if (!db.incidentTasks) {

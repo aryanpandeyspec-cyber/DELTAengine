@@ -25,12 +25,12 @@
     if (savedVenueName) currentVenueName = savedVenueName;
   } catch (e) { }
 
-  let currentCapacity = 25; // Default demo capacity
+  let currentCapacity = 250; // Real venue capacity default (Turing Hall)
   try {
     const savedCap = localStorage.getItem('delta_current_room_capacity');
     if (savedCap) {
       const parsed = parseInt(savedCap, 10);
-      if (parsed > 0) currentCapacity = parsed;
+      if (parsed > 0 && parsed !== 25) currentCapacity = parsed;
     }
   } catch (e) { }
 
@@ -329,6 +329,9 @@
     updateThresholdLabels(currentCapacity);
     if (typeof syncCrowdModeUI === 'function') syncCrowdModeUI();
     updateDensityMetrics(true);
+    if (typeof window.renderVolunteersDutyList === 'function') {
+      window.renderVolunteersDutyList(currentVenueId);
+    }
   }
 
   function syncCapacityControls(cap) {
@@ -1084,6 +1087,28 @@
         const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello ${name},\n\n${msg}`)}`;
         window.open(waUrl, '_blank');
       });
+    });
+
+    // Delegated WhatsApp button handler for dynamic cards
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.btn-wa-single');
+      if (!btn) return;
+      e.preventDefault();
+      const name = btn.getAttribute('data-name') || 'Coordinator';
+      const rawPhone = btn.getAttribute('data-phone') || '919154276178';
+      const cleanPhone = rawPhone.replace(/[^0-9]/g, '');
+      const msg = typeof compileEventMessage === 'function' ? compileEventMessage() : `Hello ${name}, report to station.`;
+
+      try {
+        fetch('/api/notify/whatsapp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ recipientName: name, phoneNumber: cleanPhone, messageText: msg })
+        });
+      } catch (err) { }
+
+      const waUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(`Hello ${name},\n\n${msg}`)}`;
+      window.open(waUrl, '_blank');
     });
 
     // 3. Guest Speakers Directory Openers & Email Actions

@@ -244,7 +244,7 @@
           OPERATOR ID:
         </span>
         <span id="vol-operator-badge" style="font-size:0.75rem; font-weight:800; background:#e0f2fe; border:1.5px solid #000; padding:2px 8px; border-radius:6px; font-family:var(--font-mono, monospace);">
-          👤 Priya Sharma (Door Marshal)
+          👤 Field Marshal (Door Lead)
         </span>
       </div>
 
@@ -274,18 +274,18 @@
       </div>
 
       <div class="vol-metric-hero">
-        <div id="vol-pax-count" class="vol-count-big">180</div>
+        <div id="vol-pax-count" class="vol-count-big">0</div>
         <div style="font-size:0.85rem; font-weight:800; font-family:var(--font-mono, monospace); color:#64748b; margin-top:2px;">
-          OF <span id="vol-pax-capacity">250</span> PAX CAPACITY (<span id="vol-pax-pct">72%</span>)
+          OF <span id="vol-pax-capacity">250</span> PAX CAPACITY (<span id="vol-pax-pct">0%</span>)
         </div>
       </div>
 
       <div class="vol-progress-wrap">
-        <div id="vol-progress-bar" class="vol-progress-fill" style="width:72%;"></div>
+        <div id="vol-progress-bar" class="vol-progress-fill" style="width:0%;"></div>
       </div>
 
       <div style="display:flex; justify-content:space-between; font-size:0.72rem; font-weight:800; font-family:var(--font-mono, monospace); color:#64748b;">
-        <span>DOOR EGRESS: <strong id="vol-flow-rate" style="color:#0f172a;">180 pax/min</strong></span>
+        <span>DOOR EGRESS: <strong id="vol-flow-rate" style="color:#0f172a;">0 pax/min</strong></span>
         <span>TRIPWIRE SENSORS: <strong style="color:#16a34a;">SYNCED</strong></span>
       </div>
     </div>
@@ -374,12 +374,28 @@
       const roleParam = urlParams.get('role'); // 'gate', 'tally', 'safety', 'coordinator'
       const nameParam = urlParams.get('name');
 
-      let currentUserName = nameParam || localStorage.getItem('delta_user_name') || 'Priya Sharma (Door Marshal)';
+      let currentUserName = nameParam || localStorage.getItem('delta_user_name') || 'Field Marshal (Door Lead)';
       if (nameParam) localStorage.setItem('delta_user_name', nameParam);
 
-      let currentOccupancy = 180;
+      let currentOccupancy = 0;
       let currentCapacity = 250;
       let selectedSosReason = 'Field Marshal reports critical crowd bottlenecking / barrier surge!';
+
+      // Rolling 60-second real door passage flow rate calculator
+      let passageTimestamps = [];
+      function recordPassageEvent() {
+        passageTimestamps.push(Date.now());
+        updateFlowRate();
+      }
+      function updateFlowRate() {
+        const cutoff = Date.now() - 60000;
+        passageTimestamps = passageTimestamps.filter(t => t >= cutoff);
+        const elFlow = document.getElementById('vol-flow-rate');
+        if (elFlow) {
+          elFlow.textContent = `${passageTimestamps.length} pax/min`;
+        }
+      }
+      setInterval(updateFlowRate, 5000);
 
       const elZoneSelect = document.getElementById('vol-zone-select');
       const elOperatorBadge = document.getElementById('vol-operator-badge');
@@ -602,9 +618,10 @@
             if (hall) {
               currentCapacity = hall.capacity || 250;
               const cctvOcc = data.cctvState?.[currentHallId]?.peopleDetected;
+              const gateOcc = data.gatesMesh?.[currentHallId]?.netOccupancy;
               currentOccupancy = hall.currentOccupancy !== undefined
                 ? hall.currentOccupancy
-                : (cctvOcc !== undefined ? cctvOcc : (currentHallId === 'hall-1' ? 180 : Math.round(currentCapacity * 0.45)));
+                : (cctvOcc !== undefined ? cctvOcc : (gateOcc !== undefined ? gateOcc : 0));
               updateUI();
             }
             flushOfflineActions();
@@ -623,6 +640,7 @@
       if (btnEntry) {
         btnEntry.addEventListener('click', () => {
           currentOccupancy++;
+          recordPassageEvent();
           updateUI();
           triggerHaptic(45);
           playTone(880, 0.08);
@@ -634,6 +652,7 @@
       if (btnExit) {
         btnExit.addEventListener('click', () => {
           if (currentOccupancy > 0) currentOccupancy--;
+          recordPassageEvent();
           updateUI();
           triggerHaptic(25);
           playTone(440, 0.08);
@@ -760,6 +779,7 @@
                 triggerHaptic(60);
                 playTone(880, 0.1);
                 currentOccupancy++;
+                recordPassageEvent();
                 updateUI();
                 dispatchPassageEvent('ENTRY');
               }

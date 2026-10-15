@@ -624,7 +624,7 @@
   <!-- ===================================================================== -->
   <!-- 1. STATIC SHOWCASE VIEW: COMING SOON OVERVIEW (SINGLE-PAGE HERO VIEW) -->
   <!-- ===================================================================== -->
-  <div id="signage-coming-soon-view" style="display:flex;">
+  <div id="signage-coming-soon-view" style="display:none;">
     <div class="coming-soon-single-card">
       <!-- Top Navigation Sub-Bar -->
       <div class="coming-soon-top-bar">
@@ -633,12 +633,12 @@
             📺 <span style="color:#2563eb;">DELTA ENGINE</span> • SIGNAGE TV
           </span>
           <span class="badge badge-yellow" style="font-weight:800; font-size:0.75rem;">
-            🚀 HARDWARE PACK PREVIEW
+            🚀 HARDWARE SPECIFICATION
           </span>
         </div>
         <div style="display:flex; align-items:center; gap:10px;">
           <button type="button" id="btn-open-live-kiosk" class="btn btn-sm btn-blue" style="font-weight:800; font-size:0.82rem; padding:6px 14px; border:2px solid #000; box-shadow:3px 3px 0px #000; cursor:pointer;" title="Launch Live Kiosk / TV Display Mode">
-            📺 Live Preview ↗
+            📺 Live Kiosk ↗
           </button>
           <a href="index.html" class="btn btn-sm btn-white" style="font-weight:800; text-decoration:none; font-size:0.82rem; padding:6px 14px; border:2px solid #000; box-shadow:3px 3px 0px #000;" title="Return to Coordinator Dashboard">
             💻 Dashboard
@@ -646,14 +646,14 @@
         </div>
       </div>
 
-      <!-- Hero Section: COMMING SOON... Taking ~40% of the card -->
+      <!-- Hero Section: Dynamic TV Architecture -->
       <div style="text-align:left; margin: 4px 0;">
         <div class="coming-soon-badge">
-          <span class="autopilot-indicator-dot pulse" style="background:#dc2626; width:9px; height:9px;"></span>
-          <span>VENUE HARDWARE PREVIEW • SCHEDULED 2026</span>
+          <span class="autopilot-indicator-dot pulse" style="background:#16a34a; width:9px; height:9px;"></span>
+          <span>HARDWARE SPECIFICATION • DIGITAL OVERHEAD KIOSK</span>
         </div>
         <h1 class="coming-soon-giant-title">
-          COMMING SOON...
+          DIGITAL TV SIGNAGE
         </h1>
         <div style="font-size:clamp(1.1rem, 2.1vw, 1.5rem); font-weight:800; font-family:var(--font-mono, monospace); color:#2563eb; letter-spacing:-0.5px;">
           Dynamic Hallway TV Signage & Real-Time Wayfinding Portal
@@ -721,7 +721,7 @@
   <!-- ===================================================================== -->
   <!-- 2. FULL PRESERVED LIVE SIGNAGE TV KIOSK VIEW (TOGGLEABLE)             -->
   <!-- ===================================================================== -->
-  <div id="live-signage-kiosk-view" style="display:none;">
+  <div id="live-signage-kiosk-view" style="display:block;">
   <div class="container">
     <!-- TOP NAVIGATION BAR -->
     <div class="signage-nav-bar">
@@ -991,9 +991,11 @@
     if (btnHeroLaunch) btnHeroLaunch.addEventListener('click', showLiveKiosk);
     if (btnShowComingSoon) btnShowComingSoon.addEventListener('click', showComingSoon);
 
-    // Check URL parameters (e.g. ?live=1 or ?kiosk=1 to directly show live kiosk)
+    // Default to live TV kiosk mode on load (unless info/overview is explicitly requested)
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('live') === '1' || urlParams.get('kiosk') === '1' || urlParams.get('preview') === '1') {
+    if (urlParams.get('info') === '1' || urlParams.get('overview') === '1') {
+      showComingSoon();
+    } else {
       showLiveKiosk();
     }
 
