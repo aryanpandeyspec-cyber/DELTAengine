@@ -102,6 +102,7 @@ class WebSocketService {
           break;
 
         case 'VOLUNTEER_SOS_ALERT':
+        case 'GATE_RELEASE_PULSE':
           if (data is Map<String, dynamic>) {
             _sosEventController.add(data);
           }
@@ -112,10 +113,47 @@ class WebSocketService {
             _badgeEventController.add(data);
           }
           break;
+
+        case 'INIT_STATE':
+          if (data is Map<String, dynamic>) {
+            if (data['tasks'] is List) {
+              for (final t in data['tasks'] as List) {
+                if (t is Map<String, dynamic>) {
+                  _taskEventController.add(TaskItem.fromJson(t));
+                }
+              }
+            }
+            final roomsData = data['rooms'];
+            if (roomsData is Map<String, dynamic>) {
+              final list = <RoomTelemetry>[];
+              roomsData.forEach((k, v) {
+                if (v is Map<String, dynamic>) {
+                  final copy = Map<String, dynamic>.from(v);
+                  copy['id'] = k;
+                  copy['name'] = k.toUpperCase();
+                  list.add(RoomTelemetry.fromJson(copy));
+                }
+              });
+              _roomEventController.add(list);
+            }
+          }
+          break;
       }
     } catch (_) {
       // Ignore malformed packets gracefully
     }
+  }
+
+  bool send(Map<String, dynamic> data) {
+    if (_isConnected && _channel != null) {
+      try {
+        _channel!.sink.add(jsonEncode(data));
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+    return false;
   }
 
   void _scheduleReconnect() {

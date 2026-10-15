@@ -634,6 +634,7 @@
             hallId: sm.hallId || 'hall-1',
             hallName: sm.hallName || 'Turing Hall'
           });
+          window.activeCadEngine = activeCadEngine;
         }
         if (sm.cadBlueprint) {
           activeCadEngine.loadCadModel(sm.cadBlueprint);
@@ -663,6 +664,7 @@
         hallId: 'hall-1',
         hallName: 'Turing Hall'
       });
+      window.activeCadEngine = activeCadEngine;
     }
   }
 

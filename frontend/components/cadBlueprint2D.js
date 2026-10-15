@@ -904,6 +904,16 @@ class CadBlueprint2DEngine {
   }
 
   /**
+   * Dynamically updates live crowd occupancy and redraws Layer 6 telemetry dots.
+   */
+  updateOccupancy(newOccupancy) {
+    if (newOccupancy !== undefined) {
+      window.cctvNetOccupancy = newOccupancy;
+    }
+    this.renderTelemetry();
+  }
+
+  /**
    * Layer 7: Architectural Dimensions & Scales
    */
   renderDimensions() {

@@ -481,7 +481,7 @@
     });
 
     // Bind ALL YouTube Stream Modal Openers
-    document.querySelectorAll('.btn-cctv-youtube-stream, #btn-cctv-youtube-stream, #btn-modal-cctv-youtube-stream').forEach(btn => {
+    document.querySelectorAll('.btn-cctv-youtube-stream, #btn-cctv-youtube-stream, #btn-modal-cctv-youtube-stream, #btn-sidebar-youtube-stream').forEach(btn => {
       btn.addEventListener('click', () => {
         openYouTubeModal();
       });
@@ -852,7 +852,7 @@
 
 
     // Bind Physical Door Sensor manual test button
-    document.querySelectorAll('#btn-cctv-trigger-sensor, .btn-cctv-trigger-sensor').forEach(btn => {
+    document.querySelectorAll('#btn-cctv-trigger-sensor, #btn-cctv-trigger-sensor-kpi, .btn-cctv-trigger-sensor').forEach(btn => {
       btn.addEventListener('click', () => {
         triggerDoorSensorLocal(620);
       });
