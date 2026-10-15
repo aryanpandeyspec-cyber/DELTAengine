@@ -181,7 +181,7 @@ function initWebSockets() {
             if (typeof window.showAutopilotResolutionHUD === 'function') {
               window.showAutopilotResolutionHUD(conflictText, destText);
             } else if (typeof createToast === 'function') {
-              createToast(`⚡ TESLA AUTOPILOT: Zero-touch resolution applied! ${destText}`, 'success');
+              createToast(`⚡ AUTOMATED MITIGATION: Conflict resolved automatically! ${destText}`, 'success');
             }
 
             if (typeof highlightHealedDestination === 'function') {

@@ -77,7 +77,7 @@
           <button id="btn-open-cctv" class="btn btn-sm btn-yellow"
             style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;"
             title="Open CCTV Room Density Perception HUD">📹 CCTV HUD <span class="cctv-live-dot"></span></button>
-          <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Click to toggle between Tesla Autopilot (Zero-Touch Autonomous Mitigation) and Manual Co-Pilot">
+          <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Toggle automated mitigation (auto-resolve schedule conflicts vs. manual review)">
             <span class="autopilot-indicator-dot pulse"></span>
             <span>⚡ AUTOPILOT: <strong class="autopilot-status-text">ENGAGED</strong></span>
           </div>
@@ -97,7 +97,7 @@
 
       <div class="header-text">
         <h1 id="main-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
-        <p class="subtitle">Super Admin Administrative Control & System Diagnostics Portal</p>
+        <p class="subtitle">Administrator Controls & System Diagnostics</p>
       </div>
     </header>
 
@@ -288,11 +288,10 @@
     <div class="admin-hero-card mb-6">
       <div class="admin-hero-badge">
         <span>👑 SUPER ADMIN COMMAND CENTER</span>
-        <span class="admin-clearance-badge">CLEARANCE LEVEL 5 (UNRESTRICTED)</span>
+        <span class="admin-clearance-badge">ADMINISTRATOR ACCESS (UNRESTRICTED)</span>
       </div>
       <h2 class="admin-hero-title">DELTA ENGINE Infrastructure Control System</h2>
-      <p class="admin-hero-sub">Global Swarm Overrides, Backend Diagnostics, LLM Circuit Breakers & Automated WhatsApp
-        Alerts</p>
+      <p class="admin-hero-sub">System overrides, backend diagnostics, circuit breakers, and coordinator alerts.</p>
     </div>
 
     <!-- METRICS PANEL (High-Density Live Event & Perception Telemetry Strip) -->
@@ -618,7 +617,7 @@
               <div class="integration-meta">
                 <strong>Project:</strong> <code>frlrazzskbzmtlqrswjl</code><br>
                 <strong>Engine:</strong> PostgreSQL + Auth SDK<br>
-                <strong>Status:</strong> Cloud Hydration Armed
+                <strong>Status:</strong> Connected & Synced
               </div>
             </div>
             <div class="badge-mini-green w-full" style="display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px; font-weight:800; font-size:0.75rem; border-radius:6px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;">
@@ -669,9 +668,9 @@
                 <span class="integration-status-pill active">3.5 / 3.8 FLASH</span>
               </div>
               <div class="integration-meta">
-                <strong>Autonomous Mode:</strong> Tesla-Style Continuous Guard<br>
-                <strong>Trigger:</strong> Auto-Fires at 80%+ Capacity / Surge<br>
-                <strong>Action:</strong> Autonomous Occlusion & Reallocation
+                <strong>Monitoring Mode:</strong> Continuous Active Monitoring<br>
+                <strong>Trigger:</strong> Activates at 80%+ Capacity or Surge<br>
+                <strong>Action:</strong> Vision Occlusion Analysis & Reallocation
               </div>
             </div>
             <div class="badge-mini-green w-full" style="display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px; font-weight:800; font-size:0.75rem; border-radius:6px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;">
@@ -705,17 +704,17 @@
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; flex-wrap:wrap; gap:8px;">
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-size:1.1rem;">🤖</span>
-              <strong style="font-size:0.9rem; color:#0f172a;">Autonomous Vision & Occlusion Guard (Tesla FSD Mode)</strong>
-              <span id="gemini-audit-model-badge" style="font-size:0.72rem; background:#ecfdf5; color:#065f46; font-weight:800; padding:2px 8px; border-radius:4px; border:1px solid #a7f3d0;">Gemini 3.5 Flash • Zero-Click</span>
+              <strong style="font-size:0.9rem; color:#0f172a;">Autonomous Vision & Occlusion Detection</strong>
+              <span id="gemini-audit-model-badge" style="font-size:0.72rem; background:#ecfdf5; color:#065f46; font-weight:800; padding:2px 8px; border-radius:4px; border:1px solid #a7f3d0;">Gemini 3.5 Flash • Automated</span>
             </div>
             <div id="gemini-audit-rating-box">
               <span class="gemini-rating-badge rating-nominal" style="font-size:0.7rem; font-weight:800; padding:2px 8px; border-radius:4px;">
-                AUTONOMOUS SELF-HEALING ARMED
+                AUTOMATED MONITORING ACTIVE
               </span>
             </div>
           </div>
           <div style="font-size:0.82rem; color:#475569; margin-bottom:8px;" id="gemini-audit-summary">
-            Continuous on-device WebGL perception running at 30 FPS. Auto-triggers Gemini multimodal vision reasoning when capacity reaches 80% to resolve pillar occlusions and crowd bottlenecks with zero human intervention.
+            Continuous camera perception running at 30 FPS. Analyzes room imagery when capacity reaches 80% to detect doorway bottlenecks and hidden crowd clusters.
           </div>
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
             <div style="background:#ffffff; border:1px solid #e2e8f0; border-radius:6px; padding:8px; font-size:0.78rem;">
@@ -1064,7 +1063,7 @@
             <div style="margin-top:10px; display:flex; flex-direction:column; gap:6px;">
               <button class="btn btn-sm btn-green w-full btn-dispatch-send-all"
                 style="font-weight:900; font-size:0.8rem; border:2px solid #000; box-shadow:3px 3px 0px #000; display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px;">
-                <span>📢 SEND ALL (ONE-CLICK DISPATCH)</span>
+                <span>📢 SEND TO ALL COORDINATORS</span>
               </button>
               <div style="display:flex; gap:6px;">
                 <button class="btn btn-sm btn-white btn-open-speaker-directory"

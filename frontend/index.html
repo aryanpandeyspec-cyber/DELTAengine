@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DELTA ENGINE - Agentic & Self-Healing Event OS</title>
+  <title>DELTA ENGINE - Venue Operations & Incident Management</title>
   <!-- Josefin Sans & Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -67,7 +67,7 @@
         </div>
         <div class="sidebar-brand-info">
           <h1 id="main-title" class="sidebar-title"><span class="title-delta">DELTA</span> <span class="title-engine">ENGINE</span></h1>
-          <div class="sidebar-tagline">Autonomous Event OS</div>
+          <div class="sidebar-tagline">Intelligent Venue Operations</div>
         </div>
       </div>
 
@@ -87,7 +87,7 @@
 
       <!-- 3. Autopilot Master Switch -->
       <div class="sidebar-autopilot-wrap">
-        <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Click to toggle between Tesla Autopilot (Zero-Touch Autonomous Mitigation) and Manual Co-Pilot">
+        <div id="autopilot-toggle-pill" class="autopilot-pill active" title="Toggle automated mitigation (auto-resolve schedule conflicts vs. manual review)">
           <span class="autopilot-indicator-dot pulse"></span>
           <span>⚡ AUTOPILOT: <strong class="autopilot-status-text">ENGAGED</strong></span>
         </div>
@@ -231,7 +231,7 @@
         <div class="venue-pa-icon-box">🎙️</div>
         <div>
           <div class="venue-pa-title">
-            ELEVENLABS AUTONOMOUS VENUE PA SYSTEM
+            VENUE PA ANNOUNCEMENT SYSTEM
             <span class="audio-equalizer">
               <span class="audio-bar"></span>
               <span class="audio-bar"></span>
@@ -240,7 +240,7 @@
               <span class="audio-bar"></span>
             </span>
           </div>
-          <div id="venue-pa-live-text" class="venue-pa-text">"Attention attendees. Autonomous perception system active."</div>
+          <div id="venue-pa-live-text" class="venue-pa-text">"Attention attendees. Hallway route updates are now active."</div>
           <div style="font-size:0.75rem; color:#c7d2fe; margin-top:2px;">
             Voice: <span style="font-weight:800; color:#fff;" id="venue-pa-live-voice">Nico Robin (Calm & Elegant)</span> • Broadcasted: <span id="venue-pa-live-time">Live</span>
           </div>
@@ -282,7 +282,7 @@
           <span class="dot red"></span>
           <span class="dot yellow"></span>
           <span class="dot green"></span>
-          <h2 class="cctv-hub-title">📹 CCTV ROOM PERCEPTION</h2>
+          <h2 class="cctv-hub-title">📹 ROOM CAMERA & DENSITY MONITOR</h2>
           <span id="cctv-stream-status" class="cctv-status-badge">⚪ <strong>CAMERA READY</strong></span>
         </div>
         <div class="cctv-hub-header-actions">
@@ -344,7 +344,7 @@
             <canvas id="cctv-hud-canvas" width="640" height="480" class="cctv-canvas"></canvas>
           </div>
           <div class="cctv-hub-feed-sub">
-            <span>🎯 <strong>Optical AI Engine:</strong> Real-time Head & Facial Recognition</span>
+            <span>🎯 <strong>Camera Density:</strong> Real-time Occupancy & Turnstile Count</span>
             <span id="cctv-optical-detection-tag" class="badge-mini-green">0 Persons Detected</span>
           </div>
 
@@ -618,7 +618,7 @@
             <div class="card-body">
               <div class="console-incident-bar mb-3"
                 style="display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border:2px solid #000; border-radius:8px; padding:6px 12px; box-shadow:2px 2px 0px #000;">
-                <span style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono); color:#1e293b;">⚡ MULTI-AGENT HEALING ENGINE</span>
+                <span style="font-size:0.75rem; font-weight:800; font-family:var(--font-mono); color:#1e293b;">⚡ AGENT SCHEDULING LOGS</span>
                 <button id="btn-open-lab-console" class="btn btn-sm btn-purple"
                   style="font-size:0.72rem; font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000; padding:3px 8px;"
                   title="Open Unified Scenario & Stress Lab">
@@ -642,7 +642,7 @@
               <div class="sentiment-ticker mt-3">
                 <h4
                   style="font-size:0.78rem; font-weight:800; font-family:var(--font-mono); margin-bottom:4px; display:flex; justify-content:space-between;">
-                  <span>💬 ATTENDEE REACTION STREAM</span>
+                  <span>💬 LIVE ATTENDEE FEEDBACK</span>
                   <span class="pulse-indicator-red">● LIVE</span>
                 </h4>
                 <div class="ticker-box" id="sentiment-ticker-box">
@@ -690,8 +690,8 @@
           <!-- EVENT BROCHURE & SCHEDULE INGESTION PIPELINE -->
           <section class="dash-card card-pipeline mb-8">
             <div class="card-header">
-              <h2><img src="ioncs/pipeline.png" class="header-icon-img" alt="Brochure"> 📄 Event Brochure & Presentation Ingestion</h2>
-              <span class="badge badge-red">Schedule AI</span>
+              <h2><img src="ioncs/pipeline.png" class="header-icon-img" alt="Brochure"> 📄 Event Schedule & Document Import</h2>
+              <span class="badge badge-red">Schedule Import</span>
             </div>
             <div class="card-body">
               <div class="pipeline-flow">
@@ -702,8 +702,8 @@
                     <line x1="12" y1="18" x2="12" y2="12" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round"/>
                     <line x1="9" y1="15" x2="15" y2="15" stroke="#ea4335" stroke-width="2.5" stroke-linecap="round"/>
                   </svg>
-                  <h3 style="font-size:1.05rem; font-weight:800; color:#0f172a;">Drag & Drop Event Brochure or Slides</h3>
-                  <p style="font-size:0.8rem; color:#64748b; margin-top:4px;">Ingests schedule matrix, talk titles, and speakers from PDF, PPTX, or timetable (.txt/.doc) (Max 20MB)</p>
+                  <h3 style="font-size:1.05rem; font-weight:800; color:#0f172a;">Import Event Schedule or Presentation Slides</h3>
+                  <p style="font-size:0.8rem; color:#64748b; margin-top:4px;">Import talk titles, speakers, and room assignments from PDF, PPTX, or text files (max 20MB)</p>
                   <input type="file" id="file-input" style="display:none;" accept=".pdf,.pptx,.ppt,.txt,.doc,.docx">
                 </div>
 
@@ -723,10 +723,10 @@
                 <!-- Content Ingestion Stage Loading Status -->
                 <div class="pipeline-loader mb-4" id="pipeline-loader" style="display: none;">
                   <div class="loader-stages">
-                    <div class="stage-item" id="stage-1"><span class="stage-dot"></span> Ingesting slide data...</div>
-                    <div class="stage-item" id="stage-2"><span class="stage-dot"></span> Extracting semantic tags...</div>
-                    <div class="stage-item" id="stage-3"><span class="stage-dot"></span> Re-weaving graph database...</div>
-                    <div class="stage-item" id="stage-4"><span class="stage-dot"></span> Auto-generating promo copy...</div>
+                    <div class="stage-item" id="stage-1"><span class="stage-dot"></span> Reading document...</div>
+                    <div class="stage-item" id="stage-2"><span class="stage-dot"></span> Extracting session details...</div>
+                    <div class="stage-item" id="stage-3"><span class="stage-dot"></span> Updating schedule graph...</div>
+                    <div class="stage-item" id="stage-4"><span class="stage-dot"></span> Generating session summary...</div>
                   </div>
                 </div>
 
@@ -824,7 +824,7 @@
           </div>
           <div class="card-body">
             <div style="font-size:0.85rem; color:#475569; font-weight:600; margin-bottom:14px; line-height:1.5;">
-              High-accuracy architectural floor-plan reconstruction engine. Ingests CAD vector drawings, PDFs, and multi-angle photos to generate an interactive 2D blueprint and 3D architectural digital twin linked to DELTA Engine's operational spatial graph.
+              Architectural floor-plan processing. Imports CAD drawings, PDFs, and room photos to generate interactive 2D blueprints and spatial maps linked to the room capacity graph.
             </div>
 
             <!-- Multi-Image Dropzone -->
@@ -892,17 +892,17 @@
                 </select>
               </div>
               <button type="button" id="btn-execute-3d-reconstruction" class="btn btn-blue" style="font-weight:800; font-size:0.82rem; padding:8px 16px; border:2.5px solid #000; box-shadow:3px 3px 0px #000; opacity:0.5; cursor:not-allowed;" disabled>
-                ✨ Reconstruct Spatial Blueprint (Nemotron / Gemini 3 / Gemma)
+                ✨ Process Floor Plan
               </button>
             </div>
 
             <!-- Processing Loading Stage Status -->
             <div class="pipeline-loader mb-4" id="spatial-loader" style="display:none;">
               <div class="loader-stages">
-                <div class="stage-item" id="spatial-stage-1"><span class="stage-dot"></span> Ingesting multi-angle photos & floor plans...</div>
-                <div class="stage-item" id="spatial-stage-2"><span class="stage-dot"></span> Triangulating dimensions & vector geometry via Gemini 2.0 Flash...</div>
-                <div class="stage-item" id="spatial-stage-3"><span class="stage-dot"></span> Mapping doors, stage deck & laser tripwire sensors...</div>
-                <div class="stage-item" id="spatial-stage-4"><span class="stage-dot"></span> Calibrating egress flow & life-safety capacity...</div>
+                <div class="stage-item" id="spatial-stage-1"><span class="stage-dot"></span> Reading floor plans and photos...</div>
+                <div class="stage-item" id="spatial-stage-2"><span class="stage-dot"></span> Calculating room dimensions and layout...</div>
+                <div class="stage-item" id="spatial-stage-3"><span class="stage-dot"></span> Detecting doors, stages, and entry sensors...</div>
+                <div class="stage-item" id="spatial-stage-4"><span class="stage-dot"></span> Calculating room capacity and exit routes...</div>
               </div>
             </div>
 
@@ -1029,7 +1029,7 @@
                 </div>
                 <div style="display:flex; justify-content:flex-end; margin-top:10px;">
                   <button type="button" id="btn-deploy-calibrated-twin" class="btn btn-sm btn-green" style="font-weight:800; padding:6px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000;">
-                    💾 Deploy Calibrated Twin to Self-Healing Engine
+                    💾 Save Calibrated Model to Venue Graph
                   </button>
                 </div>
               </div>
@@ -1310,7 +1310,7 @@
           <div style="display:flex; align-items:center; gap:8px;">
             <span class="reallocation-badge-icon" style="font-size:1.2rem;">🛡️</span>
             <span class="reallocation-badge-text" style="font-weight:900; font-family:var(--font-mono); font-size:0.85rem; color:#0f172a;">
-              SUPERVISED AUTONOMY • HUMAN-IN-THE-LOOP SLA
+              SCHEDULE REALLOCATION REVIEW
             </span>
           </div>
           <span style="font-size:0.68rem; font-weight:800; background:#fef08a; border:1px solid #000; padding:2px 6px; border-radius:4px; font-family:var(--font-mono);">
@@ -1320,7 +1320,7 @@
 
         <div class="reallocation-conflict-box" style="background:#fee2e2; border:2px solid #ef4444; border-radius:8px; padding:10px; margin-bottom:10px;">
           <div class="conflict-label" style="font-size:0.7rem; font-weight:900; color:#b91c1c; font-family:var(--font-mono); margin-bottom:2px;">
-            ⚠️ DETECTED CONSTRAINT BREACH
+            ⚠️ DETECTED ROOM CONFLICT
           </div>
           <div id="reallocation-conflict-text" class="conflict-text" style="font-size:0.82rem; font-weight:700; color:#7f1d1d; line-height:1.35;">
             ⚠️ Talk "WebGPU Deep Dive" attendance (260 pax) exceeds Turing Hall capacity (250 pax).
@@ -1329,7 +1329,7 @@
 
         <div class="reallocation-destination-box" style="background:#f0fdf4; border:2px solid #22c55e; border-radius:8px; padding:10px; margin-bottom:14px;">
           <div class="destination-label" style="font-size:0.7rem; font-weight:900; color:#15803d; font-family:var(--font-mono); margin-bottom:2px;">
-            📍 PROPOSED MITIGATION & SCHEDULE HEALING
+            📍 RECOMMENDED ACTION
           </div>
           <div id="reallocation-destination-text" class="destination-text" style="font-size:0.82rem; font-weight:700; color:#14532d; line-height:1.35;">
             📍 Relocating to Lovelace Suite (11:00 AM - 12:00 PM)
@@ -1338,7 +1338,7 @@
 
         <div class="countdown-timer-container" style="text-align:center; margin-bottom:8px;">
           <div class="countdown-timer-label" style="font-size:0.75rem; font-weight:900; font-family:var(--font-mono); color:#475569; letter-spacing:0.5px;">
-            SUPERVISORY WINDOW EXPIRES IN
+            AUTO-APPLYING IN
           </div>
           <div id="reallocation-countdown-number" class="countdown-timer-number" style="font-size:2.8rem; font-weight:900; color:#0f172a; font-family:var(--font-mono); line-height:1.1;">
             15
@@ -1354,17 +1354,17 @@
           <button id="btn-skip-countdown" class="btn btn-sm btn-green"
             style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; padding:7px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
             title="Approve and execute mitigation immediately">
-            ⚡ DISPATCH NOW (Approve)
+            ⚡ Approve & Relocate
           </button>
           <button id="btn-pause-countdown" class="btn btn-sm btn-yellow"
             style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; padding:7px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
-            title="Hold countdown for manual director evaluation">
-            ⏸️ HOLD FOR REVIEW
+            title="Hold countdown for manual review">
+            ⏸️ Hold for Review
           </button>
           <button id="btn-abort-countdown" class="btn btn-sm btn-red"
             style="font-weight:900; font-family:var(--font-mono); font-size:0.75rem; padding:7px 14px; border:2px solid #000; box-shadow:2px 2px 0px #000; cursor:pointer;"
-            title="Veto and cancel autonomous reallocation">
-            ⛔ VETO / ABORT ACTION
+            title="Cancel automated reallocation">
+            ⛔ Cancel Relocation
           </button>
         </div>
 
@@ -1382,14 +1382,14 @@
             <span class="dot red"></span>
             <span class="dot yellow"></span>
             <span class="dot green"></span>
-            <h3>⚡ OPERATIONAL DOMAIN & CONTINGENCY REGISTRY</h3>
+            <h3>⚡ SCENARIO SIMULATION & STRESS LAB</h3>
           </div>
           <button id="btn-close-scenario-lab" class="lab-close-btn" title="Close Registry">&times;</button>
         </div>
 
         <div class="lab-body">
           <div style="background:#e0e7ff; border:2px solid #4338ca; border-radius:8px; padding:10px 14px; font-size:0.8rem; color:#312e81; font-weight:600;">
-            ⚡ <strong>Operational Domain & Contingency Registry:</strong> Monitor real-time multi-room crowd spikes, transit delays, emergency cascades, and registration heatmaps across operational domains.
+            ⚡ <strong>Scenario Simulation & Stress Lab:</strong> Test room crowd surges, speaker delays, room reallocations, and registration heatmaps.
           </div>
 
           <!-- Section 1: Emergency & Cascade Trigger -->
@@ -1400,10 +1400,10 @@
             </div>
             <button id="btn-mass-disruption" class="btn w-full btn-md btn-red"
               style="background-color: #ea4335; color: #ffffff; font-weight: 900; border: 2px solid #000; box-shadow: 3px 3px 0px #000; margin-bottom:8px; font-size:0.88rem;">
-              🔥 TRIGGER MULTI-HALL CONTINGENCY PROTOCOL
+              🔥 Simulate Multi-Room Disruption
             </button>
             <div style="font-size:0.75rem; color:#555; line-height:1.3;">
-              Dispatches multi-hall stress protocols to verify autonomous agent swarm mitigation, crowd rerouting, and real-time self-healing.
+              Simulates overlapping capacity alerts across multiple rooms to test automated scheduling and crowd rerouting.
             </div>
           </div>
 
@@ -1478,12 +1478,12 @@
           <!-- Section 4: Public Address & Voice Diagnostics -->
           <div class="lab-section">
             <div class="lab-section-title">
-              <span>🎙️ 4. Autonomous Audio PA Broadcast</span>
+              <span>🎙️ 4. Venue PA Audio Broadcast</span>
               <span class="badge badge-green" style="font-size:0.65rem;">ELEVENLABS</span>
             </div>
             <button id="btn-trigger-pa-test" class="btn btn-yellow w-full btn-sm"
               style="font-weight:800; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
-              🎙️ Test Autonomous Venue PA Broadcast
+              🎙️ Test Venue PA Broadcast
             </button>
           </div>
         </div>
@@ -1704,7 +1704,7 @@
 
         <!-- Certified Inspector Note -->
         <div style="font-size:0.72rem; color:#64748b; font-family:var(--font-mono); margin-bottom:18px; line-height:1.4; border-left:3px solid #22c55e; padding-left:10px;">
-          <strong>Auditor Statement:</strong> Autonomous real-time egress flow monitored via DELTA Engine optical sensor tripwires, IoT passage counters, and CCTV computer vision. All calculations adhere to NFPA-101 Life Safety Code Table 7.3.1.2 occupant load factors.
+          <strong>Auditor Statement:</strong> Real-time egress flow monitored via DELTA Engine optical sensor tripwires, passage counters, and camera vision. All calculations adhere to NFPA-101 Life Safety Code Table 7.3.1.2 occupant load factors.
         </div>
 
         <!-- Action Buttons -->
@@ -2039,7 +2039,7 @@
           <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:20px;">
             <button id="btn-execute-send-all-wa" class="btn btn-green"
               style="flex:2; font-weight:900; font-size:0.95rem; border:2px solid #000; box-shadow:4px 4px 0px #000;">
-              🚀 DISPATCH TO ALL 3 (WHATSAPP)
+              🚀 SEND TO ALL (WHATSAPP)
             </button>
             <button id="btn-copy-compiled-text" class="btn btn-white"
               style="flex:1; font-weight:800; font-size:0.85rem; border:2px solid #000; box-shadow:3px 3px 0px #000;">
@@ -2093,7 +2093,7 @@
               <span class="badge-mini-green" style="font-size: 0.7rem;">Pico.js + COCO-SSD</span>
             </div>
             <div style="font-size: 0.75rem; color: #166534; margin-bottom: 10px;">
-              Direct MP4 videos and local video files feed raw frame buffers directly to the vision AI engine for instant facial detection bounding boxes, optical flow headcount, and automated self-healing alerts!
+              Direct MP4 videos and local video files feed video frames to the vision engine for occupancy counts, detection boxes, and automated threshold alerts.
             </div>
             <div style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
               <button class="btn btn-sm btn-green btn-load-sample-video font-bold" style="border: 2px solid #000; box-shadow: 2px 2px 0px #000; padding: 6px 12px;">
@@ -2520,8 +2520,8 @@
               <div style="display:flex; align-items:center; gap:8px;">
                 <span style="font-size:1.4rem;">📦</span>
                 <div>
-                  <strong style="font-size:0.95rem; color:#5ADBFF; font-family:var(--font-mono, monospace);">DELTA BOX — ZERO-CLOUD AUTONOMOUS EDGE PACK</strong>
-                  <div style="font-size:0.75rem; color:#94a3b8;">Autonomous Event Operations Hub • 100% Functional Without Public Internet</div>
+                  <strong style="font-size:0.95rem; color:#5ADBFF; font-family:var(--font-mono, monospace);">DELTA BOX — LOCAL EDGE HUB</strong>
+                  <div style="font-size:0.75rem; color:#94a3b8;">Local Event Operations Hub • Operates without public internet</div>
                 </div>
               </div>
               <span class="badge-mini-green" style="background:#22c55e; color:#000; font-weight:900;">⚡ 0.7ms LOCAL DETERMINISTIC SLA</span>

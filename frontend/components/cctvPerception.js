@@ -3863,7 +3863,7 @@ Email: ${fromEmail}`;
           updateDensityMetrics(true);
         }
         if (typeof createToast === 'function') {
-          createToast(`🤖 Autonomous Vision: Verified ${data.exactPersonCount} attendees (${data.occludedPersonsCount || 0} occluded behind pillars). Self-healing active.`, 'info');
+          createToast(`👁️ Camera Vision: Verified ${data.exactPersonCount} attendees (${data.occludedPersonsCount || 0} occluded behind pillars). Capacity monitoring active.`, 'info');
         }
       }
     } catch (err) {

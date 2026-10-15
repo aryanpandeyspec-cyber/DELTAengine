@@ -164,15 +164,15 @@ function initAutopilotController() {
       }).then(res => {
         if (res.status === 401 || res.status === 403) {
           window.setAutopilotMode(!nextState);
-          if (typeof createToast === 'function') createToast('⛔ Access Denied: Administrator role required to toggle Autopilot.', 'warning');
+          if (typeof createToast === 'function') createToast('⛔ Access Denied: Administrator role required to change mitigation mode.', 'warning');
         }
       }).catch(() => {});
 
       if (nextState) {
         if (typeof playSuccessSfx === 'function') playSuccessSfx();
-        if (typeof createToast === 'function') createToast('⚡ TESLA AUTOPILOT ENGAGED: Zero-Touch Autonomous Operations Active.', 'success');
+        if (typeof createToast === 'function') createToast('⚡ AUTOMATED MITIGATION ENABLED: Conflicts will resolve automatically.', 'success');
       } else {
-        if (typeof createToast === 'function') createToast('🕹️ MANUAL CO-PILOT: Human Confirmation Required for Reallocations.', 'info');
+        if (typeof createToast === 'function') createToast('🕹️ MANUAL REVIEW ENABLED: Confirmation required before reallocating rooms.', 'info');
       }
     });
   });
@@ -190,11 +190,11 @@ window.showAutopilotResolutionHUD = function(conflictText, destText) {
   }
 
   hud.innerHTML = `
-    <div class="hud-badge">⚡ TESLA AUTOPILOT • ZERO-TOUCH MITIGATION</div>
+    <div class="hud-badge">⚡ AUTOMATED MITIGATION • SCHEDULE RESOLVED</div>
     <div class="hud-conflict">${typeof escapeHtml === 'function' ? escapeHtml(conflictText) : conflictText}</div>
     <div class="hud-arrow">➔</div>
     <div class="hud-dest">${typeof escapeHtml === 'function' ? escapeHtml(destText) : destText}</div>
-    <div class="hud-time">Autonomous execution: <span class="latency">12ms</span> • Venue PA & Volunteers Dispatched</div>
+    <div class="hud-time">Resolved in <span class="latency">12ms</span> • Notifications sent to coordinators</div>
   `;
 
   hud.classList.remove('active');
