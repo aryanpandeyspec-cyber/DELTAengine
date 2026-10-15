@@ -127,3 +127,39 @@ VALUES
     ('slot-3', 'hall-3', 'topic-3')
 ON CONFLICT (slot_id, hall_id) DO UPDATE SET
     topic_id = EXCLUDED.topic_id;
+
+-- =========================================================================
+-- 6. EDGE OUTBOX RECONCILIATION TABLES (SQLite-to-Cloud Ingestion)
+-- =========================================================================
+
+CREATE TABLE IF NOT EXISTS public.edge_telemetry_logs (
+    id BIGSERIAL PRIMARY KEY,
+    hall_id TEXT NOT NULL,
+    camera_id TEXT,
+    occupancy INTEGER NOT NULL DEFAULT 0,
+    capacity INTEGER NOT NULL DEFAULT 250,
+    occupied_percent INTEGER NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'NOMINAL',
+    source TEXT,
+    recorded_at TIMESTAMPTZ NOT NULL,
+    synced_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW())
+);
+
+CREATE TABLE IF NOT EXISTS public.edge_door_logs (
+    id BIGSERIAL PRIMARY KEY,
+    gate_id TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    occupancy INTEGER NOT NULL DEFAULT 0,
+    recorded_at TIMESTAMPTZ NOT NULL,
+    synced_at TIMESTAMPTZ DEFAULT TIMEZONE('utc'::text, NOW())
+);
+
+ALTER TABLE public.edge_telemetry_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.edge_door_logs ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public insert and read on edge_telemetry_logs" 
+ON public.edge_telemetry_logs FOR ALL USING (true) WITH CHECK (true);
+
+CREATE POLICY "Allow public insert and read on edge_door_logs" 
+ON public.edge_door_logs FOR ALL USING (true) WITH CHECK (true);
+

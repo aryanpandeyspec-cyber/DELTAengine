@@ -41,6 +41,9 @@ const { reconstructRoom3DFromImages } = require('./components/spatial3dEngine');
 const { validateFloorPlanFile, inspectSourceDocument, reconstructCadGeometryFromSource, recalibrateScaleWithPoints } = require('./components/cadFloorplanParser');
 const sqliteStore = require('./components/sqliteStore');
 try { sqliteStore.initSqliteStore(); } catch (e) { console.warn('[SQLite] Init notice:', e.message); }
+const cloudSyncWorker = require('./components/cloudSyncWorker');
+try { cloudSyncWorker.startCloudSyncWorker(6000); } catch (e) { console.warn('[CloudSync] Init notice:', e.message); }
+
 
 
 // Process Uncaught Crash Guards (Prevents server process from ever freezing or exiting on errors)
@@ -1525,9 +1528,11 @@ app.post('/api/audit/supervisor-action', (req, res) => {
     db.supervisorAuditLogs = [];
   }
   db.supervisorAuditLogs.unshift(auditRecord);
+  try { sqliteStore.recordComplianceAudit('SUPERVISOR_ACTION', auditRecord.cryptoSignature, auditRecord); } catch (e) {}
   if (db.supervisorAuditLogs.length > 50) {
     db.supervisorAuditLogs.pop();
   }
+
 
   broadcast({
     type: 'SUPERVISOR_ACTION_LOGGED',
@@ -1659,7 +1664,10 @@ app.get('/api/compliance/fire-marshal-audit', (req, res) => {
     certifiedInspectorNote: "Autonomous real-time egress flow monitored via DELTA Engine optical sensor tripwires and CCTV crowd perception."
   };
 
+  try { sqliteStore.recordComplianceAudit('NFPA_AUDIT', auditReport.verificationSeal, auditReport); } catch (e) {}
+
   res.json(auditReport);
+
 });
 
 // Real-Time Google Gemini 3.8/3.5 Flash Safety & Capacity Perception Audit
@@ -2442,7 +2450,8 @@ const TELEMETRY_LOG_COOLDOWN_MS = 6000;
 
 app.post('/api/sensors/door', async (req, res) => {
   try {
-    const { event, hallId, netOccupancy, entries, exits, dist1, dist2, gateId, gateName } = req.body;
+    const { hallId, netOccupancy, entries, exits, dist1, dist2, gateId, gateName } = req.body;
+    const event = req.body.event || req.body.type || (req.body.action === 'EMERGENCY_RELEASE' ? 'EMERGENCY_RELEASE' : 'DOOR_TRIGGER');
     const targetHallId = hallId || 'hall-1';
     const hall = db.graph.halls[targetHallId] || { name: 'Turing Hall', capacity: 250 };
     const timeStr = new Date().toLocaleTimeString();
@@ -2493,6 +2502,8 @@ app.post('/api/sensors/door', async (req, res) => {
       currentGate.entries++;
       currentGate.net++;
       currentGate.lastUpdated = timeStr;
+      try { sqliteStore.recordDoorPassage(targetGateId, 'ENTRY', doorSensorNetOccupancy); } catch (e) {}
+
 
       const nowTrigger = Date.now();
       if (nowTrigger - lastLoggedDoorTick > TELEMETRY_LOG_COOLDOWN_MS) {
@@ -2564,6 +2575,8 @@ app.post('/api/sensors/door', async (req, res) => {
       if (currentGate.net > 0) currentGate.net--;
     }
     currentGate.lastUpdated = timeStr;
+    try { sqliteStore.recordDoorPassage(targetGateId, event || 'ENTRY', doorSensorNetOccupancy); } catch (e) {}
+
 
     const occupancy = (netOccupancy !== undefined && netOccupancy !== null)
       ? parseInt(netOccupancy, 10)
@@ -3887,9 +3900,11 @@ app.get('/api/sensors/camera/latest', (req, res) => {
 app.get('/api/system/storage', (req, res) => {
   res.json({
     success: true,
-    storage: sqliteStore.getStorageMetrics()
+    storage: sqliteStore.getStorageMetrics(),
+    cloudSync: typeof cloudSyncWorker !== 'undefined' ? cloudSyncWorker.getSyncMetrics() : { status: 'OFFLINE' }
   });
 });
+
 
 const PORT = process.env.PORT || 3000;
 

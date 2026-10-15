@@ -79,6 +79,15 @@ function initSqliteStore() {
       );
     `);
 
+    // 6. Schema: Sync Cursors for Cloud Outbox Reconciler
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS sync_cursors (
+        key TEXT PRIMARY KEY,
+        last_id INTEGER NOT NULL DEFAULT 0,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     isInitialized = true;
     console.log('🏛️ [SQLite WAL Engine] Initialized embedded ACID storage:', DB_FILE);
     return db;
@@ -205,11 +214,48 @@ function getStorageMetrics() {
   }
 }
 
+/**
+ * Retrieves the last processed ID for a specific synchronization stream.
+ */
+function getSyncCursor(key) {
+  if (!db && !initSqliteStore()) return 0;
+  try {
+    const row = db.prepare('SELECT last_id FROM sync_cursors WHERE key = ?').get(key);
+    return row ? (row.last_id || 0) : 0;
+  } catch (err) {
+    console.warn('[SQLite] getSyncCursor error:', err.message);
+    return 0;
+  }
+}
+
+/**
+ * Persists the last processed ID for a specific synchronization stream.
+ */
+function setSyncCursor(key, lastId) {
+  if (!db && !initSqliteStore()) return false;
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO sync_cursors (key, last_id, updated_at)
+      VALUES (?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT(key) DO UPDATE SET
+        last_id = excluded.last_id,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+    stmt.run(key, lastId || 0);
+    return true;
+  } catch (err) {
+    console.warn('[SQLite] setSyncCursor error:', err.message);
+    return false;
+  }
+}
+
 module.exports = {
   initSqliteStore,
   recordCameraTick,
   recordDoorPassage,
   recordVenueShift,
   recordComplianceAudit,
-  getStorageMetrics
+  getStorageMetrics,
+  getSyncCursor,
+  setSyncCursor
 };

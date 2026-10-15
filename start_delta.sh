@@ -41,32 +41,48 @@ echo ""
 echo "==============================================================================="
 echo "                             OPERATIONAL MENU"
 echo "==============================================================================="
-echo " [1] Connect to Live College CCTV / NVR (Enter RTSP URL)"
-echo " [2] Run 3-Second Server Room Pre-Flight Safety Test (--test)"
-echo " [3] Connect USB Webcam / Virtual Camera"
-echo " [4] Run Continuous Telemetry Simulation Mode (Background Pax Stream)"
-echo " [5] Exit Launcher (Server continues running in background)"
+echo " [1] Run Multi-Camera Commodity Edge Daemon (using config/cameras.json)"
+echo " [2] Connect Single Live College CCTV / NVR (Enter RTSP URL)"
+echo " [3] Run 3-Second Server Room Pre-Flight Safety Test (--test)"
+echo " [4] Connect USB Webcam / Virtual Camera"
+echo " [5] Run Continuous Telemetry Simulation Mode (Background Pax Stream)"
+echo " [6] Connect Physical ESP32 Door Counter (USB Serial Bridge)"
+echo " [7] Run ESP32 Multi-Gate Mesh Simulation (Gates A, B, C)"
+echo " [8] Run Comprehensive System & Compliance Audit (tests/runAllTests.js)"
+echo " [0] Exit Launcher (Server continues running in background)"
 echo "==============================================================================="
 echo ""
 
-read -p "Select an option [1-5]: " choice
+read -p "Select an option [0-8]: " choice
 
 case "$choice" in
     1)
+        $PYTHON_BIN hardware/edge_cctv_daemon.py --config config/cameras.json
+        ;;
+    2)
         read -p "Enter College NVR RTSP URL: " rtsp_url
         $PYTHON_BIN hardware/edge_cctv_daemon.py --rtsp "$rtsp_url" --hall hall-1 --preview
         ;;
-    2)
+    3)
         read -p "Enter College NVR RTSP URL to Test: " rtsp_url
         $PYTHON_BIN hardware/edge_cctv_daemon.py --rtsp "$rtsp_url" --test
         ;;
-    3)
+    4)
         $PYTHON_BIN hardware/edge_cctv_daemon.py --rtsp 0 --hall hall-1 --preview
         ;;
-    4)
+    5)
         $PYTHON_BIN hardware/edge_cctv_daemon.py --hall hall-1 --rate 2.0
         ;;
-    5)
+    6)
+        $PYTHON_BIN hardware/door_serial_bridge.py --hall hall-1
+        ;;
+    7)
+        $PYTHON_BIN hardware/door_serial_bridge.py --mesh-sim --hall hall-1
+        ;;
+    8)
+        node tests/runAllTests.js
+        ;;
+    0)
         echo "Exiting."
         exit 0
         ;;

@@ -47,13 +47,15 @@ echo  [2] Connect Single Live College CCTV / NVR (Enter RTSP URL)
 echo  [3] Run 3-Second Server Room Pre-Flight Safety Test (--test)
 echo  [4] Connect USB Webcam / OBS Virtual Camera (Webcam Mode)
 echo  [5] Run Continuous Telemetry Simulation Mode (Background Pax Stream)
-echo  [6] Open Mobile Volunteer Terminal (/volunteer.html)
-echo  [7] Open Digital Hallway Signage (/signage.html)
-echo  [8] Exit Launcher (Server continues running in background)
+echo  [6] Connect Physical ESP32 Door Counter (USB Serial Bridge)
+echo  [7] Run ESP32 Multi-Gate Mesh Simulation (Gates A, B, C)
+echo  [8] Run Comprehensive System & Compliance Audit (tests/runAllTests.js)
+echo  [9] Open Mobile Field Terminal (/volunteer.html) & Signage (/signage.html)
+echo  [0] Exit Launcher (Server continues running in background)
 echo ===============================================================================
 echo.
 
-set /p choice="Select an option [1-8]: "
+set /p choice="Select an option [0-9]: "
 
 if "%choice%"=="1" (
     echo.
@@ -98,14 +100,30 @@ if "%choice%"=="5" (
 )
 
 if "%choice%"=="6" (
-    start http://localhost:3000/volunteer.html
+    echo.
+    echo [STARTING] Launching Physical ESP32 Door Counter Serial Bridge...
+    python hardware/door_serial_bridge.py --hall hall-1
 )
 
 if "%choice%"=="7" (
-    start http://localhost:3000/signage.html
+    echo.
+    echo [STARTING] Launching Multi-Gate Mesh Simulation (Gates A, B, C)...
+    python hardware/door_serial_bridge.py --mesh-sim --hall hall-1
 )
 
 if "%choice%"=="8" (
+    echo.
+    echo [AUDIT] Running DELTA Engine 84-point comprehensive test suite...
+    node tests/runAllTests.js
+    pause
+)
+
+if "%choice%"=="9" (
+    start http://localhost:3000/volunteer.html
+    start http://localhost:3000/signage.html
+)
+
+if "%choice%"=="0" (
     echo [EXIT] DELTA Launcher finished.
     exit /b 0
 )

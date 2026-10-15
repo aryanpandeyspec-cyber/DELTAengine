@@ -1,0 +1,21 @@
+[Unit]
+Description=DELTA Engine Autonomous Spatial & Crowd Safety Operating System
+After=network.target network-online.target systemd-timesyncd.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/deltaengine
+ExecStartPre=/bin/sleep 5
+ExecStart=/usr/bin/node backend/server.js
+Restart=always
+RestartSec=3
+KillMode=process
+LimitNOFILE=65536
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=delta-engine
+
+[Install]
+WantedBy=multi-user.target
