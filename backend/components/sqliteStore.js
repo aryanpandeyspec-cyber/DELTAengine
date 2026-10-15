@@ -249,13 +249,29 @@ function setSyncCursor(key, lastId) {
   }
 }
 
+/**
+ * Retrieves recent compliance audit records.
+ */
+function getRecentComplianceAudits(limit = 50) {
+  if (!db && !initSqliteStore()) return [];
+  try {
+    const stmt = db.prepare('SELECT id, event_type, signature, payload, created_at FROM compliance_audits ORDER BY id DESC LIMIT ?');
+    return stmt.all(limit) || [];
+  } catch (err) {
+    console.warn('[SQLite] getRecentComplianceAudits error:', err.message);
+    return [];
+  }
+}
+
 module.exports = {
   initSqliteStore,
   recordCameraTick,
   recordDoorPassage,
   recordVenueShift,
   recordComplianceAudit,
+  getRecentComplianceAudits,
   getStorageMetrics,
   getSyncCursor,
   setSyncCursor
 };
+

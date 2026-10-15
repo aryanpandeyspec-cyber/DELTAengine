@@ -3766,6 +3766,54 @@ Email: ${fromEmail}`;
     updateDensityMetrics(true);
   };
 
+  // Barricade relief pulse hook (surges > 8.5 PSI)
+  window.handleGateReleasePulse = function (data) {
+    if (!data) return;
+    playCctvAlertTone('GATE_RELEASE');
+    const hudCanvas = document.getElementById('cctv-hud-canvas') || document.getElementById('modal-cctv-hud-canvas');
+    if (hudCanvas) {
+      hudCanvas.style.outline = '4px solid #f59e0b';
+      setTimeout(() => { if (hudCanvas) hudCanvas.style.outline = ''; }, 3000);
+    }
+  };
+
+  // Volunteer field emergency SOS hook
+  window.handleVolunteerSosAlert = function (data) {
+    if (!data) return;
+    playCctvAlertTone('ROOM_FULL');
+    const hudCanvas = document.getElementById('cctv-hud-canvas') || document.getElementById('modal-cctv-hud-canvas');
+    if (hudCanvas) {
+      hudCanvas.style.outline = '5px solid #ef4444';
+      setTimeout(() => { if (hudCanvas) hudCanvas.style.outline = ''; }, 5000);
+    }
+  };
+
+  // Multi-gate mesh net occupancy sync hook
+  window.handleGateMeshUpdate = function (data) {
+    if (!data) return;
+    if (data.netOccupancy !== undefined) {
+      doorSensorNetCount = data.netOccupancy;
+      currentNetOccupancy = Math.max(currentNetOccupancy, doorSensorNetCount);
+    }
+    updateDensityMetrics(true);
+  };
+
+  // Autonomous / Coordinator overflow routing hook
+  window.handleOverflowOpen = function (data) {
+    if (!data) return;
+    playCctvAlertTone('ROOM_EMPTY');
+    updateDensityMetrics(true);
+  };
+
+  // Volunteer chokepoint acknowledgement hook
+  window.handleVolunteerAlertAck = function (data) {
+    if (!data) return;
+    dismissedAlertState = currentAlertState;
+    const banner = document.getElementById('volunteer-alert-banner');
+    if (banner) banner.classList.add('hidden');
+    playCctvAlertTone('TRIGGER');
+  };
+
   // Public hook for Volunteer Dispatches
   window.handleVolunteerAlert = function (alert) {
     if (!alert) return;

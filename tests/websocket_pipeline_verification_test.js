@@ -163,6 +163,28 @@ async function runSuite() {
     assert(signHtml.includes("payload.type === 'GRAPH_UPDATED'"));
   });
 
+  const cctvJs = fs.readFileSync(path.join(__dirname, '../frontend/components/cctvPerception.js'), 'utf8');
+
+  test('cctvPerception.js defines window.handleGateReleasePulse', () => {
+    assert(cctvJs.includes("window.handleGateReleasePulse = function"));
+  });
+
+  test('cctvPerception.js defines window.handleVolunteerSosAlert', () => {
+    assert(cctvJs.includes("window.handleVolunteerSosAlert = function"));
+  });
+
+  test('cctvPerception.js defines window.handleGateMeshUpdate', () => {
+    assert(cctvJs.includes("window.handleGateMeshUpdate = function"));
+  });
+
+  test('cctvPerception.js defines window.handleOverflowOpen', () => {
+    assert(cctvJs.includes("window.handleOverflowOpen = function"));
+  });
+
+  test('cctvPerception.js defines window.handleVolunteerAlertAck', () => {
+    assert(cctvJs.includes("window.handleVolunteerAlertAck = function"));
+  });
+
   // SUITE 2: Live WebSocket Packet Delivery Verification
   console.log('\n[SUITE 2] Live Real-Time WebSocket Telemetry Broadcasts');
 
@@ -204,6 +226,14 @@ async function runSuite() {
     const p = receivedPackets.find(x => x.type === 'VOLUNTEER_SOS_ALERT');
     assert(p, 'VOLUNTEER_SOS_ALERT packet should be broadcasted');
     assert.strictEqual(p.data.volunteerName, 'Aryan Pandey (Test Marshal)');
+  });
+
+  const sqliteStore = require('../backend/components/sqliteStore');
+  test('sqliteStore persists VOLUNTEER_SOS to compliance_audits WAL', () => {
+    const audits = sqliteStore.getRecentComplianceAudits(20);
+    assert(Array.isArray(audits), 'Audits should be an array');
+    const sosAudit = audits.find(a => a.event_type === 'VOLUNTEER_SOS');
+    assert(sosAudit, 'VOLUNTEER_SOS audit should be persisted in SQLite storage');
   });
 
   // Test 2: Gate Release Pulse

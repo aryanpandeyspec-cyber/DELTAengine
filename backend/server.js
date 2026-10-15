@@ -1259,6 +1259,7 @@ app.post('/api/whatsapp/incoming', async (req, res) => {
       description: `🚨 [WHATSAPP SOS - ${volunteerName}]: ${sosNote}`,
       timestamp: timeStr
     });
+    try { sqliteStore.recordComplianceAudit('VOLUNTEER_SOS', sosRecord.id, sosRecord); } catch (e) {}
     broadcast({ type: 'VOLUNTEER_SOS_ALERT', data: sosRecord });
     replyText = `🚨 EMERGENCY SOS DISPATCHED: "${sosNote}" flashed on Central Command Projector and Security Deck! Marshals alerted.`;
   } else if (cmd.startsWith('COUNT') || cmd.startsWith('TALLY')) {
@@ -1615,6 +1616,7 @@ app.post('/api/volunteer/sos', (req, res) => {
     description: `🚨 [FIELD SOS - ${sosRecord.volunteerName} @ ${sosRecord.hallName}]: ${sosRecord.note}`,
     timestamp
   });
+  try { sqliteStore.recordComplianceAudit('VOLUNTEER_SOS', sosRecord.id, sosRecord); } catch (e) {}
 
   broadcast({
     type: 'VOLUNTEER_SOS_ALERT',
