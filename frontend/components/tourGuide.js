@@ -27,22 +27,26 @@ const tourSteps = [
   {
     title: "4. Supervised Autonomy & 15s Action SLA",
     text: "When capacity breaches, a 15-second human-in-the-loop SLA modal gives the safety director triple controls: Approve, Hold for Review, or Abort with cryptographic SHA-256 signatures.",
-    highlightId: "reallocation-countdown-modal"
+    highlightId: "reallocation-countdown-modal",
+    fallbackId: "autopilot-toggle-pill"
   },
   {
     title: "5. NFPA-101 Fire Marshal Regulatory Audit",
     text: "Calculates density (m²/pax) and portal flow rates under NFPA-101 § 12.7. Generates cryptographically sealed, printable audit certificates for municipal city inspectors.",
-    highlightId: "btn-download-fire-marshal-audit"
+    highlightId: "btn-download-fire-marshal-audit",
+    fallbackId: "fire-marshal-compliance-badge"
   },
   {
     title: "6. Mobile Field Marshal Terminal (/volunteer)",
     text: "On-ground staff use the lightweight /volunteer mobile terminal with tactile one-thumb entry/exit clickers and a 1-tap emergency SOS panic button.",
-    highlightId: "btn-open-scenario-hub"
+    highlightId: "nav-link-volunteer",
+    fallbackId: "btn-open-scenario-hub"
   },
   {
     title: "7. Autonomous Zoned Voice Announcements",
     text: "When schedules adapt, ElevenLabs voice broadcasts route directly to hallways and foyer signage speakers, preserving silence inside active lecture auditoriums.",
-    highlightId: "speaker-pills-container"
+    highlightId: "venue-pa-live-banner",
+    fallbackId: "speaker-pills-container"
   }
 ];
 
@@ -102,6 +106,16 @@ function initTourGuide() {
     });
   }
 
+  function isElementVisible(el) {
+    if (!el) return false;
+    if (el.classList.contains('hidden')) return false;
+    try {
+      const style = window.getComputedStyle(el);
+      if (style.display === 'none' || style.visibility === 'hidden') return false;
+    } catch (_) {}
+    return true;
+  }
+
   function renderTourStep() {
     const step = tourSteps[currentTourStep];
     if (textStep) {
@@ -114,7 +128,14 @@ function initTourGuide() {
     // Highlight elements visually on page
     document.querySelectorAll('.highlight-tour').forEach(el => el.classList.remove('highlight-tour'));
     
-    const highlightTarget = document.getElementById(step.highlightId);
+    let highlightTarget = document.getElementById(step.highlightId);
+    if (!isElementVisible(highlightTarget) && step.fallbackId) {
+      const fallback = document.getElementById(step.fallbackId);
+      if (isElementVisible(fallback)) {
+        highlightTarget = fallback;
+      }
+    }
+
     if (highlightTarget) {
       highlightTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
       highlightTarget.style.outline = '4px solid #facc15';
