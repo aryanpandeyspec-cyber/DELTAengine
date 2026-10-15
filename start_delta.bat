@@ -42,21 +42,28 @@ echo.
 echo ===============================================================================
 echo                              OPERATIONAL MENU
 echo ===============================================================================
-echo  [1] Connect to Live College CCTV / NVR (Enter RTSP URL)
-echo  [2] Run 3-Second Server Room Pre-Flight Safety Test (--test)
-echo  [3] Connect USB Webcam / OBS Virtual Camera (Webcam Mode)
-echo  [4] Run Continuous Telemetry Simulation Mode (Background Pax Stream)
-echo  [5] Open Mobile Volunteer Terminal (/volunteer.html)
-echo  [6] Open Digital Hallway Signage (/signage.html)
-echo  [7] Exit Launcher (Server continues running in background)
+echo  [1] Run Multi-Camera Commodity Edge Daemon (using config/cameras.json)
+echo  [2] Connect Single Live College CCTV / NVR (Enter RTSP URL)
+echo  [3] Run 3-Second Server Room Pre-Flight Safety Test (--test)
+echo  [4] Connect USB Webcam / OBS Virtual Camera (Webcam Mode)
+echo  [5] Run Continuous Telemetry Simulation Mode (Background Pax Stream)
+echo  [6] Open Mobile Volunteer Terminal (/volunteer.html)
+echo  [7] Open Digital Hallway Signage (/signage.html)
+echo  [8] Exit Launcher (Server continues running in background)
 echo ===============================================================================
 echo.
 
-set /p choice="Select an option [1-7]: "
+set /p choice="Select an option [1-8]: "
 
 if "%choice%"=="1" (
     echo.
-    set /p rtsp_url="Enter College NVR RTSP URL (e.g. rtsp://admin:pass@192.168.1.100:554/ch1/main): "
+    echo [STARTING] Launching Multi-Camera Commodity Daemon (3 FPS Sampling)...
+    python hardware/edge_cctv_daemon.py --config config/cameras.json
+)
+
+if "%choice%"=="2" (
+    echo.
+    set /p rtsp_url="Enter College NVR RTSP URL (e.g. rtsp://admin:pass@192.168.1.100:554/cam/realmonitor?channel=1&subtype=1): "
     if "!rtsp_url!"=="" (
         echo [ERROR] No RTSP URL provided. Returning...
         pause
@@ -66,7 +73,7 @@ if "%choice%"=="1" (
     python hardware/edge_cctv_daemon.py --rtsp "!rtsp_url!" --hall hall-1 --preview
 )
 
-if "%choice%"=="2" (
+if "%choice%"=="3" (
     echo.
     set /p rtsp_url="Enter College NVR RTSP URL to Test: "
     if "!rtsp_url!"=="" (
@@ -78,29 +85,30 @@ if "%choice%"=="2" (
     pause
 )
 
-if "%choice%"=="3" (
+if "%choice%"=="4" (
     echo.
     echo [STARTING] Launching USB / Virtual Camera (Index 0)...
     python hardware/edge_cctv_daemon.py --rtsp 0 --hall hall-1 --preview
 )
 
-if "%choice%"=="4" (
+if "%choice%"=="5" (
     echo.
     echo [STARTING] Launching Automated Edge Telemetry Stream (2s interval)...
     python hardware/edge_cctv_daemon.py --hall hall-1 --rate 2.0
 )
 
-if "%choice%"=="5" (
+if "%choice%"=="6" (
     start http://localhost:3000/volunteer.html
 )
 
-if "%choice%"=="6" (
+if "%choice%"=="7" (
     start http://localhost:3000/signage.html
 )
 
-if "%choice%"=="7" (
+if "%choice%"=="8" (
     echo [EXIT] DELTA Launcher finished.
     exit /b 0
 )
 
 pause
+
