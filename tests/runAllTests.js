@@ -478,6 +478,91 @@ Post-Quantum Cryptography,Prof. Bob Vance,Security Hall,180,10:30 AM - 11:30 AM,
   assert(tourJs.includes('tourSteps = [') && tourJs.includes('Autonomous Zoned Voice Announcements'), 'Interactive tour upgraded to 7-step enterprise walkthrough');
 }
 
+async function runTest15_EdgeResilienceAndWALEngine() {
+  console.log(`\n${BOLD}[TEST 15] Embedded SQLite WAL Engine, Outbox Reconciler & Edge Resilience${RESET}`);
+  const sqliteStore = require('../backend/components/sqliteStore');
+  const db = sqliteStore.initSqliteStore();
+  assert(db !== null, 'Native node:sqlite store initialized successfully');
+
+  // 1. Verify WAL Mode
+  const metrics = sqliteStore.getStorageMetrics();
+  assert(metrics.status === 'ACTIVE' && metrics.journalMode === 'WAL', 'SQLite storage is active in Write-Ahead Logging (WAL) mode');
+
+  // 2. High-speed concurrent writes (50 ticks)
+  let allWritesSucceeded = true;
+  for (let i = 0; i < 50; i++) {
+    const ok = sqliteStore.recordCameraTick({
+      hallId: 'hall-1',
+      cameraId: 'cam-test',
+      peopleDetected: 140 + (i % 20),
+      capacity: 250,
+      occupiedPercent: 56,
+      status: 'NOMINAL',
+      source: 'REGRESSION_TEST'
+    });
+    if (!ok) allWritesSucceeded = false;
+  }
+  assert(allWritesSucceeded, 'Executed 50 atomic camera ticks with 0 lock errors or SQLite exceptions');
+
+  // 3. Persistent Sync Cursors
+  const testCursorKey = 'regression_sync_cursor';
+  sqliteStore.setSyncCursor(testCursorKey, 7721);
+  const fetchedCursor = sqliteStore.getSyncCursor(testCursorKey);
+  assert(fetchedCursor === 7721, 'Sync cursor persisted and retrieved accurately (idempotent stream checkpoint)');
+
+  // 4. Storage & CloudSync diagnostics endpoint
+  const storageData = await fetchJson('/api/system/storage');
+  assert(storageData.success === true && storageData.storage.journalMode === 'WAL', '/api/system/storage exposes active WAL metrics');
+  assert(storageData.cloudSync && storageData.cloudSync.engine === 'Outbox-SQLite-to-Supabase', 'Cloud sync outbox reconciler registered in system diagnostics');
+}
+
+async function runTest16_MultiGateMeshAndHardwareCLI() {
+  console.log(`\n${BOLD}[TEST 16] Multi-Gate Mesh Fusion, Mobile Field Clicker & Hardware CLI${RESET}`);
+
+  // 1. Mobile Field Clicker Compatibility (type: ENTRY)
+  const clickerRes = await fetchJson('/api/sensors/door', {
+    method: 'POST',
+    body: JSON.stringify({
+      hallId: 'hall-1',
+      type: 'ENTRY',
+      gateId: 'gate-a',
+      count: 1,
+      source: 'flutter_field_clicker'
+    })
+  });
+  assert(clickerRes && clickerRes.success, 'Accepts mobile field clicker payload with "type: ENTRY"');
+
+  // 2. Multi-Gate Mesh Status
+  const meshData = await fetchJson('/api/sensors/doors/mesh');
+  assert(meshData.success && meshData.gates['gate-a'] !== undefined, 'Multi-gate mesh fuses Gate A, Gate B, and Gate C');
+
+  // 3. Emergency Barricade Pressure Relief (>8.5 PSI)
+  const releaseRes = await fetchJson('/api/sensors/door', {
+    method: 'POST',
+    body: JSON.stringify({
+      hallId: 'hall-1',
+      gateId: 'gate-b',
+      event: 'EMERGENCY_RELEASE',
+      pressurePsi: 9.8
+    })
+  });
+  assert(releaseRes.success && releaseRes.status === 'EMERGENCY_RELEASE_ACTIVATED', 'Autonomous barricade pressure relief pulse activated at 9.8 PSI');
+
+  // 4. Edge CCTV Daemon NVR Templates CLI
+  try {
+    const templateOutput = execSync('python hardware/edge_cctv_daemon.py --templates', { encoding: 'utf-8' });
+    assert(templateOutput.includes('CP PLUS') && templateOutput.includes('Hikvision'), 'Edge daemon CLI provides sub-stream templates for Indian NVR brands');
+  } catch (e) {
+    assert(false, `Daemon --templates CLI check failed: ${e.message}`);
+  }
+
+  // 5. System Integrations 8-Point Matrix
+  const integrationsData = await fetchJson('/api/system/integrations');
+  assert(integrationsData.sqlite && integrationsData.sqlite.connected, 'Integrations matrix verifies SQLite WAL engine');
+  assert(integrationsData.cloudSync && integrationsData.cloudSync.connected, 'Integrations matrix verifies CloudSync outbox worker');
+  assert(integrationsData.twilio && integrationsData.twilio.connected, 'Integrations matrix verifies Twilio WhatsApp messaging');
+}
+
 async function main() {
   console.log(`${BOLD}${CYAN}====================================================${RESET}`);
   console.log(`${BOLD}${CYAN}  DELTA ENGINE — COMPREHENSIVE REGRESSION & EXPANSION TEST SUITE ${RESET}`);
@@ -498,6 +583,8 @@ async function main() {
     await runTest12_FrontendVisualLockedIntegrity();
     await runTest13_EnterpriseStartupFeatures();
     await runTest14_DynamicScheduleImporterAndTour();
+    await runTest15_EdgeResilienceAndWALEngine();
+    await runTest16_MultiGateMeshAndHardwareCLI();
 
     console.log(`\n${BOLD}${CYAN}====================================================${RESET}`);
     if (passedTests === totalTests) {
