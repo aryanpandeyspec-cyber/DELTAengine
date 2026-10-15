@@ -2,6 +2,7 @@ const { generateGroqAgentSwarmDialogue } = require('./agentSwarm');
 const { autoDispatchSelfHealingEmail } = require('./supabaseEmailIntegrator');
 const { generateVenueVoiceAnnouncement } = require('./voiceAnnouncer');
 const { appendForensicAuditLog } = require('./security');
+const sqliteStore = require('./sqliteStore');
 
 async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}) {
   const logs = [];
@@ -229,6 +230,23 @@ async function runSelfHealingAgent(eventDescription, db, broadcast, options = {}
 
   if (wasHealed && typeof db.persist === 'function') {
     db.persist();
+  }
+
+  if (wasHealed) {
+    try {
+      sqliteStore.recordVenueShift(
+        conflictReason || 'CAPACITY_CONFLICT',
+        'hall-1',
+        destinationTarget || 'overflow-zone',
+        eventDescription || 'SCHEDULE_HEALED',
+        { notifications, destinationTarget }
+      );
+      sqliteStore.recordComplianceAudit(
+        'SCHEDULE_AUTONOMOUS_HEALED',
+        'SIG-HEALED-' + Date.now(),
+        { eventDescription, conflictReason, destinationTarget }
+      );
+    } catch (e) {}
   }
 
   const updatePayload = {

@@ -250,6 +250,48 @@ function setSyncCursor(key, lastId) {
 }
 
 /**
+ * Retrieves recent sensor telemetry records.
+ */
+function getRecentTelemetry(limit = 50) {
+  if (!db && !initSqliteStore()) return [];
+  try {
+    const stmt = db.prepare('SELECT id, hall_id, camera_id, people_detected, capacity, occupied_percent, status, source, created_at FROM sensor_telemetry ORDER BY id DESC LIMIT ?');
+    return stmt.all(limit) || [];
+  } catch (err) {
+    console.warn('[SQLite] getRecentTelemetry error:', err.message);
+    return [];
+  }
+}
+
+/**
+ * Retrieves recent door passage records.
+ */
+function getRecentPassages(limit = 50) {
+  if (!db && !initSqliteStore()) return [];
+  try {
+    const stmt = db.prepare('SELECT id, gate_id, direction, current_count, created_at FROM door_passages ORDER BY id DESC LIMIT ?');
+    return stmt.all(limit) || [];
+  } catch (err) {
+    console.warn('[SQLite] getRecentPassages error:', err.message);
+    return [];
+  }
+}
+
+/**
+ * Retrieves recent venue schedule shift records.
+ */
+function getRecentVenueShifts(limit = 50) {
+  if (!db && !initSqliteStore()) return [];
+  try {
+    const stmt = db.prepare('SELECT id, reason, source_hall, target_hall, topic_id, action_payload, created_at FROM venue_shifts ORDER BY id DESC LIMIT ?');
+    return stmt.all(limit) || [];
+  } catch (err) {
+    console.warn('[SQLite] getRecentVenueShifts error:', err.message);
+    return [];
+  }
+}
+
+/**
  * Retrieves recent compliance audit records.
  */
 function getRecentComplianceAudits(limit = 50) {
@@ -270,6 +312,9 @@ module.exports = {
   recordVenueShift,
   recordComplianceAudit,
   getRecentComplianceAudits,
+  getRecentTelemetry,
+  getRecentPassages,
+  getRecentVenueShifts,
   getStorageMetrics,
   getSyncCursor,
   setSyncCursor

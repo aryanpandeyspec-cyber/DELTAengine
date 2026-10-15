@@ -742,6 +742,128 @@ wss.on('connection', ws => {
       }
     }));
   } catch (e) {}
+
+  ws.on('message', (raw) => {
+    try {
+      const msg = JSON.parse(raw);
+      if (!msg || !msg.type) return;
+
+      if (msg.type === 'PING' || msg.type === 'HEARTBEAT') {
+        try {
+          ws.send(JSON.stringify({
+            type: 'PONG',
+            timestamp: Date.now(),
+            clients: wss.clients.size
+          }));
+        } catch (e) {}
+        return;
+      }
+
+      if (msg.type === 'GET_STATE' || msg.type === 'REQUEST_STATE') {
+        try {
+          ws.send(JSON.stringify({
+            type: 'INIT_STATE',
+            data: {
+              graph: db.graph,
+              schedule: db.schedule,
+              activeDate: db.activeDate,
+              contacts: db.contacts,
+              volunteers: db.volunteers,
+              whatsappLogs: db.whatsappLogs,
+              emailLogs: db.emailLogs || [],
+              limiters: db.limiters,
+              cctvState: db.cctvState,
+              autopilotEnabled: db.autopilotEnabled !== false,
+              uptimeSeconds: Math.floor(process.uptime()),
+              tokensUsed: db.tokensUsed,
+              activeScenario: getActiveScenario().id,
+              scenarios: getScenarios(),
+              rooms: db.roomsState,
+              tasks: db.incidentTasks,
+              messages: db.meshMessages || [],
+              checkinsCount: db.attendeeCheckins ? db.attendeeCheckins.length : 0
+            }
+          }));
+        } catch (e) {}
+        return;
+      }
+
+      if (msg.type === 'CHAT_MESSAGE' || msg.type === 'MESH_MESSAGE') {
+        if (msg.data && msg.data.text) {
+          const chatItem = {
+            id: msg.data.id || `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+            sender: msg.data.sender || 'Coordinator',
+            recipient: msg.data.recipient || 'All Channels',
+            recipientPhone: msg.data.recipientPhone || 'Broadcast',
+            text: String(msg.data.text).trim(),
+            timestamp: msg.data.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+          db.meshMessages = db.meshMessages || [];
+          db.meshMessages.unshift(chatItem);
+          if (db.meshMessages.length > 50) db.meshMessages = db.meshMessages.slice(0, 50);
+          try { sqliteStore.recordComplianceAudit('MESH_CHAT', chatItem.id, chatItem); } catch (e) {}
+          broadcast({ type: 'CHAT_MESSAGE', data: chatItem });
+          broadcast({ type: 'MESH_MESSAGE', data: chatItem });
+        }
+        return;
+      }
+
+      if (msg.type === 'VOICE_BROADCAST') {
+        if (msg.data) {
+          broadcast({ type: 'VOICE_BROADCAST', data: msg.data });
+        }
+        return;
+      }
+
+      if (msg.type === 'VOLUNTEER_SOS') {
+        if (msg.data) {
+          const sosRecord = {
+            id: 'sos_' + Date.now(),
+            volunteerName: msg.data.volunteerName || 'Volunteer',
+            hallId: msg.data.hallId || 'hall-1',
+            hallName: msg.data.hallName || 'Turing Hall',
+            note: msg.data.note || 'Emergency assistance requested via WebSocket',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            status: 'ACTIVE_ESCALATION'
+          };
+          try { sqliteStore.recordComplianceAudit('VOLUNTEER_SOS', sosRecord.id, sosRecord); } catch (e) {}
+          broadcast({ type: 'VOLUNTEER_SOS_ALERT', data: sosRecord });
+        }
+        return;
+      }
+
+      if (msg.type === 'VOLUNTEER_ALERT_ACK') {
+        if (msg.data) {
+          broadcast({ type: 'VOLUNTEER_ALERT_ACK', data: msg.data });
+        }
+        return;
+      }
+
+      if (msg.type === 'GATE_RELEASE_PULSE') {
+        if (msg.data) {
+          broadcast({ type: 'GATE_RELEASE_PULSE', data: msg.data });
+        }
+        return;
+      }
+
+      if (msg.type === 'QUICK_ACTION_DISPATCH') {
+        if (msg.data) {
+          broadcast({ type: 'QUICK_ACTION_DISPATCH', data: msg.data });
+        }
+        return;
+      }
+
+      if (msg.type === 'VOLUNTEER_OVERFLOW_OPEN') {
+        if (msg.data) {
+          broadcast({ type: 'VOLUNTEER_OVERFLOW_OPEN', data: msg.data });
+        }
+        return;
+      }
+    } catch (err) {
+      if (process.env.DEBUG_WS) console.warn('[WS Message Parse Error]', err.message);
+    }
+  });
+
   ws.on('close', () => {
     if (process.env.DEBUG_WS) console.log('[WS] Client disconnected');
   });
@@ -3742,6 +3864,20 @@ app.post('/api/sim/mass-disruption', async (req, res) => {
     }
   });
 
+  try {
+    sqliteStore.recordVenueShift(
+      'MASS_DISRUPTION_KEYNOTE_COLLISION',
+      'hall-1',
+      'hall-2',
+      'talk-clash-resolved',
+      { stepsCount: steps.length, resolvedCollisions: 3 }
+    );
+    sqliteStore.recordComplianceAudit('MASS_DISRUPTION_RESOLVED', 'SIG-MASS-' + Date.now(), {
+      resolvedCollisions: 3,
+      finalScheduleSlots: Object.keys(db.schedule).length
+    });
+  } catch (e) {}
+
     res.json({
       success: true,
       steps,
@@ -3947,6 +4083,18 @@ app.get('/api/system/storage', (req, res) => {
     storage: sqliteStore.getStorageMetrics(),
     cloudSync: typeof cloudSyncWorker !== 'undefined' ? cloudSyncWorker.getSyncMetrics() : { status: 'OFFLINE' }
   });
+});
+
+// GET endpoint to query recent SQLite WAL records by stream type (telemetry, passages, shifts, audits)
+app.get('/api/system/storage/records', (req, res) => {
+  const type = req.query.type || 'audits';
+  const limit = Math.min(parseInt(req.query.limit, 10) || 50, 200);
+  let records = [];
+  if (type === 'telemetry') records = sqliteStore.getRecentTelemetry(limit);
+  else if (type === 'passages') records = sqliteStore.getRecentPassages(limit);
+  else if (type === 'shifts') records = sqliteStore.getRecentVenueShifts(limit);
+  else records = sqliteStore.getRecentComplianceAudits(limit);
+  res.json({ success: true, type, count: records.length, records });
 });
 
 

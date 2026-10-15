@@ -4091,6 +4091,100 @@
                     }
                   }
                   break;
+
+                case 'VOLUNTEER_SOS_ALERT':
+                  if (packet.data) {
+                    playSound('alarm');
+                    showToast(`🚨 SOS: ${packet.data.volunteerName || 'Field Marshal'} at ${packet.data.hallName || 'Venue'}`);
+                    addAlertNotification({
+                      icon: '🚨',
+                      title: `EMERGENCY SOS: ${packet.data.volunteerName || 'Field Marshal'}`,
+                      desc: `${packet.data.note || 'Urgent escalation requested'} (${packet.data.hallName || 'Hall'})`,
+                      time: packet.data.timestamp || 'Just now'
+                    });
+                  }
+                  break;
+
+                case 'GATE_RELEASE_PULSE':
+                  if (packet.data) {
+                    playSound('ping');
+                    showToast(`🚪 Gate Release: ${packet.data.gateName || 'Barricade'} (${packet.data.pressurePsi || 8.5} PSI)`);
+                    addAlertNotification({
+                      icon: '🚪',
+                      title: `Gate Release Pulse: ${packet.data.gateName || 'Egress'}`,
+                      desc: `Pressure relief pulse active. Flow steady.`,
+                      time: 'Just now'
+                    });
+                  }
+                  break;
+
+                case 'CRITICAL_ALERT':
+                  if (packet.data) {
+                    playSound('alarm');
+                    showToast(`⚠️ ${packet.data.title || packet.data.message || 'Critical Alert'}`);
+                    addAlertNotification({
+                      icon: '⚠️',
+                      title: packet.data.title || 'Critical Alert',
+                      desc: packet.data.message || 'Venue threshold safety alert',
+                      time: 'Just now'
+                    });
+                  }
+                  break;
+
+                case 'EMERGENCY_TRIGGERED':
+                  if (packet.data) {
+                    playSound('alarm');
+                    showToast(`🛑 EMERGENCY ACTIVE: ${packet.data.reason || 'Safety Threshold Exceeded'}`);
+                    addAlertNotification({
+                      icon: '🛑',
+                      title: 'EMERGENCY ACTIVE',
+                      desc: packet.data.reason || 'Immediate attention required',
+                      time: 'Just now'
+                    });
+                  }
+                  break;
+
+                case 'EMERGENCY_CLEARED':
+                  playSound('ping');
+                  showToast(`✅ Emergency cleared. Venue nominal.`);
+                  addAlertNotification({
+                    icon: '✅',
+                    title: 'Emergency Cleared',
+                    desc: 'All zones returned to nominal safety status.',
+                    time: 'Just now'
+                  });
+                  break;
+
+                case 'AI_ADVISORY':
+                  if (packet.data) {
+                    showToast(`🤖 Copilot: ${packet.data.advisory || packet.data.summary || 'New recommendation'}`);
+                    addAlertNotification({
+                      icon: '🤖',
+                      title: 'AI Copilot Advisory',
+                      desc: packet.data.advisory || packet.data.summary || '',
+                      time: 'Just now'
+                    });
+                  }
+                  break;
+
+                case 'VOICE_ANNOUNCEMENT':
+                  if (packet.data) {
+                    playSound('ping');
+                    showToast(`📢 ${packet.data.text || packet.data.message || 'Announcement'}`);
+                    addAlertNotification({
+                      icon: '📢',
+                      title: 'Venue PA Announcement',
+                      desc: packet.data.text || packet.data.message || '',
+                      time: 'Just now'
+                    });
+                    if (packet.data.audioBase64) {
+                      try {
+                        const audio = new Audio(`data:audio/mp3;base64,${packet.data.audioBase64}`);
+                        audio.play().catch(() => {});
+                      } catch (e) {}
+                    }
+                  }
+                  break;
               }
             } catch (err) {
               console.error('[DELTA RealTime] Packet parse error:', err);

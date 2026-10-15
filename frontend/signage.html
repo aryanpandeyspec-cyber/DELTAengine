@@ -1468,10 +1468,15 @@
             graphData = payload.data.graph || graphData;
             scheduleData = payload.data.schedule || scheduleData;
             renderSignage();
-          } else if (payload.type === 'EMERGENCY_EVACUATION' || payload.type === 'MASS_DISRUPTION' || (payload.data && payload.data.isMassDisruption)) {
+          } else if (payload.type === 'EMERGENCY_RELEASE' || payload.type === 'EMERGENCY_TRIGGERED' || payload.type === 'EMERGENCY_EVACUATION' || payload.type === 'MASS_DISRUPTION' || (payload.data && payload.data.isMassDisruption)) {
             triggerEmergencySignageInversion(payload.data || {});
-          } else if (payload.type === 'EMERGENCY_CLEAR' || payload.type === 'SYSTEM_RESET') {
+          } else if (payload.type === 'EMERGENCY_CLEAR' || payload.type === 'EMERGENCY_CLEARED' || payload.type === 'SYSTEM_RESET') {
             clearEmergencySignageInversion();
+          } else if (payload.type === 'CRITICAL_ALERT') {
+            showSignagePABanner({
+              text: `⚠️ ATTENTION: ${payload.data?.message || payload.data?.title || 'Safety Threshold Exceeded'}`,
+              voice: 'Life-Safety System'
+            });
           }
         } catch (err) {
           console.warn('[Signage WS]', err);

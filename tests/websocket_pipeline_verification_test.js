@@ -151,6 +151,18 @@ async function runSuite() {
     assert(volHtml.includes("msg.type === 'VOLUNTEER_ALERT'"));
   });
 
+  test('volunteer.html handles QUICK_ACTION_DISPATCH', () => {
+    assert(volHtml.includes("msg.type === 'QUICK_ACTION_DISPATCH'"));
+  });
+
+  test('volunteer.html handles VOICE_BROADCAST', () => {
+    assert(volHtml.includes("msg.type === 'VOICE_BROADCAST'"));
+  });
+
+  test('volunteer.html handles TASK_CREATED', () => {
+    assert(volHtml.includes("msg.type === 'TASK_CREATED'"));
+  });
+
   test('signage.html handles GATE_RELEASE_PULSE', () => {
     assert(signHtml.includes("payload.type === 'GATE_RELEASE_PULSE'"));
   });
@@ -161,6 +173,41 @@ async function runSuite() {
 
   test('signage.html handles GRAPH_UPDATED', () => {
     assert(signHtml.includes("payload.type === 'GRAPH_UPDATED'"));
+  });
+
+  test('signage.html handles EMERGENCY_RELEASE & EMERGENCY_TRIGGERED', () => {
+    assert(signHtml.includes("payload.type === 'EMERGENCY_RELEASE'"));
+    assert(signHtml.includes("payload.type === 'EMERGENCY_TRIGGERED'"));
+  });
+
+  test('signage.html handles CRITICAL_ALERT', () => {
+    assert(signHtml.includes("payload.type === 'CRITICAL_ALERT'"));
+  });
+
+  const appHtml = fs.readFileSync(path.join(__dirname, '../frontend/app.html'), 'utf8');
+
+  test('app.html handles VOLUNTEER_SOS_ALERT and GATE_RELEASE_PULSE', () => {
+    assert(appHtml.includes("case 'VOLUNTEER_SOS_ALERT':"));
+    assert(appHtml.includes("case 'GATE_RELEASE_PULSE':"));
+  });
+
+  test('app.html handles CRITICAL_ALERT, EMERGENCY_TRIGGERED, and AI_ADVISORY', () => {
+    assert(appHtml.includes("case 'CRITICAL_ALERT':"));
+    assert(appHtml.includes("case 'EMERGENCY_TRIGGERED':"));
+    assert(appHtml.includes("case 'AI_ADVISORY':"));
+  });
+
+  const swJs = fs.readFileSync(path.join(__dirname, '../frontend/sw.js'), 'utf8');
+
+  test('sw.js pre-caches complete PWA suite including login and presentation', () => {
+    assert(swJs.includes("'/login.html'"));
+    assert(swJs.includes("'/presentation.html'"));
+    assert(swJs.includes("'/components/customCursor.js'"));
+    assert(swJs.includes("'/components/cctvPerception.js'"));
+  });
+
+  test('websockets.js exports window.sendWsMessage', () => {
+    assert(wsJs.includes("window.sendWsMessage = function"));
   });
 
   const cctvJs = fs.readFileSync(path.join(__dirname, '../frontend/components/cctvPerception.js'), 'utf8');
@@ -307,6 +354,64 @@ async function runSuite() {
     const pMesh = receivedPackets.find(x => x.type === 'GATE_MESH_UPDATE');
     assert(pDoor, 'DOOR_TRIGGER packet should be broadcasted');
     assert(pMesh, 'GATE_MESH_UPDATE packet should be broadcasted');
+  });
+
+  // Test 7: Bidirectional Client PING -> PONG over WebSocket
+  ws.send(JSON.stringify({ type: 'PING' }));
+  await sleep(60);
+  test('Client sends PING over WS and receives PONG', () => {
+    const pPong = receivedPackets.find(x => x.type === 'PONG');
+    assert(pPong, 'PONG packet should be received from server');
+    assert(pPong.timestamp, 'PONG should have server timestamp');
+  });
+
+  // Test 8: Bidirectional Client GET_STATE -> INIT_STATE over WebSocket
+  ws.send(JSON.stringify({ type: 'GET_STATE' }));
+  await sleep(60);
+  test('Client sends GET_STATE over WS and receives refreshed INIT_STATE', () => {
+    const inits = receivedPackets.filter(x => x.type === 'INIT_STATE');
+    assert(inits.length >= 2, 'Should have received fresh INIT_STATE upon request');
+  });
+
+  // Test 9: Bidirectional Client CHAT_MESSAGE over WebSocket
+  ws.send(JSON.stringify({
+    type: 'CHAT_MESSAGE',
+    data: {
+      sender: 'Field Marshal WS Client',
+      text: 'Direct WebSocket walkie-talkie burst test'
+    }
+  }));
+  await sleep(60);
+  test('Client sends CHAT_MESSAGE over WS and server broadcasts it', () => {
+    const pChat = receivedPackets.find(x => x.type === 'CHAT_MESSAGE' && x.data && x.data.text && x.data.text.includes('Direct WebSocket walkie-talkie'));
+    assert(pChat, 'CHAT_MESSAGE sent over WS should be broadcasted');
+  });
+
+  // Test 10: SQLite WAL Storage Records Query Endpoints
+  const storageShiftsRes = await get('/api/system/storage/records?type=shifts');
+  test('GET /api/system/storage/records?type=shifts returns ACID shifts', () => {
+    assert.strictEqual(storageShiftsRes.status, 200);
+    assert(storageShiftsRes.data.success);
+    assert.strictEqual(storageShiftsRes.data.type, 'shifts');
+    assert(Array.isArray(storageShiftsRes.data.records));
+  });
+
+  const storageTelemetryRes = await get('/api/system/storage/records?type=telemetry');
+  test('GET /api/system/storage/records?type=telemetry returns sensor telemetry', () => {
+    assert.strictEqual(storageTelemetryRes.status, 200);
+    assert(storageTelemetryRes.data.success);
+    assert.strictEqual(storageTelemetryRes.data.type, 'telemetry');
+    assert(Array.isArray(storageTelemetryRes.data.records));
+    assert(storageTelemetryRes.data.count > 0);
+  });
+
+  const storageAuditsRes = await get('/api/system/storage/records?type=audits');
+  test('GET /api/system/storage/records?type=audits returns compliance audits', () => {
+    assert.strictEqual(storageAuditsRes.status, 200);
+    assert(storageAuditsRes.data.success);
+    assert.strictEqual(storageAuditsRes.data.type, 'audits');
+    assert(Array.isArray(storageAuditsRes.data.records));
+    assert(storageAuditsRes.data.count > 0);
   });
 
   ws.close();

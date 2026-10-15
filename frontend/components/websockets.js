@@ -618,6 +618,11 @@ function initWebSockets() {
         }
         break;
       }
+
+      case 'PONG': {
+        // Live bidirectional WebSocket heartbeat acknowledgement
+        break;
+      }
     }
   };
 
@@ -638,3 +643,18 @@ function initWebSockets() {
     }
   };
 }
+
+/**
+ * Universal client-to-server WebSocket dispatch helper
+ */
+window.sendWsMessage = function (packet) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    try {
+      ws.send(typeof packet === 'string' ? packet : JSON.stringify(packet));
+      return true;
+    } catch (e) {
+      console.warn('[WS Send Error]', e);
+    }
+  }
+  return false;
+};

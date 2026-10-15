@@ -888,6 +888,36 @@
               div.innerHTML = `📻 <strong>${msg.data?.sender || 'Mesh'}:</strong> ${msg.data?.text || msg.data?.message || ''}`;
               elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
             }
+            if (msg.type === 'QUICK_ACTION_DISPATCH' && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.style.background = '#fefce8';
+              div.style.borderLeft = '4px solid #eab308';
+              div.style.padding = '6px';
+              div.style.color = '#713f12';
+              div.innerHTML = `⚡ <strong>DISPATCH:</strong> ${msg.data?.label || 'Field Action'} (by ${msg.data?.sender || 'Coordinator'})`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+              playTone(660, 0.15);
+            }
+            if (msg.type === 'VOICE_BROADCAST' && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.innerHTML = `🎙️ <strong>${msg.data?.sender || 'Radio'}:</strong> ${msg.data?.text || 'Voice transmission'}`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+              if (msg.data?.audioData) {
+                try { new Audio(msg.data.audioData).play().catch(() => {}); } catch (e) {}
+              }
+            }
+            if ((msg.type === 'TASK_CREATED' || msg.type === 'TASK_UPDATED') && elOrdersLog) {
+              const div = document.createElement('div');
+              div.className = 'order-item';
+              div.style.background = '#eff6ff';
+              div.style.borderLeft = '4px solid #3b82f6';
+              div.style.padding = '6px';
+              div.style.color = '#1e40af';
+              div.innerHTML = `📋 <strong>TASK DISPATCH:</strong> ${msg.data?.title || 'Venue Task'} at ${msg.data?.location || 'Venue'}`;
+              elOrdersLog.insertBefore(div, elOrdersLog.firstChild);
+            }
             if (['STATE_UPDATE', 'INIT_STATE', 'SCHEDULE_UPDATED', 'CCTV_OCCUPANCY_UPDATE', 'ROOM_OCCUPANCY_UPDATE', 'DOOR_TRIGGER', 'GATE_MESH_UPDATE', 'SCENARIO_CHANGED', 'GRAPH_UPDATED'].includes(msg.type)) {
               syncHallState();
             }
