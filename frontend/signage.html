@@ -505,6 +505,53 @@
       color: #dc2626;
       letter-spacing: -0.5px;
     }
+
+    /* Coming Soon Showcase Styles */
+    .coming-soon-hero-card {
+      background: #ffffff;
+      border: 3px solid #000000;
+      border-radius: 18px;
+      box-shadow: 6px 6px 0px #000000;
+      padding: 36px 32px;
+      margin-bottom: 24px;
+    }
+    .coming-soon-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: #facc15;
+      color: #000000;
+      font-family: var(--font-mono, 'Space Grotesk', monospace);
+      font-weight: 900;
+      font-size: 0.85rem;
+      padding: 6px 14px;
+      border: 2px solid #000000;
+      border-radius: 20px;
+      box-shadow: 2px 2px 0px #000000;
+      margin-bottom: 16px;
+      letter-spacing: 0.5px;
+    }
+    .feature-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin: 28px 0;
+    }
+    .feature-card-item {
+      background: #f8fafc;
+      border: 2px solid #000000;
+      border-radius: 14px;
+      box-shadow: 4px 4px 0px #000000;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .feature-card-item:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0px #000000;
+    }
   </style>
 </head>
 
@@ -519,6 +566,158 @@
     <img src="doodles/2057748.png" class="doodle-img doodle-205" alt="Doodle">
   </div>
 
+  <!-- ===================================================================== -->
+  <!-- 1. STATIC SHOWCASE VIEW: COMING SOON OVERVIEW (DEFAULT VIEW)          -->
+  <!-- ===================================================================== -->
+  <div id="signage-coming-soon-view" style="display:block;">
+    <div class="container" style="max-width: 1180px; margin: 0 auto; padding: 20px;">
+      <!-- Top Navigation Sub-Bar -->
+      <div class="signage-nav-bar" style="margin-bottom: 24px;">
+        <div class="signage-nav-left">
+          <span style="font-family:var(--font-mono); font-weight:800; font-size:1.05rem; display:flex; align-items:center; gap:8px;">
+            📺 <span style="color:#2563eb;">DELTA ENGINE</span> • SIGNAGE TV
+          </span>
+          <span class="badge badge-yellow" style="font-weight:800; font-size:0.75rem;">
+            🚀 HARDWARE PACK PREVIEW
+          </span>
+        </div>
+        <div class="signage-nav-right">
+          <button type="button" id="btn-open-live-kiosk" class="btn btn-sm btn-blue" style="font-weight:800; font-size:0.82rem; padding:6px 14px; border:2px solid #000; box-shadow:3px 3px 0px #000; cursor:pointer;" title="Launch Live Kiosk / TV Display Mode">
+            📺 Launch Live Signage TV Preview ↗
+          </button>
+          <a href="index.html" class="btn btn-sm btn-white" style="font-weight:800; text-decoration:none; font-size:0.82rem; padding:6px 14px; border:2px solid #000; box-shadow:3px 3px 0px #000;" title="Return to Coordinator Dashboard">
+            💻 Return to Dashboard
+          </a>
+        </div>
+      </div>
+
+      <!-- Main Coming Soon Hero Card -->
+      <div class="coming-soon-hero-card">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+          <div>
+            <div class="coming-soon-badge">
+              <span class="autopilot-indicator-dot pulse" style="background:#dc2626;"></span>
+              <span>COMMING SOON... VENUE TV KIOSK SUITE</span>
+            </div>
+            <h1 style="font-size:2.8rem; font-weight:900; line-height:1.15; margin:0 0 12px 0; font-family:var(--font-title, 'Josefin Sans', sans-serif); color:#000000;">
+              Dynamic Hallway TV Signage & Wayfinding Portal
+            </h1>
+            <p style="font-size:1.1rem; color:#334155; max-width:850px; line-height:1.6; margin:0 0 20px 0; font-weight:500;">
+              An autonomous over-the-air public kiosk display system engineered for 4K / 1080p wall-mounted venue TVs, doorway displays, and hallway monitors. Bridges the gap between DELTA Engine's AI swarm decisions and the physical crowds moving through venue corridors.
+            </p>
+          </div>
+          <div style="background:#fef9c3; border:3px solid #000; border-radius:14px; padding:16px 20px; box-shadow:4px 4px 0px #000; font-family:var(--font-mono); font-size:0.82rem;">
+            <div style="color:#854d0e; font-weight:800; margin-bottom:4px;">⏱️ DEPLOYMENT STATUS:</div>
+            <div style="font-weight:900; font-size:1.1rem; color:#000;">FIELD TRIAL STANDBY</div>
+            <div style="color:#713f12; margin-top:4px;">Targeting 2026 Production Rollout</div>
+          </div>
+        </div>
+
+        <!-- High-Impact Value Overview Alert -->
+        <div style="background:#eff6ff; border:2px solid #2563eb; border-radius:12px; padding:16px 20px; margin:20px 0 28px 0; display:flex; align-items:center; gap:14px; box-shadow:3px 3px 0px #000;">
+          <span style="font-size:2rem;">💡</span>
+          <div style="font-size:0.92rem; color:#1e3a8a; line-height:1.5;">
+            <strong>What is this and why is it needed?</strong> When DELTA Engine's AI agent swarm detects auditorium overcrowding or speaker delays, the algorithm recalculates room assignments in <strong>12ms</strong>. This Signage TV screen is the physical bridge that instantly redirects attendees in the hallways so crowds never get confused, crush doors, or block fire exits.
+          </div>
+        </div>
+
+        <!-- Feature Capabilities Grid -->
+        <h3 style="font-size:1.25rem; font-weight:900; margin:0 0 16px 0; color:#0f172a; display:flex; align-items:center; gap:8px;">
+          <span>⚡</span> Core Capabilities & What It Does
+        </h3>
+
+        <div class="feature-card-grid">
+          <!-- Card 1 -->
+          <div class="feature-card-item">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:1.8rem;">📺</span>
+                <span class="badge" style="background:#dbeafe; color:#1e40af; border:1.5px solid #000; font-weight:800; font-size:0.68rem;">OVERHEAD 4K KIOSK</span>
+              </div>
+              <h4 style="font-size:1.1rem; font-weight:800; margin:0 0 8px 0; color:#000;">Overhead Dynamic Timetable</h4>
+              <p style="font-size:0.85rem; color:#475569; line-height:1.5; margin:0;">
+                Displays the session currently in progress, speaker bios, research topics, and remaining time. Automatically pulls the next scheduled sessions for each hall from the central schedule graph.
+              </p>
+            </div>
+            <div style="margin-top:14px; padding-top:10px; border-top:1px dashed #cbd5e1; font-family:var(--font-mono); font-size:0.75rem; color:#2563eb; font-weight:700;">
+              ✓ Fullscreen Kiosk Mode with auto-rotating view
+            </div>
+          </div>
+
+          <!-- Card 2 -->
+          <div class="feature-card-item">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:1.8rem;">🚪</span>
+                <span class="badge" style="background:#dcfce7; color:#166534; border:1.5px solid #000; font-weight:800; font-size:0.68rem;">VISION + LASER IOT</span>
+              </div>
+              <h4 style="font-size:1.1rem; font-weight:800; margin:0 0 8px 0; color:#000;">Live Capacity & Door Ingress Gauge</h4>
+              <p style="font-size:0.85rem; color:#475569; line-height:1.5; margin:0;">
+                Connects directly to CCTV Eulerian vision counters and VL53L0X optical turnstiles. Shows real-time crowd numbers (e.g. 184 / 250 Pax) and switches door status lights from Green to Yellow to Red.
+              </p>
+            </div>
+            <div style="margin-top:14px; padding-top:10px; border-top:1px dashed #cbd5e1; font-family:var(--font-mono); font-size:0.75rem; color:#16a34a; font-weight:700;">
+              ✓ NFPA-101 / IBC Fire Code Compliant thresholds
+            </div>
+          </div>
+
+          <!-- Card 3 -->
+          <div class="feature-card-item">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:1.8rem;">⚡</span>
+                <span class="badge" style="background:#fef3c7; color:#92400e; border:1.5px solid #000; font-weight:800; font-size:0.68rem;">ZERO-TOUCH SOLVER</span>
+              </div>
+              <h4 style="font-size:1.1rem; font-weight:800; margin:0 0 8px 0; color:#000;">Autonomous Venue Reallocation Flip</h4>
+              <p style="font-size:0.85rem; color:#475569; line-height:1.5; margin:0;">
+                When an overcrowding surge or speaker delay occurs, the AI swarm reroutes the session. The display flips instantly into an emergency billboard with directional arrows to guide attendees to overflow halls.
+              </p>
+            </div>
+            <div style="margin-top:14px; padding-top:10px; border-top:1px dashed #cbd5e1; font-family:var(--font-mono); font-size:0.75rem; color:#d97706; font-weight:700;">
+              ✓ 12ms deterministic reaction time via WebSockets
+            </div>
+          </div>
+
+          <!-- Card 4 -->
+          <div class="feature-card-item">
+            <div>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <span style="font-size:1.8rem;">🚨</span>
+                <span class="badge" style="background:#fee2e2; color:#991b1b; border:1.5px solid #000; font-weight:800; font-size:0.68rem;">LIFE-SAFETY OVERRIDE</span>
+              </div>
+              <h4 style="font-size:1.1rem; font-weight:800; margin:0 0 8px 0; color:#000;">Emergency Evacuation Inversion</h4>
+              <p style="font-size:0.85rem; color:#475569; line-height:1.5; margin:0;">
+                In the event of a critical fire hazard or stampede risk, every signage screen inverts into a high-visibility evacuation board, highlighting the nearest unobstructed exit route and synthetic PA audio text.
+              </p>
+            </div>
+            <div style="margin-top:14px; padding-top:10px; border-top:1px dashed #cbd5e1; font-family:var(--font-mono); font-size:0.75rem; color:#dc2626; font-weight:700;">
+              ✓ Synchronized with Public Address PA system
+            </div>
+          </div>
+        </div>
+
+        <!-- Launch / Action Controls -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-top:30px; padding-top:20px; border-top:2px solid #000;">
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+            <button type="button" id="btn-hero-launch-preview" class="btn btn-yellow" style="font-weight:900; font-size:0.95rem; padding:10px 22px; border:3px solid #000; box-shadow:4px 4px 0px #000; cursor:pointer;">
+              📺 Launch Live Signage TV Preview
+            </button>
+            <a href="index.html" class="btn btn-white" style="font-weight:800; font-size:0.9rem; padding:10px 18px; border:2px solid #000; box-shadow:3px 3px 0px #000; text-decoration:none;">
+              ⬅️ Back to Main Dashboard
+            </a>
+          </div>
+          <div style="font-family:var(--font-mono); font-size:0.75rem; color:#64748b; font-weight:700;">
+            📡 Live WebSocket Telemetry Engine Active (All features preserved)
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- 2. FULL PRESERVED LIVE SIGNAGE TV KIOSK VIEW (TOGGLEABLE)             -->
+  <!-- ===================================================================== -->
+  <div id="live-signage-kiosk-view" style="display:none;">
   <div class="container">
     <!-- TOP NAVIGATION BAR -->
     <div class="signage-nav-bar">
@@ -555,6 +754,10 @@
         <!-- Fullscreen Toggle Button -->
         <button id="btn-fullscreen-toggle" class="btn btn-sm btn-yellow" style="font-weight:800;"
           title="Toggle Fullscreen for Hallway TV Display">⛶ Fullscreen</button>
+
+        <!-- Toggle Back to Coming Soon Overview -->
+        <button type="button" id="btn-show-coming-soon" class="btn btn-sm btn-yellow" style="font-weight:800; border:2px solid #000; box-shadow:2px 2px 0px #000;"
+          title="Return to Feature Info & Coming Soon Overview">ℹ️ Feature Overview</button>
 
         <!-- Navigation Link to Dashboard -->
         <a href="index.html" class="btn btn-sm btn-white" style="font-weight:700; text-decoration:none;"
@@ -758,8 +961,38 @@
       Dismiss Overlay (Return to TV Mode)
     </button>
   </div>
+  </div> <!-- End #live-signage-kiosk-view -->
 
   <script>
+    // --- COMING SOON / LIVE KIOSK VIEW CONTROLLER ---
+    const viewComingSoon = document.getElementById('signage-coming-soon-view');
+    const viewLiveKiosk = document.getElementById('live-signage-kiosk-view');
+    const btnOpenLive = document.getElementById('btn-open-live-kiosk');
+    const btnHeroLaunch = document.getElementById('btn-hero-launch-preview');
+    const btnShowComingSoon = document.getElementById('btn-show-coming-soon');
+
+    function showLiveKiosk() {
+      if (viewComingSoon) viewComingSoon.style.display = 'none';
+      if (viewLiveKiosk) viewLiveKiosk.style.display = 'block';
+      if (typeof renderSignage === 'function') renderSignage();
+      if (typeof renderSignageCoordinators === 'function') renderSignageCoordinators();
+    }
+
+    function showComingSoon() {
+      if (viewLiveKiosk) viewLiveKiosk.style.display = 'none';
+      if (viewComingSoon) viewComingSoon.style.display = 'block';
+    }
+
+    if (btnOpenLive) btnOpenLive.addEventListener('click', showLiveKiosk);
+    if (btnHeroLaunch) btnHeroLaunch.addEventListener('click', showLiveKiosk);
+    if (btnShowComingSoon) btnShowComingSoon.addEventListener('click', showComingSoon);
+
+    // Check URL parameters (e.g. ?live=1 or ?kiosk=1 to directly show live kiosk)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('live') === '1' || urlParams.get('kiosk') === '1' || urlParams.get('preview') === '1') {
+      showLiveKiosk();
+    }
+
     // --- REAL-TIME SIGNAGE PORTAL CONTROLLER ---
     let activeHallId = new URLSearchParams(window.location.search).get('hall') || 'hall-1';
     let graphData = null;
