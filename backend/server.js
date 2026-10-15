@@ -39,6 +39,9 @@ const { dispatchTwilioWhatsApp, isTwilioConfigured } = require('./components/twi
 const { normalizeHallId, getHallDisplayName, getAssignedPersonnelForHall, dispatchHallTargetedAlert } = require('./components/volunteerRouter');
 const { reconstructRoom3DFromImages } = require('./components/spatial3dEngine');
 const { validateFloorPlanFile, inspectSourceDocument, reconstructCadGeometryFromSource, recalibrateScaleWithPoints } = require('./components/cadFloorplanParser');
+const sqliteStore = require('./components/sqliteStore');
+try { sqliteStore.initSqliteStore(); } catch (e) { console.warn('[SQLite] Init notice:', e.message); }
+
 
 // Process Uncaught Crash Guards (Prevents server process from ever freezing or exiting on errors)
 process.on('uncaughtException', (err) => {
@@ -3777,6 +3780,7 @@ app.post('/api/sensors/camera', async (req, res) => {
     };
 
     db.cctvState[targetHallId] = cameraPayload;
+    try { sqliteStore.recordCameraTick(cameraPayload); } catch (e) {}
 
     // Broadcast live CCTV metrics to all connected coordinator & volunteer clients
     broadcast({
@@ -3879,8 +3883,16 @@ app.get('/api/sensors/camera/latest', (req, res) => {
   res.json({ success: true, data });
 });
 
+// GET endpoint to inspect embedded SQLite WAL storage health & record counts
+app.get('/api/system/storage', (req, res) => {
+  res.json({
+    success: true,
+    storage: sqliteStore.getStorageMetrics()
+  });
+});
 
 const PORT = process.env.PORT || 3000;
+
 if (require.main === module) {
   let hasRetried = false;
   server.on('error', (err) => {

@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "description": "DELTA Engine Multi-Camera Commodity Edge Vision Registry",
+  "globalSettings": {
+    "defaultTargetFps": 3.0,
+    "maxConcurrentWorkers": 8,
+    "streamTimeoutSeconds": 8.0,
+    "reconnectBackoffInitialSeconds": 2.0,
+    "reconnectBackoffMaxSeconds": 20.0,
+    "apiEndpoint": "http://localhost:3000/api/sensors/camera"
+  },
+  "cameras": [
+    {
+      "id": "cam-hall-1-front",
+      "name": "Turing Hall - Stage & Front View",
+      "hallId": "hall-1",
+      "rtspUrl": "rtsp://admin:pass@192.168.1.100:554/cam/realmonitor?channel=1&subtype=1",
+      "subStream": true,
+      "targetFps": 3.0,
+      "aggregationMode": "max",
+      "enabled": true
+    },
+    {
+      "id": "cam-hall-1-rear",
+      "name": "Turing Hall - Balcony & Egress View",
+      "hallId": "hall-1",
+      "rtspUrl": "rtsp://admin:pass@192.168.1.101:554/cam/realmonitor?channel=2&subtype=1",
+      "subStream": true,
+      "targetFps": 3.0,
+      "aggregationMode": "max",
+      "enabled": false
+    },
+    {
+      "id": "cam-hall-2-main",
+      "name": "Lovelace Arena - Main Floor",
+      "hallId": "hall-2",
+      "rtspUrl": "rtsp://admin:pass@192.168.1.102:554/cam/realmonitor?channel=1&subtype=1",
+      "subStream": true,
+      "targetFps": 3.0,
+      "aggregationMode": "max",
+      "enabled": false
+    },
+    {
+      "id": "cam-corridor-gate-a",
+      "name": "North Egress Corridor - Gate A",
+      "hallId": "hall-corridor-north",
+      "rtspUrl": "rtsp://admin:pass@192.168.1.103:554/cam/realmonitor?channel=1&subtype=1",
+      "subStream": true,
+      "targetFps": 4.0,
+      "aggregationMode": "sum",
+      "enabled": false
+    }
+  ]
+}
