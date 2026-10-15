@@ -702,6 +702,14 @@
         btnToggleCamera.addEventListener('click', async () => {
           if (!cameraStream) {
             btnToggleCamera.textContent = '⏳ STARTING OPTICS...';
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+              btnToggleCamera.textContent = '🔒 HTTPS REQUIRED';
+              alert('Optical camera requires HTTPS or localhost in modern mobile browsers. Use the Tactile Entry/Exit Clicker buttons below, which work 100% on any network.');
+              setTimeout(() => {
+                btnToggleCamera.textContent = '▶ START CAMERA';
+              }, 3000);
+              return;
+            }
             try {
               cameraStream = await navigator.mediaDevices.getUserMedia({
                 video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } },
