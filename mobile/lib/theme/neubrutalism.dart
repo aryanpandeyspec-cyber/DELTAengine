@@ -1,60 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-/// Signature Neubrutalist Color Palette for DELTA Engine
+/// Signature Luxury Tactical Color Palette for DELTA Engine
 class DeltaColors {
-  static const Color yaleBlue = Color(0xFF094074);
-  static const Color balticBlue = Color(0xFF3C6997);
-  static const Color skyAqua = Color(0xFF5ADBFF);
-  static const Color mustard = Color(0xFFFFDD4A);
-  static const Color deepSaffron = Color(0xFFFE9000);
+  // Primary brand anchors
+  static const Color yaleBlue = Color(0xFF0E223D);
+  static const Color balticBlue = Color(0xFF1E3A5F);
+  static const Color skyAqua = Color(0xFF38BDF8);
+  static const Color mustard = Color(0xFFF59E0B);
+  static const Color deepSaffron = Color(0xFFF97316);
 
   // Neon & Tactical Accents
   static const Color neonCyan = Color(0xFF00F5D4);
-  static const Color electricPurple = Color(0xFF7B2CBF);
-  static const Color hotPink = Color(0xFFFF007F);
-  static const Color mintGreen = Color(0xFF06D6A0);
-  static const Color coralRed = Color(0xFFFF4365);
+  static const Color electricPurple = Color(0xFF8B5CF6);
+  static const Color hotPink = Color(0xFFEC4899);
+  static const Color mintGreen = Color(0xFF10B981);
+  static const Color coralRed = Color(0xFFF43F5E);
 
-  // Dark & Neutral tones
-  static const Color background = Color(0xFF070B14);
-  static const Color surface = Color(0xFF101728);
-  static const Color surfaceLight = Color(0xFF18223B);
-  static const Color surfaceElevated = Color(0xFF202D4F);
-  static const Color borderBlack = Color(0xFF000000);
+  // Deep Obsidian Dark Surfaces
+  static const Color background = Color(0xFF080B11);
+  static const Color surface = Color(0xFF0F1523);
+  static const Color surfaceLight = Color(0xFF161F33);
+  static const Color surfaceElevated = Color(0xFF1D2840);
+  static const Color cardBorder = Color(0xFF222F47);
+  static const Color borderSubtle = Color(0xFF1B2436);
+  static const Color borderBlack = Color(0xFF1B2436); // Replaced harsh pure black with sleek slate graphite
   static const Color textLight = Color(0xFFF8FAFC);
   static const Color textMuted = Color(0xFF94A3B8);
+  static const Color textDim = Color(0xFF64748B);
   static const Color dangerRed = Color(0xFFEF4444);
   static const Color successGreen = Color(0xFF10B981);
 }
 
-/// Neubrutalist Decorator Utilities
+/// Refined Tactical Decorator Utilities (High-Precision Obsidian Aesthetic)
 class Neubrutalism {
-  static const double borderWidth = 2.5;
-  static const double borderRadius = 12.0;
-  static const Offset shadowOffset = Offset(4.0, 4.0);
+  static const double borderWidth = 1.0;
+  static const double borderRadius = 14.0;
+  static const Offset shadowOffset = Offset(0, 4);
 
   static BoxDecoration boxDecoration({
     Color color = DeltaColors.surface,
-    Color borderColor = DeltaColors.borderBlack,
+    Color? borderColor,
     double radius = borderRadius,
-    Color shadowColor = DeltaColors.borderBlack,
+    Color? shadowColor,
     Offset shadow = shadowOffset,
     Gradient? gradient,
   }) {
+    final effectiveBorderColor = borderColor ?? DeltaColors.cardBorder;
+    final effectiveShadowColor = shadowColor ?? const Color(0x38000000);
+
     return BoxDecoration(
       color: gradient == null ? color : null,
       gradient: gradient,
       borderRadius: BorderRadius.circular(radius),
       border: Border.all(
-        color: borderColor,
+        color: effectiveBorderColor,
         width: borderWidth,
       ),
       boxShadow: [
         BoxShadow(
-          color: shadowColor,
+          color: effectiveShadowColor,
           offset: shadow,
-          blurRadius: 0,
+          blurRadius: 14,
+          spreadRadius: 0,
         ),
       ],
     );
@@ -65,7 +73,7 @@ class Neubrutalism {
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: DeltaColors.background,
-      primaryColor: DeltaColors.yaleBlue,
+      primaryColor: DeltaColors.skyAqua,
       colorScheme: const ColorScheme.dark(
         primary: DeltaColors.skyAqua,
         secondary: DeltaColors.mustard,
@@ -102,14 +110,14 @@ class Neubrutalism {
         labelLarge: GoogleFonts.spaceGrotesk(
           fontSize: 13,
           fontWeight: FontWeight.w700,
-          color: DeltaColors.borderBlack,
+          color: Colors.white,
         ),
       ),
     );
   }
 }
 
-/// Tactile Neubrutalist Card with Press Depression Animation
+/// Refined Tactical Glass Card with Micro-Haptic Spring Animation
 class NeubrutalistCard extends StatefulWidget {
   final Widget child;
   final Color backgroundColor;
@@ -117,7 +125,7 @@ class NeubrutalistCard extends StatefulWidget {
   final VoidCallback? onTap;
   final double radius;
   final Gradient? gradient;
-  final Color borderColor;
+  final Color? borderColor;
 
   const NeubrutalistCard({
     super.key,
@@ -127,7 +135,7 @@ class NeubrutalistCard extends StatefulWidget {
     this.onTap,
     this.radius = Neubrutalism.borderRadius,
     this.gradient,
-    this.borderColor = DeltaColors.borderBlack,
+    this.borderColor,
   });
 
   @override
@@ -139,19 +147,30 @@ class _NeubrutalistCardState extends State<NeubrutalistCard> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveShadow = _isPressed ? Offset.zero : Neubrutalism.shadowOffset;
-    final transformOffset = _isPressed ? const Offset(3, 3) : Offset.zero;
+    final effectiveBorder = widget.borderColor ?? DeltaColors.cardBorder;
 
-    Widget card = Transform.translate(
-      offset: transformOffset,
+    Widget card = AnimatedScale(
+      scale: _isPressed ? 0.985 : 1.0,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOutCubic,
       child: Container(
         padding: widget.padding,
-        decoration: Neubrutalism.boxDecoration(
-          color: widget.backgroundColor,
-          radius: widget.radius,
+        decoration: BoxDecoration(
+          color: widget.gradient == null ? widget.backgroundColor : null,
           gradient: widget.gradient,
-          borderColor: widget.borderColor,
-          shadow: effectiveShadow,
+          borderRadius: BorderRadius.circular(widget.radius),
+          border: Border.all(
+            color: effectiveBorder,
+            width: 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              offset: const Offset(0, 6),
+              blurRadius: 18,
+              spreadRadius: 0,
+            ),
+          ],
         ),
         child: widget.child,
       ),
@@ -172,7 +191,7 @@ class _NeubrutalistCardState extends State<NeubrutalistCard> {
   }
 }
 
-/// Tactile Neubrutalist Action Button
+/// Refined Tactical Action Button (Modern Linear / Obsidian Style)
 class NeubrutalistButton extends StatefulWidget {
   final String label;
   final IconData? icon;
@@ -190,7 +209,7 @@ class NeubrutalistButton extends StatefulWidget {
     this.icon,
     this.onPressed,
     this.backgroundColor = DeltaColors.mustard,
-    this.textColor = DeltaColors.borderBlack,
+    this.textColor = Colors.black,
     this.isFullWidth = true,
     this.isLoading = false,
     this.height = 48,
@@ -206,8 +225,8 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveShadow = _isPressed ? Offset.zero : const Offset(3.5, 3.5);
-    final transformOffset = _isPressed ? const Offset(2.5, 2.5) : Offset.zero;
+    // If background is mustard, give it a vibrant amber-gold gradient
+    final isAmber = widget.backgroundColor == DeltaColors.mustard;
 
     return GestureDetector(
       onTapDown: (_) {
@@ -222,16 +241,37 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
         }
       },
       onTapCancel: () => setState(() => _isPressed = false),
-      child: Transform.translate(
-        offset: transformOffset,
+      child: AnimatedScale(
+        scale: _isPressed ? 0.98 : 1.0,
+        duration: const Duration(milliseconds: 100),
+        curve: Curves.easeOutCubic,
         child: Container(
           width: widget.isFullWidth ? double.infinity : null,
           height: widget.height,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: Neubrutalism.boxDecoration(
-            color: widget.backgroundColor,
-            shadow: effectiveShadow,
-            radius: 10,
+          padding: const EdgeInsets.symmetric(horizontal: 18),
+          decoration: BoxDecoration(
+            gradient: isAmber
+                ? const LinearGradient(
+                    colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  )
+                : null,
+            color: isAmber ? null : widget.backgroundColor,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: isAmber
+                  ? const Color(0xFFFCD34D).withValues(alpha: 0.5)
+                  : Colors.white.withValues(alpha: 0.15),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: widget.backgroundColor.withValues(alpha: 0.28),
+                blurRadius: 14,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Row(
             mainAxisSize: widget.isFullWidth ? MainAxisSize.max : MainAxisSize.min,
@@ -257,7 +297,7 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
                   fontSize: widget.fontSize,
                   fontWeight: FontWeight.w800,
                   color: widget.textColor,
-                  letterSpacing: 0.5,
+                  letterSpacing: 0.6,
                 ),
               ),
             ],
@@ -268,7 +308,7 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
   }
 }
 
-/// Compact Neubrutalist Badge
+/// Compact Modern Pill Badge
 class NeubrutalistBadge extends StatelessWidget {
   final String label;
   final Color backgroundColor;
@@ -279,39 +319,40 @@ class NeubrutalistBadge extends StatelessWidget {
     super.key,
     required this.label,
     this.backgroundColor = DeltaColors.skyAqua,
-    this.textColor = DeltaColors.borderBlack,
+    this.textColor = Colors.black,
     this.icon,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: DeltaColors.borderBlack, width: 1.8),
-        boxShadow: const [
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18), width: 1.0),
+        boxShadow: [
           BoxShadow(
-            color: DeltaColors.borderBlack,
-            offset: Offset(2, 2),
-            blurRadius: 0,
-          )
+            color: backgroundColor.withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
         ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 12, color: textColor),
+            Icon(icon, size: 11, color: textColor),
             const SizedBox(width: 4),
           ],
           Text(
             label,
             style: GoogleFonts.spaceGrotesk(
-              fontSize: 11,
+              fontSize: 10.5,
               fontWeight: FontWeight.w800,
               color: textColor,
+              letterSpacing: 0.4,
             ),
           ),
         ],
@@ -320,7 +361,7 @@ class NeubrutalistBadge extends StatelessWidget {
   }
 }
 
-/// Animated Pulsing Heartbeat / Live Signal Dot
+/// Animated High-Precision Signal Beacon / Live Signal Dot
 class PulsingDot extends StatefulWidget {
   final Color color;
   final double size;
@@ -348,11 +389,11 @@ class _PulsingDotState extends State<PulsingDot> with SingleTickerProviderStateM
       duration: const Duration(milliseconds: 1400),
     )..repeat(reverse: true);
 
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.3).animate(
+    _scaleAnimation = Tween<double>(begin: 0.85, end: 1.5).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
 
-    _opacityAnimation = Tween<double>(begin: 0.4, end: 1.0).animate(
+    _opacityAnimation = Tween<double>(begin: 0.3, end: 0.9).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
   }
@@ -372,11 +413,11 @@ class _PulsingDotState extends State<PulsingDot> with SingleTickerProviderStateM
           alignment: Alignment.center,
           children: [
             Container(
-              width: widget.size * _scaleAnimation.value * 1.5,
-              height: widget.size * _scaleAnimation.value * 1.5,
+              width: widget.size * _scaleAnimation.value * 1.6,
+              height: widget.size * _scaleAnimation.value * 1.6,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: widget.color.withValues(alpha: 0.3 * _opacityAnimation.value),
+                color: widget.color.withValues(alpha: 0.25 * _opacityAnimation.value),
               ),
             ),
             Container(
@@ -385,7 +426,13 @@ class _PulsingDotState extends State<PulsingDot> with SingleTickerProviderStateM
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: widget.color,
-                border: Border.all(color: Colors.black, width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.color.withValues(alpha: 0.6),
+                    blurRadius: 6,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
           ],
@@ -445,12 +492,19 @@ class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer> with 
 
             return Container(
               margin: const EdgeInsets.symmetric(horizontal: 2.5),
-              width: 5,
+              width: 4,
               height: activeHeight,
               decoration: BoxDecoration(
-                color: widget.isBroadcasting ? widget.barColor : DeltaColors.textMuted.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(3),
-                border: Border.all(color: Colors.black, width: 1),
+                color: widget.isBroadcasting ? widget.barColor : DeltaColors.textMuted.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(4),
+                boxShadow: widget.isBroadcasting
+                    ? [
+                        BoxShadow(
+                          color: widget.barColor.withValues(alpha: 0.4),
+                          blurRadius: 6,
+                        ),
+                      ]
+                    : null,
               ),
             );
           }),

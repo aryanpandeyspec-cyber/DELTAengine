@@ -169,7 +169,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
             backgroundColor: DeltaColors.surfaceLight,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
-              side: const BorderSide(color: Colors.black, width: 2),
+              side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
             ),
             content: Row(
               children: [
@@ -255,7 +255,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: Colors.black, width: 2),
+                side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
               ),
             ),
             onPressed: () => Navigator.pop(ctx),
@@ -280,7 +280,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
       backgroundColor: DeltaColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-        side: BorderSide(color: Colors.black, width: 2.5),
+        side: BorderSide(color: DeltaColors.cardBorder, width: 1.0),
       ),
       builder: (ctx) => Padding(
         padding: const EdgeInsets.all(18),
@@ -430,7 +430,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
           backgroundColor: DeltaColors.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: Colors.black, width: 2.8),
+            side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
           ),
           title: Row(
             children: [
@@ -534,7 +534,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
                 foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
-                  side: const BorderSide(color: Colors.black, width: 2),
+                  side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
                 ),
               ),
               onPressed: () async {
@@ -645,7 +645,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: Colors.black, width: 2),
+                side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
               ),
             ),
             onPressed: () async {
@@ -1153,7 +1153,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
                           decoration: Neubrutalism.boxDecoration(
                             color: const Color(0xFF22C55E),
                             radius: 8,
-                            borderColor: Colors.black,
+                            borderColor: DeltaColors.cardBorder,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -1215,7 +1215,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
                           decoration: Neubrutalism.boxDecoration(
                             color: Colors.white,
                             radius: 8,
-                            borderColor: Colors.black,
+                            borderColor: DeltaColors.cardBorder,
                           ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -1688,7 +1688,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
         foregroundColor: Colors.black,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: const BorderSide(color: Colors.black, width: 2),
+          side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
         ),
         onPressed: _showCreateTaskDialog,
         icon: const Icon(Icons.add_task),
@@ -2261,7 +2261,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
                   fillColor: DeltaColors.surfaceLight,
                   prefixIcon: const Icon(Icons.qr_code, color: DeltaColors.neonCyan),
                   hintText: 'e.g. VIP-9941',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Colors.black, width: 2)),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: DeltaColors.cardBorder, width: 1.0)),
                 ),
               ),
               const SizedBox(height: 10),
@@ -2271,19 +2271,19 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
                   ActionChip(
                     label: const Text('Preset: VIP Pass', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     backgroundColor: DeltaColors.surfaceLight,
-                    side: const BorderSide(color: Colors.black, width: 1.5),
+                    side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
                     onPressed: () => codeCtrl.text = 'VIP-9941',
                   ),
                   ActionChip(
                     label: const Text('Preset: Keynote Speaker', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     backgroundColor: DeltaColors.surfaceLight,
-                    side: const BorderSide(color: Colors.black, width: 1.5),
+                    side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
                     onPressed: () => codeCtrl.text = 'SPK-1022',
                   ),
                   ActionChip(
                     label: const Text('Preset: Delegate', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
                     backgroundColor: DeltaColors.surfaceLight,
-                    side: const BorderSide(color: Colors.black, width: 1.5),
+                    side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
                     onPressed: () => codeCtrl.text = 'DEL-4418',
                   ),
                 ],
@@ -2362,7 +2362,7 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
                   style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.skyAqua, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 12),
-                const Divider(color: Colors.black, thickness: 1.8),
+                Divider(color: Colors.white.withValues(alpha: 0.1), thickness: 1.0),
                 const SizedBox(height: 8),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
