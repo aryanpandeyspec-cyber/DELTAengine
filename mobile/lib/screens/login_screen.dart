@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/websocket_service.dart';
 import '../theme/neubrutalism.dart';
@@ -23,6 +25,53 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   late AnimationController _badgeAnimController;
 
+  final List<Map<String, dynamic>> _rolePresets = [
+    {
+      'id': 'COORDINATOR',
+      'label': 'COORDINATOR',
+      'title': 'Lead Ops',
+      'name': 'Suryansh',
+      'email': 'coordinator@delta-engine.in',
+      'pass': 'delta2026',
+      'icon': Icons.alt_route,
+      'color': DeltaColors.skyAqua,
+      'tag': 'OPS LEAD',
+    },
+    {
+      'id': 'ADMIN',
+      'label': 'COMMANDER',
+      'title': 'Systems Admin',
+      'name': 'Aryan Pandey',
+      'email': 'aryan.pandey777hyd@gmail.com',
+      'pass': 'deltaAdmin2026!',
+      'icon': Icons.admin_panel_settings,
+      'color': DeltaColors.mustard,
+      'tag': 'SUPER ADMIN',
+    },
+    {
+      'id': 'SAFETY',
+      'label': 'SAFETY DIR',
+      'title': 'NFPA Marshal',
+      'name': 'Safety Officer',
+      'email': 'safety@delta-engine.in',
+      'pass': 'delta2026',
+      'icon': Icons.local_police,
+      'color': DeltaColors.coralRed,
+      'tag': 'FIRE MARSHAL',
+    },
+    {
+      'id': 'AV_LEAD',
+      'label': 'AV / GATES',
+      'title': 'Mesh & Audio',
+      'name': 'Shahid',
+      'email': 'shahid@delta-engine.in',
+      'pass': 'delta2026',
+      'icon': Icons.headset_mic,
+      'color': DeltaColors.neonCyan,
+      'tag': 'FIELD DESK',
+    },
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -41,6 +90,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   }
 
   Future<void> _handleLogin() async {
+    HapticFeedback.mediumImpact();
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -74,6 +124,31 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     }
   }
 
+  void _handleInstantDemoBypass() {
+    HapticFeedback.heavyImpact();
+    // Connect WebSocket if possible
+    WebSocketService().connect();
+
+    final activePreset = _rolePresets.firstWhere(
+      (r) => r['id'] == _selectedRole,
+      orElse: () => _rolePresets[0],
+    );
+
+    final demoSession = OperatorSession(
+      id: 'demo-operator-777',
+      name: activePreset['name'] as String,
+      email: _emailController.text.isNotEmpty ? _emailController.text : activePreset['email'] as String,
+      role: _selectedRole.toLowerCase(),
+      token: 'jwt-delta-demo-instant-pass',
+    );
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => CockpitScreen(session: demoSession),
+      ),
+    );
+  }
+
   void _showHostConfigDialog() {
     final hostController = TextEditingController(text: _api.baseUrl);
 
@@ -82,8 +157,8 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       builder: (ctx) => AlertDialog(
         backgroundColor: DeltaColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: Colors.black, width: 2.5),
+          borderRadius: BorderRadius.circular(14),
+          side: const BorderSide(color: Colors.black, width: 2.8),
         ),
         title: Row(
           children: [
@@ -91,10 +166,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
                 color: DeltaColors.yaleBlue,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.black, width: 1.5),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.black, width: 2),
               ),
-              child: const Icon(Icons.dns, color: DeltaColors.mustard, size: 18),
+              child: const Icon(Icons.dns, color: DeltaColors.mustard, size: 20),
             ),
             const SizedBox(width: 10),
             Text(
@@ -102,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               style: GoogleFonts.outfit(
                 fontWeight: FontWeight.w900,
                 color: DeltaColors.mustard,
-                fontSize: 16,
+                fontSize: 17,
               ),
             ),
           ],
@@ -112,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'DELTA Engine Backend Base URL:',
+              'DELTA Engine Host Address:',
               style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted),
             ),
             const SizedBox(height: 8),
@@ -129,11 +204,18 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ),
             ),
             const SizedBox(height: 12),
+            Text(
+              'Fast Presets:',
+              style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white70),
+            ),
+            const SizedBox(height: 6),
             Wrap(
               spacing: 6,
+              runSpacing: 6,
               children: [
                 _buildHostPresetChip('Localhost (3000)', 'http://localhost:3000', hostController),
                 _buildHostPresetChip('Android Emulator', 'http://10.0.2.2:3000', hostController),
+                _buildHostPresetChip('Production Cloud', 'https://deltaengine.vercel.app', hostController),
               ],
             ),
           ],
@@ -141,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('CANCEL', style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted)),
+            child: Text('CANCEL', style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -158,7 +240,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               if (mounted) setState(() {});
               nav.pop();
             },
-            child: Text('SAVE HOST', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold)),
+            child: Text('SAVE & REBIND', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w900)),
           ),
         ],
       ),
@@ -168,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   Widget _buildHostPresetChip(String label, String url, TextEditingController controller) {
     return ActionChip(
       backgroundColor: DeltaColors.surfaceLight,
-      label: Text(label, style: const TextStyle(fontSize: 11, color: DeltaColors.skyAqua)),
+      label: Text(label, style: const TextStyle(fontSize: 11, color: DeltaColors.skyAqua, fontWeight: FontWeight.bold)),
       side: const BorderSide(color: Colors.black, width: 1.5),
       onPressed: () {
         controller.text = url;
@@ -179,16 +261,17 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: DeltaColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(maxWidth: 440),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // App Badge / Brand Header with animated pulsing live tag
+                  // App Badge / Brand Header with animated live tag
                   Center(
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
@@ -201,9 +284,9 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const PulsingDot(color: DeltaColors.neonCyan, size: 7),
-                          const SizedBox(width: 6),
+                          const SizedBox(width: 8),
                           Text(
-                            'SUPABASE AUTH • v3.6',
+                            'SUPABASE AUTH • ENTERPRISE OS',
                             style: GoogleFonts.spaceGrotesk(
                               color: Colors.white,
                               fontWeight: FontWeight.w900,
@@ -215,30 +298,33 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       ),
                     ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
 
                   // Title with Neubrutalist drop shadow style
                   Text(
                     'DELTA ENGINE',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
-                      fontSize: 36,
+                      fontSize: 38,
                       fontWeight: FontWeight.w900,
                       height: 1.05,
                       color: DeltaColors.textLight,
                       letterSpacing: -1.0,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 6),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
                         decoration: BoxDecoration(
                           color: DeltaColors.mustard,
-                          borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.black, width: 1.5),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.black, width: 2),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+                          ],
                         ),
                         child: Text(
                           'MOBILE COORDINATOR OS',
@@ -262,12 +348,114 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 22),
+
+                  // Role Profile Selector
+                  Text(
+                    'SELECT OPERATOR PROFILE:',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w900,
+                      color: DeltaColors.mustard,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      mainAxisSpacing: 8,
+                      crossAxisSpacing: 8,
+                      childAspectRatio: 2.2,
+                    ),
+                    itemCount: _rolePresets.length,
+                    itemBuilder: (context, idx) {
+                      final role = _rolePresets[idx];
+                      final isSelected = _selectedRole == role['id'];
+                      final color = role['color'] as Color;
+
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selectedRole = role['id'] as String;
+                            _emailController.text = role['email'] as String;
+                            _passwordController.text = role['pass'] as String;
+                          });
+                        },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? color.withValues(alpha: 0.18) : DeltaColors.surface,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected ? color : Colors.black,
+                              width: isSelected ? 2.6 : 2.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isSelected ? color.withValues(alpha: 0.6) : Colors.black,
+                                offset: isSelected ? const Offset(2.5, 2.5) : const Offset(2, 2),
+                                blurRadius: isSelected ? 3 : 0,
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(6),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? color : DeltaColors.surfaceLight,
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(color: Colors.black, width: 1.5),
+                                ),
+                                child: Icon(
+                                  role['icon'] as IconData,
+                                  size: 16,
+                                  color: isSelected ? Colors.black : Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      role['name'] as String,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w800,
+                                        color: isSelected ? Colors.white : DeltaColors.textLight,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    Text(
+                                      role['tag'] as String,
+                                      style: GoogleFonts.spaceGrotesk(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w900,
+                                        color: isSelected ? color : DeltaColors.textMuted,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 18),
 
                   // Neubrutalist Login Card
                   NeubrutalistCard(
                     backgroundColor: DeltaColors.surface,
-                    padding: const EdgeInsets.all(22),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -276,12 +464,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           children: [
                             Row(
                               children: [
-                                const Icon(Icons.shield_outlined, color: DeltaColors.mustard, size: 18),
-                                const SizedBox(width: 6),
+                                const Icon(Icons.shield_outlined, color: DeltaColors.mustard, size: 20),
+                                const SizedBox(width: 8),
                                 Text(
                                   'OPERATOR AUTH',
                                   style: GoogleFonts.outfit(
-                                    fontSize: 16,
+                                    fontSize: 17,
                                     fontWeight: FontWeight.w900,
                                     color: DeltaColors.mustard,
                                     letterSpacing: 0.5,
@@ -419,50 +607,61 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                             ),
                           ),
                         ),
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 20),
 
-                        // Role Selector Tabs
-                        Text(
-                          'SELECT ACTIVE DUTY ROLE:',
-                          style: GoogleFonts.spaceGrotesk(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            color: DeltaColors.mustard,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildRolePresetBtn('COORDINATOR', 'coordinator@delta-engine.in', Icons.alt_route),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _buildRolePresetBtn('ADMIN', 'admin@delta-engine.in', Icons.admin_panel_settings),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _buildRolePresetBtn('SAFETY', 'safety@delta-engine.in', Icons.local_police),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 22),
-
-                        // Login Action Button
+                        // Primary Login Button
                         NeubrutalistButton(
                           label: 'INITIALIZE COCKPIT',
                           icon: Icons.rocket_launch,
                           backgroundColor: DeltaColors.mustard,
                           textColor: Colors.black,
-                          height: 52,
+                          height: 50,
                           fontSize: 14,
                           isLoading: _isLoading,
                           onPressed: _handleLogin,
                         ),
+
+                        const SizedBox(height: 10),
+
+                        // One-Tap Instant Demo Bypass Button
+                        GestureDetector(
+                          onTap: _handleInstantDemoBypass,
+                          child: Container(
+                            width: double.infinity,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: DeltaColors.surfaceLight,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: DeltaColors.neonCyan, width: 1.8),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.flash_on, color: DeltaColors.neonCyan, size: 16),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    '⚡ 1-TAP DEMO BYPASS',
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                      color: DeltaColors.neonCyan,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 18),
 
                   // Live Connection Status Footer
                   Row(
@@ -488,52 +687,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRolePresetBtn(String label, String email, IconData icon) {
-    final isSelected = _selectedRole == label;
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _selectedRole = label;
-          _emailController.text = email;
-          _passwordController.text = 'delta2026';
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? DeltaColors.skyAqua : DeltaColors.surfaceLight,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.black, width: 2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black,
-              offset: isSelected ? const Offset(2, 2) : const Offset(1.5, 1.5),
-              blurRadius: 0,
-            ),
-          ],
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: isSelected ? Colors.black : DeltaColors.textMuted,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: GoogleFonts.spaceGrotesk(
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-                color: isSelected ? Colors.black : DeltaColors.textMuted,
-              ),
-            ),
-          ],
         ),
       ),
     );
