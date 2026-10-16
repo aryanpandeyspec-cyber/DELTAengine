@@ -27,6 +27,7 @@ class WebSocketService {
   Stream<VoiceTransmission> get onVoiceEvent => _voiceEventController.stream;
   Stream<Map<String, dynamic>> get onSosEvent => _sosEventController.stream;
   Stream<Map<String, dynamic>> get onBadgeEvent => _badgeEventController.stream;
+  int _reconnectAttempts = 0;
   bool get isConnected => _isConnected;
 
   void connect() {
@@ -39,10 +40,13 @@ class WebSocketService {
 
       _channel = WebSocketChannel.connect(uri);
       _isConnected = true;
+      _reconnectAttempts = 0;
       _connectionStateController.add(true);
 
       _subscription = _channel!.stream.listen(
         (message) {
+          _isConnected = true;
+          _reconnectAttempts = 0;
           _handleMessage(message);
         },
         onError: (err) {
@@ -158,13 +162,19 @@ class WebSocketService {
 
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
-    _reconnectTimer = Timer(const Duration(seconds: 4), () {
+    final delays = [2, 4, 8, 15, 25];
+    final delaySeconds = (_reconnectAttempts < delays.length)
+        ? delays[_reconnectAttempts]
+        : 25;
+    _reconnectAttempts++;
+    _reconnectTimer = Timer(Duration(seconds: delaySeconds), () {
       connect();
     });
   }
 
   void disconnect() {
     _reconnectTimer?.cancel();
+    _reconnectAttempts = 0;
     _subscription?.cancel();
     _channel?.sink.close();
     _isConnected = false;

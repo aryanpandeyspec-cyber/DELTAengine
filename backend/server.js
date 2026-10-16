@@ -1004,13 +1004,13 @@ app.post('/api/rooms/update', (req, res) => {
 });
 
 app.post('/api/voice/broadcast', (req, res) => {
-  const { sender, channel, target, text, audioData } = req.body;
+  const { sender, channel, target, text, audioData } = req.body || {};
   const broadcastData = {
     id: 'voice_' + Date.now(),
-    sender: sender || 'Coordinator',
-    channel: channel || '1',
-    target: target || 'All Mesh Channels',
-    text: text || 'Voice dispatch',
+    sender: escapeHtml(String(sender || 'Coordinator')).slice(0, 80),
+    channel: String(channel || '1').slice(0, 10),
+    target: escapeHtml(String(target || 'All Mesh Channels')).slice(0, 100),
+    text: escapeHtml(String(text || 'Voice dispatch')).slice(0, 500),
     audioData: audioData || null,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };
@@ -1107,16 +1107,16 @@ app.get('/api/tasks', (req, res) => {
 });
 
 app.post('/api/tasks/create', (req, res) => {
-  const { title, location, priority, creator } = req.body;
+  const { title, location, priority, creator } = req.body || {};
   if (!title) return res.status(400).json({ error: 'Task title is required' });
   const newTask = {
     id: 'task_' + Date.now(),
-    title,
-    location: location || 'General Area',
-    priority: priority || 'normal',
+    title: escapeHtml(String(title)).slice(0, 200),
+    location: escapeHtml(String(location || 'General Area')).slice(0, 100),
+    priority: String(priority || 'normal').slice(0, 20),
     status: 'open',
     claimedBy: null,
-    creator: creator || 'Coordinator',
+    creator: escapeHtml(String(creator || 'Coordinator')).slice(0, 80),
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   };
   if (!db.incidentTasks) db.incidentTasks = [];
@@ -1718,15 +1718,16 @@ app.post('/api/audit/supervisor-action', (req, res) => {
 app.post('/api/volunteer/sos', (req, res) => {
   const { volunteerName, hallId, note, crowdSeverity } = req.body || {};
   const timestamp = new Date().toLocaleTimeString();
-  const hall = db.graph?.halls?.[hallId] || { name: hallId || 'Active Zone' };
+  const safeHallId = String(hallId || 'hall-1').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
+  const hall = db.graph?.halls?.[safeHallId] || { name: safeHallId || 'Active Zone' };
 
   const sosRecord = {
     id: `SOS_${Date.now()}`,
-    volunteerName: volunteerName || 'On-Ground Safety Marshal',
-    hallId: hallId || 'hall-1',
-    hallName: hall.name,
-    crowdSeverity: crowdSeverity || 'HIGH',
-    note: note || 'Field Marshal reports critical crowd bottlenecking / barrier surge!',
+    volunteerName: escapeHtml(String(volunteerName || 'On-Ground Safety Marshal')).slice(0, 100),
+    hallId: safeHallId,
+    hallName: escapeHtml(String(hall.name)).slice(0, 100),
+    crowdSeverity: String(crowdSeverity || 'HIGH').slice(0, 20),
+    note: escapeHtml(String(note || 'Field Marshal reports critical crowd bottlenecking / barrier surge!')).slice(0, 500),
     timestamp
   };
 

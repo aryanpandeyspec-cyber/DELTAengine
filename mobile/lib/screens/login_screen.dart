@@ -551,20 +551,56 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
                               ],
                             ),
-                            child: Row(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Icon(Icons.error_outline, color: DeltaColors.dangerRed, size: 18),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    _errorMessage!,
-                                    style: GoogleFonts.spaceGrotesk(
-                                      color: Colors.redAccent,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                Row(
+                                  children: [
+                                    const Icon(Icons.error_outline, color: DeltaColors.dangerRed, size: 18),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        _errorMessage!,
+                                        style: GoogleFonts.spaceGrotesk(
+                                          color: Colors.redAccent,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
                                     ),
-                                  ),
+                                  ],
                                 ),
+                                if (_errorMessage!.contains('reach') || _errorMessage!.contains('timed out') || _errorMessage!.contains('Socket') || _errorMessage!.contains('connect')) ...[
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton(
+                                          style: OutlinedButton.styleFrom(
+                                            side: const BorderSide(color: DeltaColors.mustard, width: 1.5),
+                                            padding: const EdgeInsets.symmetric(vertical: 4),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                          ),
+                                          onPressed: _showHostConfigDialog,
+                                          child: Text('⚙️ EDIT HOST IP', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.mustard)),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: DeltaColors.neonCyan,
+                                            foregroundColor: Colors.black,
+                                            padding: const EdgeInsets.symmetric(vertical: 4),
+                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                                          ),
+                                          onPressed: _handleInstantDemoBypass,
+                                          child: Text('⚡ DEMO BYPASS', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w900)),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ],
                             ),
                           ),
