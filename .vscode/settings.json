@@ -17,5 +17,12 @@
     "**/*.zip": true,
     "**/video_frames": true,
     "**/extracted_assets": true
-  }
+  },
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.metadata/**",
+    "**/archetype/**",
+    "**/META-INF/**",
+    "**/mobile/android/**"
+  ]
 }
