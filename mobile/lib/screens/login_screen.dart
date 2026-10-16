@@ -271,6 +271,37 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Official DELTA Engine Brand Emblem
+                  Center(
+                    child: Container(
+                      width: 84,
+                      height: 84,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        border: Border.all(color: Colors.black, width: 2.8),
+                        boxShadow: const [
+                          BoxShadow(
+                            color: DeltaColors.neonCyan,
+                            blurRadius: 18,
+                            spreadRadius: 1,
+                          ),
+                          BoxShadow(
+                            color: Colors.black,
+                            offset: Offset(4, 4),
+                            blurRadius: 0,
+                          ),
+                        ],
+                      ),
+                      child: Image.asset(
+                        'assets/images/delta_emblem.png',
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
                   // App Badge / Brand Header with animated live tag
                   Center(
                     child: Container(

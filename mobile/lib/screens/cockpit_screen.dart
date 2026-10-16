@@ -685,16 +685,21 @@ class _CockpitScreenState extends State<CockpitScreen> with SingleTickerProvider
         title: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(7),
+              width: 36,
+              height: 36,
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: DeltaColors.yaleBlue,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.black, width: 2),
                 boxShadow: const [
                   BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
                 ],
               ),
-              child: const Icon(Icons.bolt, color: DeltaColors.mustard, size: 18),
+              child: Image.asset(
+                'assets/images/delta_emblem.png',
+                fit: BoxFit.contain,
+              ),
             ),
             const SizedBox(width: 10),
             Column(
