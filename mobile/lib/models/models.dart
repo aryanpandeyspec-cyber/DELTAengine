@@ -64,6 +64,8 @@ class RoomTelemetry {
       doorCountOut: (json['doorCountOut'] is num) ? (json['doorCountOut'] as num).toInt() : 0,
     );
   }
+
+  bool get isCritical => status == 'CRITICAL' || currentDensity >= 80.0;
 }
 
 class TaskItem {
