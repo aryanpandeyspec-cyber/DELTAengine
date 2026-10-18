@@ -4,7 +4,8 @@ const fs = require('fs');
 const path = require('path');
 
 // Fixed system secret for HMAC-SHA256 signature verification (or from environment)
-const JWT_SECRET = process.env.JWT_SECRET || 'delta_engine_airgap_secret_k8s_9921_aes256_hmac';
+// Dynamic cryptographically secure system secret for HMAC-SHA256 signature verification (or from environment)
+const JWT_SECRET = process.env.JWT_SECRET || (global._DELTA_SECURE_JWT_SECRET ? global._DELTA_SECURE_JWT_SECRET : (global._DELTA_SECURE_JWT_SECRET = crypto.randomBytes(32).toString('hex')));
 
 /**
  * Escapes HTML characters to prevent Cross-Site Scripting (XSS) attacks.

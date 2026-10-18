@@ -1121,6 +1121,7 @@ app.post('/api/tasks/create', (req, res) => {
   };
   if (!db.incidentTasks) db.incidentTasks = [];
   db.incidentTasks.unshift(newTask);
+  try { sqliteStore.recordTask(newTask); } catch (e) {}
 
   broadcast({
     type: 'TASK_CREATED',
@@ -1137,6 +1138,7 @@ app.post('/api/tasks/claim', (req, res) => {
   if (!task) return res.status(404).json({ error: 'Task not found' });
   task.status = 'claimed';
   task.claimedBy = claimedBy || 'Volunteer';
+  try { sqliteStore.recordTask(task); } catch (e) {}
 
   broadcast({
     type: 'TASK_UPDATED',
@@ -1153,6 +1155,7 @@ app.post('/api/tasks/resolve', (req, res) => {
   if (!task) return res.status(404).json({ error: 'Task not found' });
   task.status = 'resolved';
   task.resolvedBy = resolvedBy || 'Volunteer';
+  try { sqliteStore.recordTask(task); } catch (e) {}
 
   broadcast({
     type: 'TASK_UPDATED',
@@ -3976,11 +3979,21 @@ app.post('/api/sensors/camera', async (req, res) => {
     db.cctvState[targetHallId] = cameraPayload;
     try { sqliteStore.recordCameraTick(cameraPayload); } catch (e) {}
 
-    // Broadcast live CCTV metrics to all connected coordinator & volunteer clients
-    broadcast({
-      type: 'CCTV_OCCUPANCY_UPDATE',
-      data: cameraPayload
-    });
+    // Throttled WebSocket Broadcast (Anti-Freeze Guard)
+    // Only broadcast immediately if occupancy changed significantly (+/-2), status transitioned, or 3s heartbeat elapsed
+    if (!global._lastBroadcastByHall) global._lastBroadcastByHall = {};
+    const lastBroadcast = global._lastBroadcastByHall[targetHallId] || { count: -999, status: '', time: 0 };
+    const countDiff = Math.abs(currentCount - lastBroadcast.count);
+    const timeDiff = nowMs - lastBroadcast.time;
+    const shouldBroadcast = countDiff >= 2 || currentStatus !== lastBroadcast.status || timeDiff >= 3000;
+
+    if (shouldBroadcast) {
+      global._lastBroadcastByHall[targetHallId] = { count: currentCount, status: currentStatus, time: nowMs };
+      broadcast({
+        type: 'CCTV_OCCUPANCY_UPDATE',
+        data: cameraPayload
+      });
+    }
 
     // Evaluate Volunteer & Coordinator Notification triggers ONLY on state transition with per-hall cooldown
     const now = Date.now();

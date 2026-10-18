@@ -79,7 +79,23 @@ function initSqliteStore() {
       );
     `);
 
-    // 6. Schema: Sync Cursors for Cloud Outbox Reconciler
+    // 6. Schema: Incident Tasks Persistence
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS incident_tasks (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        location TEXT,
+        priority TEXT,
+        status TEXT,
+        claimed_by TEXT,
+        resolved_by TEXT,
+        creator TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      );
+      CREATE INDEX IF NOT EXISTS idx_tasks_status ON incident_tasks(status);
+    `);
+
+    // 7. Schema: Sync Cursors for Cloud Outbox Reconciler
     db.exec(`
       CREATE TABLE IF NOT EXISTS sync_cursors (
         key TEXT PRIMARY KEY,
@@ -305,7 +321,52 @@ function getRecentComplianceAudits(limit = 50) {
   }
 }
 
+/**
+ * Records or updates an incident task in SQLite WAL.
+ */
+function recordTask(task) {
+  if (!db && !initSqliteStore()) return false;
+  try {
+    const stmt = db.prepare(`
+      INSERT INTO incident_tasks (id, title, location, priority, status, claimed_by, resolved_by, creator)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        status = excluded.status,
+        claimed_by = excluded.claimed_by,
+        resolved_by = excluded.resolved_by
+    `);
+    stmt.run(
+      task.id,
+      task.title || 'Incident Task',
+      task.location || 'General Area',
+      task.priority || 'normal',
+      task.status || 'open',
+      task.claimedBy || null,
+      task.resolvedBy || null,
+      task.creator || 'Coordinator'
+    );
+    return true;
+  } catch (err) {
+    console.warn('[SQLite] recordTask error:', err.message);
+    return false;
+  }
+}
+
+/**
+ * Loads all persisted tasks from SQLite.
+ */
+function getPersistedTasks() {
+  if (!db && !initSqliteStore()) return [];
+  try {
+    return db.prepare('SELECT id, title, location, priority, status, claimed_by as claimedBy, resolved_by as resolvedBy, creator, created_at as timestamp FROM incident_tasks ORDER BY created_at DESC LIMIT 100').all();
+  } catch (err) {
+    return [];
+  }
+}
+
 module.exports = {
+  recordTask,
+  getPersistedTasks,
   initSqliteStore,
   recordCameraTick,
   recordDoorPassage,
