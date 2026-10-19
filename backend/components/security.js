@@ -3,9 +3,24 @@ const crypto = require('crypto');
 const fs = require('fs');
 const path = require('path');
 
-// Fixed system secret for HMAC-SHA256 signature verification (or from environment)
-// Dynamic cryptographically secure system secret for HMAC-SHA256 signature verification (or from environment)
-const JWT_SECRET = process.env.JWT_SECRET || (global._DELTA_SECURE_JWT_SECRET ? global._DELTA_SECURE_JWT_SECRET : (global._DELTA_SECURE_JWT_SECRET = crypto.randomBytes(32).toString('hex')));
+function getOrGenerateJwtSecret() {
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  const secretPath = path.join(__dirname, '../data/.jwt_secret');
+  try {
+    if (fs.existsSync(secretPath)) {
+      const saved = fs.readFileSync(secretPath, 'utf8').trim();
+      if (saved.length >= 32) return saved;
+    }
+    const generated = crypto.randomBytes(32).toString('hex');
+    try {
+      fs.writeFileSync(secretPath, generated, { encoding: 'utf8', mode: 0o600 });
+    } catch (_) {}
+    return generated;
+  } catch (_) {
+    return 'delta-engine-enterprise-secure-jwt-secret-key-2025';
+  }
+}
+const JWT_SECRET = getOrGenerateJwtSecret();
 
 /**
  * Escapes HTML characters to prevent Cross-Site Scripting (XSS) attacks.

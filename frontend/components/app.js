@@ -1724,3 +1724,142 @@ function initWhatsAppBroadcastManager() {
   }
 }
 
+// ============================================================================
+// WHOLE-SYSTEM CROSS-PLATFORM SYNCHRONIZATION EVENT HANDLERS
+// Ensures edge perception sensors, mobile coordinator dispatches, walkie-talkie
+// mesh, turnstiles, and supervisor audit ledger correlate into Central Command.
+// ============================================================================
+
+window.handleTaskUpdate = function (task) {
+  if (!task) return;
+  const statusIcon = task.status === 'RESOLVED' ? '✅' : task.status === 'CLAIMED' ? '✋' : '📋';
+  const logType = task.status === 'RESOLVED' ? 'success' : task.status === 'CLAIMED' ? 'action' : 'conflict';
+  const claimedText = (task.assignedTo || task.claimedBy) ? ` (by ${task.assignedTo || task.claimedBy})` : '';
+
+  if (typeof appendLog === 'function') {
+    appendLog(`[TASK DISPATCH] ${statusIcon} Task [${task.id || 'task'}]: "${task.title || task.action || 'Incident'}" — Status: ${task.status}${claimedText}`, logType);
+  }
+
+  if (typeof createToast === 'function') {
+    const toastTitle = task.status === 'RESOLVED'
+      ? '✅ Incident Task Resolved'
+      : task.status === 'CLAIMED'
+        ? '✋ Incident Task Claimed'
+        : '📋 New Incident Task Dispatched';
+    createToast(`${toastTitle}: "${task.title || task.action || task.id}"${claimedText}`, task.status === 'RESOLVED' ? 'success' : 'info');
+  }
+
+  const auditBox = document.getElementById('admin-audit-log-container');
+  if (auditBox) {
+    const line = document.createElement('div');
+    line.className = `admin-audit-line ${task.status === 'RESOLVED' ? 'success' : 'info'}`;
+    line.textContent = `[${new Date().toLocaleTimeString()}] ${statusIcon} TASK ${task.status}: ${task.title || task.action} ${claimedText}`;
+    auditBox.insertBefore(line, auditBox.firstChild);
+  }
+};
+
+window.handleQuickActionDispatch = function (data) {
+  if (!data) return;
+  const label = data.label || data.action || 'Tactical Action';
+  const sender = data.sender || 'Mobile Coordinator';
+  const time = data.timestamp || new Date().toLocaleTimeString();
+
+  if (typeof appendLog === 'function') {
+    appendLog(`[TACTICAL DISPATCH] ⚡ Action "${label}" dispatched by ${sender}`, 'action');
+  }
+
+  if (typeof createToast === 'function') {
+    createToast(`⚡ Field Action Dispatched: ${label} (by ${sender})`, 'warning');
+  }
+
+  const auditBox = document.getElementById('admin-audit-log-container');
+  if (auditBox) {
+    const line = document.createElement('div');
+    line.className = 'admin-audit-line conflict';
+    line.textContent = `[${time}] ⚡ TACTICAL DISPATCH: ${label} triggered by ${sender}`;
+    auditBox.insertBefore(line, auditBox.firstChild);
+  }
+};
+
+window.handleMeshMessage = function (data) {
+  if (!data) return;
+  const chatBox = document.getElementById('swarm-chat-messages');
+  if (chatBox) {
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble liaison';
+    bubble.innerHTML = `
+      <span class="chat-time">${data.timestamp || new Date().toLocaleTimeString()}</span>
+      <span class="chat-sender">📱 ${data.sender || 'Mobile Coordinator'} ➔ ${data.recipient || 'All Channels'}</span>
+      <span class="chat-text">${data.text || ''}</span>
+    `;
+    chatBox.appendChild(bubble);
+    if (chatBox.parentElement) {
+      chatBox.parentElement.scrollTop = chatBox.parentElement.scrollHeight;
+    }
+  }
+
+  if (typeof appendLog === 'function') {
+    appendLog(`[WALKIE-TALKIE MESH] 📻 ${data.sender || 'Coordinator'}: "${data.text || ''}"`, 'system');
+  }
+
+  if (typeof createToast === 'function' && data.text) {
+    createToast(`📻 Mesh Comms (${data.sender || 'Field'}): "${data.text}"`, 'info');
+  }
+};
+
+window.handleBadgeScanned = function (data) {
+  if (!data) return;
+  const name = data.attendeeName || 'Attendee';
+  const badgeId = data.badgeId || 'GATE-PASS';
+  const gate = data.gate || data.gateName || 'Main Turnstile';
+
+  if (typeof appendLog === 'function') {
+    appendLog(`[TICKET GATE ADMISSION] 🎟️ ${name} (${badgeId}) validated at ${gate}`, 'system');
+  }
+
+  if (typeof createToast === 'function') {
+    createToast(`🎟️ Admission Verified: ${name} @ ${gate}`, 'info');
+  }
+};
+
+window.handleSupervisorActionLogged = function (data) {
+  if (!data) return;
+  const by = data.overriddenBy || 'Safety Supervisor';
+  const dec = data.decision || 'Manual Override';
+  const sig = data.cryptoSignature || 'SHA-256';
+  const time = data.timestamp || new Date().toLocaleTimeString();
+
+  if (typeof appendLog === 'function') {
+    appendLog(`[SUPERVISOR ACTION] 🛡️ ${dec} authorized by ${by} [Sig: ${sig}]`, 'action');
+  }
+
+  const logBox = document.getElementById('fm-modal-interventions-log');
+  if (logBox) {
+    if (logBox.textContent.includes('No emergency supervisor overrides')) {
+      logBox.innerHTML = '';
+    }
+    const entry = document.createElement('div');
+    entry.style.cssText = 'padding:4px 0; border-bottom:1px dashed #ca8a04; font-family:var(--font-mono);';
+    entry.innerHTML = `<strong>[${time}]</strong> 🛡️ ${dec} — <em>${by}</em> <span style="font-size:0.65rem; color:#854d0e;">(${sig})</span>`;
+    logBox.insertBefore(entry, logBox.firstChild);
+  }
+
+  if (typeof createToast === 'function') {
+    createToast(`🛡️ Supervisor Action Recorded: ${dec}`, 'success');
+  }
+};
+
+window.handleRoomsUpdate = function (data) {
+  if (!data) return;
+  if (data.rooms && typeof graphState !== 'undefined' && graphState && graphState.halls) {
+    Object.keys(data.rooms).forEach(k => {
+      if (graphState.halls[k]) {
+        if (data.rooms[k].occupancy !== undefined) graphState.halls[k].currentOccupancy = data.rooms[k].occupancy;
+        if (data.rooms[k].capacity !== undefined) graphState.halls[k].capacity = data.rooms[k].capacity;
+      }
+    });
+  }
+  if (typeof updateCounters === 'function') updateCounters();
+  if (typeof safeSyncUI === 'function') safeSyncUI(selectedNodeId);
+};
+

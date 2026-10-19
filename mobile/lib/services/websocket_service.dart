@@ -20,6 +20,10 @@ class WebSocketService {
   final StreamController<VoiceTransmission> _voiceEventController = StreamController<VoiceTransmission>.broadcast();
   final StreamController<Map<String, dynamic>> _sosEventController = StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<Map<String, dynamic>> _badgeEventController = StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _scheduleEventController = StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _quickActionController = StreamController<Map<String, dynamic>>.broadcast();
+
+  final Map<String, RoomTelemetry> _cachedRooms = {};
 
   Stream<bool> get isConnectedStream => _connectionStateController.stream;
   Stream<TaskItem> get onTaskEvent => _taskEventController.stream;
@@ -27,6 +31,8 @@ class WebSocketService {
   Stream<VoiceTransmission> get onVoiceEvent => _voiceEventController.stream;
   Stream<Map<String, dynamic>> get onSosEvent => _sosEventController.stream;
   Stream<Map<String, dynamic>> get onBadgeEvent => _badgeEventController.stream;
+  Stream<Map<String, dynamic>> get onScheduleEvent => _scheduleEventController.stream;
+  Stream<Map<String, dynamic>> get onQuickActionEvent => _quickActionController.stream;
   int _reconnectAttempts = 0;
   bool get isConnected => _isConnected;
 
@@ -83,19 +89,39 @@ class WebSocketService {
           }
           break;
 
+        case 'CCTV_OCCUPANCY_UPDATE':
+        case 'ROOM_OCCUPANCY_UPDATE':
+          if (data is Map<String, dynamic>) {
+            final updatedRoom = RoomTelemetry.fromJson(data);
+            _cachedRooms[updatedRoom.id] = updatedRoom;
+            _roomEventController.add(_cachedRooms.values.toList());
+          }
+          break;
+
         case 'ROOMS_UPDATE':
-          if (data is Map<String, dynamic> && data['rooms'] is Map<String, dynamic>) {
-            final roomsMap = data['rooms'] as Map<String, dynamic>;
-            final list = <RoomTelemetry>[];
-            roomsMap.forEach((k, v) {
-              if (v is Map<String, dynamic>) {
-                final copy = Map<String, dynamic>.from(v);
-                copy['id'] = k;
-                copy['name'] = k.toUpperCase();
-                list.add(RoomTelemetry.fromJson(copy));
-              }
-            });
-            _roomEventController.add(list);
+          if (data is Map<String, dynamic>) {
+            if (data['rooms'] is Map<String, dynamic>) {
+              final roomsMap = data['rooms'] as Map<String, dynamic>;
+              roomsMap.forEach((k, v) {
+                if (v is Map<String, dynamic>) {
+                  final copy = Map<String, dynamic>.from(v);
+                  copy['id'] = k;
+                  copy['name'] = k.toUpperCase();
+                  final r = RoomTelemetry.fromJson(copy);
+                  _cachedRooms[r.id] = r;
+                }
+              });
+            } else if (data['roomId'] != null && data['room'] is Map<String, dynamic>) {
+              final k = data['roomId'].toString();
+              final copy = Map<String, dynamic>.from(data['room'] as Map<String, dynamic>);
+              copy['id'] = k;
+              copy['name'] = k.toUpperCase();
+              final r = RoomTelemetry.fromJson(copy);
+              _cachedRooms[r.id] = r;
+            }
+            if (_cachedRooms.isNotEmpty) {
+              _roomEventController.add(_cachedRooms.values.toList());
+            }
           }
           break;
 
@@ -118,6 +144,19 @@ class WebSocketService {
           }
           break;
 
+        case 'SCHEDULE_HEALED':
+        case 'SCHEDULE_UPDATED':
+          if (data is Map<String, dynamic>) {
+            _scheduleEventController.add(data);
+          }
+          break;
+
+        case 'QUICK_ACTION_DISPATCH':
+          if (data is Map<String, dynamic>) {
+            _quickActionController.add(data);
+          }
+          break;
+
         case 'INIT_STATE':
           if (data is Map<String, dynamic>) {
             if (data['tasks'] is List) {
@@ -129,16 +168,18 @@ class WebSocketService {
             }
             final roomsData = data['rooms'];
             if (roomsData is Map<String, dynamic>) {
-              final list = <RoomTelemetry>[];
               roomsData.forEach((k, v) {
                 if (v is Map<String, dynamic>) {
                   final copy = Map<String, dynamic>.from(v);
                   copy['id'] = k;
                   copy['name'] = k.toUpperCase();
-                  list.add(RoomTelemetry.fromJson(copy));
+                  final r = RoomTelemetry.fromJson(copy);
+                  _cachedRooms[r.id] = r;
                 }
               });
-              _roomEventController.add(list);
+              if (_cachedRooms.isNotEmpty) {
+                _roomEventController.add(_cachedRooms.values.toList());
+              }
             }
           }
           break;
@@ -189,5 +230,7 @@ class WebSocketService {
     _voiceEventController.close();
     _sosEventController.close();
     _badgeEventController.close();
+    _scheduleEventController.close();
+    _quickActionController.close();
   }
 }

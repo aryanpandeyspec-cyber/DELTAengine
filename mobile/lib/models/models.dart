@@ -35,11 +35,15 @@ class RoomTelemetry {
         ? (json['currentOccupancy'] as num).toInt()
         : (json['occupancy'] is num)
             ? (json['occupancy'] as num).toInt()
-            : ((json['density'] is num) ? ((json['density'] as num).toDouble() / 100 * cap).round() : 0);
+            : (json['peopleDetected'] is num)
+                ? (json['peopleDetected'] as num).toInt()
+                : ((json['density'] is num) ? ((json['density'] as num).toDouble() / 100 * cap).round() : 0);
 
     double density = 0.0;
     if (json['currentDensity'] is num) {
       density = (json['currentDensity'] as num).toDouble();
+    } else if (json['occupiedPercent'] is num) {
+      density = (json['occupiedPercent'] as num).toDouble();
     } else if (json['density'] is num) {
       density = (json['density'] as num).toDouble();
     } else if (cap > 0) {
@@ -47,8 +51,8 @@ class RoomTelemetry {
     }
 
     return RoomTelemetry(
-      id: json['id']?.toString() ?? json['roomId']?.toString() ?? 'room-unknown',
-      name: json['name']?.toString() ?? json['roomName']?.toString() ?? 'Monitored Zone',
+      id: json['id']?.toString() ?? json['roomId']?.toString() ?? json['hallId']?.toString() ?? 'room-unknown',
+      name: json['name']?.toString() ?? json['roomName']?.toString() ?? json['hallName']?.toString() ?? 'Monitored Zone',
       currentDensity: density.clamp(0.0, 150.0),
       capacity: cap,
       currentOccupancy: occ,
@@ -60,8 +64,12 @@ class RoomTelemetry {
       trend: json['trend']?.toString() ?? 'STABLE',
       temperature: (json['temperature'] is num) ? (json['temperature'] as num).toDouble() : 23.0,
       co2: (json['co2'] is num) ? (json['co2'] as num).toInt() : 680,
-      doorCountIn: (json['doorCountIn'] is num) ? (json['doorCountIn'] as num).toInt() : occ,
-      doorCountOut: (json['doorCountOut'] is num) ? (json['doorCountOut'] as num).toInt() : 0,
+      doorCountIn: (json['doorCountIn'] is num)
+          ? (json['doorCountIn'] as num).toInt()
+          : (json['entries'] is num ? (json['entries'] as num).toInt() : occ),
+      doorCountOut: (json['doorCountOut'] is num)
+          ? (json['doorCountOut'] as num).toInt()
+          : (json['exits'] is num ? (json['exits'] as num).toInt() : 0),
     );
   }
 

@@ -61,6 +61,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   StreamSubscription? _roomSub;
   StreamSubscription? _voiceSub;
   StreamSubscription? _sosSub;
+  StreamSubscription? _scheduleSub;
+  StreamSubscription? _quickActionSub;
 
   @override
   void initState() {
@@ -108,6 +110,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _roomSub?.cancel();
     _voiceSub?.cancel();
     _sosSub?.cancel();
+    _scheduleSub?.cancel();
+    _quickActionSub?.cancel();
     super.dispose();
   }
 
@@ -200,6 +204,63 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _sosSub = _ws.onSosEvent.listen((sos) {
       if (mounted) {
         _showEmergencyAlertBanner(sos);
+      }
+    });
+
+    _scheduleSub = _ws.onScheduleEvent.listen((data) {
+      if (mounted) {
+        final reason = data['conflictReason'] ?? data['reason'] ?? 'Schedule optimized by Self-Healing Swarm';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: DeltaColors.surfaceLight,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(color: DeltaColors.mustard, width: 1.0),
+            ),
+            content: Row(
+              children: [
+                const Icon(Icons.auto_fix_high, color: DeltaColors.mustard, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '⚡ [SELF-HEALING OPTIMIZER] $reason',
+                    style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+
+    _quickActionSub = _ws.onQuickActionEvent.listen((action) {
+      if (mounted) {
+        final label = action['label'] ?? action['action'] ?? 'Tactical Action';
+        final sender = action['sender'] ?? 'Field Operations';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: DeltaColors.surfaceLight,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+              side: const BorderSide(color: DeltaColors.neonCyan, width: 1.0),
+            ),
+            content: Row(
+              children: [
+                const Icon(Icons.flash_on, color: DeltaColors.neonCyan, size: 20),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    '⚡ [DISPATCH SYNC] $label by $sender',
+                    style: GoogleFonts.spaceGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     });
   }
