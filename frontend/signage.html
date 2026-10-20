@@ -723,6 +723,11 @@
   <!-- ===================================================================== -->
   <div id="live-signage-kiosk-view" style="display:block;">
   <div class="container">
+    <!-- AUDIO UNLOCK BANNER (Auto-dismisses on first click) -->
+    <div id="signage-audio-unlock-banner" style="background:#fef08a; color:#854d0e; padding:8px 16px; font-size:0.75rem; font-weight:900; font-family:var(--font-mono, monospace); text-align:center; border:2px solid #ca8a04; border-radius:8px; margin-bottom:12px; cursor:pointer; display:flex; justify-content:center; align-items:center; gap:10px; box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+      <span>🔊 LIVE VENUE AUDIO PA: TAP OR CLICK ANYWHERE ON SCREEN TO ACTIVATE ELEVENLABS VOICE DISPATCH</span>
+      <span style="background:#ca8a04; color:#fff; border-radius:4px; padding:2px 8px; font-size:0.7rem; font-weight:900;">UNMUTE</span>
+    </div>
     <!-- TOP NAVIGATION BAR -->
     <div class="signage-nav-bar">
       <div class="signage-nav-left">
@@ -1234,6 +1239,27 @@
         </div>
       `;
       banner.style.display = 'flex';
+
+      // Live Voice PA Audio Playback (ElevenLabs or SpeechSynthesis fallback)
+      if (data && data.audioUrl) {
+        try {
+          const audio = new Audio(data.audioUrl);
+          audio.play().catch(() => {
+            if ('speechSynthesis' in window && data.text) {
+              const utter = new SpeechSynthesisUtterance(data.text);
+              utter.rate = 0.95;
+              window.speechSynthesis.speak(utter);
+            }
+          });
+        } catch (_) {}
+      } else if ('speechSynthesis' in window && data && data.text) {
+        try {
+          const utter = new SpeechSynthesisUtterance(data.text);
+          utter.rate = 0.95;
+          window.speechSynthesis.speak(utter);
+        } catch (_) {}
+      }
+
       setTimeout(() => {
         if (banner) banner.style.display = 'none';
       }, 12000);
@@ -1578,6 +1604,20 @@
       const overlay = document.getElementById('signage-emergency-overlay');
       if (overlay) overlay.remove();
     }
+
+    // Browser Audio Autoplay Unlock Handler (Dismisses banner & primes audio context)
+    const audioBanner = document.getElementById('signage-audio-unlock-banner');
+    function unlockAudio() {
+      if (audioBanner) audioBanner.style.display = 'none';
+      try {
+        const dummy = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+        dummy.play().catch(() => {});
+      } catch (_) {}
+      document.removeEventListener('click', unlockAudio);
+      document.removeEventListener('keydown', unlockAudio);
+    }
+    document.addEventListener('click', unlockAudio);
+    document.addEventListener('keydown', unlockAudio);
   </script>
 </body>
 

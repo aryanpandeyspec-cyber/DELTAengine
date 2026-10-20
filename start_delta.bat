@@ -16,27 +16,29 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-:: 2. Check Python
+:: 2. Check Python (Optional for Hardware RTSP Daemon)
 where python >nul 2>nul
 if %errorlevel% neq 0 (
-    echo [ERROR] Python is not installed or not in PATH! Please install Python 3.10+.
-    pause
-    exit /b 1
+    echo [INFO] Python not found on PATH. Hardware RTSP daemon will be disabled,
+    echo        but Web Event OS, SQLite WAL Engine, and Mobile Mesh are 100%% ready.
+    set HAS_PYTHON=0
+) else (
+    set HAS_PYTHON=1
 )
 
 :: 3. Launch Backend Server in background window if not already listening
 netstat -ano | findstr :3000 | findstr LISTENING >nul
 if %errorlevel% equ 0 (
-    echo [OK] DELTA Backend Server is already running on port 3000.
+    echo [OK] DELTA Backend Server is already active on port 3000.
 ) else (
     echo [STARTING] Launching DELTA Central Server on port 3000 (0.0.0.0)...
     start "DELTA Server (Port 3000)" cmd /k "node backend/server.js"
-    timeout /t 2 /nobreak >nul
+    timeout /t 3 /nobreak >nul
 )
 
 :: 4. Open Local Browser Dashboard
-echo [LAUNCH] Opening DELTA Engine Dashboard in default browser...
-start http://localhost:3000/app.html
+echo [LAUNCH] Opening DELTA Central Command Console in default browser...
+start http://localhost:3000/
 
 echo.
 echo ===============================================================================
@@ -58,6 +60,14 @@ echo.
 set choice=%1
 if "%choice%"=="" (
     set /p choice="Select an option [0-9]: "
+)
+
+if "!choice!" geq "1" if "!choice!" leq "7" if "!HAS_PYTHON!"=="0" (
+    echo.
+    echo [NOTICE] Options 1-7 interact with physical hardware daemons and require Python 3.10+.
+    echo          Web Event OS, Self-Healing Swarm, Signage TV, and Mobile Mesh are already running!
+    pause
+    goto :eof
 )
 
 if "%choice%"=="1" (

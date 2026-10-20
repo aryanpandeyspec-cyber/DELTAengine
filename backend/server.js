@@ -2000,16 +2000,44 @@ app.post('/api/notify/email', async (req, res) => {
 // DELTA BOX — ZERO-INTERNET VENUE BLACKOUT PACK & MORNING BRIEFING QR CODES
 // =========================================================================
 function getLocalIpAddress() {
+  if (process.env.VENUE_LAN_IP) return process.env.VENUE_LAN_IP.trim();
+  if (process.env.HOST_IP) return process.env.HOST_IP.trim();
+
   try {
     const os = require('os');
     const interfaces = os.networkInterfaces();
+    const candidates = [];
+
     for (const name of Object.keys(interfaces)) {
+      const lower = name.toLowerCase();
+      // Filter out virtual, hyper-v, wsl, docker, and vpn bridge adapters that phones cannot reach
+      const isVirtual = lower.includes('vethernet') || lower.includes('virtual') ||
+                        lower.includes('vmware') || lower.includes('wsl') ||
+                        lower.includes('docker') || lower.includes('tailscale') ||
+                        lower.includes('tap') || lower.includes('loopback') ||
+                        lower.includes('pseudo');
+
       for (const iface of interfaces[name] || []) {
         if ((iface.family === 'IPv4' || iface.family === 4) && !iface.internal) {
-          return iface.address;
+          candidates.push({ name: lower, address: iface.address, isVirtual });
         }
       }
     }
+
+    // 1. Prioritize real physical Wi-Fi or WLAN adapter
+    const wifi = candidates.find(c => !c.isVirtual && (c.name.includes('wi-fi') || c.name.includes('wlan') || c.name.includes('wireless')));
+    if (wifi) return wifi.address;
+
+    // 2. Next prioritize physical Ethernet adapter
+    const eth = candidates.find(c => !c.isVirtual && (c.name.includes('ethernet') || c.name.includes('eth') || c.name.includes('en0')));
+    if (eth) return eth.address;
+
+    // 3. Any non-virtual IPv4
+    const nonVirtual = candidates.find(c => !c.isVirtual);
+    if (nonVirtual) return nonVirtual.address;
+
+    // 4. Fallback to any detected IPv4
+    if (candidates.length > 0) return candidates[0].address;
   } catch (_) {}
   return 'localhost';
 }
