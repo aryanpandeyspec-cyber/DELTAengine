@@ -202,6 +202,8 @@ class NeubrutalistButton extends StatefulWidget {
   final bool isLoading;
   final double height;
   final double fontSize;
+  final EdgeInsetsGeometry? padding;
+  final Gradient? gradient;
 
   const NeubrutalistButton({
     super.key,
@@ -212,8 +214,10 @@ class NeubrutalistButton extends StatefulWidget {
     this.textColor = Colors.black,
     this.isFullWidth = true,
     this.isLoading = false,
-    this.height = 48,
-    this.fontSize = 13,
+    this.height = 44,
+    this.fontSize = 12,
+    this.padding,
+    this.gradient,
   });
 
   @override
@@ -248,17 +252,18 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
         child: Container(
           width: widget.isFullWidth ? double.infinity : null,
           height: widget.height,
-          padding: const EdgeInsets.symmetric(horizontal: 18),
+          padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            gradient: isAmber
-                ? const LinearGradient(
-                    colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  )
-                : null,
-            color: isAmber ? null : widget.backgroundColor,
-            borderRadius: BorderRadius.circular(12),
+            gradient: widget.gradient ??
+                (isAmber
+                    ? const LinearGradient(
+                        colors: [Color(0xFFFBBF24), Color(0xFFF59E0B)],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      )
+                    : null),
+            color: (widget.gradient != null || isAmber) ? null : widget.backgroundColor,
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(
               color: isAmber
                   ? const Color(0xFFFCD34D).withValues(alpha: 0.5)
@@ -267,9 +272,9 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
             ),
             boxShadow: [
               BoxShadow(
-                color: widget.backgroundColor.withValues(alpha: 0.28),
-                blurRadius: 14,
-                offset: const Offset(0, 4),
+                color: widget.backgroundColor.withValues(alpha: 0.25),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
@@ -279,25 +284,30 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
             children: [
               if (widget.isLoading) ...[
                 SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: 14,
+                  height: 14,
                   child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
+                    strokeWidth: 2.0,
                     valueColor: AlwaysStoppedAnimation<Color>(widget.textColor),
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 6),
               ] else if (widget.icon != null) ...[
-                Icon(widget.icon, color: widget.textColor, size: 16),
-                const SizedBox(width: 8),
+                Icon(widget.icon, color: widget.textColor, size: 15),
+                const SizedBox(width: 6),
               ],
-              Text(
-                widget.label,
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: widget.fontSize,
-                  fontWeight: FontWeight.w800,
-                  color: widget.textColor,
-                  letterSpacing: 0.6,
+              Flexible(
+                child: Text(
+                  widget.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: widget.fontSize,
+                    fontWeight: FontWeight.w800,
+                    color: widget.textColor,
+                    letterSpacing: 0.4,
+                  ),
                 ),
               ),
             ],

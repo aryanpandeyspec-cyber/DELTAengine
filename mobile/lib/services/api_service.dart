@@ -21,8 +21,33 @@ class ApiService {
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
-    _baseUrl = prefs.getString('delta_base_url') ?? 'http://localhost:3000';
+    final savedUrl = prefs.getString('delta_base_url');
+    if (savedUrl != null && savedUrl.isNotEmpty) {
+      _baseUrl = savedUrl;
+    } else {
+      _baseUrl = 'http://localhost:3000';
+      if (Platform.isAndroid) {
+        await _autoDetectEdgeGateway();
+      }
+    }
     _authToken = prefs.getString('delta_auth_token');
+  }
+
+  Future<void> _autoDetectEdgeGateway() async {
+    final candidates = [
+      'http://localhost:3000',
+      'http://192.168.1.4:3000',
+      'http://192.168.137.1:3000',
+    ];
+    for (final candidate in candidates) {
+      try {
+        final res = await http.get(Uri.parse('$candidate/api/state')).timeout(const Duration(milliseconds: 900));
+        if (res.statusCode == 200) {
+          _baseUrl = candidate;
+          break;
+        }
+      } catch (_) {}
+    }
   }
 
   Future<void> setBaseUrl(String newUrl) async {

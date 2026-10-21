@@ -495,6 +495,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               spacing: 6,
               runSpacing: 6,
               children: [
+                _buildHostPresetChip('Wi-Fi LAN (3000)', 'http://192.168.1.4:3000', hostController),
+                _buildHostPresetChip('Hotspot (3000)', 'http://192.168.137.1:3000', hostController),
                 _buildHostPresetChip('Localhost (3000)', 'http://localhost:3000', hostController),
                 _buildHostPresetChip('Android Emulator', 'http://10.0.2.2:3000', hostController),
                 _buildHostPresetChip('Production Cloud', 'https://deltaengine.vercel.app', hostController),
@@ -1057,21 +1059,23 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       appBar: AppBar(
         backgroundColor: DeltaColors.surface,
         elevation: 0,
+        titleSpacing: 10,
         shape: const Border(
-          bottom: BorderSide(color: Colors.black, width: 2.5),
+          bottom: BorderSide(color: DeltaColors.cardBorder, width: 1.0),
         ),
         title: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 36,
-              height: 36,
-              padding: const EdgeInsets.all(4),
+              width: 32,
+              height: 32,
+              padding: const EdgeInsets.all(3),
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: DeltaColors.cardBorder, width: 1.0),
                 boxShadow: const [
-                  BoxShadow(color: Color(0x38000000), offset: Offset(0, 2), blurRadius: 8),
+                  BoxShadow(color: Color(0x28000000), offset: Offset(0, 2), blurRadius: 6),
                 ],
               ),
               child: Image.asset(
@@ -1079,70 +1083,68 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 fit: BoxFit.contain,
               ),
             ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'DELTA ENGINE',
-                  style: GoogleFonts.outfit(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 0.5,
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'DELTA ENGINE',
+                    style: GoogleFonts.outfit(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.4,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                Row(
-                  children: [
-                    Text(
-                      widget.session.name.toUpperCase(),
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 10,
-                        color: DeltaColors.mustard,
-                        fontWeight: FontWeight.w800,
-                      ),
+                  Text(
+                    '${widget.session.name.toUpperCase()} • ${widget.session.role}',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 9.5,
+                      color: DeltaColors.mustard,
+                      fontWeight: FontWeight.w700,
                     ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '• ${widget.session.role}',
-                      style: GoogleFonts.spaceGrotesk(
-                        fontSize: 9,
-                        color: DeltaColors.skyAqua,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           ],
         ),
         actions: [
           // Active Coordinator Roster Button (from Suryansh)
           IconButton(
-            icon: const Icon(Icons.groups, size: 20, color: DeltaColors.mustard),
+            icon: const Icon(Icons.groups_outlined, size: 20, color: DeltaColors.mustard),
             tooltip: 'Team Contacts',
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: _showTeamRosterDialog,
           ),
 
           // Quick Emergency SOS Header Button
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
             child: InkWell(
               onTap: _showSosConfirmationDialog,
+              borderRadius: BorderRadius.circular(6),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: DeltaColors.dangerRed,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+                  ),
                   borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: DeltaColors.cardBorder, width: 1.0),
-                  boxShadow: const [
-                    BoxShadow(color: Color(0x38000000), offset: Offset(0, 2), blurRadius: 8),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.0),
+                  boxShadow: [
+                    BoxShadow(color: DeltaColors.dangerRed.withValues(alpha: 0.35), blurRadius: 6),
                   ],
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.emergency, color: Colors.white, size: 14),
-                    const SizedBox(width: 4),
+                    const Icon(Icons.emergency, color: Colors.white, size: 12),
+                    const SizedBox(width: 3),
                     Text(
                       'SOS',
                       style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
@@ -1157,29 +1159,30 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           Tooltip(
             message: 'View Edge Engine Telemetry & Network Diagnostics',
             child: InkWell(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(14),
               onTap: _showNetworkDiagnosticsModal,
               child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 11, horizontal: 6),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
-                  color: _isWsConnected ? DeltaColors.successGreen.withValues(alpha: 0.18) : Colors.red.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(16),
+                  color: _isWsConnected ? DeltaColors.successGreen.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(14),
                   border: Border.all(
-                    color: _isWsConnected ? DeltaColors.successGreen : Colors.red,
-                    width: 1.8,
+                    color: _isWsConnected ? DeltaColors.successGreen : Colors.redAccent,
+                    width: 1.2,
                   ),
                 ),
                 child: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    PulsingDot(color: _isWsConnected ? DeltaColors.successGreen : Colors.red, size: 7),
-                    const SizedBox(width: 6),
+                    PulsingDot(color: _isWsConnected ? DeltaColors.successGreen : Colors.red, size: 6),
+                    const SizedBox(width: 4),
                     Text(
                       _isWsConnected ? 'MESH' : 'OFFLINE',
                       style: GoogleFonts.spaceGrotesk(
-                        fontSize: 10,
+                        fontSize: 9.5,
                         fontWeight: FontWeight.w800,
-                        color: _isWsConnected ? DeltaColors.successGreen : Colors.red,
+                        color: _isWsConnected ? DeltaColors.successGreen : Colors.redAccent,
                       ),
                     ),
                   ],
@@ -1190,6 +1193,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
 
           IconButton(
             icon: const Icon(Icons.logout, size: 18, color: DeltaColors.textMuted),
+            padding: const EdgeInsets.all(6),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
             onPressed: () {
               WebSocketService().disconnect();
               Navigator.of(context).pushReplacement(
@@ -1197,6 +1202,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               );
             },
           ),
+          const SizedBox(width: 4),
         ],
       ),
       body: _isLoading
@@ -1213,7 +1219,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: DeltaColors.surface,
-          border: Border(top: BorderSide(color: Colors.black, width: 2.5)),
+          border: Border(top: BorderSide(color: DeltaColors.cardBorder, width: 1.0)),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentTabIndex,
@@ -1327,21 +1333,27 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.hub_outlined, color: DeltaColors.neonCyan, size: 18),
-                        const SizedBox(width: 8),
-                        Text(
-                          'GLOBAL VENUE PRESSURE',
-                          style: GoogleFonts.outfit(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                            letterSpacing: 0.5,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(Icons.hub_outlined, color: DeltaColors.neonCyan, size: 18),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              'GLOBAL VENUE PRESSURE',
+                              style: GoogleFonts.outfit(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 0.4,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
+                    const SizedBox(width: 8),
                     NeubrutalistBadge(
                       label: avgDensity >= 80 ? 'HIGH SURGE' : avgDensity >= 60 ? 'ELEVATED' : 'NOMINAL',
                       backgroundColor: avgDensity >= 80 ? DeltaColors.dangerRed : avgDensity >= 60 ? DeltaColors.mustard : DeltaColors.neonCyan,
@@ -1724,16 +1736,22 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.map_outlined, color: DeltaColors.skyAqua, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    'INTERACTIVE VENUE BLUEPRINT',
-                    style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white),
-                  ),
-                ],
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.map_outlined, color: DeltaColors.skyAqua, size: 18),
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Text(
+                        'VENUE BLUEPRINT',
+                        style: GoogleFonts.outfit(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               NeubrutalistBadge(label: 'FLOOR 1', backgroundColor: DeltaColors.mustard, textColor: Colors.black),
             ],
           ),
@@ -2177,25 +2195,32 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   Widget _buildTaskFilterChip(String filterKey, String label) {
     final isSelected = _taskFilter == filterKey;
     return GestureDetector(
-      onTap: () => setState(() => _taskFilter = filterKey),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _taskFilter = filterKey);
+      },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? DeltaColors.skyAqua : DeltaColors.surface,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: DeltaColors.cardBorder, width: 1.0),
+          color: isSelected ? DeltaColors.skyAqua : const Color(0xFF101726),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isSelected ? DeltaColors.skyAqua : const Color(0xFF222F47),
+            width: 1.0,
+          ),
           boxShadow: [
-            BoxShadow(
-              color: Colors.black,
-              offset: isSelected ? const Offset(1.5, 1.5) : const Offset(1, 1),
-              blurRadius: 0,
-            ),
+            if (isSelected)
+              BoxShadow(
+                color: DeltaColors.skyAqua.withValues(alpha: 0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
           ],
         ),
         child: Text(
           label,
           style: GoogleFonts.spaceGrotesk(
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: FontWeight.w800,
             color: isSelected ? Colors.black : DeltaColors.textLight,
           ),
@@ -2271,10 +2296,11 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                       child: NeubrutalistButton(
                         label: 'CLAIM TASK',
                         icon: Icons.pan_tool_alt,
-                        backgroundColor: DeltaColors.skyAqua,
-                        textColor: Colors.black,
-                        height: 40,
-                        fontSize: 12,
+                        backgroundColor: const Color(0xFF0284C7),
+                        textColor: Colors.white,
+                        height: 38,
+                        fontSize: 11,
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
                         onPressed: () => _handleClaimTask(task),
                       ),
                     ),
@@ -2284,10 +2310,11 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                     child: NeubrutalistButton(
                       label: 'MARK RESOLVED',
                       icon: Icons.check_circle_outline,
-                      backgroundColor: DeltaColors.successGreen,
-                      textColor: Colors.black,
-                      height: 40,
-                      fontSize: 12,
+                      backgroundColor: const Color(0xFF059669),
+                      textColor: Colors.white,
+                      height: 38,
+                      fontSize: 11,
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
                       onPressed: () => _handleResolveTask(task),
                     ),
                   ),
