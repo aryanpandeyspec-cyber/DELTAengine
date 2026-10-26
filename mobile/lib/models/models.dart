@@ -30,46 +30,136 @@ class RoomTelemetry {
   });
 
   factory RoomTelemetry.fromJson(Map<String, dynamic> json) {
-    final cap = (json['capacity'] is num) ? (json['capacity'] as num).toInt() : 100;
-    final occ = (json['currentOccupancy'] is num)
+    int cap = (json['capacity'] is num) ? (json['capacity'] as num).toInt() : 0;
+    int occ = (json['currentOccupancy'] is num)
         ? (json['currentOccupancy'] as num).toInt()
         : (json['occupancy'] is num)
             ? (json['occupancy'] as num).toInt()
             : (json['peopleDetected'] is num)
                 ? (json['peopleDetected'] as num).toInt()
-                : ((json['density'] is num) ? ((json['density'] as num).toDouble() / 100 * cap).round() : 0);
+                : 0;
+
+    // Handle string format e.g. "200 / 250 Seats"
+    if (json['seats'] != null && (cap == 0 || occ == 0)) {
+      final seatsStr = json['seats'].toString().replaceAll(',', '');
+      final match = RegExp(r'(\d+)\s*/\s*(\d+)').firstMatch(seatsStr);
+      if (match != null) {
+        occ = int.tryParse(match.group(1) ?? '') ?? occ;
+        cap = int.tryParse(match.group(2) ?? '') ?? cap;
+      }
+    }
+
+    final id = json['id']?.toString() ?? json['roomId']?.toString() ?? json['hallId']?.toString() ?? 'room-unknown';
+
+    // Set standard capacity fallback if not provided
+    if (cap == 0) {
+      switch (id.toLowerCase()) {
+        case 'room1':
+        case 'hall-1':
+          cap = 250;
+          break;
+        case 'room2':
+        case 'hall-2':
+          cap = 120;
+          break;
+        case 'room3':
+        case 'hall-3':
+          cap = 60;
+          break;
+        case 'room4':
+        case 'hall-4':
+          cap = 500;
+          break;
+        case 'room5':
+        case 'hall-5':
+          cap = 1200;
+          break;
+        default:
+          cap = 200;
+      }
+    }
 
     double density = 0.0;
     if (json['currentDensity'] is num) {
       density = (json['currentDensity'] as num).toDouble();
+    } else if (json['percent'] is num) {
+      density = (json['percent'] as num).toDouble();
     } else if (json['occupiedPercent'] is num) {
       density = (json['occupiedPercent'] as num).toDouble();
     } else if (json['density'] is num) {
       density = (json['density'] as num).toDouble();
-    } else if (cap > 0) {
+    } else if (cap > 0 && occ > 0) {
       density = (occ / cap) * 100.0;
     }
 
+    if (occ == 0 && density > 0 && cap > 0) {
+      occ = ((density / 100.0) * cap).round();
+    }
+
+    String name = json['name']?.toString() ?? json['roomName']?.toString() ?? json['hallName']?.toString() ?? '';
+    if (name.isEmpty || name.toUpperCase() == id.toUpperCase()) {
+      switch (id.toLowerCase()) {
+        case 'room1':
+        case 'hall-1':
+          name = 'Turing Grand Hall';
+          break;
+        case 'room2':
+        case 'hall-2':
+          name = 'Lovelace Auditorium';
+          break;
+        case 'room3':
+        case 'hall-3':
+          name = 'Von Neumann Hub';
+          break;
+        case 'room4':
+        case 'hall-4':
+          name = 'Shannon Workshop Suite';
+          break;
+        case 'room5':
+        case 'hall-5':
+          name = 'Hopper Tech Pavilion';
+          break;
+        default:
+          name = id.toUpperCase();
+      }
+    }
+
+    final rawStatus = json['status']?.toString().toUpperCase() ?? '';
+    final status = rawStatus == 'NOMINAL' || rawStatus == 'OPTIMAL'
+        ? (density >= 80 ? 'CRITICAL' : density >= 60 ? 'ELEVATED' : 'OPTIMAL')
+        : rawStatus == 'ALERT' || rawStatus == 'CRITICAL'
+            ? 'CRITICAL'
+            : (density >= 80 ? 'CRITICAL' : density >= 60 ? 'ELEVATED' : 'OPTIMAL');
+
+    final inCount = (json['doorCountIn'] is num)
+        ? (json['doorCountIn'] as num).toInt()
+        : (json['entries'] is num ? (json['entries'] as num).toInt() : (occ * 1.15).round());
+    final outCount = (json['doorCountOut'] is num)
+        ? (json['doorCountOut'] as num).toInt()
+        : (json['exits'] is num ? (json['exits'] as num).toInt() : (inCount - occ).clamp(0, inCount));
+
+    final temp = (json['temperature'] is num)
+        ? (json['temperature'] as num).toDouble()
+        : (21.5 + (density > 75 ? 2.5 : 0.8));
+    final co2 = (json['co2'] is num)
+        ? (json['co2'] as num).toInt()
+        : (500 + (density * 4.5).round());
+
     return RoomTelemetry(
-      id: json['id']?.toString() ?? json['roomId']?.toString() ?? json['hallId']?.toString() ?? 'room-unknown',
-      name: json['name']?.toString() ?? json['roomName']?.toString() ?? json['hallName']?.toString() ?? 'Monitored Zone',
+      id: id,
+      name: name,
       currentDensity: density.clamp(0.0, 150.0),
       capacity: cap,
       currentOccupancy: occ,
-      status: json['status']?.toString().toUpperCase() ??
-          (density > 85 ? 'CRITICAL' : density > 65 ? 'ELEVATED' : 'OPTIMAL'),
+      status: status,
       predictedRisk: (json['predictedRisk'] is num)
           ? (json['predictedRisk'] as num).toDouble()
-          : (density > 80 ? 0.85 : 0.2),
-      trend: json['trend']?.toString() ?? 'STABLE',
-      temperature: (json['temperature'] is num) ? (json['temperature'] as num).toDouble() : 23.0,
-      co2: (json['co2'] is num) ? (json['co2'] as num).toInt() : 680,
-      doorCountIn: (json['doorCountIn'] is num)
-          ? (json['doorCountIn'] as num).toInt()
-          : (json['entries'] is num ? (json['entries'] as num).toInt() : occ),
-      doorCountOut: (json['doorCountOut'] is num)
-          ? (json['doorCountOut'] as num).toInt()
-          : (json['exits'] is num ? (json['exits'] as num).toInt() : 0),
+          : (density >= 80 ? 0.85 : (density >= 60 ? 0.55 : 0.2)),
+      trend: json['trend']?.toString() ?? (density > 75 ? 'RISING' : 'STABLE'),
+      temperature: double.parse(temp.toStringAsFixed(1)),
+      co2: co2,
+      doorCountIn: inCount,
+      doorCountOut: outCount,
     );
   }
 
@@ -98,13 +188,23 @@ class TaskItem {
   });
 
   factory TaskItem.fromJson(Map<String, dynamic> json) {
+    String pri = json['severity']?.toString().toUpperCase() ??
+        json['priority']?.toString().toUpperCase() ??
+        'MEDIUM';
+    if (pri == 'URGENT') pri = 'CRITICAL';
+    if (pri == 'NORMAL') pri = 'MEDIUM';
+    if (pri == 'LOW') pri = 'LOW';
+
+    String stat = json['status']?.toString().toUpperCase() ?? 'PENDING';
+    if (stat == 'OPEN') stat = 'PENDING';
+
     return TaskItem(
       id: json['id']?.toString() ?? json['taskId']?.toString() ?? 'task-${DateTime.now().millisecondsSinceEpoch}',
       title: json['title']?.toString() ?? json['action']?.toString() ?? 'Automated Incident Task',
       description: json['description']?.toString() ?? json['details']?.toString() ?? '',
       location: json['location']?.toString() ?? json['zone']?.toString() ?? 'General Area',
-      severity: json['severity']?.toString().toUpperCase() ?? 'MEDIUM',
-      status: json['status']?.toString().toUpperCase() ?? 'PENDING',
+      severity: pri,
+      status: stat,
       assignedTo: json['assignedTo']?.toString() ?? json['claimedBy']?.toString(),
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now()

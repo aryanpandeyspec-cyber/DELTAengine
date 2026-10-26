@@ -35,15 +35,19 @@ class ApiService {
 
   Future<void> _autoDetectEdgeGateway() async {
     final candidates = [
+      'http://192.168.1.2:3000',
       'http://localhost:3000',
       'http://192.168.1.4:3000',
       'http://192.168.137.1:3000',
+      'http://10.0.2.2:3000',
     ];
     for (final candidate in candidates) {
       try {
-        final res = await http.get(Uri.parse('$candidate/api/state')).timeout(const Duration(milliseconds: 900));
+        final res = await http.get(Uri.parse('$candidate/api/state')).timeout(const Duration(milliseconds: 1200));
         if (res.statusCode == 200) {
           _baseUrl = candidate;
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('delta_base_url', _baseUrl);
           break;
         }
       } catch (_) {}
@@ -339,6 +343,16 @@ class ApiService {
       return false;
     }
   }
+
+  /// Tactical Steering & Flow Action Trigger
+  Future<bool> triggerTacticalAction(String action, {String? label, String? sender}) async {
+    return dispatchQuickAction(
+      action: action,
+      label: label ?? 'Autonomous Gate/Corridor Steering',
+      sender: sender ?? 'Coordinator Cockpit Live Steering',
+    );
+  }
+
   /// Attendee QR Badge Verification & Anti-Tamper Check
   Future<AttendeeBadgeResult> verifyBadge({
     required String code,

@@ -218,6 +218,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               spacing: 6,
               runSpacing: 6,
               children: [
+                _buildHostPresetChip('Wi-Fi PC (3000)', 'http://192.168.1.2:3000', hostController),
                 _buildHostPresetChip('Wi-Fi LAN (3000)', 'http://192.168.1.4:3000', hostController),
                 _buildHostPresetChip('Hotspot (3000)', 'http://192.168.137.1:3000', hostController),
                 _buildHostPresetChip('Localhost (3000)', 'http://localhost:3000', hostController),

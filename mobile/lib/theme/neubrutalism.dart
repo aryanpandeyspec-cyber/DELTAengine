@@ -17,19 +17,127 @@ class DeltaColors {
   static const Color mintGreen = Color(0xFF10B981);
   static const Color coralRed = Color(0xFFF43F5E);
 
-  // Deep Obsidian Dark Surfaces
-  static const Color background = Color(0xFF080B11);
-  static const Color surface = Color(0xFF0F1523);
-  static const Color surfaceLight = Color(0xFF161F33);
-  static const Color surfaceElevated = Color(0xFF1D2840);
-  static const Color cardBorder = Color(0xFF222F47);
-  static const Color borderSubtle = Color(0xFF1B2436);
-  static const Color borderBlack = Color(0xFF1B2436); // Replaced harsh pure black with sleek slate graphite
+  // Deep Obsidian Dark Surfaces (High-End Mission Control Aesthetic)
+  static const Color background = Color(0xFF080D1A);
+  static const Color surface = Color(0xFF0F172A);
+  static const Color surfaceLight = Color(0xFF162238);
+  static const Color surfaceElevated = Color(0xFF1E2D4A);
+  static const Color cardBorder = Color(0xFF223452);
+  static const Color borderSubtle = Color(0xFF1A263D);
+  static const Color borderBlack = Color(0xFF1B2436);
   static const Color textLight = Color(0xFFF8FAFC);
   static const Color textMuted = Color(0xFF94A3B8);
   static const Color textDim = Color(0xFF64748B);
   static const Color dangerRed = Color(0xFFEF4444);
   static const Color successGreen = Color(0xFF10B981);
+}
+
+/// Unified High-Performance Tactical Typography for DELTA Engine
+/// Built on Plus Jakarta Sans (UI clarity & elegance) and JetBrains Mono (precision telemetry)
+class DeltaTypography {
+  // Headings & Brand Elements (Plus Jakarta Sans)
+  static TextStyle displayHero({Color color = DeltaColors.textLight, double fontSize = 28}) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w800,
+        color: color,
+        letterSpacing: -0.6,
+      );
+
+  static TextStyle titleLarge({Color color = DeltaColors.textLight, double fontSize = 18}) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w700,
+        color: color,
+        letterSpacing: -0.3,
+      );
+
+  static TextStyle titleMedium({Color color = DeltaColors.textLight, double fontSize = 14.5}) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w700,
+        color: color,
+        letterSpacing: -0.2,
+      );
+
+  static TextStyle titleSmall({Color color = DeltaColors.textLight, double fontSize = 12.5}) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w600,
+        color: color,
+      );
+
+  // Precision Telemetry & Tabular Figures (JetBrains Mono)
+  static TextStyle monoHero({Color color = DeltaColors.mustard}) =>
+      GoogleFonts.jetBrainsMono(
+        fontSize: 38,
+        fontWeight: FontWeight.w800,
+        color: color,
+        letterSpacing: -1.0,
+      );
+
+  static TextStyle monoStat({Color color = DeltaColors.textLight, double fontSize = 13}) =>
+      GoogleFonts.jetBrainsMono(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w700,
+        color: color,
+      );
+
+  static TextStyle monoLabel({Color color = DeltaColors.textMuted, double fontSize = 10.5}) =>
+      GoogleFonts.jetBrainsMono(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w600,
+        color: color,
+        letterSpacing: 0.5,
+      );
+
+  static TextStyle monoBadge({Color color = Colors.black, double fontSize = 10.5}) =>
+      GoogleFonts.jetBrainsMono(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w800,
+        color: color,
+        letterSpacing: 0.4,
+      );
+
+  // Clean Body & Functional Micro-Labels
+  static TextStyle body({Color color = DeltaColors.textLight, double fontSize = 13}) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w400,
+        color: color,
+        height: 1.35,
+      );
+
+  static TextStyle bodyBold({Color color = DeltaColors.textLight, double fontSize = 13}) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w600,
+        color: color,
+      );
+
+  static TextStyle bodyMuted({Color color = DeltaColors.textMuted, double fontSize = 11.5}) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w400,
+        color: color,
+        height: 1.3,
+      );
+
+  static TextStyle microCaps({Color color = DeltaColors.textMuted, double fontSize = 9.5}) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w700,
+        color: color,
+        letterSpacing: 0.8,
+      );
+
+  static TextStyle button({Color color = Colors.black, double fontSize = 12}) =>
+      GoogleFonts.plusJakartaSans(
+        fontSize: fontSize,
+        fontWeight: FontWeight.w800,
+        color: color,
+        letterSpacing: 0.4,
+      );
 }
 
 /// Refined Tactical Decorator Utilities (High-Precision Obsidian Aesthetic)
@@ -69,6 +177,8 @@ class Neubrutalism {
   }
 
   static ThemeData get themeData {
+    final baseTextTheme = GoogleFonts.plusJakartaSansTextTheme(ThemeData.dark().textTheme);
+
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
@@ -80,34 +190,35 @@ class Neubrutalism {
         surface: DeltaColors.surface,
         error: DeltaColors.dangerRed,
       ),
-      textTheme: TextTheme(
-        displayLarge: GoogleFonts.outfit(
+      textTheme: baseTextTheme.copyWith(
+        displayLarge: GoogleFonts.plusJakartaSans(
           fontSize: 28,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w800,
           color: DeltaColors.textLight,
           letterSpacing: -0.5,
         ),
-        headlineMedium: GoogleFonts.outfit(
+        headlineMedium: GoogleFonts.plusJakartaSans(
           fontSize: 20,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w700,
           color: DeltaColors.textLight,
+          letterSpacing: -0.3,
         ),
-        titleMedium: GoogleFonts.outfit(
+        titleMedium: GoogleFonts.plusJakartaSans(
           fontSize: 16,
           fontWeight: FontWeight.w700,
           color: DeltaColors.textLight,
         ),
-        bodyLarge: GoogleFonts.spaceGrotesk(
+        bodyLarge: GoogleFonts.plusJakartaSans(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: DeltaColors.textLight,
         ),
-        bodyMedium: GoogleFonts.spaceGrotesk(
-          fontSize: 12,
+        bodyMedium: GoogleFonts.plusJakartaSans(
+          fontSize: 12.5,
           fontWeight: FontWeight.w400,
           color: DeltaColors.textMuted,
         ),
-        labelLarge: GoogleFonts.spaceGrotesk(
+        labelLarge: GoogleFonts.plusJakartaSans(
           fontSize: 13,
           fontWeight: FontWeight.w700,
           color: Colors.white,
@@ -157,7 +268,14 @@ class _NeubrutalistCardState extends State<NeubrutalistCard> {
         padding: widget.padding,
         decoration: BoxDecoration(
           color: widget.gradient == null ? widget.backgroundColor : null,
-          gradient: widget.gradient,
+          gradient: widget.gradient ??
+              (widget.backgroundColor == DeltaColors.surface
+                  ? const LinearGradient(
+                      colors: [Color(0xFF0F1829), Color(0xFF0A101C)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null),
           borderRadius: BorderRadius.circular(widget.radius),
           border: Border.all(
             color: effectiveBorder,
@@ -165,7 +283,7 @@ class _NeubrutalistCardState extends State<NeubrutalistCard> {
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.3),
+              color: Colors.black.withValues(alpha: 0.35),
               offset: const Offset(0, 6),
               blurRadius: 18,
               spreadRadius: 0,
@@ -229,7 +347,6 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
 
   @override
   Widget build(BuildContext context) {
-    // If background is mustard, give it a vibrant amber-gold gradient
     final isAmber = widget.backgroundColor == DeltaColors.mustard;
 
     return GestureDetector(
@@ -302,11 +419,9 @@ class _NeubrutalistButtonState extends State<NeubrutalistButton> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   softWrap: false,
-                  style: GoogleFonts.spaceGrotesk(
+                  style: DeltaTypography.button(
                     fontSize: widget.fontSize,
-                    fontWeight: FontWeight.w800,
                     color: widget.textColor,
-                    letterSpacing: 0.4,
                   ),
                 ),
               ),
@@ -336,7 +451,7 @@ class NeubrutalistBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 7.5, vertical: 3.5),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
@@ -358,11 +473,9 @@ class NeubrutalistBadge extends StatelessWidget {
           ],
           Text(
             label,
-            style: GoogleFonts.spaceGrotesk(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w800,
+            style: DeltaTypography.monoBadge(
+              fontSize: 10.0,
               color: textColor,
-              letterSpacing: 0.4,
             ),
           ),
         ],
@@ -452,7 +565,85 @@ class _PulsingDotState extends State<PulsingDot> with SingleTickerProviderStateM
   }
 }
 
-/// Live Audio Waveform Equalizer Visualizer
+/// Dynamic Tactical Progress Bar with Glow and Auto-Severity Color Grading
+class TacticalProgressBar extends StatelessWidget {
+  final double value; // 0.0 to 1.0 (or percentage ratio)
+  final double height;
+  final Color? colorOverride;
+  final bool showSegments;
+
+  const TacticalProgressBar({
+    super.key,
+    required this.value,
+    this.height = 6.0,
+    this.colorOverride,
+    this.showSegments = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final clamped = value.clamp(0.0, 1.0);
+    final effectiveColor = colorOverride ??
+        (clamped >= 0.8
+            ? DeltaColors.dangerRed
+            : clamped >= 0.6
+                ? DeltaColors.mustard
+                : DeltaColors.mintGreen);
+
+    return Container(
+      height: height,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: DeltaColors.surfaceElevated,
+        borderRadius: BorderRadius.circular(height / 2),
+      ),
+      child: Stack(
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 350),
+                curve: Curves.easeOutCubic,
+                width: constraints.maxWidth * clamped,
+                height: height,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      effectiveColor.withValues(alpha: 0.75),
+                      effectiveColor,
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(height / 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: effectiveColor.withValues(alpha: 0.5),
+                      blurRadius: 6,
+                      spreadRadius: 0,
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          if (showSegments)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(
+                4,
+                (_) => Container(
+                  width: 1.5,
+                  height: height,
+                  color: Colors.black.withValues(alpha: 0.35),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Live Audio Waveform Equalizer Visualizer (Expanded 16-Band Array)
 class AudioWaveformVisualizer extends StatefulWidget {
   final bool isBroadcasting;
   final Color barColor;
@@ -475,7 +666,7 @@ class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer> with 
     super.initState();
     _anim = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 550),
     )..repeat(reverse: true);
   }
 
@@ -487,7 +678,10 @@ class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer> with 
 
   @override
   Widget build(BuildContext context) {
-    final multipliers = [0.3, 0.8, 0.5, 1.0, 0.7, 0.4, 0.9, 0.6, 0.2, 0.85, 0.45, 0.75];
+    final multipliers = [
+      0.3, 0.7, 0.45, 0.9, 0.6, 1.0, 0.8, 0.5,
+      0.85, 0.4, 0.95, 0.65, 0.75, 0.5, 0.85, 0.35
+    ];
 
     return AnimatedBuilder(
       animation: _anim,
@@ -496,22 +690,23 @@ class _AudioWaveformVisualizerState extends State<AudioWaveformVisualizer> with 
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: List.generate(multipliers.length, (index) {
+            final wave = (index % 2 == 0) ? _anim.value : (1.0 - _anim.value);
             final activeHeight = widget.isBroadcasting
-                ? 10.0 + (32.0 * multipliers[index] * (0.4 + 0.6 * _anim.value))
+                ? 8.0 + (32.0 * multipliers[index] * (0.35 + 0.65 * wave))
                 : 6.0;
 
             return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2.5),
-              width: 4,
+              margin: const EdgeInsets.symmetric(horizontal: 2.0),
+              width: 3.5,
               height: activeHeight,
               decoration: BoxDecoration(
-                color: widget.isBroadcasting ? widget.barColor : DeltaColors.textMuted.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(4),
+                color: widget.isBroadcasting ? widget.barColor : DeltaColors.textMuted.withValues(alpha: 0.25),
+                borderRadius: BorderRadius.circular(3),
                 boxShadow: widget.isBroadcasting
                     ? [
                         BoxShadow(
-                          color: widget.barColor.withValues(alpha: 0.4),
-                          blurRadius: 6,
+                          color: widget.barColor.withValues(alpha: 0.45),
+                          blurRadius: 5,
                         ),
                       ]
                     : null,
