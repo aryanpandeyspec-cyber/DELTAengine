@@ -24,8 +24,16 @@ class ApiService {
     final savedUrl = prefs.getString('delta_base_url');
     if (savedUrl != null && savedUrl.isNotEmpty) {
       _baseUrl = savedUrl;
+      try {
+        final res = await http.get(Uri.parse('$_baseUrl/api/state')).timeout(const Duration(milliseconds: 900));
+        if (res.statusCode != 200) {
+          await _autoDetectEdgeGateway();
+        }
+      } catch (_) {
+        await _autoDetectEdgeGateway();
+      }
     } else {
-      _baseUrl = 'http://localhost:3000';
+      _baseUrl = 'http://192.168.1.6:3000';
       if (Platform.isAndroid) {
         await _autoDetectEdgeGateway();
       }

@@ -1056,7 +1056,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Row(
+                                          Wrap(
+                                            crossAxisAlignment: WrapCrossAlignment.center,
+                                            spacing: 6,
+                                            runSpacing: 2,
                                             children: [
                                               Text(
                                                 'REMEMBER ME',
@@ -1067,7 +1070,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                                   letterSpacing: 0.5,
                                                 ),
                                               ),
-                                              const SizedBox(width: 6),
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                                 decoration: BoxDecoration(

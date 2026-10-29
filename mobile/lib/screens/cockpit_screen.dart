@@ -1447,28 +1447,31 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final roleColor = _getRoleColor(widget.session.role);
+
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: DeltaColors.surface,
+        backgroundColor: const Color(0xFF0C1019),
         elevation: 0,
         titleSpacing: 10,
+        toolbarHeight: 62,
         shape: const Border(
-          bottom: BorderSide(color: DeltaColors.cardBorder, width: 1.0),
+          bottom: BorderSide(color: Color(0xFF1E283D), width: 1.0),
         ),
         title: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 32,
-              height: 32,
-              padding: const EdgeInsets.all(3),
+              width: 34,
+              height: 34,
+              padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: DeltaColors.cardBorder, width: 1.0),
-                boxShadow: const [
-                  BoxShadow(color: Color(0x28000000), offset: Offset(0, 2), blurRadius: 6),
-                ],
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1E283E), Color(0xFF101625)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: const Color(0xFF38BDF8).withValues(alpha: 0.35), width: 1.0),
               ),
               child: Image.asset(
                 'assets/images/delta_emblem.png',
@@ -1476,25 +1479,53 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               ),
             ),
             const SizedBox(width: 8),
-            Flexible(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     'DELTA ENGINE',
-                    style: DeltaTypography.titleMedium(
+                    style: GoogleFonts.outfit(
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w900,
                       color: Colors.white,
+                      letterSpacing: 0.4,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    '${widget.session.name.toUpperCase()} • ${widget.session.role}',
-                    style: DeltaTypography.microCaps(
-                      color: DeltaColors.mustard,
-                      fontSize: 9.5,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                  const SizedBox(height: 1),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: roleColor.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: roleColor.withValues(alpha: 0.4), width: 0.7),
+                        ),
+                        child: Text(
+                          widget.session.role.toUpperCase(),
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 8.5,
+                            fontWeight: FontWeight.w800,
+                            color: roleColor,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 5),
+                      Flexible(
+                        child: Text(
+                          widget.session.name,
+                          style: GoogleFonts.spaceGrotesk(
+                            fontSize: 10.5,
+                            color: const Color(0xFF94A3B8),
+                            fontWeight: FontWeight.w600,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1502,68 +1533,60 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           ],
         ),
         actions: [
-          // Session Expiry & Remember-Me Timer Chip
-          InkWell(
-            borderRadius: BorderRadius.circular(8),
-            onTap: _showSessionDetailsDialog,
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: const Color(0xFF131F33),
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: widget.session.isAdmin
-                      ? DeltaColors.mustard.withValues(alpha: 0.5)
-                      : DeltaColors.skyAqua.withValues(alpha: 0.5),
-                  width: 1.0,
+          // Unified Operational Status Pill (Telemetry & 4h Window)
+          Tooltip(
+            message: 'Operational Session & Telemetry Status',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: _showNetworkDiagnosticsModal,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 16, horizontal: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF111726),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: _isWsConnected
+                        ? DeltaColors.successGreen.withValues(alpha: 0.5)
+                        : DeltaColors.dangerRed.withValues(alpha: 0.5),
+                    width: 1.0,
+                  ),
                 ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    widget.session.isAdmin ? Icons.admin_panel_settings : Icons.access_time,
-                    size: 11,
-                    color: widget.session.isAdmin ? DeltaColors.mustard : DeltaColors.skyAqua,
-                  ),
-                  const SizedBox(width: 3),
-                  Text(
-                    widget.session.remainingDurationFormatted,
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w800,
-                      color: widget.session.isAdmin ? DeltaColors.mustard : DeltaColors.skyAqua,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    PulsingDot(
+                      color: _isWsConnected ? DeltaColors.successGreen : DeltaColors.dangerRed,
+                      size: 6,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 5),
+                    Text(
+                      _isWsConnected ? widget.session.remainingDurationFormatted : 'OFFLINE',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        color: _isWsConnected ? Colors.white : DeltaColors.dangerRed,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
 
-          // Active Coordinator Roster Button (from Suryansh)
-          IconButton(
-            icon: const Icon(Icons.groups_outlined, size: 20, color: DeltaColors.mustard),
-            tooltip: 'Team Contacts',
-            padding: const EdgeInsets.all(6),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: _showTeamRosterDialog,
-          ),
-
-          // Quick Emergency SOS Header Button
+          // High-Priority Emergency SOS Button
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 2),
             child: InkWell(
               onTap: _showSosConfirmationDialog,
-              borderRadius: BorderRadius.circular(6),
+              borderRadius: BorderRadius.circular(7),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [Color(0xFFDC2626), Color(0xFFB91C1C)],
+                    colors: [Color(0xFFDC2626), Color(0xFF991B1B)],
                   ),
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.2), width: 1.0),
+                  borderRadius: BorderRadius.circular(7),
                   boxShadow: [
                     BoxShadow(color: DeltaColors.dangerRed.withValues(alpha: 0.35), blurRadius: 6),
                   ],
@@ -1575,7 +1598,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                     const SizedBox(width: 3),
                     Text(
                       'SOS',
-                      style: DeltaTypography.monoBadge(fontSize: 10, color: Colors.white),
+                      style: GoogleFonts.spaceGrotesk(fontSize: 10, fontWeight: FontWeight.w900, color: Colors.white),
                     ),
                   ],
                 ),
@@ -1583,47 +1606,81 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             ),
           ),
 
-          // Live WS indicator pill (tap to open Enterprise Network & Engine Diagnostics)
-          Tooltip(
-            message: 'View Edge Engine Telemetry & Network Diagnostics',
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: _showNetworkDiagnosticsModal,
-              child: Container(
-                margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 3),
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _isWsConnected ? DeltaColors.successGreen.withValues(alpha: 0.15) : Colors.red.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: _isWsConnected ? DeltaColors.successGreen : Colors.redAccent,
-                    width: 1.2,
-                  ),
-                ),
+          // Operations Overflow Menu
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert, color: Color(0xFF94A3B8), size: 19),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+            color: const Color(0xFF101726),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: const BorderSide(color: Color(0xFF222F47), width: 1.0),
+            ),
+            onSelected: (val) {
+              if (val == 'session') _showSessionDetailsDialog();
+              if (val == 'roster') _showTeamRosterDialog();
+              if (val == 'diag') _showNetworkDiagnosticsModal();
+              if (val == 'host') _showHostConfigDialog();
+              if (val == 'logout') _handleLogout();
+            },
+            itemBuilder: (ctx) => [
+              PopupMenuItem(
+                value: 'session',
                 child: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    PulsingDot(color: _isWsConnected ? DeltaColors.successGreen : Colors.red, size: 6),
-                    const SizedBox(width: 4),
-                    Text(
-                      _isWsConnected ? 'MESH' : 'OFFLINE',
-                      style: DeltaTypography.monoBadge(
-                        fontSize: 9.5,
-                        color: _isWsConnected ? DeltaColors.successGreen : Colors.redAccent,
+                    const Icon(Icons.access_time, size: 15, color: DeltaColors.skyAqua),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Session (${widget.session.remainingDurationFormatted})',
+                        style: GoogleFonts.spaceGrotesk(fontSize: 12, color: Colors.white),
                       ),
                     ),
                   ],
                 ),
               ),
-            ),
-          ),
-
-          IconButton(
-            icon: const Icon(Icons.logout, size: 18, color: DeltaColors.textMuted),
-            tooltip: 'Logout Terminal',
-            padding: const EdgeInsets.all(6),
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: _handleLogout,
+              PopupMenuItem(
+                value: 'roster',
+                child: Row(
+                  children: [
+                    const Icon(Icons.groups_outlined, size: 15, color: DeltaColors.mustard),
+                    const SizedBox(width: 10),
+                    Text('Team Contacts', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: Colors.white)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'diag',
+                child: Row(
+                  children: [
+                    const Icon(Icons.hub_outlined, size: 15, color: DeltaColors.neonCyan),
+                    const SizedBox(width: 10),
+                    Text('Engine Telemetry', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: Colors.white)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'host',
+                child: Row(
+                  children: [
+                    const Icon(Icons.dns_outlined, size: 15, color: DeltaColors.skyAqua),
+                    const SizedBox(width: 10),
+                    Text('Host IP Config', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: Colors.white)),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(height: 1),
+              PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    const Icon(Icons.logout, size: 15, color: DeltaColors.dangerRed),
+                    const SizedBox(width: 10),
+                    Text('Logout Terminal', style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.dangerRed, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
           ),
           const SizedBox(width: 4),
         ],
@@ -1643,8 +1700,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
-          color: DeltaColors.surface,
-          border: const Border(top: BorderSide(color: DeltaColors.cardBorder, width: 1.0)),
+          color: const Color(0xFF0C1019),
+          border: const Border(top: BorderSide(color: Color(0xFF1E283D), width: 1.0)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.4),
@@ -1660,35 +1717,35 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           elevation: 0,
           type: BottomNavigationBarType.fixed,
           selectedItemColor: DeltaColors.mustard,
-          unselectedItemColor: DeltaColors.textMuted,
-          selectedLabelStyle: DeltaTypography.microCaps(fontSize: 10, color: DeltaColors.mustard),
-          unselectedLabelStyle: DeltaTypography.microCaps(fontSize: 9.5, color: DeltaColors.textMuted),
+          unselectedItemColor: const Color(0xFF64748B),
+          selectedLabelStyle: GoogleFonts.spaceGrotesk(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.5),
+          unselectedLabelStyle: GoogleFonts.spaceGrotesk(fontSize: 9, fontWeight: FontWeight.w600, letterSpacing: 0.3),
           items: [
             const BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_outlined),
               activeIcon: Icon(Icons.dashboard),
-              label: 'TELEMETRY',
+              label: 'RADAR',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.assignment_outlined),
               activeIcon: Icon(Icons.assignment),
-              label: 'INCIDENTS',
+              label: 'TASKS',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.radio_outlined),
               activeIcon: Icon(Icons.radio),
-              label: 'WALKIE MESH',
+              label: 'COMMS',
             ),
             const BottomNavigationBarItem(
               icon: Icon(Icons.qr_code_scanner_outlined),
               activeIcon: Icon(Icons.qr_code_scanner),
-              label: 'BADGE SCAN',
+              label: 'SCAN',
             ),
             if (widget.session.isAdmin)
               const BottomNavigationBarItem(
                 icon: Icon(Icons.admin_panel_settings_outlined),
                 activeIcon: Icon(Icons.admin_panel_settings),
-                label: 'GOVERNANCE',
+                label: 'ADMIN',
               ),
           ],
         ),
@@ -3710,40 +3767,46 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: DeltaColors.mustard.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: DeltaColors.mustard.withValues(alpha: 0.4)),
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: DeltaColors.mustard.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: DeltaColors.mustard.withValues(alpha: 0.4)),
+                            ),
+                            child: const Icon(Icons.admin_panel_settings, color: DeltaColors.mustard, size: 20),
                           ),
-                          child: const Icon(Icons.admin_panel_settings, color: DeltaColors.mustard, size: 22),
-                        ),
-                        const SizedBox(width: 10),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'ADMIN COMMAND & AUDIT',
-                              style: GoogleFonts.outfit(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                                letterSpacing: 0.4,
-                              ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'ADMIN COMMAND & AUDIT',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 0.3,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                Text(
+                                  'Session Governance & Remote Force-Logout',
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 10.5,
+                                    color: DeltaColors.textMuted,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
                             ),
-                            Text(
-                              'Session Governance & Remote Force-Logout',
-                              style: GoogleFonts.spaceGrotesk(
-                                fontSize: 11,
-                                color: DeltaColors.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                          ),
+                        ],
+                      ),
                     ),
                     IconButton(
                       icon: _isLoadingAdminSessions
@@ -3917,12 +3980,19 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                d.title,
-                                style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 12.5),
+                              Expanded(
+                                child: Text(
+                                  d.title,
+                                  style: GoogleFonts.outfit(
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
                               ),
+                              const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
@@ -3959,35 +4029,49 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 3,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: DeltaColors.skyAqua,
-                      borderRadius: BorderRadius.circular(2),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 3,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: DeltaColors.skyAqua,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    'CONNECTED VOLUNTEERS & OPERATORS (${_adminSessions.length})',
-                    style: GoogleFonts.spaceGrotesk(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w800,
-                      color: DeltaColors.textMuted,
-                      letterSpacing: 0.6,
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'CONNECTED VOLUNTEERS (${_adminSessions.length})',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 10.5,
+                          fontWeight: FontWeight.w800,
+                          color: DeltaColors.textMuted,
+                          letterSpacing: 0.5,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-              Text(
-                'REMOTE REVOCATION READY',
-                style: GoogleFonts.spaceGrotesk(
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
-                  color: DeltaColors.dangerRed,
-                  letterSpacing: 0.5,
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: DeltaColors.dangerRed.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: DeltaColors.dangerRed.withValues(alpha: 0.4), width: 0.8),
+                ),
+                child: Text(
+                  'REVOCATION READY',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 8.5,
+                    fontWeight: FontWeight.w800,
+                    color: DeltaColors.dangerRed,
+                    letterSpacing: 0.4,
+                  ),
                 ),
               ),
             ],
@@ -4132,18 +4216,24 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
 
                     // Metadata details
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.phone_android, size: 13, color: DeltaColors.textDim),
-                            const SizedBox(width: 4),
-                            Text(
-                              session.deviceModel,
-                              style: GoogleFonts.spaceGrotesk(fontSize: 10.5, color: DeltaColors.textDim),
-                            ),
-                          ],
+                        Expanded(
+                          flex: 3,
+                          child: Row(
+                            children: [
+                              const Icon(Icons.phone_android, size: 13, color: DeltaColors.textDim),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  session.deviceModel,
+                                  style: GoogleFonts.spaceGrotesk(fontSize: 10.5, color: DeltaColors.textDim),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
                         Row(
                           children: [
                             const Icon(Icons.wifi, size: 13, color: DeltaColors.textDim),
@@ -4154,6 +4244,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                             ),
                           ],
                         ),
+                        const SizedBox(width: 8),
                         Row(
                           children: [
                             const PulsingDot(color: DeltaColors.successGreen, size: 5),
