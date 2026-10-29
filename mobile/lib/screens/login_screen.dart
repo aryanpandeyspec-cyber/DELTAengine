@@ -15,17 +15,33 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStateMixin {
-  final _emailController = TextEditingController(text: 'coordinator@delta-engine.in');
-  final _passwordController = TextEditingController(text: 'delta2026');
+  final _nameController = TextEditingController(text: 'Aryan Pandey');
+  final _emailController = TextEditingController(text: 'aryan.pandey777hyd@gmail.com');
+  final _passwordController = TextEditingController(text: 'deltaAdmin2026!');
   final _api = ApiService();
 
   bool _isLoading = false;
+  bool _isRestoringSession = true;
+  bool _rememberMe = true;
   String? _errorMessage;
-  String _selectedRole = 'COORDINATOR';
+  String _selectedRole = 'ADMIN';
 
   late AnimationController _badgeAnimController;
+  List<DynamicOperatorProfile> _dynamicOperators = [];
 
   final List<Map<String, dynamic>> _rolePresets = [
+    {
+      'id': 'ADMIN',
+      'label': 'COMMANDER',
+      'title': 'Super Admin',
+      'name': 'Aryan Pandey',
+      'email': 'aryan.pandey777hyd@gmail.com',
+      'pass': 'deltaAdmin2026!',
+      'icon': Icons.admin_panel_settings,
+      'color': DeltaColors.mustard,
+      'tag': 'SUPER ADMIN',
+      'desc': 'Full authority, remote volunteer revocation & security audits',
+    },
     {
       'id': 'COORDINATOR',
       'label': 'COORDINATOR',
@@ -36,17 +52,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       'icon': Icons.alt_route,
       'color': DeltaColors.skyAqua,
       'tag': 'OPS LEAD',
-    },
-    {
-      'id': 'ADMIN',
-      'label': 'COMMANDER',
-      'title': 'Systems Admin',
-      'name': 'Aryan Pandey',
-      'email': 'aryan.pandey777hyd@gmail.com',
-      'pass': 'deltaAdmin2026!',
-      'icon': Icons.admin_panel_settings,
-      'color': DeltaColors.mustard,
-      'tag': 'SUPER ADMIN',
+      'desc': 'Chokepoint steering, gate balancing & mesh communications',
     },
     {
       'id': 'SAFETY',
@@ -58,17 +64,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       'icon': Icons.local_police,
       'color': DeltaColors.coralRed,
       'tag': 'FIRE MARSHAL',
+      'desc': 'NFPA egress clearance, CO2 & crowd density safety thresholds',
     },
     {
-      'id': 'AV_LEAD',
-      'label': 'AV / GATES',
-      'title': 'Mesh & Audio',
+      'id': 'VOLUNTEER',
+      'label': 'VOLUNTEER',
+      'title': 'Field Marshal',
       'name': 'Shahid',
-      'email': 'shahid@delta-engine.in',
+      'email': 'volunteer@delta-engine.in',
       'pass': 'delta2026',
-      'icon': Icons.headset_mic,
+      'icon': Icons.how_to_reg,
       'color': DeltaColors.neonCyan,
       'tag': 'FIELD DESK',
+      'desc': 'Turnstile headcounts, badge validation & incident pickup',
     },
   ];
 
@@ -79,10 +87,45 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+
+    _checkAutoLogin();
+    _loadDynamicOperators();
+  }
+
+  Future<void> _checkAutoLogin() async {
+    try {
+      final session = await _api.restoreSessionFromStorage();
+      if (session != null && !session.isExpired) {
+        final isValid = await _api.validateSession();
+        if (isValid && mounted) {
+          WebSocketService().connect();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => CockpitScreen(session: session),
+            ),
+          );
+          return;
+        }
+      }
+    } catch (_) {}
+
+    if (mounted) {
+      setState(() => _isRestoringSession = false);
+    }
+  }
+
+  Future<void> _loadDynamicOperators() async {
+    try {
+      final list = await _api.fetchDynamicOperators();
+      if (mounted && list.isNotEmpty) {
+        setState(() => _dynamicOperators = list);
+      }
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _badgeAnimController.dispose();
@@ -101,6 +144,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
         email: _emailController.text,
         password: _passwordController.text,
         role: _selectedRole,
+        rememberMe: _rememberMe,
       );
 
       // Connect real-time WebSocket on successful authentication
@@ -126,7 +170,6 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   void _handleInstantDemoBypass() {
     HapticFeedback.heavyImpact();
-    // Connect WebSocket if possible
     WebSocketService().connect();
 
     final activePreset = _rolePresets.firstWhere(
@@ -135,12 +178,19 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
 
     final demoSession = OperatorSession(
-      id: 'demo-operator-777',
-      name: activePreset['name'] as String,
-      email: _emailController.text.isNotEmpty ? _emailController.text : activePreset['email'] as String,
+      id: 'demo-${DateTime.now().millisecondsSinceEpoch % 10000}',
+      name: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : activePreset['name'] as String,
+      email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : activePreset['email'] as String,
       role: _selectedRole.toLowerCase(),
       token: 'jwt-delta-demo-instant-pass',
+      sessionId: 'sess-demo-${DateTime.now().millisecondsSinceEpoch}',
+      expiresAt: DateTime.now().add(const Duration(hours: 4)),
+      rememberMe: _rememberMe,
     );
+
+    if (_rememberMe) {
+      _api.saveSessionToStorage(demoSession);
+    }
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -218,6 +268,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               spacing: 6,
               runSpacing: 6,
               children: [
+                _buildHostPresetChip('Wi-Fi Host (192.168.1.6)', 'http://192.168.1.6:3000', hostController),
                 _buildHostPresetChip('Wi-Fi PC (3000)', 'http://192.168.1.2:3000', hostController),
                 _buildHostPresetChip('Wi-Fi LAN (3000)', 'http://192.168.1.4:3000', hostController),
                 _buildHostPresetChip('Hotspot (3000)', 'http://192.168.137.1:3000', hostController),
@@ -277,6 +328,78 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
   @override
   Widget build(BuildContext context) {
+    if (_isRestoringSession) {
+      return Scaffold(
+        backgroundColor: DeltaColors.background,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F1523),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: const Color(0xFF222F47), width: 1.0),
+                boxShadow: [
+                  BoxShadow(
+                    color: DeltaColors.skyAqua.withValues(alpha: 0.18),
+                    blurRadius: 30,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const PulsingDot(color: DeltaColors.skyAqua, size: 14),
+                  const SizedBox(height: 18),
+                  Text(
+                    'RESTORING VERIFIED EVENT SESSION',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Validating 4-Hour active event token with DELTA Security Gateway...',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11.5,
+                      color: DeltaColors.textMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+                  const SizedBox(
+                    width: 26,
+                    height: 26,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(DeltaColors.skyAqua),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  TextButton(
+                    onPressed: () => setState(() => _isRestoringSession = false),
+                    child: Text(
+                      'LOG IN AS DIFFERENT IDENTITY',
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 11,
+                        color: DeltaColors.skyAqua,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: DeltaColors.background,
       body: Stack(
@@ -433,20 +556,20 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                       ),
                       const SizedBox(height: 20),
 
-                      // Operator Profile Selector
+                      // Command & Authority Hierarchy
                       Row(
                         children: [
                           Container(
                             width: 3,
                             height: 12,
                             decoration: BoxDecoration(
-                              color: DeltaColors.skyAqua,
+                              color: DeltaColors.mustard,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            'SELECT OPERATOR PROFILE',
+                            'COMMAND & AUTHORITY HIERARCHY',
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 10.5,
                               fontWeight: FontWeight.w800,
@@ -464,7 +587,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           crossAxisCount: 2,
                           mainAxisSpacing: 8,
                           crossAxisSpacing: 8,
-                          childAspectRatio: 2.3,
+                          childAspectRatio: 2.2,
                         ),
                         itemCount: _rolePresets.length,
                         itemBuilder: (context, idx) {
@@ -477,6 +600,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               HapticFeedback.selectionClick();
                               setState(() {
                                 _selectedRole = role['id'] as String;
+                                _nameController.text = role['name'] as String;
                                 _emailController.text = role['email'] as String;
                                 _passwordController.text = role['pass'] as String;
                               });
@@ -529,7 +653,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
                                         Text(
-                                          role['name'] as String,
+                                          role['title'] as String,
                                           style: GoogleFonts.outfit(
                                             fontSize: 12,
                                             fontWeight: FontWeight.w700,
@@ -550,12 +674,15 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                               ),
                                               const SizedBox(width: 4),
                                             ],
-                                            Text(
-                                              role['tag'] as String,
-                                              style: GoogleFonts.spaceGrotesk(
-                                                fontSize: 9,
-                                                fontWeight: FontWeight.w800,
-                                                color: isSelected ? color : DeltaColors.textDim,
+                                            Flexible(
+                                              child: Text(
+                                                role['tag'] as String,
+                                                style: GoogleFonts.spaceGrotesk(
+                                                  fontSize: 9,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: isSelected ? color : DeltaColors.textDim,
+                                                ),
+                                                overflow: TextOverflow.ellipsis,
                                               ),
                                             ),
                                           ],
@@ -569,7 +696,78 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                           );
                         },
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 14),
+
+                      // Dynamic Personnel Selector Strip
+                      if (_dynamicOperators.isNotEmpty) ...[
+                        Row(
+                          children: [
+                            Container(
+                              width: 3,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: DeltaColors.neonCyan,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'LIVE EVENT PERSONNEL ROSTER',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                color: DeltaColors.textMuted,
+                                letterSpacing: 0.6,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          physics: const BouncingScrollPhysics(),
+                          child: Row(
+                            children: _dynamicOperators.map((op) {
+                              final isCurrent = _emailController.text == op.email;
+                              return Padding(
+                                padding: const EdgeInsets.only(right: 8),
+                                child: ActionChip(
+                                  backgroundColor: isCurrent ? const Color(0xFF16253D) : const Color(0xFF0F1523),
+                                  side: BorderSide(
+                                    color: isCurrent ? DeltaColors.neonCyan : const Color(0xFF1E283D),
+                                    width: 1.0,
+                                  ),
+                                  avatar: CircleAvatar(
+                                    radius: 10,
+                                    backgroundColor: DeltaColors.surfaceLight,
+                                    child: Text(
+                                      op.name.isNotEmpty ? op.name[0].toUpperCase() : '?',
+                                      style: const TextStyle(fontSize: 10, color: Colors.white, fontWeight: FontWeight.bold),
+                                    ),
+                                  ),
+                                  label: Text(
+                                    '${op.name} (${op.role})',
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 11,
+                                      fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
+                                      color: isCurrent ? Colors.white : DeltaColors.textMuted,
+                                    ),
+                                  ),
+                                  onPressed: () {
+                                    HapticFeedback.selectionClick();
+                                    setState(() {
+                                      _nameController.text = op.name;
+                                      _emailController.text = op.email;
+                                      _selectedRole = op.role;
+                                    });
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                      ],
 
                       // Refined Obsidian Auth Card (Contains required OPERATOR AUTH header)
                       Container(
@@ -707,6 +905,42 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               const SizedBox(height: 14),
                             ],
 
+                            // Name Field
+                            Text(
+                              'OPERATOR NAME',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: DeltaColors.textMuted,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            TextField(
+                              controller: _nameController,
+                              style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 13),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: const Color(0xFF0A0E17),
+                                hintText: 'Enter your name',
+                                hintStyle: GoogleFonts.spaceGrotesk(color: DeltaColors.textDim, fontSize: 13),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                prefixIcon: const Icon(Icons.person_outline, color: DeltaColors.skyAqua, size: 18),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(color: Color(0xFF1E283D), width: 1.0),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(color: Color(0xFF1E283D), width: 1.0),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                  borderSide: const BorderSide(color: DeltaColors.skyAqua, width: 1.5),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+
                             // Email Field
                             Text(
                               'OPERATOR IDENTITY / EMAIL',
@@ -778,7 +1012,95 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                 ),
                               ),
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
+
+                            // 4-Hour Event Window Remember Me Toggle
+                            GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() => _rememberMe = !_rememberMe);
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                decoration: BoxDecoration(
+                                  color: _rememberMe
+                                      ? const Color(0xFF122238)
+                                      : const Color(0xFF0A0E17),
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(
+                                    color: _rememberMe
+                                        ? DeltaColors.skyAqua.withValues(alpha: 0.55)
+                                        : const Color(0xFF1E283D),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 20,
+                                      height: 20,
+                                      decoration: BoxDecoration(
+                                        color: _rememberMe ? DeltaColors.skyAqua : Colors.transparent,
+                                        borderRadius: BorderRadius.circular(5),
+                                        border: Border.all(
+                                          color: _rememberMe ? DeltaColors.skyAqua : DeltaColors.textMuted,
+                                          width: 1.5,
+                                        ),
+                                      ),
+                                      child: _rememberMe
+                                          ? const Icon(Icons.check, size: 15, color: Colors.black)
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 10),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Text(
+                                                'REMEMBER ME',
+                                                style: GoogleFonts.spaceGrotesk(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: Colors.white,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                                decoration: BoxDecoration(
+                                                  color: DeltaColors.skyAqua.withValues(alpha: 0.2),
+                                                  borderRadius: BorderRadius.circular(4),
+                                                ),
+                                                child: Text(
+                                                  '3-4 HOURS WINDOW',
+                                                  style: GoogleFonts.spaceGrotesk(
+                                                    fontSize: 8.5,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: DeltaColors.skyAqua,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            'Stay logged in across restarts. Remotely revocable by Admin.',
+                                            style: GoogleFonts.spaceGrotesk(
+                                              fontSize: 9.5,
+                                              color: DeltaColors.textMuted,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 18),
 
                             // Linear-Style Electric Action Button
                             GestureDetector(

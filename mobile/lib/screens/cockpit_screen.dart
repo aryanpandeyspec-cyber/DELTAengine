@@ -65,6 +65,13 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   StreamSubscription? _sosSub;
   StreamSubscription? _scheduleSub;
   StreamSubscription? _quickActionSub;
+  StreamSubscription? _sessionRevokedSub;
+
+  // Admin Governance & Session Discrepancy State
+  List<ActiveOperatorSession> _adminSessions = [];
+  List<SecurityDiscrepancy> _adminDiscrepancies = [];
+  bool _isLoadingAdminSessions = false;
+  Timer? _adminSessionsTimer;
 
   @override
   void initState() {
@@ -86,6 +93,15 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat();
+
+    if (widget.session.isAdmin) {
+      _fetchAdminGovernanceData();
+      _adminSessionsTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+        if (mounted && widget.session.isAdmin) {
+          _fetchAdminGovernanceData(silent: true);
+        }
+      });
+    }
   }
 
   void _startEventPhaseTicker() {
@@ -107,6 +123,13 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _telemetryTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
       if (!mounted) return;
       try {
+        // Validate active session with backend to detect remote revocation
+        final isSessionValid = await _api.validateSession();
+        if (!isSessionValid && mounted) {
+          _handleForcedLogout(reason: 'Session revoked or expired by Administrator.');
+          return;
+        }
+
         final rooms = await _api.fetchRooms();
         final tasks = await _api.fetchTasks();
         if (mounted && rooms.isNotEmpty) {
@@ -149,6 +172,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   void dispose() {
     _tickerTimer?.cancel();
     _telemetryTimer?.cancel();
+    _adminSessionsTimer?.cancel();
     _scannerAnim.dispose();
     _pttAnim.dispose();
     _wsStateSub?.cancel();
@@ -158,6 +182,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _sosSub?.cancel();
     _scheduleSub?.cancel();
     _quickActionSub?.cancel();
+    _sessionRevokedSub?.cancel();
     super.dispose();
   }
 
@@ -309,6 +334,327 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
         );
       }
     });
+
+    _sessionRevokedSub = _ws.onSessionRevoked.listen((data) {
+      if (mounted) {
+        final sessId = data['sessionId']?.toString();
+        final email = data['email']?.toString();
+        if (sessId == widget.session.sessionId ||
+            (email != null && email.toLowerCase() == widget.session.email.toLowerCase())) {
+          _handleForcedLogout(reason: data['reason']?.toString() ?? 'Session revoked by Administrator.');
+        } else if (widget.session.isAdmin) {
+          // If this terminal is Admin and another terminal was revoked, refresh live session roster
+          _fetchAdminGovernanceData(silent: true);
+        }
+      }
+    });
+  }
+
+  Future<void> _fetchAdminGovernanceData({bool silent = false}) async {
+    if (!silent) setState(() => _isLoadingAdminSessions = true);
+    try {
+      final res = await _api.fetchAdminSessions();
+      if (mounted) {
+        setState(() {
+          _adminSessions = res['sessions'] as List<ActiveOperatorSession>? ?? [];
+          _adminDiscrepancies = res['discrepancies'] as List<SecurityDiscrepancy>? ?? [];
+          _isLoadingAdminSessions = false;
+        });
+      }
+    } catch (_) {
+      if (mounted && !silent) {
+        setState(() => _isLoadingAdminSessions = false);
+      }
+    }
+  }
+
+  Future<void> _handleForcedLogout({String reason = 'Session terminated by Administrator.'}) async {
+    _telemetryTimer?.cancel();
+    _tickerTimer?.cancel();
+    _adminSessionsTimer?.cancel();
+    await _api.clearStoredSession();
+    _ws.disconnect();
+
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F1523),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: DeltaColors.dangerRed, width: 2.0),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.gavel, color: DeltaColors.dangerRed, size: 24),
+            const SizedBox(width: 10),
+            Text(
+              'ACCESS REVOKED',
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+                fontSize: 16,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Your terminal authorization has been revoked by the Super Administrator.\n\nReason: $reason',
+          style: GoogleFonts.spaceGrotesk(color: const Color(0xFFCBD5E1), fontSize: 13),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: DeltaColors.dangerRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+            child: Text('RETURN TO LOGIN', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleLogout() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F1523),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF222F47), width: 1.0),
+        ),
+        title: Text(
+          'DISCONNECT TERMINAL',
+          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16),
+        ),
+        content: Text(
+          'Are you sure you want to sign out? This will end your active event session on this device.',
+          style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted, fontSize: 12),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('CANCEL', style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: DeltaColors.dangerRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('LOGOUT', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      _telemetryTimer?.cancel();
+      _tickerTimer?.cancel();
+      _adminSessionsTimer?.cancel();
+      await _api.clearStoredSession();
+      _ws.disconnect();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+    }
+  }
+
+  void _showSessionDetailsDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F1523),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: Color(0xFF23324C), width: 1.0),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF162238),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(Icons.verified_user_outlined, color: DeltaColors.skyAqua, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'SESSION SECURITY',
+              style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 16),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSessionMetaRow('Terminal Operator', widget.session.name),
+            _buildSessionMetaRow('Role Hierarchy', widget.session.role.toUpperCase()),
+            _buildSessionMetaRow('Operator Email', widget.session.email),
+            _buildSessionMetaRow('Session ID', widget.session.sessionId),
+            _buildSessionMetaRow('Event Window', widget.session.remainingDurationFormatted),
+            _buildSessionMetaRow('Remember Me Status', widget.session.rememberMe ? 'Persisted (4h Token)' : 'Single Session'),
+            _buildSessionMetaRow('Engine Endpoint', _api.baseUrl),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('CLOSE', style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: DeltaColors.dangerRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              _handleLogout();
+            },
+            child: Text('LOGOUT', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionMetaRow(String label, String val) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 110,
+            child: Text(
+              label,
+              style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textDim, fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              val,
+              style: GoogleFonts.spaceGrotesk(fontSize: 11, color: Colors.white, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _handleForceRevokeSession(ActiveOperatorSession targetSession) async {
+    HapticFeedback.heavyImpact();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F1523),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: DeltaColors.dangerRed, width: 2.0),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.gavel, color: DeltaColors.dangerRed, size: 22),
+            const SizedBox(width: 8),
+            Text(
+              'FORCE LOGOUT VOLUNTEER',
+              style: GoogleFonts.outfit(
+                color: DeltaColors.dangerRed,
+                fontWeight: FontWeight.w900,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Revoke active terminal session for ${targetSession.name}?',
+              style: GoogleFonts.spaceGrotesk(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A121E),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: DeltaColors.dangerRed.withValues(alpha: 0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Terminal: ${targetSession.deviceModel} (${targetSession.ip})', style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textMuted)),
+                  Text('Role: ${targetSession.role} • Title: ${targetSession.title}', style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textMuted)),
+                  Text('Session ID: ${targetSession.sessionId}', style: GoogleFonts.spaceGrotesk(fontSize: 10, color: DeltaColors.textDim)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'This action will immediately terminate their authorization token, force disconnect their terminal, and log them out back to the authentication screen.',
+              style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textMuted),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text('CANCEL', style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: DeltaColors.dangerRed,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text('CONFIRM REVOCATION', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800, fontSize: 11)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      final success = await _api.revokeSession(
+        sessionId: targetSession.sessionId,
+        reason: 'Revoked by Administrator command (${widget.session.name})',
+      );
+      if (mounted) {
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: const Color(0xFF1A1E2C),
+              content: Text(
+                '✓ Revoked session for ${targetSession.name}. Terminal forcibly logged out.',
+                style: GoogleFonts.spaceGrotesk(color: DeltaColors.neonCyan, fontWeight: FontWeight.bold),
+              ),
+            ),
+          );
+          _fetchAdminGovernanceData(silent: true);
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Failed to revoke session. Verify server connectivity.')),
+          );
+        }
+      }
+    }
   }
 
   void _showEmergencyAlertBanner(Map<String, dynamic> sos) {
@@ -1156,6 +1502,45 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           ],
         ),
         actions: [
+          // Session Expiry & Remember-Me Timer Chip
+          InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: _showSessionDetailsDialog,
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: const Color(0xFF131F33),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: widget.session.isAdmin
+                      ? DeltaColors.mustard.withValues(alpha: 0.5)
+                      : DeltaColors.skyAqua.withValues(alpha: 0.5),
+                  width: 1.0,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    widget.session.isAdmin ? Icons.admin_panel_settings : Icons.access_time,
+                    size: 11,
+                    color: widget.session.isAdmin ? DeltaColors.mustard : DeltaColors.skyAqua,
+                  ),
+                  const SizedBox(width: 3),
+                  Text(
+                    widget.session.remainingDurationFormatted,
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w800,
+                      color: widget.session.isAdmin ? DeltaColors.mustard : DeltaColors.skyAqua,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           // Active Coordinator Roster Button (from Suryansh)
           IconButton(
             icon: const Icon(Icons.groups_outlined, size: 20, color: DeltaColors.mustard),
@@ -1235,14 +1620,10 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
 
           IconButton(
             icon: const Icon(Icons.logout, size: 18, color: DeltaColors.textMuted),
+            tooltip: 'Logout Terminal',
             padding: const EdgeInsets.all(6),
             constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-            onPressed: () {
-              WebSocketService().disconnect();
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
+            onPressed: _handleLogout,
           ),
           const SizedBox(width: 4),
         ],
@@ -1256,6 +1637,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 _buildTasksTab(),
                 _buildWalkieTalkieTab(),
                 _buildBadgeScannerTab(),
+                if (widget.session.isAdmin)
+                  _buildAdminGovernanceTab(),
               ],
             ),
       bottomNavigationBar: Container(
@@ -1280,27 +1663,33 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           unselectedItemColor: DeltaColors.textMuted,
           selectedLabelStyle: DeltaTypography.microCaps(fontSize: 10, color: DeltaColors.mustard),
           unselectedLabelStyle: DeltaTypography.microCaps(fontSize: 9.5, color: DeltaColors.textMuted),
-          items: const [
-            BottomNavigationBarItem(
+          items: [
+            const BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_outlined),
               activeIcon: Icon(Icons.dashboard),
               label: 'TELEMETRY',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.assignment_outlined),
               activeIcon: Icon(Icons.assignment),
               label: 'INCIDENTS',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.radio_outlined),
               activeIcon: Icon(Icons.radio),
               label: 'WALKIE MESH',
             ),
-            BottomNavigationBarItem(
+            const BottomNavigationBarItem(
               icon: Icon(Icons.qr_code_scanner_outlined),
               activeIcon: Icon(Icons.qr_code_scanner),
               label: 'BADGE SCAN',
             ),
+            if (widget.session.isAdmin)
+              const BottomNavigationBarItem(
+                icon: Icon(Icons.admin_panel_settings_outlined),
+                activeIcon: Icon(Icons.admin_panel_settings),
+                label: 'GOVERNANCE',
+              ),
           ],
         ),
       ),
@@ -3282,6 +3671,555 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
         const SizedBox(height: 24),
       ],
     );
+  }
+
+  // ==========================================
+  // TAB 5: ADMIN GOVERNANCE & ACTIVE SESSIONS
+  // ==========================================
+  Widget _buildAdminGovernanceTab() {
+    return RefreshIndicator(
+      color: DeltaColors.mustard,
+      backgroundColor: DeltaColors.surface,
+      onRefresh: () => _fetchAdminGovernanceData(),
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        children: [
+          // Header Card with Crown Emblem & Summary
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF1F1C12), Color(0xFF14120B)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: DeltaColors.mustard.withValues(alpha: 0.4), width: 1.2),
+              boxShadow: [
+                BoxShadow(
+                  color: DeltaColors.mustard.withValues(alpha: 0.12),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: DeltaColors.mustard.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: DeltaColors.mustard.withValues(alpha: 0.4)),
+                          ),
+                          child: const Icon(Icons.admin_panel_settings, color: DeltaColors.mustard, size: 22),
+                        ),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'ADMIN COMMAND & AUDIT',
+                              style: GoogleFonts.outfit(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w900,
+                                color: Colors.white,
+                                letterSpacing: 0.4,
+                              ),
+                            ),
+                            Text(
+                              'Session Governance & Remote Force-Logout',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 11,
+                                color: DeltaColors.textMuted,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: _isLoadingAdminSessions
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: DeltaColors.mustard),
+                            )
+                          : const Icon(Icons.refresh, color: DeltaColors.mustard, size: 20),
+                      tooltip: 'Refresh Active Sessions',
+                      onPressed: _isLoadingAdminSessions ? null : () => _fetchAdminGovernanceData(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F1523),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFF222F47)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('ACTIVE TERMINALS', style: GoogleFonts.spaceGrotesk(fontSize: 9.5, fontWeight: FontWeight.bold, color: DeltaColors.textDim)),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const PulsingDot(color: DeltaColors.successGreen, size: 7),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '${_adminSessions.length} Connected',
+                                  style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.w900, color: Colors.white),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F1523),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: _adminDiscrepancies.isNotEmpty
+                                ? DeltaColors.dangerRed.withValues(alpha: 0.6)
+                                : const Color(0xFF222F47),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('DISCREPANCIES', style: GoogleFonts.spaceGrotesk(fontSize: 9.5, fontWeight: FontWeight.bold, color: DeltaColors.textDim)),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                PulsingDot(
+                                  color: _adminDiscrepancies.isNotEmpty ? DeltaColors.dangerRed : DeltaColors.successGreen,
+                                  size: 7,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _adminDiscrepancies.isNotEmpty ? '${_adminDiscrepancies.length} Anomalies' : '0 Flagged',
+                                  style: GoogleFonts.outfit(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w900,
+                                    color: _adminDiscrepancies.isNotEmpty ? DeltaColors.dangerRed : DeltaColors.successGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // Section 1: Security Discrepancies Deck
+          Row(
+            children: [
+              Container(
+                width: 3,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: _adminDiscrepancies.isNotEmpty ? DeltaColors.dangerRed : DeltaColors.successGreen,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'SECURITY AUDIT & DISCREPANCY DETECTOR',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  color: DeltaColors.textMuted,
+                  letterSpacing: 0.6,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          if (_adminDiscrepancies.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0C1919),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: DeltaColors.successGreen.withValues(alpha: 0.35)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.verified, color: DeltaColors.successGreen, size: 20),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Zero Discrepancies Detected',
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 13),
+                        ),
+                        Text(
+                          'All volunteer terminals verified. No duplicate IPs or unmarshaled chokepoints.',
+                          style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.textMuted),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ..._adminDiscrepancies.map((d) {
+              final isCrit = d.severity == 'CRITICAL';
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isCrit ? const Color(0xFF231215) : const Color(0xFF1F1B12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: isCrit ? DeltaColors.dangerRed.withValues(alpha: 0.6) : DeltaColors.mustard.withValues(alpha: 0.5),
+                    width: 1.0,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      isCrit ? Icons.warning_rounded : Icons.info_outline,
+                      color: isCrit ? DeltaColors.dangerRed : DeltaColors.mustard,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                d.title,
+                                style: GoogleFonts.outfit(fontWeight: FontWeight.w800, color: Colors.white, fontSize: 12.5),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: (isCrit ? DeltaColors.dangerRed : DeltaColors.mustard).withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  d.type,
+                                  style: GoogleFonts.spaceGrotesk(
+                                    fontSize: 8.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: isCrit ? DeltaColors.dangerRed : DeltaColors.mustard,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            d.description,
+                            style: GoogleFonts.spaceGrotesk(fontSize: 11, color: const Color(0xFFE2E8F0)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
+
+          const SizedBox(height: 20),
+
+          // Section 2: Active Connected Terminals Roster
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 3,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: DeltaColors.skyAqua,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'CONNECTED VOLUNTEERS & OPERATORS (${_adminSessions.length})',
+                    style: GoogleFonts.spaceGrotesk(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                      color: DeltaColors.textMuted,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                'REMOTE REVOCATION READY',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                  color: DeltaColors.dangerRed,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+
+          if (_adminSessions.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F1523),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: const Color(0xFF222F47)),
+              ),
+              child: Center(
+                child: Column(
+                  children: [
+                    const Icon(Icons.people_outline, color: DeltaColors.textDim, size: 36),
+                    const SizedBox(height: 10),
+                    Text(
+                      'No other operator sessions registered.',
+                      style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            ..._adminSessions.map((session) {
+              final isSelf = session.sessionId == widget.session.sessionId ||
+                  session.email.toLowerCase() == widget.session.email.toLowerCase();
+              final roleColor = _getRoleColor(session.role);
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: isSelf ? const Color(0xFF141F32) : const Color(0xFF0F1523),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelf
+                        ? DeltaColors.skyAqua.withValues(alpha: 0.5)
+                        : const Color(0xFF222F47),
+                    width: isSelf ? 1.4 : 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: roleColor.withValues(alpha: 0.2),
+                          child: Text(
+                            session.name.isNotEmpty ? session.name[0].toUpperCase() : '?',
+                            style: GoogleFonts.outfit(
+                              color: roleColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      session.name,
+                                      style: GoogleFonts.outfit(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  if (isSelf) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                      decoration: BoxDecoration(
+                                        color: DeltaColors.skyAqua.withValues(alpha: 0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                        border: Border.all(color: DeltaColors.skyAqua.withValues(alpha: 0.5), width: 0.8),
+                                      ),
+                                      child: Text(
+                                        'THIS DEVICE',
+                                        style: GoogleFonts.spaceGrotesk(
+                                          fontSize: 8.5,
+                                          fontWeight: FontWeight.w900,
+                                          color: DeltaColors.skyAqua,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              Text(
+                                '${session.email} • ${session.title}',
+                                style: GoogleFonts.spaceGrotesk(
+                                  fontSize: 11,
+                                  color: DeltaColors.textMuted,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                          decoration: BoxDecoration(
+                            color: roleColor.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: roleColor.withValues(alpha: 0.5), width: 1.0),
+                          ),
+                          child: Text(
+                            session.role.toUpperCase(),
+                            style: GoogleFonts.spaceGrotesk(
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w800,
+                              color: roleColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+                    const SizedBox(height: 10),
+
+                    // Metadata details
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.phone_android, size: 13, color: DeltaColors.textDim),
+                            const SizedBox(width: 4),
+                            Text(
+                              session.deviceModel,
+                              style: GoogleFonts.spaceGrotesk(fontSize: 10.5, color: DeltaColors.textDim),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            const Icon(Icons.wifi, size: 13, color: DeltaColors.textDim),
+                            const SizedBox(width: 4),
+                            Text(
+                              session.ip,
+                              style: GoogleFonts.spaceGrotesk(fontSize: 10.5, color: DeltaColors.textDim),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            const PulsingDot(color: DeltaColors.successGreen, size: 5),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${session.durationMinutes}m active',
+                              style: GoogleFonts.spaceGrotesk(fontSize: 10.5, color: DeltaColors.successGreen, fontWeight: FontWeight.bold),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Action buttons
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: DeltaColors.dangerRed.withValues(alpha: 0.6),
+                                width: 1.0,
+                              ),
+                              backgroundColor: DeltaColors.dangerRed.withValues(alpha: 0.08),
+                              foregroundColor: DeltaColors.dangerRed,
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                            icon: const Icon(Icons.power_settings_new, size: 15),
+                            label: Text(
+                              isSelf ? 'REVOKE & LOGOUT MY SESSION' : 'FORCE LOGOUT VOLUNTEER',
+                              style: GoogleFonts.spaceGrotesk(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            onPressed: () => _handleForceRevokeSession(session),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            }),
+          const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  Color _getRoleColor(String role) {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+      case 'SUPER_ADMIN':
+        return DeltaColors.mustard;
+      case 'COORDINATOR':
+        return DeltaColors.skyAqua;
+      case 'SAFETY':
+        return DeltaColors.coralRed;
+      case 'VOLUNTEER':
+      default:
+        return DeltaColors.neonCyan;
+    }
   }
 }
 

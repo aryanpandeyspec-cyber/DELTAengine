@@ -22,6 +22,7 @@ class WebSocketService {
   final StreamController<Map<String, dynamic>> _badgeEventController = StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<Map<String, dynamic>> _scheduleEventController = StreamController<Map<String, dynamic>>.broadcast();
   final StreamController<Map<String, dynamic>> _quickActionController = StreamController<Map<String, dynamic>>.broadcast();
+  final StreamController<Map<String, dynamic>> _sessionRevokedController = StreamController<Map<String, dynamic>>.broadcast();
 
   final Map<String, RoomTelemetry> _cachedRooms = {};
 
@@ -33,6 +34,7 @@ class WebSocketService {
   Stream<Map<String, dynamic>> get onBadgeEvent => _badgeEventController.stream;
   Stream<Map<String, dynamic>> get onScheduleEvent => _scheduleEventController.stream;
   Stream<Map<String, dynamic>> get onQuickActionEvent => _quickActionController.stream;
+  Stream<Map<String, dynamic>> get onSessionRevoked => _sessionRevokedController.stream;
   int _reconnectAttempts = 0;
   bool get isConnected => _isConnected;
 
@@ -157,6 +159,12 @@ class WebSocketService {
           }
           break;
 
+        case 'SESSION_REVOKED':
+          if (data is Map<String, dynamic>) {
+            _sessionRevokedController.add(data);
+          }
+          break;
+
         case 'INIT_STATE':
           if (data is Map<String, dynamic>) {
             if (data['tasks'] is List) {
@@ -232,5 +240,6 @@ class WebSocketService {
     _badgeEventController.close();
     _scheduleEventController.close();
     _quickActionController.close();
+    _sessionRevokedController.close();
   }
 }

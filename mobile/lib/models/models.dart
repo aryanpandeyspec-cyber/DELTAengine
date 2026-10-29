@@ -235,8 +235,11 @@ class OperatorSession {
   final String id;
   final String email;
   final String name;
-  final String role; // coordinator, security, admin, medic
+  final String role; // coordinator, security, admin, medic, volunteer
   final String token;
+  final String sessionId;
+  final DateTime? expiresAt;
+  final bool rememberMe;
 
   OperatorSession({
     required this.id,
@@ -244,16 +247,196 @@ class OperatorSession {
     required this.name,
     required this.role,
     required this.token,
-  });
+    String? sessionId,
+    this.expiresAt,
+    this.rememberMe = false,
+  }) : sessionId = sessionId ?? 'sess-${DateTime.now().millisecondsSinceEpoch}';
 
   factory OperatorSession.fromJson(Map<String, dynamic> json) {
     final user = json['user'] is Map<String, dynamic> ? json['user'] as Map<String, dynamic> : json;
+    final expStr = json['expiresAt']?.toString() ?? user['expiresAt']?.toString();
+    final expiresAt = expStr != null ? DateTime.tryParse(expStr) : null;
+    final sessId = json['sessionId']?.toString() ??
+        user['sessionId']?.toString() ??
+        'sess-${DateTime.now().millisecondsSinceEpoch}';
+
     return OperatorSession(
       id: user['id']?.toString() ?? 'usr-${DateTime.now().millisecondsSinceEpoch}',
       email: user['email']?.toString() ?? 'operator@deltaengine.internal',
       name: user['name']?.toString() ?? user['user_metadata']?['full_name']?.toString() ?? 'Lead Coordinator',
       role: user['role']?.toString() ?? 'coordinator',
       token: json['token']?.toString() ?? json['access_token']?.toString() ?? 'token-demo-valid',
+      sessionId: sessId,
+      expiresAt: expiresAt,
+      rememberMe: json['rememberMe'] == true || user['rememberMe'] == true,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'email': email,
+      'name': name,
+      'role': role,
+      'token': token,
+      'sessionId': sessionId,
+      'expiresAt': expiresAt?.toIso8601String(),
+      'rememberMe': rememberMe,
+    };
+  }
+
+  bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
+
+  Duration get remainingDuration {
+    if (expiresAt == null) return const Duration(hours: 4);
+    final diff = expiresAt!.difference(DateTime.now());
+    return diff.isNegative ? Duration.zero : diff;
+  }
+
+  String get remainingDurationFormatted {
+    final rem = remainingDuration;
+    if (rem.inMinutes <= 0) return 'Expired';
+    final hours = rem.inHours;
+    final minutes = rem.inMinutes.remainder(60);
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    }
+    return '${minutes}m';
+  }
+
+  bool get isAdmin {
+    final r = role.toUpperCase();
+    return r == 'ADMIN' || r == 'SUPER_ADMIN';
+  }
+
+  bool get isCoordinator => role.toUpperCase() == 'COORDINATOR';
+  bool get isSafety => role.toUpperCase() == 'SAFETY';
+  bool get isVolunteer => role.toUpperCase() == 'VOLUNTEER';
+}
+
+class ActiveOperatorSession {
+  final String sessionId;
+  final String id;
+  final String name;
+  final String email;
+  final String role;
+  final String title;
+  final String ip;
+  final String deviceModel;
+  final DateTime loginTime;
+  final DateTime lastSeen;
+  final String status;
+  final bool rememberMe;
+  final int durationMinutes;
+
+  ActiveOperatorSession({
+    required this.sessionId,
+    required this.id,
+    required this.name,
+    required this.email,
+    required this.role,
+    required this.title,
+    required this.ip,
+    required this.deviceModel,
+    required this.loginTime,
+    required this.lastSeen,
+    required this.status,
+    required this.rememberMe,
+    required this.durationMinutes,
+  });
+
+  factory ActiveOperatorSession.fromJson(Map<String, dynamic> json) {
+    return ActiveOperatorSession(
+      sessionId: json['sessionId']?.toString() ?? '',
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Unknown Operator',
+      email: json['email']?.toString() ?? '',
+      role: json['role']?.toString() ?? 'VOLUNTEER',
+      title: json['title']?.toString() ?? 'Field Operator',
+      ip: json['ip']?.toString() ?? '127.0.0.1',
+      deviceModel: json['deviceModel']?.toString() ?? 'Mobile Terminal',
+      loginTime: json['loginTime'] != null
+          ? DateTime.tryParse(json['loginTime'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      lastSeen: json['lastSeen'] != null
+          ? DateTime.tryParse(json['lastSeen'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      status: json['status']?.toString() ?? 'ACTIVE',
+      rememberMe: json['rememberMe'] == true,
+      durationMinutes: (json['durationMinutes'] is num) ? (json['durationMinutes'] as num).toInt() : 0,
+    );
+  }
+
+  bool get isRevoked => status == 'REVOKED';
+  bool get isExpired => status == 'EXPIRED';
+  bool get isActive => status == 'ACTIVE';
+}
+
+class SecurityDiscrepancy {
+  final String id;
+  final String severity; // CRITICAL, WARNING, INFO
+  final String type; // CONCURRENT_LOGIN, STALE_SESSION, INGRESS_DEFICIT
+  final String title;
+  final String description;
+  final DateTime timestamp;
+  final String? affectedUser;
+  final String? roomId;
+
+  SecurityDiscrepancy({
+    required this.id,
+    required this.severity,
+    required this.type,
+    required this.title,
+    required this.description,
+    required this.timestamp,
+    this.affectedUser,
+    this.roomId,
+  });
+
+  factory SecurityDiscrepancy.fromJson(Map<String, dynamic> json) {
+    return SecurityDiscrepancy(
+      id: json['id']?.toString() ?? 'disc-${DateTime.now().millisecondsSinceEpoch}',
+      severity: json['severity']?.toString() ?? 'WARNING',
+      type: json['type']?.toString() ?? 'ANOMALY',
+      title: json['title']?.toString() ?? 'Security Anomaly',
+      description: json['description']?.toString() ?? '',
+      timestamp: json['timestamp'] != null
+          ? DateTime.tryParse(json['timestamp'].toString()) ?? DateTime.now()
+          : DateTime.now(),
+      affectedUser: json['affectedUser']?.toString(),
+      roomId: json['roomId']?.toString(),
+    );
+  }
+}
+
+class DynamicOperatorProfile {
+  final String id;
+  final String name;
+  final String role;
+  final String email;
+  final String assignedHall;
+  final String location;
+  final String status;
+
+  DynamicOperatorProfile({
+    required this.id,
+    required this.name,
+    required this.role,
+    required this.email,
+    required this.assignedHall,
+    required this.location,
+    required this.status,
+  });
+
+  factory DynamicOperatorProfile.fromJson(Map<String, dynamic> json) {
+    return DynamicOperatorProfile(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Operator',
+      role: json['role']?.toString() ?? 'VOLUNTEER',
+      email: json['email']?.toString() ?? '',
+      assignedHall: json['assignedHall']?.toString() ?? 'Main Concourse',
+      location: json['location']?.toString() ?? 'Zone A',
+      status: json['status']?.toString() ?? 'ON_DUTY',
     );
   }
 }

@@ -124,7 +124,153 @@ function base64UrlDecode(str) {
   return Buffer.from(str, 'base64').toString('utf8');
 }
 
-const SESSION_DURATION_SECONDS = 3 * 60 * 60; // 10,800 seconds = 3 Hours Session Lifetime
+const SESSION_DURATION_SECONDS = 4 * 60 * 60; // 14,400 seconds = 4 Hours Session Lifetime (Event Window)
+
+// =========================================================================
+// 🛡️ ACTIVE SESSION REGISTRY & SECURITY DISCREPANCY DETECTOR
+// =========================================================================
+
+const activeSessions = new Map();
+const revokedSessionIds = new Set();
+
+function registerActiveSession(user, req, customSessionId = null) {
+  const sessionId = customSessionId || `sess_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  const ip = req.ip || req.connection?.remoteAddress || '127.0.0.1';
+  const userAgent = req.headers?.['user-agent'] || 'Mobile App';
+  const deviceModel = req.body?.deviceModel || req.headers?.['x-device-model'] || (userAgent.includes('Android') ? 'Android Terminal' : 'Coordinator Terminal');
+  const now = new Date();
+  const expiresAt = new Date(now.getTime() + SESSION_DURATION_SECONDS * 1000);
+
+  const sessionObj = {
+    sessionId,
+    id: user.id || `usr_${Date.now()}`,
+    name: user.name || 'Field Operator',
+    email: user.email || `${(user.name || 'operator').toLowerCase().replace(/\s+/g, '')}@delta-engine.in`,
+    role: (user.role || 'COORDINATOR').toUpperCase(),
+    title: user.title || (user.role === 'ADMIN' ? 'Super Administrator' : 'Operations Coordinator'),
+    ip,
+    userAgent,
+    deviceModel,
+    loginTime: now.toISOString(),
+    lastSeen: now.toISOString(),
+    expiresAt: expiresAt.toISOString(),
+    status: 'ACTIVE',
+    rememberMe: !!req.body?.rememberMe
+  };
+
+  activeSessions.set(sessionId, sessionObj);
+  return sessionObj;
+}
+
+function touchActiveSession(sessionId) {
+  if (!sessionId) return;
+  const s = activeSessions.get(sessionId);
+  if (s && s.status === 'ACTIVE') {
+    s.lastSeen = new Date().toISOString();
+  }
+}
+
+function revokeActiveSession(sessionId, revokedBy = 'Super Admin', reason = 'Administrative Revocation') {
+  if (!sessionId) return false;
+  revokedSessionIds.add(sessionId);
+  const s = activeSessions.get(sessionId);
+  if (s) {
+    s.status = 'REVOKED';
+    s.revokedAt = new Date().toISOString();
+    s.revokedBy = revokedBy;
+    s.revocationReason = reason;
+    return s;
+  }
+  return false;
+}
+
+function getActiveSessions() {
+  const now = Date.now();
+  const list = [];
+  for (const [sId, s] of activeSessions.entries()) {
+    const isExpired = new Date(s.expiresAt).getTime() < now;
+    if (isExpired && s.status === 'ACTIVE') {
+      s.status = 'EXPIRED';
+    }
+    list.push(s);
+  }
+  return list.sort((a, b) => new Date(b.lastSeen).getTime() - new Date(a.lastSeen).getTime());
+}
+
+function detectSecurityDiscrepancies(sessionsList, roomStates = {}) {
+  const discrepancies = [];
+  const activeOnly = (sessionsList || []).filter(s => s.status === 'ACTIVE');
+
+  // 1. Dual / Simultaneous Login Detection (same email on multiple distinct IPs or devices)
+  const emailMap = new Map();
+  for (const s of activeOnly) {
+    if (!emailMap.has(s.email)) {
+      emailMap.set(s.email, []);
+    }
+    emailMap.get(s.email).push(s);
+  }
+
+  for (const [email, userSessions] of emailMap.entries()) {
+    if (userSessions.length > 1) {
+      const distinctIps = new Set(userSessions.map(u => u.ip));
+      if (distinctIps.size > 1) {
+        discrepancies.push({
+          id: `disc_dual_${Date.now()}_${email.replace(/[^a-zA-Z0-9]/g, '_')}`,
+          severity: 'HIGH',
+          type: 'DUAL_SESSION_ANOMALY',
+          title: `Concurrent Sign-in Anomaly (${email})`,
+          description: `User "${userSessions[0].name}" is actively logged in from ${distinctIps.size} different IP addresses (${Array.from(distinctIps).join(', ')}). Possible passkey sharing or session duplication.`,
+          timestamp: new Date().toLocaleTimeString(),
+          affectedUser: userSessions[0].name,
+          email,
+          sessionIds: userSessions.map(u => u.sessionId)
+        });
+      }
+    }
+  }
+
+  // 2. Idle Session Warning (Logged-in operator with no telemetry/heartbeat for > 20 mins)
+  const nowMs = Date.now();
+  for (const s of activeOnly) {
+    const idleMinutes = (nowMs - new Date(s.lastSeen).getTime()) / 60000;
+    if (idleMinutes > 20) {
+      discrepancies.push({
+        id: `disc_idle_${s.sessionId}`,
+        severity: 'MEDIUM',
+        type: 'IDLE_OPERATOR',
+        title: `Unresponsive Field Session (${s.name})`,
+        description: `Terminal assigned to "${s.name}" (${s.role}) has been inactive for ${Math.round(idleMinutes)} minutes. Check on field officer safety.`,
+        timestamp: new Date().toLocaleTimeString(),
+        affectedUser: s.name,
+        email: s.email,
+        sessionId: s.sessionId
+      });
+    }
+  }
+
+  // 3. High Density Chokepoint Coverage Gap
+  Object.keys(roomStates).forEach(roomId => {
+    const r = roomStates[roomId];
+    if (r && (r.percent >= 85 || r.status === 'alert')) {
+      const volunteerCount = activeOnly.filter(s => s.role === 'VOLUNTEER' || s.role === 'COORDINATOR').length;
+      if (volunteerCount < 2) {
+        discrepancies.push({
+          id: `disc_surge_${roomId}`,
+          severity: 'CRITICAL',
+          type: 'UNCOVERED_CHOKEPOINT',
+          title: `Surge Chokepoint Ingress Deficit (${roomId.toUpperCase()})`,
+          description: `Critical room ${roomId.toUpperCase()} is at ${r.percent}% density (${r.seats || 'High'}), but only ${volunteerCount} field personnel are currently logged in.`,
+          timestamp: new Date().toLocaleTimeString(),
+          affectedUser: 'Central Command',
+          roomId
+        });
+      }
+    }
+  });
+
+  return discrepancies;
+}
+
 
 /**
  * Parses HTTP Cookie header into key-value map.
@@ -241,6 +387,9 @@ function verifyJwt(token) {
     if (payload.exp && payload.exp < now) {
       return null; // Expired token!
     }
+    if (payload.sessionId && revokedSessionIds.has(payload.sessionId)) {
+      return { ...payload, isRevoked: true }; // Flag revoked session
+    }
     return payload;
   } catch (e) {
     return null;
@@ -270,6 +419,16 @@ function authenticateToken(req, res, next) {
   if (token) {
     const verified = verifyJwt(token);
     if (verified) {
+      if (verified.isRevoked) {
+        return res.status(401).json({
+          success: false,
+          error: 'SESSION_REVOKED',
+          message: 'Your active session has been terminated by an Administrator.'
+        });
+      }
+      if (verified.sessionId) {
+        touchActiveSession(verified.sessionId);
+      }
       req.user = verified;
       return next();
     } else {
@@ -373,5 +532,10 @@ module.exports = {
   authenticateToken,
   requireRole,
   appendForensicAuditLog,
-  getForensicAuditLogs
+  getForensicAuditLogs,
+  registerActiveSession,
+  touchActiveSession,
+  revokeActiveSession,
+  getActiveSessions,
+  detectSecurityDiscrepancies
 };

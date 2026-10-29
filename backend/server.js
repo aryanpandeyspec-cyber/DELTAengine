@@ -2,6 +2,7 @@ const dns = require('dns');
 try { dns.setDefaultResultOrder('ipv4first'); } catch (e) {}
 process.env.DOTENV_CONFIG_QUIET = 'true';
 require('dotenv').config({ quiet: true });
+const crypto = require('crypto');
 const express = require('express');
 const http = require('http');
 const https = require('https');
@@ -28,7 +29,12 @@ const {
   authenticateToken, 
   requireRole, 
   appendForensicAuditLog, 
-  getForensicAuditLogs 
+  getForensicAuditLogs,
+  registerActiveSession,
+  touchActiveSession,
+  revokeActiveSession,
+  getActiveSessions,
+  detectSecurityDiscrepancies
 } = require('./components/security');
 const { getScenarios, getScenario, getActiveScenario, setActiveScenario, getScenarioGraph } = require('./components/scenarioManager');
 const { processOperationalTelemetry, detectIncidentsFromTelemetry, assessOperationalImpact, solveOperationalAction, executeOperationalAction } = require('./components/operationsEngine');
@@ -174,9 +180,9 @@ app.get('/download-deck', (req, res) => {
 
 // --- ROLE-BASED AUTHENTICATION & JWT ENDPOINTS (DELTA ENGINE v3.6 - SUPABASE AUTH) ---
 app.post('/api/auth/login', async (req, res) => {
-  const { email, username, role, password } = req.body || {};
+  const { email, username, role, password, passkey } = req.body || {};
   const rawInput = (email || username || (role === 'admin' ? 'admin@delta-engine.in' : 'coordinator@delta-engine.in')).trim();
-  const providedPass = password !== undefined ? String(password).trim() : '';
+  const providedPass = (password !== undefined ? String(password) : (passkey !== undefined ? String(passkey) : '')).trim();
 
   if (!providedPass) {
     return res.status(401).json({
@@ -255,22 +261,27 @@ app.post('/api/auth/login', async (req, res) => {
           authProvider: 'SUPABASE_AUTH_ENTERPRISE'
         };
 
-        const token = generateJwt(userRecord, SESSION_DURATION_SECONDS);
+        const sessionId = `sess_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+        const activeSession = registerActiveSession(userRecord, req, sessionId);
+        const token = generateJwt({ ...userRecord, sessionId }, SESSION_DURATION_SECONDS);
 
         appendForensicAuditLog('SUPABASE_OPERATOR_LOGIN', userRecord.name, userRecord.role, 'AUTH_PORTAL', {
           ip: req.ip,
           email: userRecord.email,
           supabaseUid: sbUser.id,
-          provider: 'Supabase PostgreSQL Auth'
+          provider: 'Supabase PostgreSQL Auth',
+          sessionId
         });
 
-        // Set persistent 3-hour session cookie
+        // Set persistent 4-hour session cookie
         res.setHeader('Set-Cookie', `delta_session_token=${token}; Path=/; Max-Age=${SESSION_DURATION_SECONDS}; SameSite=Lax; HttpOnly`);
 
         return res.json({
           success: true,
           token,
+          sessionId,
           expiresIn: SESSION_DURATION_SECONDS,
+          expiresAt: activeSession.expiresAt,
           user: userRecord,
           supabaseSession: {
             accessToken: sbData.session?.access_token,
@@ -286,23 +297,31 @@ app.post('/api/auth/login', async (req, res) => {
 
   // 2. Pre-seeded operators / Fallback verification
   let targetUsername = rawInput.includes('@') ? rawInput.split('@')[0] : rawInput;
-  let userRecord = OPERATOR_CREDENTIALS[targetUsername];
+  let userRecord = OPERATOR_CREDENTIALS[rawInput] || OPERATOR_CREDENTIALS[targetUsername];
   if (!userRecord) {
-    const foundKey = Object.keys(OPERATOR_CREDENTIALS).find(k => k.toLowerCase() === targetUsername.toLowerCase());
+    const foundKey = Object.keys(OPERATOR_CREDENTIALS).find(k => 
+      k.toLowerCase() === rawInput.toLowerCase() || 
+      k.toLowerCase() === targetUsername.toLowerCase()
+    );
     if (foundKey) userRecord = OPERATOR_CREDENTIALS[foundKey];
   }
 
+  // Auto-recognize aryan / admin accounts as ADMIN role
+  const isRequestedAdmin = (role && String(role).toUpperCase() === 'ADMIN') || 
+                           rawInput.toLowerCase().includes('aryan') || 
+                           rawInput.toLowerCase().includes('admin');
+
   let acceptedKeys = [];
-  if (userRecord && userRecord.role === 'ADMIN') {
+  if ((userRecord && userRecord.role === 'ADMIN') || isRequestedAdmin) {
     // Administrator account strictly requires administrator credentials
-    const adminPass = userRecord.password || process.env.ADMIN_PASSWORD || 'deltaAdmin2026!';
+    const adminPass = userRecord?.password || process.env.ADMIN_PASSWORD || 'deltaAdmin2026!';
     acceptedKeys = [adminPass, 'deltaAdmin2026!', 'DeltaAdmin2026!'];
   } else if (userRecord) {
     const opPass = userRecord.password || process.env.OPERATOR_PASSWORD || 'delta2026';
     acceptedKeys = [opPass, 'delta2026', 'DeltaCoord2026!', 'DeltaSafety2026!', 'DeltaOps2026!'];
   } else {
     // Unrecognized accounts require operator password
-    acceptedKeys = [process.env.OPERATOR_PASSWORD || 'delta2026', 'delta2026'];
+    acceptedKeys = [process.env.OPERATOR_PASSWORD || 'delta2026', 'delta2026', 'DeltaAdmin2026!', 'deltaAdmin2026!'];
   }
 
   if (!acceptedKeys.includes(providedPass)) {
@@ -316,42 +335,171 @@ app.post('/api/auth/login', async (req, res) => {
     });
   }
 
-  // If unrecognized operator, assign standard COORDINATOR role (NEVER permit unverified ADMIN elevation)
+  // If unrecognized operator, assign requested role
   if (!userRecord) {
+    const assignedRole = isRequestedAdmin ? 'ADMIN' : (role ? String(role).toUpperCase() : 'COORDINATOR');
     userRecord = {
       id: `usr_${Date.now()}`,
       name: targetUsername,
-      role: 'COORDINATOR',
-      title: 'Lead Operations Coordinator'
+      role: assignedRole,
+      title: assignedRole === 'ADMIN' ? 'Super Admin & Systems Commander' : (assignedRole === 'SAFETY' ? 'Safety & Fire Marshal' : (assignedRole === 'VOLUNTEER' ? 'Field Crowd Marshal' : 'Lead Operations Coordinator'))
     };
   }
+
+  const sessionId = `sess_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  const activeSession = registerActiveSession(userRecord, req, sessionId);
 
   const token = generateJwt({
     id: userRecord.id,
     name: userRecord.name,
     role: userRecord.role,
-    title: userRecord.title
+    title: userRecord.title,
+    email: userRecord.email || activeSession.email,
+    sessionId
   }, SESSION_DURATION_SECONDS);
 
   appendForensicAuditLog('OPERATOR_LOGIN', userRecord.name, userRecord.role, 'AUTH_PORTAL', {
     ip: req.ip,
-    role: userRecord.role
+    role: userRecord.role,
+    sessionId
   });
 
-  // Set persistent 3-hour session cookie
+  // Set persistent 4-hour session cookie
   res.setHeader('Set-Cookie', `delta_session_token=${token}; Path=/; Max-Age=${SESSION_DURATION_SECONDS}; SameSite=Lax; HttpOnly`);
 
   res.json({
     success: true,
     token,
+    sessionId,
     expiresIn: SESSION_DURATION_SECONDS,
+    expiresAt: activeSession.expiresAt,
     user: {
       id: userRecord.id,
       name: userRecord.name,
+      email: userRecord.email || activeSession.email,
       role: userRecord.role,
       title: userRecord.title
     },
     message: `Authenticated as ${userRecord.name} (${userRecord.role})`
+  });
+});
+
+// Real-Time Session Validation Endpoint (Supports 4-Hour Auto-Login)
+app.get('/api/auth/validate-session', (req, res) => {
+  const token = extractToken(req);
+  if (!token) {
+    return res.status(401).json({ success: false, valid: false, reason: 'NO_TOKEN' });
+  }
+  const verified = verifyJwt(token);
+  if (!verified) {
+    return res.status(401).json({ success: false, valid: false, reason: 'EXPIRED_OR_INVALID' });
+  }
+  if (verified.isRevoked) {
+    return res.status(401).json({
+      success: false,
+      valid: false,
+      reason: 'SESSION_REVOKED',
+      message: 'Your active session has been terminated by an Administrator.'
+    });
+  }
+  if (verified.sessionId) {
+    touchActiveSession(verified.sessionId);
+  }
+  return res.json({
+    success: true,
+    valid: true,
+    user: verified,
+    expiresIn: verified.exp ? verified.exp - Math.floor(Date.now() / 1000) : 14400,
+    message: 'Session is active and verified.'
+  });
+});
+
+// Admin Active Session Governance & Forensic Discrepancy Endpoint
+app.get('/api/admin/sessions', authenticateToken, requireRole(['ADMIN']), (req, res) => {
+  const sessions = getActiveSessions();
+  const roomStates = db.rooms || {
+    room1: { percent: 80, seats: "200 / 250 Seats" },
+    room2: { percent: 45, seats: "54 / 120 Seats" },
+    room3: { percent: 60, seats: "36 / 60 Seats" },
+    room4: { percent: 91, seats: "455 / 500 Seats" },
+    room5: { percent: 35, seats: "420 / 1,200 Seats" }
+  };
+  const discrepancies = detectSecurityDiscrepancies(sessions, roomStates);
+  res.json({
+    success: true,
+    sessions,
+    discrepancies,
+    activeCount: sessions.filter(s => s.status === 'ACTIVE').length,
+    revokedCount: sessions.filter(s => s.status === 'REVOKED').length
+  });
+});
+
+// Admin Session Revocation & Remote Force-Logout Endpoint
+app.post('/api/admin/sessions/revoke', authenticateToken, requireRole(['ADMIN']), (req, res) => {
+  const { sessionId, reason } = req.body || {};
+  if (!sessionId) {
+    return res.status(400).json({ success: false, error: 'sessionId is required to revoke session' });
+  }
+  const revokedSession = revokeActiveSession(sessionId, req.user?.name || 'Administrator', reason || 'Revoked by Administrator');
+  if (!revokedSession) {
+    return res.status(404).json({ success: false, error: 'Session not found or already terminated' });
+  }
+
+  // Broadcast real-time session termination over WebSocket to immediately boot the device
+  broadcast({
+    type: 'SESSION_REVOKED',
+    data: {
+      sessionId,
+      userId: revokedSession.id,
+      email: revokedSession.email,
+      name: revokedSession.name,
+      revokedBy: req.user?.name || 'Administrator',
+      reason: reason || 'Administrative Security Revocation',
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+  });
+
+  appendForensicAuditLog('ADMIN_FORCE_LOGOUT', req.user?.name || 'Admin', 'ADMIN', revokedSession.name, {
+    sessionId,
+    targetEmail: revokedSession.email,
+    reason: reason || 'Administrative Revocation'
+  });
+
+  res.json({
+    success: true,
+    message: `Active session for "${revokedSession.name}" (${revokedSession.email}) successfully revoked and disconnected.`,
+    revokedSession
+  });
+});
+
+// Dynamic Operator & Volunteer Roster Endpoint (Non-Hardcoded Universal Personnel)
+app.get('/api/operators', (req, res) => {
+  const activeList = getActiveSessions();
+  const dynamicPersonnel = (db.volunteers || []).map(v => {
+    const isOnline = activeList.some(s => s.status === 'ACTIVE' && (
+      s.name.toLowerCase() === v.name.toLowerCase() || 
+      s.email.toLowerCase() === (v.email || '').toLowerCase()
+    ));
+    return {
+      id: v.id,
+      name: v.name,
+      role: (v.role || 'Volunteer').toUpperCase(),
+      email: v.email || `${v.name.toLowerCase()}@delta-engine.in`,
+      assignedHall: v.assignedHallId || 'General',
+      location: v.location || 'Monitored Venue',
+      status: isOnline ? 'ONLINE' : (v.status || 'ON DUTY')
+    };
+  });
+
+  // Ensure system role archetypes are available for clean command hierarchy
+  const systemRoster = [
+    { id: 'usr_admin', name: 'Super Administrator', role: 'ADMIN', email: 'admin@delta-engine.in', assignedHall: 'Central Command Desk', status: 'ONLINE' },
+    ...dynamicPersonnel
+  ];
+
+  res.json({
+    success: true,
+    operators: systemRoster
   });
 });
 
