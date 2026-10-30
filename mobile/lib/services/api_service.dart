@@ -22,23 +22,22 @@ class ApiService {
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     final savedUrl = prefs.getString('delta_base_url');
+    _authToken = prefs.getString('delta_auth_token');
+
     if (savedUrl != null && savedUrl.isNotEmpty) {
       _baseUrl = savedUrl;
+      // Fast background verification with low timeout (<350ms)
       try {
-        final res = await http.get(Uri.parse('$_baseUrl/api/state')).timeout(const Duration(milliseconds: 900));
-        if (res.statusCode != 200) {
-          await _autoDetectEdgeGateway();
-        }
-      } catch (_) {
-        await _autoDetectEdgeGateway();
-      }
+        final res = await http.get(Uri.parse('$_baseUrl/api/state')).timeout(const Duration(milliseconds: 350));
+        if (res.statusCode == 200) return;
+      } catch (_) {}
     } else {
       _baseUrl = 'http://192.168.1.6:3000';
-      if (Platform.isAndroid) {
-        await _autoDetectEdgeGateway();
-      }
     }
-    _authToken = prefs.getString('delta_auth_token');
+
+    if (Platform.isAndroid || Platform.isIOS) {
+      await _autoDetectEdgeGateway();
+    }
   }
 
   Future<void> _autoDetectEdgeGateway() async {
@@ -50,17 +49,39 @@ class ApiService {
       'http://192.168.137.1:3000',
       'http://10.0.2.2:3000',
     ];
+
+    final completer = Completer<String?>();
+    int pending = candidates.length;
+
+    // Parallel concurrent probing across all candidates (<650ms total)
     for (final candidate in candidates) {
-      try {
-        final res = await http.get(Uri.parse('$candidate/api/state')).timeout(const Duration(milliseconds: 1200));
-        if (res.statusCode == 200) {
-          _baseUrl = candidate;
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('delta_base_url', _baseUrl);
-          break;
+      http.get(Uri.parse('$candidate/api/state'))
+          .timeout(const Duration(milliseconds: 600))
+          .then((res) {
+        if (res.statusCode == 200 && !completer.isCompleted) {
+          completer.complete(candidate);
+        } else {
+          pending--;
+          if (pending <= 0 && !completer.isCompleted) {
+            completer.complete(null);
+          }
         }
-      } catch (_) {}
+      }).catchError((_) {
+        pending--;
+        if (pending <= 0 && !completer.isCompleted) {
+          completer.complete(null);
+        }
+      });
     }
+
+    try {
+      final winner = await completer.future.timeout(const Duration(milliseconds: 650), onTimeout: () => null);
+      if (winner != null) {
+        _baseUrl = winner;
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('delta_base_url', _baseUrl);
+      }
+    } catch (_) {}
   }
 
   Future<void> setBaseUrl(String newUrl) async {

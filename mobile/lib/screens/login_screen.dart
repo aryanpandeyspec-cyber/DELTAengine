@@ -21,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
   final _api = ApiService();
 
   bool _isLoading = false;
-  bool _isRestoringSession = true;
+  bool _isRestoringSession = false;
   bool _rememberMe = true;
   String? _errorMessage;
   String _selectedRole = 'ADMIN';

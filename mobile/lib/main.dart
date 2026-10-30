@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
-import 'services/api_service.dart';
-import 'screens/login_screen.dart';
+import 'package:flutter/services.dart';
+import 'screens/splash_screen.dart';
 import 'theme/neubrutalism.dart';
 
-void main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await ApiService().init();
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      systemNavigationBarColor: Color(0xFF070B14),
+      systemNavigationBarIconBrightness: Brightness.light,
+    ),
+  );
   runApp(const DeltaMobileApp());
 }
 
@@ -18,7 +25,7 @@ class DeltaMobileApp extends StatelessWidget {
       title: 'DELTA Engine Mobile',
       debugShowCheckedModeBanner: false,
       theme: Neubrutalism.themeData,
-      home: const LoginScreen(),
+      home: const SplashScreen(),
     );
   }
 }
