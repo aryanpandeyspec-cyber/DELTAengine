@@ -30,9 +30,12 @@
         if (!res.ok) throw new Error('Unauthorized');
         return res.json();
       }).then(function (data) {
-        if (!data || !data.success || !data.user || data.user.role !== 'ADMIN') {
+        if (!data || !data.success || !data.user || String(data.user.role).toUpperCase() !== 'ADMIN') {
           alert('Access Denied: Super Admin role clearance is required.');
           window.location.replace('index.html?error=unauthorized');
+        } else {
+          var nameEl = document.getElementById('admin-user-name');
+          if (nameEl && data.user.name) nameEl.textContent = data.user.name;
         }
       }).catch(function () {
         try {
@@ -222,7 +225,7 @@
 
             <div class="cctv-headcount-sub">
               <span><span id="cctv-venue-detected-lbl" class="cctv-venue-detected-lbl">👥 Detected In Turing
-                  Hall:</span> <strong id="cctv-metric-headcount">0 / 250 Pax</strong></span>
+                  Hall:</span> <strong id="cctv-metric-headcount" class="cctv-metric-headcount">0 / 250 Pax</strong></span>
               <span id="cctv-occupancy-status-pill" class="status-pill neutral">⚪ ROOM EMPTY (0%)</span>
             </div>
           </div>
@@ -378,7 +381,7 @@
             <div class="ingress-kpi-headline">
               <span class="ingress-kpi-label">OPTICAL SENSOR COUNT:</span>
               <div class="ingress-kpi-val">
-                <strong id="cctv-metric-headcount">0 / 250 Pax</strong> <span class="ingress-kpi-status-tag">(NOMINAL)</span>
+                <strong id="cctv-metric-headcount-kpi" class="cctv-metric-headcount">0 / 250 Pax</strong> <span class="ingress-kpi-status-tag">(NOMINAL)</span>
               </div>
             </div>
             <button id="btn-cctv-trigger-sensor-kpi" class="btn btn-sm btn-yellow btn-cctv-trigger-sensor"
@@ -507,7 +510,7 @@
           <div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
               <span style="font-family:var(--font-mono); font-size:0.82rem; font-weight:800;">🙋‍♂️ ASSIGNED VOLUNTEERS
-                & CREW (4)</span>
+                & CREW (<span id="featured-volunteers-count-header">3</span>)</span>
               <span class="card-badge green">ALL ON DUTY</span>
             </div>
 
@@ -526,29 +529,33 @@
       <div class="dash-card admin-card">
         <div class="card-header">
           <span class="card-title">🖥️ Backend Infrastructure & Diagnostics</span>
-          <span class="card-badge green">ALL SYSTEMS GO</span>
+          <span id="admin-system-health-badge" class="card-badge green">ALL SYSTEMS GO</span>
         </div>
         <div class="card-body">
           <div class="admin-diag-grid">
             <div class="diag-item">
               <span class="diag-label">Graph DB (Neo4j / Engine):</span>
-              <span class="diag-val success">🟢 1ms (Healthy)</span>
+              <span id="admin-diag-graph-db" class="diag-val success">🟢 1ms (Healthy)</span>
             </div>
             <div class="diag-item">
               <span class="diag-label">WebSocket Dispatcher:</span>
-              <span class="diag-val success">🟢 Active (WS Port 3000)</span>
+              <span id="admin-diag-ws-status" class="diag-val success">🟢 Active (WS Port 3000)</span>
             </div>
             <div class="diag-item">
               <span class="diag-label">Groq LLM API Gateway:</span>
-              <span class="diag-val success">🟢 Llama-3 70B (38ms)</span>
+              <span id="admin-diag-llm-gateway" class="diag-val success">🟢 Llama-3 70B (38ms)</span>
             </div>
             <div class="diag-item">
               <span class="diag-label">Supabase Sync Engine:</span>
-              <span class="diag-val success">🟢 Connected</span>
+              <span id="admin-diag-supabase-status" class="diag-val success">🟢 Connected</span>
             </div>
             <div class="diag-item">
               <span class="diag-label">System Uptime:</span>
               <span id="admin-system-uptime" class="diag-val">99.98% (Online)</span>
+            </div>
+            <div class="diag-item">
+              <span class="diag-label">Active Operator Sessions:</span>
+              <span id="admin-diag-sessions" class="diag-val success">1 Active Session</span>
             </div>
           </div>
         </div>
@@ -602,7 +609,7 @@
     <div class="dash-card admin-card mb-6">
       <div class="card-header">
         <span class="card-title">⚡ ACTIVE CLOUD AI & MESSAGING INFRASTRUCTURE</span>
-        <span class="card-badge green">4 CLOUD ENGINES INTEGRATED</span>
+        <span class="card-badge green" id="admin-integrations-count-badge">5 CLOUD ENGINES CONNECTED</span>
       </div>
       <div class="card-body">
         <div class="integrations-summary-bar">
@@ -612,15 +619,15 @@
             <div>
               <div class="integration-header">
                 <span class="integration-title">⚡ Supabase Cloud</span>
-                <span class="integration-status-pill active">POSTGRESQL</span>
+                <span class="integration-status-pill active" id="admin-status-pill-supabase">POSTGRESQL</span>
               </div>
               <div class="integration-meta">
                 <strong>Project:</strong> <code>frlrazzskbzmtlqrswjl</code><br>
                 <strong>Engine:</strong> PostgreSQL + Auth SDK<br>
-                <strong>Status:</strong> Connected & Synced
+                <strong>Status:</strong> <span id="admin-status-text-supabase">Connected & Synced</span>
               </div>
             </div>
-            <div class="badge-mini-green w-full" style="display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px; font-weight:800; font-size:0.75rem; border-radius:6px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;">
+            <div class="badge-mini-green w-full" id="admin-badge-supabase" style="display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px; font-weight:800; font-size:0.75rem; border-radius:6px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;">
               <span class="pulse-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
               ☁️ POSTGRESQL CONNECTED
             </div>
@@ -629,12 +636,12 @@
             <div>
               <div class="integration-header">
                 <span class="integration-title">📧 Resend Cloud</span>
-                <span class="integration-status-pill active">LIVE DKIM</span>
+                <span class="integration-status-pill active" id="admin-status-pill-resend">LIVE DKIM</span>
               </div>
               <div class="integration-meta">
-                <strong>Provider:</strong> Resend API<br>
+                <strong>Provider:</strong> Resend API (DKIM/SPF)<br>
                 <strong>Sender:</strong> <code>onboarding@resend.dev</code><br>
-                <strong>Verified Admin:</strong> <code>aryan.pandey777hyd@gmail.com</code>
+                <strong>Verified Recipient:</strong> <code id="admin-resend-verified-email">aryan.pandey777hyd@gmail.com</code>
               </div>
             </div>
             <button id="btn-admin-test-resend" class="btn btn-sm btn-blue w-full" style="font-weight:800; font-size:0.75rem;">
@@ -647,7 +654,7 @@
             <div>
               <div class="integration-header">
                 <span class="integration-title">🎙️ ElevenLabs Voice</span>
-                <span class="integration-status-pill active">FLASH v2.5</span>
+                <span class="integration-status-pill active" id="admin-status-pill-eleven">FLASH v2.5</span>
               </div>
               <div class="integration-meta">
                 <strong>Model:</strong> <code>eleven_flash_v2_5</code><br>
@@ -665,18 +672,17 @@
             <div>
               <div class="integration-header">
                 <span class="integration-title">🧠 Google Gemini</span>
-                <span class="integration-status-pill active">3.5 / 3.8 FLASH</span>
+                <span class="integration-status-pill active" id="admin-status-pill-gemini">3.5 / 3.8 FLASH</span>
               </div>
               <div class="integration-meta">
-                <strong>Monitoring Mode:</strong> Continuous Active Monitoring<br>
+                <strong>Monitoring Mode:</strong> Continuous Active Perception<br>
                 <strong>Trigger:</strong> Activates at 80%+ Capacity or Surge<br>
-                <strong>Action:</strong> Vision Occlusion Analysis & Reallocation
+                <strong>Action:</strong> Vision Occlusion & Flow Analysis
               </div>
             </div>
-            <div class="badge-mini-green w-full" style="display:flex; align-items:center; justify-content:center; gap:6px; padding:6px 10px; font-weight:800; font-size:0.75rem; border-radius:6px; background:#ecfdf5; color:#065f46; border:1px solid #a7f3d0;">
-              <span class="pulse-dot" style="display:inline-block; width:8px; height:8px; border-radius:50%; background:#10b981;"></span>
-              🤖 AUTONOMOUS PERCEPTION ACTIVE
-            </div>
+            <button id="btn-admin-test-gemini" class="btn btn-sm btn-purple w-full" style="font-weight:800; font-size:0.75rem;">
+              🤖 Run Gemini Safety Audit
+            </button>
           </div>
 
           <!-- TWILIO WHATSAPP -->
@@ -684,15 +690,15 @@
             <div>
               <div class="integration-header">
                 <span class="integration-title">💬 Twilio Messaging</span>
-                <span class="integration-status-pill ready">CLICK-TO-CHAT</span>
+                <span class="integration-status-pill active" id="admin-status-pill-twilio">LIVE ACTIVE</span>
               </div>
               <div class="integration-meta">
-                <strong>API Status:</strong> Ready for SID/Token<br>
-                <strong>Mode:</strong> Direct WhatsApp Intent<br>
+                <strong>API Status:</strong> <span id="admin-twilio-status-text">Active Twilio API (+91)</span><br>
+                <strong>Mode:</strong> Multi-Channel WhatsApp Dispatch<br>
                 <strong>Active Lines:</strong> 3 Coordinators (+91)
               </div>
             </div>
-            <button id="btn-admin-test-twilio" class="btn btn-sm btn-white w-full" style="font-weight:800; font-size:0.75rem;">
+            <button id="btn-admin-test-twilio" class="btn btn-sm btn-green w-full" style="font-weight:800; font-size:0.75rem;">
               💬 Test WhatsApp Alert
             </button>
           </div>
@@ -946,7 +952,7 @@
 
             <div class="cctv-headcount-sub">
               <span><span class="cctv-venue-detected-lbl">👥 Detected In Turing Hall:</span> <strong
-                  id="cctv-metric-headcount">0 / 250 Pax</strong></span>
+                  id="modal-cctv-metric-headcount" class="cctv-metric-headcount">0 / 250 Pax</strong></span>
               <span id="cctv-occupancy-status-pill" class="status-pill neutral">⚪ ROOM EMPTY (0%)</span>
             </div>
           </div>

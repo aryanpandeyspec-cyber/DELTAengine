@@ -1373,6 +1373,10 @@ function initFireMarshalCompliance() {
     });
   }
 
+  // Hydrate initial live compliance rating immediately on load
+  fetchAndUpdateAuditReport(false);
+  window.fetchAndUpdateAuditReport = fetchAndUpdateAuditReport;
+
   // Bind Close Button
   if (btnClose && modal) {
     btnClose.addEventListener('click', () => {

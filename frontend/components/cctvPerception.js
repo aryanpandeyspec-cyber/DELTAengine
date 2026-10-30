@@ -3339,7 +3339,7 @@ Email: ${fromEmail}`;
     // Update DOM indicators (Both Top Hub and Modal)
     const occupiedEls = document.querySelectorAll('#cctv-metric-occupied-pct');
     const emptyEls = document.querySelectorAll('#cctv-metric-empty-pct');
-    const headcountEls = document.querySelectorAll('#cctv-metric-headcount');
+    const headcountEls = document.querySelectorAll('#cctv-metric-headcount, .cctv-metric-headcount, #cctv-metric-headcount-kpi, #modal-cctv-metric-headcount');
     const statusBarEls = document.querySelectorAll('#cctv-occupancy-status-pill');
     const barOccupiedEls = document.querySelectorAll('#cctv-bar-occupied');
     const barEmptyEls = document.querySelectorAll('#cctv-bar-empty');

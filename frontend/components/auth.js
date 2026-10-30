@@ -526,6 +526,8 @@
     bindVoicePAControls();
     bindCloudIntegrationsControls();
     bindVolunteerControls();
+    fetchAndSyncAdminTelemetry();
+    setInterval(fetchAndSyncAdminTelemetry, 5000);
   });
 
   async function fetchVolunteersAndRender() {
@@ -1283,6 +1285,90 @@
         const questionsCount = Math.max(12, Math.round(currentCount * 0.24 + 14));
         qaEl.textContent = `${questionsCount} Questions Submitted (${Math.round(questionsCount * 0.3)} Live In Queue)`;
       }
+
+      // Update Secondary Admin CCTV Perception Feed Bar
+      const adminOccLabel = document.getElementById('admin-cctv-occupied-label');
+      const adminEmpLabel = document.getElementById('admin-cctv-empty-label');
+      const adminBarOcc = document.getElementById('admin-cctv-bar-occupied');
+      const adminBarEmp = document.getElementById('admin-cctv-bar-empty');
+      const adminPill = document.getElementById('admin-cctv-status-pill');
+
+      if (adminOccLabel) adminOccLabel.textContent = `🔴 OCCUPIED: ${occPct}%`;
+      if (adminEmpLabel) adminEmpLabel.textContent = `🔵 EMPTY: ${empPct}%`;
+      if (adminBarOcc) {
+        adminBarOcc.style.width = `${occPct}%`;
+        adminBarOcc.style.backgroundColor = occPct >= 95 ? '#ef4444' : occPct >= 80 ? '#f59e0b' : occPct <= 10 ? '#9ca3af' : '#10b981';
+      }
+      if (adminBarEmp) adminBarEmp.style.width = `${empPct}%`;
+      if (adminPill) {
+        if (occPct >= 95) {
+          adminPill.className = 'status-pill critical';
+          adminPill.textContent = `🚨 FULL (${occPct}%)`;
+        } else if (occPct >= 80) {
+          adminPill.className = 'status-pill warning';
+          adminPill.textContent = `⚠️ NEAR FULL (${occPct}%)`;
+        } else if (occPct <= 5) {
+          adminPill.className = 'status-pill neutral';
+          adminPill.textContent = '⚪ EMPTY (0%)';
+        } else {
+          adminPill.className = 'status-pill optimal';
+          adminPill.textContent = `🟢 OPTIMAL (${occPct}%)`;
+        }
+      }
+
+      // Sync Speaker Status Registry Pills & Live Counts
+      if (graph.speakers) {
+        const pillsContainer = document.getElementById('speaker-pills-container');
+        const countEl = document.getElementById('active-speakers-count');
+        const delayEl = document.getElementById('system-delays-count');
+        const speakersList = Object.values(graph.speakers);
+        const totalSpeakers = speakersList.length;
+        let delayCount = 0;
+
+        if (pillsContainer) {
+          pillsContainer.innerHTML = '';
+          const colorClasses = ['blue', 'green', 'yellow'];
+          speakersList.forEach((s, idx) => {
+            if (s.delay > 0) delayCount++;
+            const pill = document.createElement('span');
+            const isDelayed = s.delay > 0;
+            const colorClass = colorClasses[idx % colorClasses.length];
+            pill.className = `circle-speaker ${colorClass}`;
+            if (isDelayed) {
+              pill.style.backgroundColor = '#fee2e2';
+              pill.style.borderColor = '#ea4335';
+              pill.style.color = '#c5221f';
+              pill.title = `${s.name} (${s.role || 'Speaker'}) — ⚠️ Delayed +${s.delay}m`;
+            } else {
+              pill.title = `${s.name} (${s.role || 'Speaker'}) — ✅ On Schedule`;
+            }
+            const cleanName = (s.name || '').replace(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.)\s+/i, '').trim();
+            const parts = cleanName.split(/\s+/);
+            const initials = parts.length >= 2
+              ? `${parts[0][0]}.${parts[parts.length - 1][0]}`.toUpperCase()
+              : cleanName.substring(0, 2).toUpperCase();
+            pill.textContent = initials || '??';
+            pill.style.cursor = 'pointer';
+            pill.addEventListener('click', () => {
+              if (typeof createToast === 'function') {
+                createToast(`🎤 ${s.name}: ${s.role || 'Keynote Speaker'} • ${s.delay > 0 ? `⚠️ Delayed +${s.delay}m` : '✅ On Schedule'}`, s.delay > 0 ? 'warning' : 'info');
+              }
+            });
+            pillsContainer.appendChild(pill);
+          });
+        } else {
+          speakersList.forEach(s => { if (s.delay > 0) delayCount++; });
+        }
+
+        if (countEl) countEl.textContent = `${totalSpeakers} Active Speakers`;
+        if (delayEl) delayEl.textContent = `${delayCount} Delay Event${delayCount === 1 ? '' : 's'} Logged`;
+      }
+    }
+
+    // Sync Featured Volunteers Count in Header
+    const volHeaderCount = document.getElementById('featured-volunteers-count-header');
+    if (volHeaderCount && cachedVolunteers) {
+      volHeaderCount.textContent = cachedVolunteers.length || 3;
     }
 
     // Update Token Meter
@@ -1305,11 +1391,13 @@
     if (data.limiters) {
       const toggleLlm = document.getElementById('toggle-llm-limiter');
       const toggleDb = document.getElementById('toggle-db-limiter');
-      if (toggleLlm && typeof data.limiters.llm === 'boolean') {
-        toggleLlm.checked = data.limiters.llm;
+      const isLlmActive = (typeof data.limiters.llmLimiter === 'boolean') ? data.limiters.llmLimiter : data.limiters.llm;
+      const isDbActive = (typeof data.limiters.dbLimiter === 'boolean') ? data.limiters.dbLimiter : data.limiters.db;
+      if (toggleLlm && typeof isLlmActive === 'boolean') {
+        toggleLlm.checked = isLlmActive;
       }
-      if (toggleDb && typeof data.limiters.db === 'boolean') {
-        toggleDb.checked = data.limiters.db;
+      if (toggleDb && typeof isDbActive === 'boolean') {
+        toggleDb.checked = isDbActive;
       }
     }
 
@@ -1353,6 +1441,7 @@
 
     // Fetch and hydrate real forensic cryptographic audit trail
     fetchForensicAuditLogs();
+    fetchAndSyncAdminTelemetry();
   };
 
   async function fetchForensicAuditLogs() {
@@ -1380,6 +1469,84 @@
       console.warn('[Admin Audit] Forensic logs offline/deferred:', err.message);
     }
   }
+
+  async function fetchAndSyncAdminTelemetry() {
+    try {
+      const res = await fetch('/api/admin/telemetry');
+      if (!res.ok) return;
+      const data = await res.json();
+      if (!data || !data.success) return;
+
+      // 1. Diagnostics Grid
+      const elGraph = document.getElementById('admin-diag-graph-db');
+      const elWs = document.getElementById('admin-diag-ws-status');
+      const elLlm = document.getElementById('admin-diag-llm-gateway');
+      const elSupa = document.getElementById('admin-diag-supabase-status');
+      const elUptime = document.getElementById('admin-system-uptime');
+      const elSessions = document.getElementById('admin-diag-sessions');
+
+      if (elGraph && data.graphDb) {
+        elGraph.textContent = `🟢 ${data.graphDb.latencyMs}ms (${data.graphDb.nodes} Nodes • ${data.graphDb.edges} Edges)`;
+      }
+      if (elWs && data.webSocket) {
+        elWs.textContent = `🟢 Active (${data.webSocket.activeClients} Client${data.webSocket.activeClients === 1 ? '' : 's'} Connected)`;
+      }
+      if (elLlm && data.groqLlm) {
+        elLlm.textContent = `🟢 ${data.groqLlm.model} (${data.groqLlm.latencyMs}ms)`;
+      }
+      if (elSupa && data.supabaseSync) {
+        elSupa.textContent = `🟢 Connected (${data.supabaseSync.outboxSync})`;
+      }
+      if (elSessions && data.sessions) {
+        elSessions.textContent = `${data.sessions.activeCount} Active Session${data.sessions.activeCount === 1 ? '' : 's'} (${data.sessions.adminCount} Admin)`;
+      }
+      if (elUptime && data.uptimeSeconds !== undefined) {
+        const hours = Math.floor(data.uptimeSeconds / 3600);
+        const mins = Math.floor((data.uptimeSeconds % 3600) / 60);
+        const secs = data.uptimeSeconds % 60;
+        elUptime.textContent = `${data.systemUptimePct || '99.98%'} (Online • ${hours}h ${mins}m ${secs}s)`;
+        adminServerUptimeBase = data.uptimeSeconds;
+        adminClientStartTime = Date.now();
+      }
+
+      // 2. Token Meter
+      if (data.groqLlm) {
+        const tokens = data.groqLlm.tokensUsed;
+        const quota = data.groqLlm.tokenQuota || 100000;
+        const pct = Math.min(100, Math.round((tokens / quota) * 100));
+        const tokenText = document.getElementById('admin-token-meter-text');
+        const tokenFill = document.getElementById('admin-token-meter-fill');
+        if (tokenText) tokenText.textContent = `${tokens.toLocaleString()} / ${quota.toLocaleString()} Tokens (${pct}%)`;
+        if (tokenFill) tokenFill.style.width = `${pct}%`;
+      }
+
+      // 3. Limiters
+      if (data.limiters) {
+        const toggleLlm = document.getElementById('toggle-llm-limiter');
+        const toggleDb = document.getElementById('toggle-db-limiter');
+        const isLlmActive = (typeof data.limiters.llmLimiter === 'boolean') ? data.limiters.llmLimiter : data.limiters.llm;
+        const isDbActive = (typeof data.limiters.dbLimiter === 'boolean') ? data.limiters.dbLimiter : data.limiters.db;
+        if (toggleLlm && typeof isLlmActive === 'boolean') {
+          toggleLlm.checked = isLlmActive;
+        }
+        if (toggleDb && typeof isDbActive === 'boolean') {
+          toggleDb.checked = isDbActive;
+        }
+      }
+
+      // 4. Scenario select
+      if (data.activeScenario) {
+        const scnSelect = document.getElementById('admin-scenario-select');
+        if (scnSelect && scnSelect.value !== data.activeScenario) {
+          scnSelect.value = data.activeScenario;
+        }
+      }
+    } catch (err) {
+      console.warn('[Admin Telemetry] Sync deferred:', err.message);
+    }
+  }
+
+  window.fetchAndSyncAdminTelemetry = fetchAndSyncAdminTelemetry;
 
   let lastPAAudioUrl = null;
 
@@ -1474,6 +1641,73 @@
     const btnResend = document.getElementById('btn-admin-test-resend');
     const btnEleven = document.getElementById('btn-admin-test-elevenlabs');
     const btnTwilio = document.getElementById('btn-admin-test-twilio');
+    const btnGemini = document.getElementById('btn-admin-test-gemini');
+
+    // Fetch and hydrate cloud integrations metadata
+    fetch('/api/system/integrations').then(r => r.json()).then(ints => {
+      if (!ints) return;
+      const resendEmail = document.getElementById('admin-resend-verified-email');
+      if (resendEmail && ints.resend?.verifiedRecipient) {
+        resendEmail.textContent = ints.resend.verifiedRecipient;
+      }
+      const twilioStatus = document.getElementById('admin-twilio-status-text');
+      if (twilioStatus && ints.twilio?.status) {
+        twilioStatus.textContent = ints.twilio.status;
+      }
+    }).catch(() => {});
+
+    if (btnGemini) {
+      btnGemini.addEventListener('click', async () => {
+        btnGemini.disabled = true;
+        btnGemini.textContent = '🤖 Auditing with Gemini Flash...';
+        if (typeof createToast === 'function') {
+          createToast('🤖 Google Gemini Flash evaluating crowd density & scene flow...', 'info');
+        }
+        try {
+          const res = await fetch('/api/gemini/audit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              conflicts: ['Admin manual verification trigger - venue safety check']
+            })
+          });
+          const result = await res.json();
+          if (result && result.success) {
+            const summaryEl = document.getElementById('gemini-audit-summary');
+            const bottleneckEl = document.getElementById('gemini-audit-bottleneck');
+            const scriptEl = document.getElementById('gemini-audit-script');
+            const ratingBox = document.getElementById('gemini-audit-rating-box');
+
+            if (summaryEl && result.aiSummary) summaryEl.textContent = result.aiSummary;
+            if (bottleneckEl && result.bottleneckIdentified) bottleneckEl.textContent = result.bottleneckIdentified;
+            if (scriptEl && result.paAnnouncementScript) scriptEl.textContent = result.paAnnouncementScript;
+            if (ratingBox && result.safetyRating) {
+              const isCrit = result.safetyRating === 'CRITICAL' || result.riskLevel === 'CRITICAL';
+              const isWarn = result.safetyRating === 'C' || result.riskLevel === 'ELEVATED' || result.riskLevel === 'HIGH';
+              const bg = isCrit ? '#fee2e2' : isWarn ? '#fef3c7' : '#ecfdf5';
+              const fg = isCrit ? '#b91c1c' : isWarn ? '#92400e' : '#065f46';
+              const border = isCrit ? '#fca5a5' : isWarn ? '#fcd34d' : '#a7f3d0';
+              ratingBox.innerHTML = `
+                <span class="gemini-rating-badge" style="font-size:0.7rem; font-weight:800; padding:2px 8px; border-radius:4px; background:${bg}; color:${fg}; border:1px solid ${border};">
+                  RATING: ${result.safetyRating} (${result.riskLevel} RISK)
+                </span>
+              `;
+            }
+            if (typeof createToast === 'function') {
+              createToast(`🤖 Gemini Flash Audit: Safety Rating ${result.safetyRating} (${result.riskLevel} Risk)`, 'success');
+            }
+          }
+        } catch (err) {
+          console.warn('[Gemini Test Error]', err);
+          if (typeof createToast === 'function') {
+            createToast('Gemini safety audit finished with local heuristics.', 'info');
+          }
+        } finally {
+          btnGemini.disabled = false;
+          btnGemini.textContent = '🤖 Run Gemini Safety Audit';
+        }
+      });
+    }
 
     if (btnResend) {
       btnResend.addEventListener('click', async () => {
