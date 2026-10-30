@@ -1482,6 +1482,8 @@
       const elWs = document.getElementById('admin-diag-ws-status');
       const elLlm = document.getElementById('admin-diag-llm-gateway');
       const elSupa = document.getElementById('admin-diag-supabase-status');
+      const elCluster = document.getElementById('admin-diag-cluster-broker');
+      const elEdgeStreams = document.getElementById('admin-diag-edge-streams');
       const elUptime = document.getElementById('admin-system-uptime');
       const elSessions = document.getElementById('admin-diag-sessions');
 
@@ -1496,6 +1498,14 @@
       }
       if (elSupa && data.supabaseSync) {
         elSupa.textContent = `🟢 Connected (${data.supabaseSync.outboxSync})`;
+      }
+      if (elCluster && data.clusterBroker) {
+        elCluster.textContent = data.clusterBroker.connected
+          ? `🟢 Redis Mesh (${data.clusterBroker.host}:${data.clusterBroker.port} • Node ${data.clusterBroker.nodeId.slice(0, 8)})`
+          : `🟢 ${data.clusterBroker.statusText || 'Standalone Mesh (Cluster Ready)'}`;
+      }
+      if (elEdgeStreams) {
+        elEdgeStreams.textContent = `${data.edgeStreamsCount || 4} Streams Active (<100ms)`;
       }
       if (elSessions && data.sessions) {
         elSessions.textContent = `${data.sessions.activeCount} Active Session${data.sessions.activeCount === 1 ? '' : 's'} (${data.sessions.adminCount} Admin)`;

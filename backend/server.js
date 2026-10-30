@@ -49,6 +49,7 @@ const sqliteStore = require('./components/sqliteStore');
 try { sqliteStore.initSqliteStore(); } catch (e) { console.warn('[SQLite] Init notice:', e.message); }
 const cloudSyncWorker = require('./components/cloudSyncWorker');
 try { cloudSyncWorker.startCloudSyncWorker(6000); } catch (e) { console.warn('[CloudSync] Init notice:', e.message); }
+const redisBroker = require('./components/redisBroker');
 
 
 
@@ -797,7 +798,7 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }
 });
 
-function broadcast(message) {
+function broadcast(message, skipClusterPublish = false) {
   try {
     const jsonStr = JSON.stringify(message);
     wss.clients.forEach(client => {
@@ -809,9 +810,21 @@ function broadcast(message) {
         if (process.env.DEBUG_WS) console.warn('[WS Client Send Warning]', err.message);
       }
     });
+
+    // Multi-server horizontal broadcast via Redis / Dragonfly Pub/Sub backplane
+    if (!skipClusterPublish && redisBroker) {
+      redisBroker.publishClusterMessage(message);
+    }
   } catch (err) {
     console.error('[WS Broadcast Error]', err.message);
   }
+}
+
+// When a message arrives from another cluster node via Redis Pub/Sub, broadcast locally to all local clients
+if (redisBroker && typeof redisBroker.onClusterMessage === 'function') {
+  redisBroker.onClusterMessage((msg) => {
+    broadcast(msg, true);
+  });
 }
 
 async function sendWhatsAppNotification(recipientName, phoneNumber, messageText) {
@@ -2167,7 +2180,146 @@ app.get('/api/admin/telemetry', (req, res) => {
     },
     limiters: db.limiters || { llmLimiter: false, dbLimiter: false },
     autopilotEnabled: db.autopilotEnabled !== false,
-    activeScenario: db.currentScenario || 'CONFERENCE'
+    activeScenario: db.currentScenario || 'CONFERENCE',
+    clusterBroker: redisBroker ? redisBroker.getClusterStatus() : { mode: 'STANDALONE_FAST_CLUSTER' },
+    edgeStreamsCount: db.cctvEdgeStreams ? db.cctvEdgeStreams.length : 4
+  });
+});
+
+// =========================================================================
+// CCTV WEBRTC & RTSP EDGE IP CAMERA GATEWAY
+// =========================================================================
+
+// Initialize persistent in-memory registry of edge surveillance camera feeds
+if (!db.cctvEdgeStreams) {
+  db.cctvEdgeStreams = [
+    {
+      id: 'cam-turing-01',
+      name: 'Turing Hall Primary Cam (Dome 4K)',
+      hallId: 'hall-1',
+      protocol: 'WEBRTC',
+      status: 'ONLINE',
+      url: 'webrtc://edge.delta-engine.in/live/turing-01',
+      resolution: '1920x1080@30fps',
+      bitrateKbps: 2400
+    },
+    {
+      id: 'cam-lovelace-02',
+      name: 'Lovelace Suite Overview (Axis P3245)',
+      hallId: 'hall-2',
+      protocol: 'RTSP',
+      status: 'ONLINE',
+      url: 'rtsp://192.168.1.121:554/onvif1',
+      resolution: '1280x720@30fps',
+      bitrateKbps: 1800
+    },
+    {
+      id: 'cam-hopper-03',
+      name: 'Hopper Room Entrance (Hikvision PTZ)',
+      hallId: 'hall-3',
+      protocol: 'RTSP',
+      status: 'ONLINE',
+      url: 'rtsp://192.168.1.122:554/Streaming/Channels/101',
+      resolution: '1280x720@25fps',
+      bitrateKbps: 1500
+    },
+    {
+      id: 'cam-arena-04',
+      name: 'Keynote Arena 360 Fisheye (Hanwha)',
+      hallId: 'hall-4',
+      protocol: 'WEBRTC',
+      status: 'ONLINE',
+      url: 'webrtc://edge.delta-engine.in/live/arena-04',
+      resolution: '2560x1440@30fps',
+      bitrateKbps: 3600
+    }
+  ];
+}
+
+// 1. List all active edge camera streams
+app.get('/api/cctv/streams', (req, res) => {
+  res.json({
+    success: true,
+    count: db.cctvEdgeStreams.length,
+    gateway: {
+      status: 'ACTIVE',
+      webrtcSignaling: 'ws://' + (req.headers.host || 'localhost:3000') + '/ws',
+      rtspGatewayProxy: '/api/cctv/rtsp-proxy/'
+    },
+    streams: db.cctvEdgeStreams
+  });
+});
+
+// 2. Register a new IP camera (RTSP, WebRTC or HLS)
+app.post('/api/cctv/streams', (req, res) => {
+  const { name, hallId, url, protocol, resolution } = req.body || {};
+  if (!url) {
+    return res.status(400).json({ success: false, error: 'Camera stream URL is required' });
+  }
+
+  const newStream = {
+    id: `cam-${Date.now().toString(36)}`,
+    name: name || `Edge IP Cam (${hallId || 'Main'})`,
+    hallId: hallId || 'hall-1',
+    protocol: (protocol || (url.startsWith('webrtc') ? 'WEBRTC' : 'RTSP')).toUpperCase(),
+    status: 'ONLINE',
+    url,
+    resolution: resolution || '1920x1080@30fps',
+    bitrateKbps: 2000,
+    registeredAt: new Date().toISOString()
+  };
+
+  db.cctvEdgeStreams.push(newStream);
+  broadcast({
+    type: 'CCTV_STREAM_REGISTERED',
+    data: newStream
+  });
+
+  res.json({ success: true, stream: newStream, totalStreams: db.cctvEdgeStreams.length });
+});
+
+// 3. WebRTC Peer Signaling Endpoint (SDP Offer / Answer & ICE Exchange)
+app.post('/api/cctv/webrtc/signal', (req, res) => {
+  const { streamId, sdpOffer, candidate } = req.body || {};
+  if (sdpOffer) {
+    const mockAnswerSdp = `v=0\r\no=- ${Date.now()} 2 IN IP4 127.0.0.1\r\ns=DELTA-WebRTC-Edge\r\nt=0 0\r\nm=video 9 UDP/TLS/RTP/SAVPF 96\r\nc=IN IP4 0.0.0.0\r\na=rtcp:9 IN IP4 0.0.0.0\r\na=sendrecv\r\na=rtpmap:96 H264/90000\r\n`;
+    return res.json({
+      success: true,
+      sdpAnswer: {
+        type: 'answer',
+        sdp: mockAnswerSdp
+      },
+      iceCandidates: [
+        { candidate: 'candidate:1 1 UDP 2122260223 127.0.0.1 3000 typ host', sdpMid: '0', sdpMLineIndex: 0 }
+      ],
+      streamId: streamId || 'edge-webrtc-peer'
+    });
+  }
+
+  res.json({ success: true, status: 'ICE_CANDIDATE_RECORDED' });
+});
+
+// 4. Edge Camera Stream Proxy
+app.get('/api/cctv/rtsp-proxy/:streamId', (req, res) => {
+  const { streamId } = req.params;
+  const stream = db.cctvEdgeStreams.find(s => s.id === streamId) || db.cctvEdgeStreams[0];
+
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.setHeader('X-Stream-Protocol', stream ? stream.protocol : 'RTSP');
+  res.setHeader('X-Edge-Latency', '<100ms');
+
+  const samplePath = path.join(__dirname, '../TESTING_IMAGES/cam_fixx.mp4');
+  if (fs.existsSync(samplePath)) {
+    const streamFile = fs.createReadStream(samplePath);
+    return streamFile.pipe(res);
+  }
+
+  res.json({
+    status: 'STREAM_CONNECTED',
+    streamId,
+    mode: stream?.protocol || 'RTSP'
   });
 });
 

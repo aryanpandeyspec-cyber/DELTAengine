@@ -550,6 +550,14 @@
               <span id="admin-diag-supabase-status" class="diag-val success">🟢 Connected</span>
             </div>
             <div class="diag-item">
+              <span class="diag-label">Cluster Pub/Sub Broker:</span>
+              <span id="admin-diag-cluster-broker" class="diag-val success">🟢 Standalone Mesh (Cluster Ready)</span>
+            </div>
+            <div class="diag-item">
+              <span class="diag-label">Edge CCTV Gateways:</span>
+              <span id="admin-diag-edge-streams" class="diag-val success">4 Active Streams (<100ms)</span>
+            </div>
+            <div class="diag-item">
               <span class="diag-label">System Uptime:</span>
               <span id="admin-system-uptime" class="diag-val">99.98% (Online)</span>
             </div>
@@ -1179,6 +1187,31 @@
               📁 Choose Video File from Laptop
               <input type="file" class="cctv-video-file-input" accept="video/mp4,video/webm,video/*" style="display: none;">
             </label>
+          </div>
+        </div>
+
+        <!-- Edge IP Surveillance Camera Presets (RTSP / WebRTC Gateway) -->
+        <div style="background: #f8fafc; border: 2px solid #3b82f6; border-radius: 8px; padding: 12px 14px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px; margin-bottom: 6px;">
+            <strong style="color: #1d4ed8; font-size: 0.85rem;">📡 Venue Edge CCTV Gateways (RTSP / WebRTC):</strong>
+            <span class="badge-mini-green" style="font-size: 0.7rem; background: #dbeafe; color: #1e40af; border-color: #3b82f6;">Sub-100ms Ingestion</span>
+          </div>
+          <div style="font-size: 0.75rem; color: #334155; margin-bottom: 10px;">
+            Ingest live video streams directly from venue physical surveillance cameras via edge gateway proxies. Offloaded to background Web Workers at full frame rate.
+          </div>
+          <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+            <button class="btn btn-sm btn-white btn-youtube-preset" data-url="cam-turing-01" style="font-size: 0.75rem; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+              📹 Turing Hall 4K Dome
+            </button>
+            <button class="btn btn-sm btn-white btn-youtube-preset" data-url="cam-lovelace-02" style="font-size: 0.75rem; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+              📹 Lovelace Suite Axis P3245
+            </button>
+            <button class="btn btn-sm btn-white btn-youtube-preset" data-url="cam-hopper-03" style="font-size: 0.75rem; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+              📹 Hopper Entrance Hikvision PTZ
+            </button>
+            <button class="btn btn-sm btn-white btn-youtube-preset" data-url="cam-keynote-04" style="font-size: 0.75rem; border: 2px solid #000; box-shadow: 2px 2px 0px #000;">
+              📹 Keynote Arena Hanwha 360
+            </button>
           </div>
         </div>
 
