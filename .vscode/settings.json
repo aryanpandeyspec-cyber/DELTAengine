@@ -9,15 +9,28 @@
     "**/*.pptx": true,
     "**/*.pdf": true,
     "**/video_frames/**": true,
-    "**/extracted_assets/**": true
+    "**/extracted_assets/**": true,
+    "**/mobile/build/**": true,
+    "**/mobile/android/.gradle/**": true,
+    "**/.gradle/**": true,
+    "**/mobile/.dart_tool/**": true
   },
   "search.exclude": {
     "**/node_modules": true,
     "**/*.mp4": true,
     "**/*.zip": true,
     "**/video_frames": true,
-    "**/extracted_assets": true
+    "**/extracted_assets": true,
+    "**/mobile/build": true,
+    "**/mobile/android/.gradle": true,
+    "**/.gradle": true,
+    "**/mobile/.dart_tool": true
   },
+  "gradle.autoDetect": "off",
+  "gradle.nestedProjects": false,
+  "java.gradle.buildServer.enabled": "off",
+  "jdk.jdkhome": "C:\\Program Files\\Android\\Android Studio\\jbr",
+  "jdk.project.jdkhome": "C:\\Program Files\\Android\\Android Studio\\jbr",
   "java.import.gradle.enabled": false,
   "java.import.maven.enabled": false,
   "java.autobuild.enabled": false,
@@ -29,6 +42,7 @@
     "**/archetype/**",
     "**/META-INF/**",
     "**/mobile/android/**",
+    "**/mobile/build/**",
     "**/.pub-cache/**",
     "**/AppData/Local/Pub/**",
     "**/.gradle/**",

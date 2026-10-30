@@ -17,6 +17,20 @@ allprojects {
     }
 }
 
+subprojects {
+    project.buildscript {
+        repositories {
+            google()
+            mavenCentral()
+            gradlePluginPortal()
+        }
+        dependencies {
+            classpath("com.android.tools.build:gradle:9.1.0")
+            classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.4.0")
+        }
+    }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")
