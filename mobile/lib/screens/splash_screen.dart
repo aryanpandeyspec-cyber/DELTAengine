@@ -1,16 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../services/websocket_service.dart';
 import 'cockpit_screen.dart';
 import 'login_screen.dart';
 
-/// Tactical Aerospace Boot / Splash Screen for DELTA Engine Mobile
-/// Renders an ultra-smooth, futuristic cyber-boot sequence with real-time
-/// micro-telemetry, glowing Delta triangle emblem, and instant gateway resolution.
+/// Ultra-Fast, Silky-Smooth 120 FPS Cyber Kinetic Splash Screen
+/// Seamless hand-off from Android cold-start window to Flutter with instant
+/// hardware-accelerated spring animations and parallel gateway resolution.
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 
@@ -18,26 +17,14 @@ class SplashScreen extends StatefulWidget {
   State<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMixin {
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnimation;
-
-  late AnimationController _scanlineController;
-  late Animation<double> _scanlineAnimation;
-
-  late AnimationController _progressController;
+class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+  late AnimationController _animController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _glowAnimation;
+  late Animation<double> _titleFadeAnimation;
+  late Animation<Offset> _titleSlideAnimation;
   late Animation<double> _progressAnimation;
 
-  final List<String> _bootLogs = [
-    '⚡ KERNEL MOUNTED [DELTA-OS v2.4]',
-    '📡 PROBING EDGE GATEWAYS (PARALLEL MESH)...',
-    '🛡️ ZERO-TRUST HARDWARE ENCLAVE VERIFIED',
-    '🎯 CROWD PERCEPTION & OPTICAL LIDAR READY',
-    '🟢 ALL SYSTEMS NOMINAL • LAUNCHING DECK',
-  ];
-
-  int _visibleLogsCount = 1;
-  Timer? _logTimer;
   OperatorSession? _resolvedSession;
   bool _isNavigating = false;
   final ApiService _api = ApiService();
@@ -46,63 +33,71 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void initState() {
     super.initState();
 
-    // 1. Breathing Glow Animation for Emblem
-    _pulseController = AnimationController(
+    // 1. Single unified hardware-accelerated animation controller (750ms total)
+    _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    )..repeat(reverse: true);
-    _pulseAnimation = Tween<double>(begin: 0.85, end: 1.15).animate(
-      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+      duration: const Duration(milliseconds: 750),
     );
 
-    // 2. Optical Scanline Sweep across the Triangle
-    _scanlineController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1200),
-    )..repeat();
-    _scanlineAnimation = Tween<double>(begin: -0.2, end: 1.2).animate(
-      CurvedAnimation(parent: _scanlineController, curve: Curves.linear),
+    // Staggered timeline:
+    // 0.0 - 0.45: Triangle Emblem Spring Bloom
+    _scaleAnimation = Tween<double>(begin: 0.90, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: const Interval(0.0, 0.45, curve: Curves.easeOutBack),
+      ),
     );
 
-    // 3. Fast Tactical Loading Progress Bar (0% to 100% in 1200ms)
-    _progressController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1300),
+    // 0.1 - 0.55: Radial Cyan Energy Halo
+    _glowAnimation = Tween<double>(begin: 0.2, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: const Interval(0.1, 0.55, curve: Curves.easeOut),
+      ),
     );
+
+    // 0.25 - 0.70: Brand Title Reveal
+    _titleFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: const Interval(0.25, 0.70, curve: Curves.easeOut),
+      ),
+    );
+    _titleSlideAnimation = Tween<Offset>(
+      begin: const Offset(0.0, 0.25),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animController,
+        curve: const Interval(0.25, 0.70, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    // 0.20 - 0.90: High-Speed Cyber Progress Fill
     _progressAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _progressController, curve: Curves.easeOutCubic),
+      CurvedAnimation(
+        parent: _animController,
+        curve: const Interval(0.20, 0.90, curve: Curves.easeInOutCubic),
+      ),
     );
-    _progressController.forward();
 
-    // 4. Progressive Terminal Telemetry Typing Effect
-    _logTimer = Timer.periodic(const Duration(milliseconds: 240), (timer) {
-      if (_visibleLogsCount < _bootLogs.length) {
-        if (mounted) {
-          setState(() {
-            _visibleLogsCount++;
-          });
-          HapticFeedback.selectionClick();
-        }
-      } else {
-        timer.cancel();
-      }
-    });
+    _animController.forward();
 
-    // 5. Run Background Initialization & Session Check
+    // 2. Parallel Background Initialization & Gateway Handshake
     _warmUpAndNavigate();
   }
 
   Future<void> _warmUpAndNavigate() async {
     final startTime = DateTime.now();
 
-    // Run parallel gateway detection & session restore
+    // Parallel edge gateway detection & cached session check
     try {
       await _api.init();
       final session = await _api.restoreSessionFromStorage();
       if (session != null && !session.isExpired) {
         final isValid = await _api.validateSession().timeout(
-          const Duration(milliseconds: 800),
-          onTimeout: () => true, // Proceed offline if session is unexpired
+          const Duration(milliseconds: 500),
+          onTimeout: () => true, // Offline entry permitted if unexpired
         );
         if (isValid) {
           _resolvedSession = session;
@@ -111,9 +106,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
       }
     } catch (_) {}
 
-    // Ensure minimum splash duration of 1200ms so animation is visually satisfying
+    // Snappy, non-blocking splash duration (target: ~750ms max)
     final elapsed = DateTime.now().difference(startTime).inMilliseconds;
-    final remaining = 1250 - elapsed;
+    final remaining = 750 - elapsed;
     if (remaining > 0) {
       await Future.delayed(Duration(milliseconds: remaining));
     }
@@ -124,7 +119,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void _proceedToNextScreen() {
     if (_isNavigating || !mounted) return;
     _isNavigating = true;
-    HapticFeedback.lightImpact();
+    HapticFeedback.selectionClick();
 
     final nextScreen = (_resolvedSession != null)
         ? CockpitScreen(session: _resolvedSession!)
@@ -132,11 +127,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 400),
+        transitionDuration: const Duration(milliseconds: 280),
         pageBuilder: (context, animation, secondaryAnimation) => nextScreen,
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
-            opacity: CurvedAnimation(parent: animation, curve: Curves.easeInOut),
+            opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
             child: child,
           );
         },
@@ -146,10 +141,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
   @override
   void dispose() {
-    _pulseController.dispose();
-    _scanlineController.dispose();
-    _progressController.dispose();
-    _logTimer?.cancel();
+    _animController.dispose();
     super.dispose();
   }
 
@@ -158,18 +150,19 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     return Scaffold(
       backgroundColor: const Color(0xFF070B14),
       body: GestureDetector(
-        onTap: _proceedToNextScreen, // Quick tap-to-skip for instant entry
+        onTap: _proceedToNextScreen, // Instant tap-to-skip
         behavior: HitTestBehavior.opaque,
         child: Stack(
           children: [
-            // Ambient cyber-grid background
-            Positioned.fill(
+            // Ambient cyber background grid (static RepaintBoundary for 120 FPS performance)
+            const RepaintBoundary(
               child: CustomPaint(
-                painter: _TacticalGridPainter(),
+                size: Size.infinite,
+                painter: _StaticCyberGridPainter(),
               ),
             ),
 
-            // Top Status Pill
+            // Top Status Bar
             SafeArea(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -179,9 +172,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF10192C),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFF223554), width: 1),
+                        color: const Color(0xFF0F172A),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: const Color(0xFF1E2D4A), width: 1),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -195,12 +188,13 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             ),
                           ),
                           const SizedBox(width: 6),
-                          Text(
+                          const Text(
                             'STANDBY: FIELD DECK',
-                            style: GoogleFonts.jetBrainsMono(
+                            style: TextStyle(
+                              fontFamily: 'monospace',
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF38BDF8),
+                              color: Color(0xFF38BDF8),
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -209,10 +203,11 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     ),
                     Text(
                       'TAP TO SKIP ▶',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: TextStyle(
+                        fontFamily: 'monospace',
                         fontSize: 9.5,
                         fontWeight: FontWeight.w600,
-                        color: Colors.white.withValues(alpha: 0.4),
+                        color: Colors.white.withValues(alpha: 0.45),
                         letterSpacing: 0.8,
                       ),
                     ),
@@ -221,220 +216,186 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
               ),
             ),
 
-            // Center Content: Glowing Delta Emblem & Title
+            // Center: Glowing Delta Triangle Emblem & Typography
             Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Glowing Delta Triangle Emblem Container
-                  AnimatedBuilder(
-                    animation: _pulseAnimation,
-                    builder: (context, child) {
-                      return Transform.scale(
-                        scale: _pulseAnimation.value,
+              child: AnimatedBuilder(
+                animation: _animController,
+                builder: (context, _) {
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Emblem with Hardware-Accelerated Scale & Neon Cyan Glow
+                      Transform.scale(
+                        scale: _scaleAnimation.value,
                         child: Container(
-                          width: 110,
-                          height: 110,
+                          width: 112,
+                          height: 112,
                           decoration: BoxDecoration(
                             color: const Color(0xFF0E172A),
                             borderRadius: BorderRadius.circular(24),
                             border: Border.all(
-                              color: const Color(0xFF00F5D4).withValues(alpha: 0.6),
+                              color: const Color(0xFF00F5D4).withValues(alpha: 0.5 * _glowAnimation.value + 0.3),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF00E5FF).withValues(alpha: 0.28 * _pulseAnimation.value),
-                                blurRadius: 36 * _pulseAnimation.value,
-                                spreadRadius: 4,
+                                color: const Color(0xFF00F5D4).withValues(alpha: 0.22 * _glowAnimation.value),
+                                blurRadius: 28,
+                                spreadRadius: 2,
                               ),
                               BoxShadow(
                                 color: Colors.black.withValues(alpha: 0.6),
-                                offset: const Offset(0, 10),
-                                blurRadius: 24,
+                                offset: const Offset(0, 8),
+                                blurRadius: 18,
                               ),
                             ],
                           ),
-                          clipBehavior: Clip.antiAlias,
                           child: Stack(
                             alignment: Alignment.center,
                             children: [
                               // Pure Delta Triangle Emblem (No text fragments)
                               Padding(
-                                padding: const EdgeInsets.all(16.0),
+                                padding: const EdgeInsets.all(18.0),
                                 child: Image.asset(
                                   'assets/images/delta_emblem.png',
                                   fit: BoxFit.contain,
                                 ),
                               ),
-                              // Animated Optical Scanline Passing Through
-                              AnimatedBuilder(
-                                animation: _scanlineAnimation,
-                                builder: (context, _) {
-                                  return Positioned(
-                                    top: 110 * _scanlineAnimation.value,
-                                    left: 0,
-                                    right: 0,
-                                    child: Container(
-                                      height: 3,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Colors.transparent,
-                                            const Color(0xFF00F5D4).withValues(alpha: 0.9),
-                                            const Color(0xFF38BDF8),
-                                            Colors.transparent,
-                                          ],
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: const Color(0xFF00F5D4).withValues(alpha: 0.8),
-                                            blurRadius: 8,
-                                            spreadRadius: 2,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  );
-                                },
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Brand Titles (Staggered Slide & Fade)
+                      FadeTransition(
+                        opacity: _titleFadeAnimation,
+                        child: SlideTransition(
+                          position: _titleSlideAnimation,
+                          child: const Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'DELTA ENGINE',
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.white,
+                                  letterSpacing: 4.5,
+                                ),
+                              ),
+                              SizedBox(height: 6),
+                              Text(
+                                'AUTONOMOUS VENUE STEERING & LIFE SAFETY',
+                                style: TextStyle(
+                                  fontFamily: 'monospace',
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF38BDF8),
+                                  letterSpacing: 1.2,
+                                ),
                               ),
                             ],
                           ),
                         ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 22),
-
-                  // Brand Title
-                  Text(
-                    'DELTA ENGINE',
-                    style: GoogleFonts.outfit(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 4.0,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'AUTONOMOUS VENUE STEERING & LIFE SAFETY',
-                    style: GoogleFonts.jetBrainsMono(
-                      fontSize: 9.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF38BDF8),
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                ],
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
 
-            // Bottom Console: Micro Terminal Feed & Progress Bar
+            // Bottom Cyber Progress & Telemetry Status Bar
             Positioned(
               left: 24,
               right: 24,
-              bottom: 36,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Terminal Telemetry Window
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0A101D),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFF1E2E4A), width: 1),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: List.generate(_visibleLogsCount, (index) {
-                        final log = _bootLogs[index];
-                        final isLast = (index == _visibleLogsCount - 1);
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 2.0),
-                          child: Text(
-                            log,
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 10,
-                              fontWeight: isLast ? FontWeight.w700 : FontWeight.w500,
-                              color: isLast ? const Color(0xFF00F5D4) : const Color(0xFF94A3B8),
-                            ),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-                  const SizedBox(height: 14),
+              bottom: 38,
+              child: AnimatedBuilder(
+                animation: _animController,
+                builder: (context, _) {
+                  final progress = _progressAnimation.value;
+                  final pct = (progress * 100).toInt();
 
-                  // Animated Progress Bar Header
-                  AnimatedBuilder(
-                    animation: _progressAnimation,
-                    builder: (context, _) {
-                      final pct = (_progressAnimation.value * 100).toInt();
-                      return Row(
+                  String statusText;
+                  Color statusColor;
+                  if (progress < 0.35) {
+                    statusText = '⚡ INITIALIZING CORE KERNEL';
+                    statusColor = const Color(0xFF94A3B8);
+                  } else if (progress < 0.70) {
+                    statusText = '📡 CONNECTING EDGE SENSORS';
+                    statusColor = const Color(0xFF38BDF8);
+                  } else if (progress < 0.95) {
+                    statusText = '🎯 SYNCING VENUE TELEMETRY';
+                    statusColor = const Color(0xFFF59E0B);
+                  } else {
+                    statusText = '🟢 SYSTEMS NOMINAL • LAUNCHING';
+                    statusColor = const Color(0xFF00F5D4);
+                  }
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            pct < 100 ? 'INITIALIZING SUBSYSTEMS...' : 'SYSTEMS ONLINE',
-                            style: GoogleFonts.jetBrainsMono(
+                            statusText,
+                            style: TextStyle(
+                              fontFamily: 'monospace',
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
-                              color: pct < 100 ? const Color(0xFF94A3B8) : const Color(0xFF00F5D4),
+                              color: statusColor,
+                              letterSpacing: 0.5,
                             ),
                           ),
                           Text(
                             '$pct%',
-                            style: GoogleFonts.jetBrainsMono(
+                            style: const TextStyle(
+                              fontFamily: 'monospace',
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                               color: Colors.white,
                             ),
                           ),
                         ],
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 6),
+                      ),
+                      const SizedBox(height: 8),
 
-                  // Progress Bar Track
-                  Container(
-                    height: 5,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF152238),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    alignment: Alignment.centerLeft,
-                    child: AnimatedBuilder(
-                      animation: _progressAnimation,
-                      builder: (context, _) {
-                        return Container(
-                          width: MediaQuery.of(context).size.width * _progressAnimation.value,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(3),
-                            gradient: const LinearGradient(
-                              colors: [
-                                Color(0xFF38BDF8),
-                                Color(0xFF00F5D4),
-                                Color(0xFFF59E0B),
+                      // Sleek Progress Track
+                      Container(
+                        height: 4,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF131D31),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: progress.clamp(0.02, 1.0),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(2),
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF38BDF8),
+                                  Color(0xFF00F5D4),
+                                  Color(0xFFF59E0B),
+                                ],
+                              ),
+                              boxShadow: const [
+                                BoxShadow(
+                                  color: Color(0xFF00F5D4),
+                                  blurRadius: 6,
+                                ),
                               ],
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF00F5D4).withValues(alpha: 0.6),
-                                blurRadius: 6,
-                              ),
-                            ],
                           ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ),
           ],
@@ -444,16 +405,17 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 }
 
-/// Subtle tactical crosshairs and micro-grid background painter
-class _TacticalGridPainter extends CustomPainter {
+/// Static, zero-cost painter for mission grid lines and corner reticles
+class _StaticCyberGridPainter extends CustomPainter {
+  const _StaticCyberGridPainter();
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = const Color(0xFF132038).withValues(alpha: 0.35)
+      ..color = const Color(0xFF142036).withValues(alpha: 0.35)
       ..strokeWidth = 0.5;
 
-    // Draw subtle grid lines
-    const step = 40.0;
+    const step = 42.0;
     for (double x = 0; x < size.width; x += step) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
@@ -461,24 +423,23 @@ class _TacticalGridPainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
     }
 
-    // Corner crosshairs
-    final crossPaint = Paint()
-      ..color = const Color(0xFF38BDF8).withValues(alpha: 0.3)
+    final cornerPaint = Paint()
+      ..color = const Color(0xFF38BDF8).withValues(alpha: 0.25)
       ..strokeWidth = 1.0;
 
     const arm = 12.0;
-    // Top-left
-    canvas.drawLine(const Offset(16, 16), const Offset(16 + arm, 16), crossPaint);
-    canvas.drawLine(const Offset(16, 16), const Offset(16, 16 + arm), crossPaint);
-    // Top-right
-    canvas.drawLine(Offset(size.width - 16, 16), Offset(size.width - 16 - arm, 16), crossPaint);
-    canvas.drawLine(Offset(size.width - 16, 16), Offset(size.width - 16, 16 + arm), crossPaint);
-    // Bottom-left
-    canvas.drawLine(Offset(16, size.height - 16), Offset(16 + arm, size.height - 16), crossPaint);
-    canvas.drawLine(Offset(16, size.height - 16), Offset(16, size.height - 16 - arm), crossPaint);
-    // Bottom-right
-    canvas.drawLine(Offset(size.width - 16, size.height - 16), Offset(size.width - 16 - arm, size.height - 16), crossPaint);
-    canvas.drawLine(Offset(size.width - 16, size.height - 16), Offset(size.width - 16, size.height - 16 - arm), crossPaint);
+    // Corner crosshairs
+    canvas.drawLine(const Offset(16, 16), const Offset(16 + arm, 16), cornerPaint);
+    canvas.drawLine(const Offset(16, 16), const Offset(16, 16 + arm), cornerPaint);
+
+    canvas.drawLine(Offset(size.width - 16, 16), Offset(size.width - 16 - arm, 16), cornerPaint);
+    canvas.drawLine(Offset(size.width - 16, 16), Offset(size.width - 16, 16 + arm), cornerPaint);
+
+    canvas.drawLine(Offset(16, size.height - 16), Offset(16 + arm, size.height - 16), cornerPaint);
+    canvas.drawLine(Offset(16, size.height - 16), Offset(16, size.height - 16 - arm), cornerPaint);
+
+    canvas.drawLine(Offset(size.width - 16, size.height - 16), Offset(size.width - 16 - arm, size.height - 16), cornerPaint);
+    canvas.drawLine(Offset(size.width - 16, size.height - 16), Offset(size.width - 16, size.height - 16 - arm), cornerPaint);
   }
 
   @override

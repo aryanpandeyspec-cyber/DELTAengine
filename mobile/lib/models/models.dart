@@ -164,6 +164,23 @@ class RoomTelemetry {
   }
 
   bool get isCritical => status == 'CRITICAL' || currentDensity >= 80.0;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'currentDensity': currentDensity,
+      'capacity': capacity,
+      'currentOccupancy': currentOccupancy,
+      'status': status,
+      'predictedRisk': predictedRisk,
+      'trend': trend,
+      'temperature': temperature,
+      'co2': co2,
+      'doorCountIn': doorCountIn,
+      'doorCountOut': doorCountOut,
+    };
+  }
 }
 
 class TaskItem {
@@ -228,6 +245,19 @@ class TaskItem {
       assignedTo: assignedTo ?? this.assignedTo,
       createdAt: createdAt,
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'location': location,
+      'severity': severity,
+      'status': status,
+      'assignedTo': assignedTo,
+      'createdAt': createdAt.toIso8601String(),
+    };
   }
 }
 

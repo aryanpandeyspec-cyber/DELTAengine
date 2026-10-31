@@ -96,7 +96,10 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     try {
       final session = await _api.restoreSessionFromStorage();
       if (session != null && !session.isExpired) {
-        final isValid = await _api.validateSession();
+        final isValid = await _api.validateSession().timeout(
+          const Duration(milliseconds: 600),
+          onTimeout: () => true, // Allow offline entry if session is active
+        );
         if (isValid && mounted) {
           WebSocketService().connect();
           Navigator.of(context).pushReplacement(

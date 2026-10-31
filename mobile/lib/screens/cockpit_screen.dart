@@ -25,13 +25,19 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   final _ws = WebSocketService();
 
   int _currentTabIndex = 0;
-  bool _isLoading = true;
+  bool _isLoading = false;
   bool _isWsConnected = false;
   String _taskFilter = 'ALL';
   String _taskSearchQuery = '';
   String? _selectedBlueprintRoomId;
 
-  List<RoomTelemetry> _rooms = [];
+  List<RoomTelemetry> _rooms = [
+    RoomTelemetry(id: 'room1', name: 'Turing Grand Hall', currentDensity: 84.0, capacity: 500, currentOccupancy: 420, status: 'CRITICAL', predictedRisk: 0.88, doorCountIn: 480, doorCountOut: 60, temperature: 24.2, co2: 780),
+    RoomTelemetry(id: 'room2', name: 'Lovelace Auditorium', currentDensity: 65.0, capacity: 250, currentOccupancy: 162, status: 'ELEVATED', predictedRisk: 0.65, doorCountIn: 190, doorCountOut: 28, temperature: 22.8, co2: 640),
+    RoomTelemetry(id: 'room3', name: 'Von Neumann Hub', currentDensity: 42.0, capacity: 180, currentOccupancy: 75, status: 'OPTIMAL', predictedRisk: 0.30, doorCountIn: 92, doorCountOut: 17, temperature: 21.5, co2: 520),
+    RoomTelemetry(id: 'room4', name: 'Shannon Workshop Suite', currentDensity: 52.0, capacity: 120, currentOccupancy: 62, status: 'OPTIMAL', predictedRisk: 0.40, doorCountIn: 70, doorCountOut: 8, temperature: 22.0, co2: 590),
+    RoomTelemetry(id: 'room5', name: 'Hopper Tech Pavilion', currentDensity: 35.0, capacity: 1200, currentOccupancy: 420, status: 'OPTIMAL', predictedRisk: 0.25, doorCountIn: 490, doorCountOut: 70, temperature: 20.8, co2: 480),
+  ];
   List<TaskItem> _tasks = [];
   final List<VoiceTransmission> _voiceTransmissions = [];
   AttendeeBadgeResult? _lastScannedBadge;
@@ -187,31 +193,33 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   }
 
   Future<void> _loadInitialData() async {
-    setState(() => _isLoading = true);
-    try {
-      final roomsFuture = _api.fetchRooms();
-      final tasksFuture = _api.fetchTasks();
-      final results = await Future.wait([roomsFuture, tasksFuture]);
+    // 1. Immediately hydrate cached rooms & tasks for zero perceived latency
+    final cachedRooms = _api.getCachedRooms();
+    final cachedTasks = _api.getCachedTasks();
+    if (cachedRooms.isNotEmpty && mounted) {
+      setState(() => _rooms = cachedRooms);
+    }
+    if (cachedTasks.isNotEmpty && mounted) {
+      setState(() => _tasks = cachedTasks);
+    }
 
-      setState(() {
-        _rooms = results[0] as List<RoomTelemetry>;
-        _tasks = results[1] as List<TaskItem>;
-        _isLoading = false;
-      });
-    } catch (e) {
+    // 2. Fetch fresh telemetry concurrently in the background
+    try {
+      final results = await Future.wait([
+        _api.fetchRooms().timeout(const Duration(milliseconds: 2500)),
+        _api.fetchTasks().timeout(const Duration(milliseconds: 2500)),
+      ]);
+
       if (mounted) {
         setState(() {
+          _rooms = results[0] as List<RoomTelemetry>;
+          _tasks = results[1] as List<TaskItem>;
           _isLoading = false;
-          if (_rooms.isEmpty) {
-            _rooms = [
-              RoomTelemetry(id: 'room1', name: 'Turing Grand Hall', currentDensity: 84.0, capacity: 500, currentOccupancy: 420, status: 'CRITICAL', predictedRisk: 0.88, doorCountIn: 480, doorCountOut: 60, temperature: 24.2, co2: 780),
-              RoomTelemetry(id: 'room2', name: 'Lovelace Auditorium', currentDensity: 65.0, capacity: 250, currentOccupancy: 162, status: 'ELEVATED', predictedRisk: 0.65, doorCountIn: 190, doorCountOut: 28, temperature: 22.8, co2: 640),
-              RoomTelemetry(id: 'room3', name: 'Von Neumann Hub', currentDensity: 42.0, capacity: 180, currentOccupancy: 75, status: 'OPTIMAL', predictedRisk: 0.30, doorCountIn: 92, doorCountOut: 17, temperature: 21.5, co2: 520),
-              RoomTelemetry(id: 'room4', name: 'Shannon Workshop Suite', currentDensity: 52.0, capacity: 120, currentOccupancy: 62, status: 'OPTIMAL', predictedRisk: 0.40, doorCountIn: 70, doorCountOut: 8, temperature: 22.0, co2: 590),
-              RoomTelemetry(id: 'room5', name: 'Hopper Tech Pavilion', currentDensity: 35.0, capacity: 1200, currentOccupancy: 420, status: 'OPTIMAL', predictedRisk: 0.25, doorCountIn: 490, doorCountOut: 70, temperature: 20.8, co2: 480),
-            ];
-          }
         });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
     }
   }
@@ -1685,7 +1693,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           const SizedBox(width: 4),
         ],
       ),
-      body: _isLoading
+      body: (_isLoading && _rooms.isEmpty)
           ? const Center(child: CircularProgressIndicator(color: DeltaColors.skyAqua))
           : IndexedStack(
               index: _currentTabIndex,

@@ -10,29 +10,51 @@ class ApiService {
   factory ApiService() => _instance;
   ApiService._internal();
 
-  static const Duration _defaultTimeout = Duration(seconds: 8);
+  static const Duration _defaultTimeout = Duration(milliseconds: 2500);
 
   // Configurable base URL for testing on Desktop, Android Emulator (10.0.2.2), or physical device
-  String _baseUrl = 'http://localhost:3000';
+  String _baseUrl = 'http://192.168.1.5:3000';
   String? _authToken;
+  List<RoomTelemetry> _cachedRooms = [];
+  List<TaskItem> _cachedTasks = [];
 
   String get baseUrl => _baseUrl;
   String? get authToken => _authToken;
+
+  List<RoomTelemetry> getCachedRooms() => List.unmodifiable(_cachedRooms);
+  List<TaskItem> getCachedTasks() => List.unmodifiable(_cachedTasks);
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
     final savedUrl = prefs.getString('delta_base_url');
     _authToken = prefs.getString('delta_auth_token');
 
+    // Restore cached telemetry for 0ms initial render
+    final rawRooms = prefs.getString('delta_cached_rooms');
+    if (rawRooms != null && rawRooms.isNotEmpty) {
+      try {
+        final list = jsonDecode(rawRooms) as List<dynamic>;
+        _cachedRooms = list.map((r) => RoomTelemetry.fromJson(r as Map<String, dynamic>)).toList();
+      } catch (_) {}
+    }
+
+    final rawTasks = prefs.getString('delta_cached_tasks');
+    if (rawTasks != null && rawTasks.isNotEmpty) {
+      try {
+        final list = jsonDecode(rawTasks) as List<dynamic>;
+        _cachedTasks = list.map((t) => TaskItem.fromJson(t as Map<String, dynamic>)).toList();
+      } catch (_) {}
+    }
+
     if (savedUrl != null && savedUrl.isNotEmpty) {
       _baseUrl = savedUrl;
-      // Fast background verification with low timeout (<350ms)
+      // Fast background verification with low timeout (<250ms)
       try {
-        final res = await http.get(Uri.parse('$_baseUrl/api/state')).timeout(const Duration(milliseconds: 350));
+        final res = await http.get(Uri.parse('$_baseUrl/api/state')).timeout(const Duration(milliseconds: 250));
         if (res.statusCode == 200) return;
       } catch (_) {}
     } else {
-      _baseUrl = 'http://192.168.1.6:3000';
+      _baseUrl = 'http://192.168.1.5:3000';
     }
 
     if (Platform.isAndroid || Platform.isIOS) {
@@ -41,22 +63,48 @@ class ApiService {
   }
 
   Future<void> _autoDetectEdgeGateway() async {
-    final candidates = [
+    final candidateSet = <String>{
+      'http://192.168.1.5:3000',
       'http://192.168.1.6:3000',
       'http://192.168.1.2:3000',
-      'http://localhost:3000',
+      'http://192.168.1.3:3000',
       'http://192.168.1.4:3000',
-      'http://192.168.137.1:3000',
+      'http://192.168.1.7:3000',
+      'http://192.168.1.8:3000',
+      'http://192.168.1.1:3000',
       'http://10.0.2.2:3000',
-    ];
+      'http://localhost:3000',
+    };
 
+    // Dynamically detect local subnet from active network interfaces
+    try {
+      final interfaces = await NetworkInterface.list(
+        type: InternetAddressType.IPv4,
+        includeLinkLocal: false,
+      );
+      for (final iface in interfaces) {
+        for (final addr in iface.addresses) {
+          if (!addr.isLoopback && addr.address.contains('.')) {
+            final parts = addr.address.split('.');
+            if (parts.length == 4) {
+              final prefix = '${parts[0]}.${parts[1]}.${parts[2]}';
+              for (int i = 1; i <= 15; i++) {
+                candidateSet.add('http://$prefix.$i:3000');
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    final candidates = candidateSet.toList();
     final completer = Completer<String?>();
     int pending = candidates.length;
 
-    // Parallel concurrent probing across all candidates (<650ms total)
+    // Parallel concurrent probing across all candidate endpoints (<400ms max)
     for (final candidate in candidates) {
       http.get(Uri.parse('$candidate/api/state'))
-          .timeout(const Duration(milliseconds: 600))
+          .timeout(const Duration(milliseconds: 380))
           .then((res) {
         if (res.statusCode == 200 && !completer.isCompleted) {
           completer.complete(candidate);
@@ -75,7 +123,7 @@ class ApiService {
     }
 
     try {
-      final winner = await completer.future.timeout(const Duration(milliseconds: 650), onTimeout: () => null);
+      final winner = await completer.future.timeout(const Duration(milliseconds: 400), onTimeout: () => null);
       if (winner != null) {
         _baseUrl = winner;
         final prefs = await SharedPreferences.getInstance();
@@ -315,9 +363,16 @@ class ApiService {
             list.add(RoomTelemetry.fromJson(copy));
           }
         });
-        if (list.isNotEmpty) return list;
+        if (list.isNotEmpty) {
+          _cachedRooms = list;
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('delta_cached_rooms', jsonEncode(list.map((r) => r.toJson()).toList()));
+          }).catchError((_) {});
+          return list;
+        }
       }
     } catch (_) {}
+    if (_cachedRooms.isNotEmpty) return _cachedRooms;
     return _fallbackRooms();
   }
 
@@ -358,10 +413,16 @@ class ApiService {
         final data = _safeJsonDecode(response.body);
         final rawTasks = (data is Map && data['tasks'] is List) ? (data['tasks'] as List<dynamic>) : [];
         if (rawTasks.isNotEmpty) {
-          return rawTasks.map((t) => TaskItem.fromJson(t as Map<String, dynamic>)).toList();
+          final list = rawTasks.map((t) => TaskItem.fromJson(t as Map<String, dynamic>)).toList();
+          _cachedTasks = list;
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString('delta_cached_tasks', jsonEncode(list.map((t) => t.toJson()).toList()));
+          }).catchError((_) {});
+          return list;
         }
       }
     } catch (_) {}
+    if (_cachedTasks.isNotEmpty) return _cachedTasks;
     return [
       TaskItem(
         id: 't-offline-1',
