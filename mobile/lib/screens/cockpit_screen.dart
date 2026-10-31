@@ -739,7 +739,11 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     }
   }
 
+  bool _isSosDialogActive = false;
+
   void _showEmergencyAlertBanner(Map<String, dynamic> sos) {
+    if (_isSosDialogActive || !mounted) return;
+    _isSosDialogActive = true;
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -806,7 +810,9 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           ),
         ],
       ),
-    );
+    ).then((_) {
+      _isSosDialogActive = false;
+    });
   }
 
   // Active Device Identity / Team Contacts Sheet (From Suryansh)
@@ -1442,7 +1448,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   }
 
   void _showSosConfirmationDialog() {
-    String selectedHall = 'room1';
+    String selectedHall = _rooms.isNotEmpty ? _rooms.first.id : 'room1';
     final noteCtrl = TextEditingController(text: 'Crowd bottleneck surge near main entrance!');
 
     showDialog(
@@ -1475,13 +1481,15 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             DropdownButtonFormField<String>(
               initialValue: selectedHall,
               dropdownColor: DeltaColors.surfaceLight,
-              items: const [
-                DropdownMenuItem(value: 'room1', child: Text('Turing Grand Hall', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'room2', child: Text('Lovelace Auditorium', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'room3', child: Text('Von Neumann Hub', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'room4', child: Text('Shannon Workshop', style: TextStyle(color: Colors.white))),
-                DropdownMenuItem(value: 'room5', child: Text('Hopper Pavilion', style: TextStyle(color: Colors.white))),
-              ],
+              items: _rooms.isNotEmpty
+                  ? _rooms.map((r) => DropdownMenuItem(value: r.id, child: Text(r.name, style: const TextStyle(color: Colors.white)))).toList()
+                  : const [
+                      DropdownMenuItem(value: 'room1', child: Text('Turing Grand Hall', style: TextStyle(color: Colors.white))),
+                      DropdownMenuItem(value: 'room2', child: Text('Lovelace Auditorium', style: TextStyle(color: Colors.white))),
+                      DropdownMenuItem(value: 'room3', child: Text('Von Neumann Hub', style: TextStyle(color: Colors.white))),
+                      DropdownMenuItem(value: 'room4', child: Text('Shannon Workshop', style: TextStyle(color: Colors.white))),
+                      DropdownMenuItem(value: 'room5', child: Text('Hopper Pavilion', style: TextStyle(color: Colors.white))),
+                    ],
               onChanged: (val) {
                 if (val != null) selectedHall = val;
               },
@@ -1521,18 +1529,27 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              await _api.triggerEmergencySos(
+              final ok = await _api.triggerEmergencySos(
                 volunteerName: widget.session.name,
                 hallId: selectedHall,
                 note: noteCtrl.text.trim(),
               );
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    backgroundColor: DeltaColors.dangerRed,
-                    content: Text('🚨 Emergency SOS Broadcast Sent to Central Command Deck!'),
-                  ),
-                );
+                if (ok) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      backgroundColor: DeltaColors.dangerRed,
+                      content: Text('🚨 Emergency SOS Broadcast Sent to Central Command Deck!'),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      backgroundColor: Color(0xFF1E293B),
+                      content: Text('⚠️ SOS Queued Locally: Offline Mesh will relay when connection restores.'),
+                    ),
+                  );
+                }
               }
             },
             child: Text('SEND SOS ALERT', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w900)),

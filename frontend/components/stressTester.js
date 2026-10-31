@@ -22,7 +22,7 @@ function applyHeatmaps(stressFactor) {
   cells.forEach(cell => {
     const slotId = cell.getAttribute('data-slot-id');
     const hallId = cell.getAttribute('data-hall-id');
-    const topicId = scheduleState[slotId][hallId];
+    const topicId = (scheduleState[slotId] && hallId) ? scheduleState[slotId][hallId] : null;
 
     cell.classList.remove('heatmap-normal', 'heatmap-low', 'heatmap-warning', 'heatmap-critical', 'cell-conflict');
 

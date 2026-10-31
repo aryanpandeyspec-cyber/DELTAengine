@@ -1884,7 +1884,14 @@ app.post('/api/volunteer/sos', (req, res) => {
   const { volunteerName, hallId, note, crowdSeverity } = req.body || {};
   const timestamp = new Date().toLocaleTimeString();
   const safeHallId = String(hallId || 'hall-1').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
-  const hall = db.graph?.halls?.[safeHallId] || { name: safeHallId || 'Active Zone' };
+  let resolvedHall = db.graph?.halls?.[safeHallId];
+  if (!resolvedHall) {
+    const hallNum = safeHallId.replace(/[^0-9]/g, '');
+    if (hallNum) {
+      resolvedHall = db.graph?.halls?.[`hall-${hallNum}`] || db.graph?.halls?.[`room${hallNum}`];
+    }
+  }
+  const hall = resolvedHall || { name: safeHallId || 'Active Zone' };
 
   const sosRecord = {
     id: `SOS_${Date.now()}`,
