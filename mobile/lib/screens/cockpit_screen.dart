@@ -29,6 +29,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   bool _isWsConnected = false;
   String _taskFilter = 'ALL';
   String _taskSearchQuery = '';
+  final _taskSearchController = TextEditingController();
   String? _selectedBlueprintRoomId;
 
   List<RoomTelemetry> _rooms = [
@@ -106,6 +107,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   StreamSubscription? _scheduleSub;
   StreamSubscription? _quickActionSub;
   StreamSubscription? _sessionRevokedSub;
+  StreamSubscription? _badgeSub;
 
   // Admin Governance & Session Discrepancy State
   List<ActiveOperatorSession> _adminSessions = [];
@@ -233,6 +235,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _scheduleSub?.cancel();
     _quickActionSub?.cancel();
     _sessionRevokedSub?.cancel();
+    _badgeSub?.cancel();
+    _taskSearchController.dispose();
     super.dispose();
   }
 
@@ -308,6 +312,9 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       if (mounted) {
         setState(() {
           _voiceTransmissions.insert(0, voice);
+          if (_voiceTransmissions.length > 50) {
+            _voiceTransmissions.removeLast();
+          }
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -394,6 +401,15 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             duration: const Duration(seconds: 3),
           ),
         );
+      }
+    });
+
+    _badgeSub = _ws.onBadgeEvent.listen((badgeData) {
+      if (mounted) {
+        final total = badgeData['totalCheckedIn'];
+        if (total is int) {
+          setState(() => _totalGateCheckins = total);
+        }
       }
     });
 
@@ -953,9 +969,11 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               spacing: 6,
               runSpacing: 6,
               children: [
+                _buildHostPresetChip('Wi-Fi Host (192.168.1.5:3000)', 'http://192.168.1.5:3000', hostController),
+                _buildHostPresetChip('Localhost / Reverse ADB', 'http://127.0.0.1:3000', hostController),
+                _buildHostPresetChip('Wi-Fi (192.168.1.6)', 'http://192.168.1.6:3000', hostController),
                 _buildHostPresetChip('Wi-Fi LAN (3000)', 'http://192.168.1.4:3000', hostController),
                 _buildHostPresetChip('Hotspot (3000)', 'http://192.168.137.1:3000', hostController),
-                _buildHostPresetChip('Localhost (3000)', 'http://localhost:3000', hostController),
                 _buildHostPresetChip('Android Emulator', 'http://10.0.2.2:3000', hostController),
                 _buildHostPresetChip('Production Cloud', 'https://deltaengine.vercel.app', hostController),
               ],
@@ -982,6 +1000,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             onPressed: () async {
               final nav = Navigator.of(ctx);
               await _api.setBaseUrl(hostController.text);
+              WebSocketService().connect();
               if (mounted) setState(() {});
               nav.pop();
             },
@@ -1384,7 +1403,21 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                     priority: priority,
                     creator: widget.session.name,
                   );
-                  setState(() => _tasks.insert(0, newTask));
+                  setState(() {
+
+                    final idx = _tasks.indexWhere((t) => t.id == newTask.id);
+
+                    if (idx >= 0) {
+
+                      _tasks[idx] = newTask;
+
+                    } else {
+
+                      _tasks.insert(0, newTask);
+
+                    }
+
+                  });
                   if (ctx.mounted) Navigator.pop(ctx);
                 } catch (e) {
                   final fallback = TaskItem(
@@ -2953,6 +2986,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 border: Border.all(color: DeltaColors.cardBorder, width: 1.0),
               ),
               child: TextField(
+                controller: _taskSearchController,
                 onChanged: (q) => setState(() => _taskSearchQuery = q.trim().toLowerCase()),
                 style: DeltaTypography.body(color: Colors.white, fontSize: 13),
                 decoration: InputDecoration(
@@ -2962,7 +2996,10 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                   suffixIcon: _taskSearchQuery.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.close, size: 16, color: DeltaColors.textMuted),
-                          onPressed: () => setState(() => _taskSearchQuery = ''),
+                          onPressed: () {
+                            _taskSearchController.clear();
+                            setState(() => _taskSearchQuery = '');
+                          },
                         )
                       : null,
                   border: InputBorder.none,
@@ -3276,11 +3313,27 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                   onTapUp: (_) async {
                     HapticFeedback.mediumImpact();
                     setState(() => _isBroadcasting = false);
-                    await _api.broadcastVoice(
-                      sender: widget.session.name,
-                      channel: _activeChannel,
-                      text: 'Live radio transmission from ${widget.session.name}',
-                    );
+                    try {
+                      await _api.broadcastVoice(
+                        sender: widget.session.name,
+                        channel: _activeChannel,
+                        text: 'Live radio transmission from ${widget.session.name}',
+                      );
+                    } catch (_) {
+                      if (mounted) {
+                        final localTransmission = VoiceTransmission(
+                          channel: _activeChannel,
+                          speaker: widget.session.name,
+                          message: 'Live radio transmission from ${widget.session.name} (Offline Mesh)',
+                          timestamp: DateTime.now(),
+                          waveform: [0.3, 0.7, 0.9, 0.4, 0.2, 0.8, 0.5, 0.3],
+                        );
+                        setState(() {
+                          _voiceTransmissions.insert(0, localTransmission);
+                          if (_voiceTransmissions.length > 50) _voiceTransmissions.removeLast();
+                        });
+                      }
+                    }
                   },
                   onTapCancel: () => setState(() => _isBroadcasting = false),
                   child: Container(
@@ -3348,11 +3401,27 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           children: quickVoiceMessages.map((msg) => InkWell(
             onTap: () async {
               HapticFeedback.lightImpact();
-              await _api.broadcastVoice(
-                sender: widget.session.name,
-                channel: _activeChannel,
-                text: msg,
-              );
+              try {
+                await _api.broadcastVoice(
+                  sender: widget.session.name,
+                  channel: _activeChannel,
+                  text: msg,
+                );
+              } catch (_) {
+                if (mounted) {
+                  final localTransmission = VoiceTransmission(
+                    channel: _activeChannel,
+                    speaker: widget.session.name,
+                    message: '$msg (Offline Mesh)',
+                    timestamp: DateTime.now(),
+                    waveform: [0.4, 0.8, 0.6, 0.5, 0.7],
+                  );
+                  setState(() {
+                    _voiceTransmissions.insert(0, localTransmission);
+                    if (_voiceTransmissions.length > 50) _voiceTransmissions.removeLast();
+                  });
+                }
+              }
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(

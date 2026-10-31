@@ -910,6 +910,7 @@ wss.on('connection', ws => {
       if (!msg || !msg.type) return;
 
       if (msg.type === 'PING' || msg.type === 'HEARTBEAT') {
+        ws.isAlive = true;
         try {
           ws.send(JSON.stringify({
             type: 'PONG',

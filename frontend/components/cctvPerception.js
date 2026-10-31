@@ -217,6 +217,7 @@
   let visionWorker = null;
   let isVisionWorkerBusy = false;
   let isVisionWorkerReady = false;
+  let lastVisionWorkerPostTime = 0;
 
   function initVisionWorker() {
     if (visionWorker || typeof Worker === 'undefined') return;
@@ -2999,8 +3000,9 @@ Email: ${fromEmail}`;
         }
 
         // 2. Optical Vision Pipeline: Background Web Worker Offloading (or synchronous fallback)
-        if (isVisionWorkerReady && !isVisionWorkerBusy && cvCanvas && cvCtx) {
+        if (isVisionWorkerReady && (!isVisionWorkerBusy || (now - lastVisionWorkerPostTime > 1500)) && cvCanvas && cvCtx) {
           isVisionWorkerBusy = true;
+          lastVisionWorkerPostTime = now;
           try {
             cvCtx.drawImage(videoEl, 0, 0, 320, 240);
             const imgData = cvCtx.getImageData(0, 0, 320, 240);

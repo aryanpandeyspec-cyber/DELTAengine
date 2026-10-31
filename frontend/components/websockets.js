@@ -48,6 +48,25 @@ function updateAgentHealthIndicator(status) {
 
 let wsReconnectTimer = null;
 let fallbackPollingTimer = null;
+let wsPingTimer = null;
+
+function startWsHeartbeat() {
+  stopWsHeartbeat();
+  wsPingTimer = setInterval(() => {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try {
+        ws.send(JSON.stringify({ type: 'PING', timestamp: Date.now() }));
+      } catch (e) {}
+    }
+  }, 25000);
+}
+
+function stopWsHeartbeat() {
+  if (wsPingTimer) {
+    clearInterval(wsPingTimer);
+    wsPingTimer = null;
+  }
+}
 
 function startFallbackPolling() {
   if (fallbackPollingTimer) return;
@@ -92,6 +111,7 @@ function initWebSockets() {
       clearInterval(fallbackPollingTimer);
       fallbackPollingTimer = null;
     }
+    startWsHeartbeat();
     if (typeof appendLog === 'function') appendLog('[SYSTEM] WebSocket client successfully linked to Event Operating System.', 'success');
     updateAgentHealthIndicator('ONLINE');
   };
@@ -661,6 +681,7 @@ function initWebSockets() {
   };
 
   ws.onerror = (err) => {
+    stopWsHeartbeat();
     updateAgentHealthIndicator('OFFLINE');
     startFallbackPolling();
     if (typeof appendLog === 'function') appendLog('[ERROR] Connection interrupted. Running in fallback offline layout.', 'conflict');
@@ -668,6 +689,7 @@ function initWebSockets() {
   };
 
   ws.onclose = () => {
+    stopWsHeartbeat();
     updateAgentHealthIndicator('OFFLINE');
     startFallbackPolling();
     if (typeof appendLog === 'function') appendLog('[SYSTEM] Connection offline. Offline synchronization active.', 'system');

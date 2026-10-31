@@ -271,11 +271,11 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               spacing: 6,
               runSpacing: 6,
               children: [
-                _buildHostPresetChip('Wi-Fi Host (192.168.1.6)', 'http://192.168.1.6:3000', hostController),
-                _buildHostPresetChip('Wi-Fi PC (3000)', 'http://192.168.1.2:3000', hostController),
-                _buildHostPresetChip('Wi-Fi LAN (3000)', 'http://192.168.1.4:3000', hostController),
-                _buildHostPresetChip('Hotspot (3000)', 'http://192.168.137.1:3000', hostController),
-                _buildHostPresetChip('Localhost (3000)', 'http://localhost:3000', hostController),
+                _buildHostPresetChip('Wi-Fi Host (192.168.1.5:3000)', 'http://192.168.1.5:3000', hostController),
+                _buildHostPresetChip('Localhost / Reverse ADB', 'http://127.0.0.1:3000', hostController),
+                _buildHostPresetChip('Wi-Fi (192.168.1.6)', 'http://192.168.1.6:3000', hostController),
+                _buildHostPresetChip('Wi-Fi LAN (192.168.1.2)', 'http://192.168.1.2:3000', hostController),
+                _buildHostPresetChip('Hotspot (192.168.137.1)', 'http://192.168.137.1:3000', hostController),
                 _buildHostPresetChip('Android Emulator', 'http://10.0.2.2:3000', hostController),
                 _buildHostPresetChip('Production Cloud', 'https://deltaengine.vercel.app', hostController),
               ],
@@ -302,6 +302,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
             onPressed: () async {
               final nav = Navigator.of(ctx);
               await _api.setBaseUrl(hostController.text);
+              WebSocketService().connect();
               if (mounted) setState(() {});
               nav.pop();
             },

@@ -12,6 +12,7 @@ class WebSocketService {
   WebSocketChannel? _channel;
   StreamSubscription? _subscription;
   Timer? _reconnectTimer;
+  Timer? _pingTimer;
   bool _isConnected = false;
 
   final StreamController<bool> _connectionStateController = StreamController<bool>.broadcast();
@@ -56,6 +57,7 @@ class WebSocketService {
         if (_channel == channel) {
           _isConnected = true;
           _reconnectAttempts = 0;
+          _startHeartbeat();
           if (!_connectionStateController.isClosed) {
             _connectionStateController.add(true);
           }
@@ -76,6 +78,7 @@ class WebSocketService {
         },
         onError: (_) {
           _isConnected = false;
+          _stopHeartbeat();
           if (!_connectionStateController.isClosed) {
             _connectionStateController.add(false);
           }
@@ -83,6 +86,7 @@ class WebSocketService {
         },
         onDone: () {
           _isConnected = false;
+          _stopHeartbeat();
           if (!_connectionStateController.isClosed) {
             _connectionStateController.add(false);
           }
@@ -237,6 +241,20 @@ class WebSocketService {
     return false;
   }
 
+  void _startHeartbeat() {
+    _pingTimer?.cancel();
+    _pingTimer = Timer.periodic(const Duration(seconds: 25), (_) {
+      if (_isConnected && _channel != null) {
+        send({'type': 'PING', 'timestamp': DateTime.now().millisecondsSinceEpoch});
+      }
+    });
+  }
+
+  void _stopHeartbeat() {
+    _pingTimer?.cancel();
+    _pingTimer = null;
+  }
+
   void _scheduleReconnect() {
     _reconnectTimer?.cancel();
     final delays = [2, 4, 8, 15, 25];
@@ -251,6 +269,7 @@ class WebSocketService {
 
   void disconnect() {
     _reconnectTimer?.cancel();
+    _stopHeartbeat();
     _reconnectAttempts = 0;
     _subscription?.cancel();
     _subscription = null;

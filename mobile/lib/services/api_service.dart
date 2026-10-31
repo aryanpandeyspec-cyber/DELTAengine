@@ -139,7 +139,13 @@ class ApiService {
   }
 
   Future<void> setBaseUrl(String newUrl) async {
-    _baseUrl = newUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    var clean = newUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    if (clean.isNotEmpty && !clean.startsWith('http://') && !clean.startsWith('https://')) {
+      clean = 'http://$clean';
+    }
+    if (clean.isNotEmpty) {
+      _baseUrl = clean;
+    }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('delta_base_url', _baseUrl);
   }

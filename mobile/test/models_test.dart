@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:delta_mobile/models/models.dart';
 import 'package:delta_mobile/services/api_service.dart';
 
@@ -72,6 +73,36 @@ void main() {
       expect(voice.waveform[1], equals(0.5));
       expect(voice.waveform[2], equals(0.9));
       expect(voice.waveform[3], equals(0.5));
+    });
+
+    test('Direct constructor creates valid offline VoiceTransmission', () {
+      final voice = VoiceTransmission(
+        channel: '2',
+        speaker: 'Aryan',
+        message: 'Gate bottleneck cleared',
+        timestamp: DateTime(2026, 11, 1, 10, 30),
+        waveform: [0.2, 0.4, 0.6],
+      );
+      expect(voice.channel, equals('2'));
+      expect(voice.speaker, equals('Aryan'));
+      expect(voice.message, equals('Gate bottleneck cleared'));
+      expect(voice.waveform.length, equals(3));
+    });
+  });
+
+  group('ApiService URL Normalization Tests', () {
+    test('setBaseUrl normalizes raw IP addresses and strips trailing slashes', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+      final api = ApiService();
+      await api.setBaseUrl('192.168.1.5:3000/');
+      expect(api.baseUrl, equals('http://192.168.1.5:3000'));
+
+      await api.setBaseUrl('https://deltaengine.vercel.app///');
+      expect(api.baseUrl, equals('https://deltaengine.vercel.app'));
+
+      await api.setBaseUrl('127.0.0.1:3000');
+      expect(api.baseUrl, equals('http://127.0.0.1:3000'));
     });
   });
 }
