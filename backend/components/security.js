@@ -252,7 +252,10 @@ function detectSecurityDiscrepancies(sessionsList, roomStates = {}) {
   Object.keys(roomStates).forEach(roomId => {
     const r = roomStates[roomId];
     if (r && (r.percent >= 85 || r.status === 'alert')) {
-      const volunteerCount = activeOnly.filter(s => s.role === 'VOLUNTEER' || s.role === 'COORDINATOR').length;
+      const volunteerCount = activeOnly.filter(s => {
+        const roleUpper = (s.role || '').toUpperCase();
+        return roleUpper === 'VOLUNTEER' || roleUpper === 'COORDINATOR';
+      }).length;
       if (volunteerCount < 2) {
         discrepancies.push({
           id: `disc_surge_${roomId}`,
@@ -451,13 +454,16 @@ function authenticateToken(req, res, next) {
  * Express Middleware: Enforces granular role-based permissions.
  */
 function requireRole(allowedRoles = []) {
+  const normalizedAllowed = (allowedRoles || []).map(r => String(r).toUpperCase());
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ success: false, error: 'Unauthorized' });
     }
 
+    const userRole = String(req.user.role || '').toUpperCase();
+
     // ADMIN has universal permission override
-    if (req.user.role === 'ADMIN' || allowedRoles.includes(req.user.role)) {
+    if (userRole === 'ADMIN' || userRole === 'SUPER_ADMIN' || normalizedAllowed.includes(userRole)) {
       return next();
     }
 

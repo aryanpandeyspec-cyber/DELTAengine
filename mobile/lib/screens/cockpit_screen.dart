@@ -4478,6 +4478,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                         ),
                         const SizedBox(width: 8),
                         Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             const PulsingDot(color: DeltaColors.successGreen, size: 5),
                             const SizedBox(width: 4),
@@ -4531,13 +4532,16 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   }
 
   Color _getRoleColor(String role) {
-    switch (role.toUpperCase()) {
+    switch (role.toUpperCase().replaceAll('_', ' ').trim()) {
       case 'ADMIN':
-      case 'SUPER_ADMIN':
+      case 'SUPER ADMIN':
         return DeltaColors.mustard;
       case 'COORDINATOR':
+      case 'LEAD OPS':
         return DeltaColors.skyAqua;
       case 'SAFETY':
+      case 'SAFETY DIRECTOR':
+      case 'FIRE MARSHAL':
         return DeltaColors.coralRed;
       case 'VOLUNTEER':
       default:

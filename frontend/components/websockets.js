@@ -697,6 +697,8 @@ function initWebSockets() {
         if (isMe && !window.location.pathname.includes('login')) {
           localStorage.removeItem('delta_auth_token');
           localStorage.removeItem('delta_user_session');
+          localStorage.removeItem('delta_session_id');
+          localStorage.removeItem('delta_user_email');
           if (typeof createToast === 'function') {
             createToast(`Your session has been terminated by an Administrator: ${revData.reason || 'Administrative Revocation'}.`, 'error');
           }
