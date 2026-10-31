@@ -187,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       role: _selectedRole.toLowerCase(),
       token: 'jwt-delta-demo-instant-pass',
       sessionId: 'sess-demo-${DateTime.now().millisecondsSinceEpoch}',
-      expiresAt: DateTime.now().add(const Duration(hours: 4)),
+      expiresAt: DateTime.now().add(const Duration(hours: 3)),
       rememberMe: _rememberMe,
     );
 

@@ -124,7 +124,7 @@ function base64UrlDecode(str) {
   return Buffer.from(str, 'base64').toString('utf8');
 }
 
-const SESSION_DURATION_SECONDS = 4 * 60 * 60; // 14,400 seconds = 4 Hours Session Lifetime (Event Window)
+const SESSION_DURATION_SECONDS = 3 * 60 * 60; // 10,800 seconds = 3 Hours Session Lifetime (Event Window)
 
 // =========================================================================
 // 🛡️ ACTIVE SESSION REGISTRY & SECURITY DISCREPANCY DETECTOR

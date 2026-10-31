@@ -349,7 +349,7 @@ class ApiService {
         token: 'jwt-delta-offline-${DateTime.now().millisecondsSinceEpoch}',
         sessionId: 'sess-${DateTime.now().millisecondsSinceEpoch}',
         rememberMe: rememberMe,
-        expiresAt: DateTime.now().add(const Duration(hours: 4)),
+        expiresAt: DateTime.now().add(const Duration(hours: 3)),
       );
       if (rememberMe) {
         await saveSessionToStorage(offlineSession);

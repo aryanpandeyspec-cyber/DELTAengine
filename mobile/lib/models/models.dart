@@ -323,7 +323,7 @@ class OperatorSession {
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
 
   Duration get remainingDuration {
-    if (expiresAt == null) return const Duration(hours: 4);
+    if (expiresAt == null) return const Duration(hours: 3);
     final diff = expiresAt!.difference(DateTime.now());
     return diff.isNegative ? Duration.zero : diff;
   }

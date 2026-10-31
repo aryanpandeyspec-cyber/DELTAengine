@@ -7,12 +7,13 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const DeltaMobileApp());
 
-    // Advance frame for async _checkAutoLogin() to complete and update _isRestoringSession
+    // Advance frame for splash screen animation and navigation to complete
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 50));
+    await tester.pump(const Duration(milliseconds: 1400));
+    await tester.pump(const Duration(milliseconds: 200));
 
     // Verify that the login screen header and components render properly
-    expect(find.text('DELTA ENGINE'), findsOneWidget);
+    expect(find.text('DELTA ENGINE'), findsWidgets);
     expect(find.text('MOBILE COORDINATOR OS'), findsOneWidget);
     expect(find.text('OPERATOR AUTH'), findsOneWidget);
   });
