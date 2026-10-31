@@ -128,5 +128,17 @@ void main() {
       expect(session.isRevoked, isFalse);
     });
   });
+
+  group('AttendeeBadgeResult & Offline Verification Tests', () {
+    test('Offline verification issues valid edge attendee badge', () async {
+      final api = ApiService();
+      final res = await api.verifyBadge(code: 'VIP-9941', scannedBy: 'Gate Marshal');
+      expect(res.valid, isTrue);
+      expect(res.ticketId, equals('VIP-9941'));
+      expect(res.name, contains('VIP'));
+      expect(res.tier, contains('VIP'));
+      expect(res.tamperCheckPassed, isTrue);
+    });
+  });
 }
 

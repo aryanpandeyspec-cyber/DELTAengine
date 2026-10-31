@@ -2311,6 +2311,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                               );
                             }
                           });
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Gate Passage Recorded (+1 IN)'),
@@ -2373,6 +2374,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                               );
                             }
                           });
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text('Gate Passage Recorded (-1 OUT)'),
@@ -2574,24 +2576,30 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           ),
           if (_selectedBlueprintRoomId != null) ...[
             const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: DeltaColors.surfaceLight,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: DeltaColors.skyAqua, width: 1.5),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.pin_drop, size: 14, color: DeltaColors.skyAqua),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Focused on ${_rooms.firstWhere((r) => r.id == _selectedBlueprintRoomId, orElse: () => _rooms.first).name}',
-                    style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
+            Builder(builder: (_) {
+              final focusedRoom = _rooms.cast<RoomTelemetry?>().firstWhere(
+                (r) => r?.id == _selectedBlueprintRoomId,
+                orElse: () => _rooms.isNotEmpty ? _rooms.first : null,
+              );
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: DeltaColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: DeltaColors.skyAqua, width: 1.5),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.pin_drop, size: 14, color: DeltaColors.skyAqua),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Focused on ${focusedRoom?.name ?? _selectedBlueprintRoomId ?? "Zone"}',
+                      style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ],
+                ),
+              );
+            }),
           ],
         ],
       ),
@@ -3814,8 +3822,17 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 backgroundColor: DeltaColors.mustard,
                 textColor: Colors.black,
                 onPressed: () async {
+                  final enteredCode = _scannerCodeController.text.trim();
+                  if (enteredCode.isEmpty) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter or select a badge code to verify.')),
+                    );
+                    return;
+                  }
+                  HapticFeedback.mediumImpact();
                   try {
-                    final res = await _api.verifyBadge(code: _scannerCodeController.text, scannedBy: widget.session.name);
+                    final res = await _api.verifyBadge(code: enteredCode, scannedBy: widget.session.name);
                     if (mounted) {
                       setState(() {
                         _lastScannedBadge = res;
@@ -3824,6 +3841,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                     }
                   } catch (e) {
                     if (mounted) {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Badge verification error: $e')),
                       );
@@ -4223,7 +4241,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        'CONNECTED VOLUNTEERS (${_adminSessions.length})',
+                        'CONNECTED OPERATORS (${_adminSessions.length})',
                         style: GoogleFonts.spaceGrotesk(
                           fontSize: 10.5,
                           fontWeight: FontWeight.w800,
@@ -4463,7 +4481,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                             ),
                             icon: const Icon(Icons.power_settings_new, size: 15),
                             label: Text(
-                              isSelf ? 'REVOKE & LOGOUT MY SESSION' : 'FORCE LOGOUT VOLUNTEER',
+                              isSelf ? 'REVOKE & LOGOUT MY SESSION' : 'FORCE LOGOUT ${session.role.toUpperCase()}',
                               style: GoogleFonts.spaceGrotesk(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
