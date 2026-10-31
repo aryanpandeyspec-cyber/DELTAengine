@@ -108,7 +108,7 @@ class WebSocketService {
                 if (v is Map<String, dynamic>) {
                   final copy = Map<String, dynamic>.from(v);
                   copy['id'] = k;
-                  copy['name'] = k.toUpperCase();
+                  // default to formatted room name
                   final r = RoomTelemetry.fromJson(copy);
                   _cachedRooms[r.id] = r;
                 }
@@ -117,7 +117,7 @@ class WebSocketService {
               final k = data['roomId'].toString();
               final copy = Map<String, dynamic>.from(data['room'] as Map<String, dynamic>);
               copy['id'] = k;
-              copy['name'] = k.toUpperCase();
+              // default to formatted room name
               final r = RoomTelemetry.fromJson(copy);
               _cachedRooms[r.id] = r;
             }
@@ -180,7 +180,7 @@ class WebSocketService {
                 if (v is Map<String, dynamic>) {
                   final copy = Map<String, dynamic>.from(v);
                   copy['id'] = k;
-                  copy['name'] = k.toUpperCase();
+                  // default to formatted room name
                   final r = RoomTelemetry.fromJson(copy);
                   _cachedRooms[r.id] = r;
                 }

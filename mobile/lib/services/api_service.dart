@@ -21,8 +21,8 @@ class ApiService {
   String get baseUrl => _baseUrl;
   String? get authToken => _authToken;
 
-  List<RoomTelemetry> getCachedRooms() => List.unmodifiable(_cachedRooms);
-  List<TaskItem> getCachedTasks() => List.unmodifiable(_cachedTasks);
+  List<RoomTelemetry> getCachedRooms() => List<RoomTelemetry>.from(_cachedRooms);
+  List<TaskItem> getCachedTasks() => List<TaskItem>.from(_cachedTasks);
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -387,8 +387,8 @@ class ApiService {
         }
       }
     } catch (_) {}
-    if (_cachedRooms.isNotEmpty) return _cachedRooms;
-    return _fallbackRooms();
+    if (_cachedRooms.isNotEmpty) return List<RoomTelemetry>.from(_cachedRooms);
+    return List<RoomTelemetry>.from(_fallbackRooms());
   }
 
   List<RoomTelemetry> _fallbackRooms() {
@@ -437,7 +437,7 @@ class ApiService {
         }
       }
     } catch (_) {}
-    if (_cachedTasks.isNotEmpty) return _cachedTasks;
+    if (_cachedTasks.isNotEmpty) return List<TaskItem>.from(_cachedTasks);
     return [
       TaskItem(
         id: 't-offline-1',

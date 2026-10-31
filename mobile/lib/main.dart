@@ -6,8 +6,8 @@ import 'theme/neubrutalism.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Disable blocking runtime HTTP font downloads on mobile for zero-stutter 120 FPS
-  GoogleFonts.config.allowRuntimeFetching = false;
+  // Allow Google Fonts runtime fetching and local caching
+  GoogleFonts.config.allowRuntimeFetching = true;
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,

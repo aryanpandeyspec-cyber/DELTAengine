@@ -102,6 +102,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   }
 
   void _onProgressUpdate() {
+    if (!mounted) return;
     final progress = _progressAnim.value;
     final targetIndex = (progress * (_bootLogs.length - 1)).clamp(0, _bootLogs.length - 1).toInt();
     if (targetIndex != _currentLogIndex) {

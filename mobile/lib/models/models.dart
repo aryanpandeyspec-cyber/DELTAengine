@@ -241,11 +241,16 @@ class TaskItem {
       description: description,
       location: location,
       severity: severity,
-      status: status ?? this.status,
+      status: status != null ? status.toUpperCase() : this.status,
       assignedTo: assignedTo ?? this.assignedTo,
       createdAt: createdAt,
     );
   }
+
+  bool get isClaimed => status.toUpperCase() == 'CLAIMED';
+  bool get isResolved => status.toUpperCase() == 'RESOLVED';
+  bool get isPending => status.toUpperCase() == 'PENDING' || status.toUpperCase() == 'OPEN';
+  bool get isUrgent => severity.toUpperCase() == 'URGENT' || severity.toUpperCase() == 'CRITICAL';
 
   Map<String, dynamic> toJson() {
     return {
@@ -537,7 +542,9 @@ class VoiceTransmission {
           ? DateTime.tryParse(json['timestamp'].toString()) ?? DateTime.now()
           : DateTime.now(),
       waveform: (json['waveform'] is List)
-          ? (json['waveform'] as List).map((e) => (e as num).toDouble()).toList()
+          ? (json['waveform'] as List)
+              .map((e) => (e is num) ? e.toDouble() : (double.tryParse(e.toString()) ?? 0.5))
+              .toList()
           : [0.3, 0.7, 0.4, 0.9, 0.6, 0.2, 0.8, 0.5, 0.3],
     );
   }

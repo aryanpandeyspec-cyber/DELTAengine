@@ -42,6 +42,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   final List<VoiceTransmission> _voiceTransmissions = [];
   AttendeeBadgeResult? _lastScannedBadge;
   int _totalGateCheckins = 842;
+  final _scannerCodeController = TextEditingController(text: 'VIP-9941');
 
   // Walkie talkie state
   String _activeChannel = '1';
@@ -140,8 +141,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
         final tasks = await _api.fetchTasks();
         if (mounted && rooms.isNotEmpty) {
           setState(() {
-            _rooms = rooms;
-            _tasks = tasks;
+            _rooms = List<RoomTelemetry>.from(rooms);
+            _tasks = List<TaskItem>.from(tasks);
           });
         }
       } catch (_) {
@@ -181,6 +182,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _adminSessionsTimer?.cancel();
     _scannerAnim.dispose();
     _pttAnim.dispose();
+    _scannerCodeController.dispose();
     _wsStateSub?.cancel();
     _taskSub?.cancel();
     _roomSub?.cancel();
@@ -197,10 +199,10 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     final cachedRooms = _api.getCachedRooms();
     final cachedTasks = _api.getCachedTasks();
     if (cachedRooms.isNotEmpty && mounted) {
-      setState(() => _rooms = cachedRooms);
+      setState(() => _rooms = List<RoomTelemetry>.from(cachedRooms));
     }
     if (cachedTasks.isNotEmpty && mounted) {
-      setState(() => _tasks = cachedTasks);
+      setState(() => _tasks = List<TaskItem>.from(cachedTasks));
     }
 
     // 2. Fetch fresh telemetry concurrently in the background
@@ -212,8 +214,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
 
       if (mounted) {
         setState(() {
-          _rooms = results[0] as List<RoomTelemetry>;
-          _tasks = results[1] as List<TaskItem>;
+          _rooms = List<RoomTelemetry>.from(results[0] as List<RoomTelemetry>);
+          _tasks = List<TaskItem>.from(results[1] as List<TaskItem>);
           _isLoading = false;
         });
       }
@@ -234,19 +236,21 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _taskSub = _ws.onTaskEvent.listen((task) {
       if (mounted) {
         setState(() {
-          final index = _tasks.indexWhere((t) => t.id == task.id);
+          final copy = List<TaskItem>.from(_tasks);
+          final index = copy.indexWhere((t) => t.id == task.id);
           if (index != -1) {
-            _tasks[index] = task;
+            copy[index] = task;
           } else {
-            _tasks.insert(0, task);
+            copy.insert(0, task);
           }
+          _tasks = copy;
         });
       }
     });
 
     _roomSub = _ws.onRoomEvent.listen((rooms) {
       if (mounted) {
-        setState(() => _rooms = rooms);
+        setState(() => _rooms = List<RoomTelemetry>.from(rooms));
       }
     });
 
@@ -359,7 +363,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   }
 
   Future<void> _fetchAdminGovernanceData({bool silent = false}) async {
-    if (!silent) setState(() => _isLoadingAdminSessions = true);
+    if (!silent && mounted) setState(() => _isLoadingAdminSessions = true);
     try {
       final res = await _api.fetchAdminSessions();
       if (mounted) {
@@ -1141,13 +1145,13 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   Future<void> _handleClaimTask(TaskItem task) async {
     try {
       await _api.claimTask(taskId: task.id, claimedBy: widget.session.name);
-      setState(() {
-        final idx = _tasks.indexWhere((t) => t.id == task.id);
-        if (idx != -1) {
-          _tasks[idx] = task.copyWith(status: 'claimed', assignedTo: widget.session.name);
-        }
-      });
       if (mounted) {
+        setState(() {
+          final idx = _tasks.indexWhere((t) => t.id == task.id);
+          if (idx != -1) {
+            _tasks[idx] = task.copyWith(status: 'CLAIMED', assignedTo: widget.session.name);
+          }
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
@@ -1167,13 +1171,13 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   Future<void> _handleResolveTask(TaskItem task) async {
     try {
       await _api.resolveTask(taskId: task.id, resolvedBy: widget.session.name);
-      setState(() {
-        final idx = _tasks.indexWhere((t) => t.id == task.id);
-        if (idx != -1) {
-          _tasks[idx] = task.copyWith(status: 'resolved');
-        }
-      });
       if (mounted) {
+        setState(() {
+          final idx = _tasks.indexWhere((t) => t.id == task.id);
+          if (idx != -1) {
+            _tasks[idx] = task.copyWith(status: 'RESOLVED');
+          }
+        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
@@ -1696,7 +1700,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       body: (_isLoading && _rooms.isEmpty)
           ? const Center(child: CircularProgressIndicator(color: DeltaColors.skyAqua))
           : IndexedStack(
-              index: _currentTabIndex,
+              index: _currentTabIndex.clamp(0, widget.session.isAdmin ? 4 : 3),
               children: [
                 _buildTelemetryTab(),
                 _buildTasksTab(),
@@ -1719,7 +1723,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           ],
         ),
         child: BottomNavigationBar(
-          currentIndex: _currentTabIndex,
+          currentIndex: _currentTabIndex.clamp(0, widget.session.isAdmin ? 4 : 3),
           onTap: (index) => setState(() => _currentTabIndex = index),
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -2830,9 +2834,9 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   // ==========================================
   Widget _buildTasksTab() {
     final filteredTasks = _tasks.where((t) {
-      if (_taskFilter == 'URGENT' && !(t.severity == 'URGENT' || t.severity == 'CRITICAL')) return false;
-      if (_taskFilter == 'CLAIMED' && t.status != 'claimed') return false;
-      if (_taskFilter == 'RESOLVED' && t.status != 'resolved') return false;
+      if (_taskFilter == 'URGENT' && !t.isUrgent) return false;
+      if (_taskFilter == 'CLAIMED' && !t.isClaimed) return false;
+      if (_taskFilter == 'RESOLVED' && !t.isResolved) return false;
       if (_taskSearchQuery.isNotEmpty) {
         final matchesTitle = t.title.toLowerCase().contains(_taskSearchQuery);
         final matchesLocation = t.location.toLowerCase().contains(_taskSearchQuery);
@@ -2842,9 +2846,9 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       return true;
     }).toList();
 
-    final urgentCount = _tasks.where((t) => t.severity == 'URGENT' || t.severity == 'CRITICAL').length;
-    final claimedCount = _tasks.where((t) => t.status == 'claimed').length;
-    final resolvedCount = _tasks.where((t) => t.status == 'resolved').length;
+    final urgentCount = _tasks.where((t) => t.isUrgent).length;
+    final claimedCount = _tasks.where((t) => t.isClaimed).length;
+    final resolvedCount = _tasks.where((t) => t.isResolved).length;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -2995,9 +2999,9 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   }
 
   Widget _buildEnhancedTaskCard(TaskItem task) {
-    final isUrgent = task.severity == 'URGENT' || task.severity == 'CRITICAL';
-    final isClaimed = task.status == 'claimed';
-    final isResolved = task.status == 'resolved';
+    final isUrgent = task.isUrgent;
+    final isClaimed = task.isClaimed;
+    final isResolved = task.isResolved;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -3437,8 +3441,6 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   // TAB 4: BADGE SCANNER & ACCESS CONTROL
   // ==========================================
   Widget _buildBadgeScannerTab() {
-    final codeCtrl = TextEditingController(text: 'VIP-9941');
-
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -3583,7 +3585,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
 
               // Code Input & Presets
               TextField(
-                controller: codeCtrl,
+                controller: _scannerCodeController,
                 style: DeltaTypography.monoStat(color: Colors.white, fontSize: 14),
                 decoration: InputDecoration(
                   filled: true,
@@ -3612,28 +3614,28 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                     label: Text('VIP PASS (DELTA-8492)', style: DeltaTypography.monoBadge(fontSize: 10, color: DeltaColors.mustard)),
                     backgroundColor: DeltaColors.surfaceLight,
                     side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
-                    onPressed: () => codeCtrl.text = 'DELTA-8492',
+                    onPressed: () => _scannerCodeController.text = 'DELTA-8492',
                   ),
                   ActionChip(
                     avatar: const Icon(Icons.mic, size: 13, color: DeltaColors.skyAqua),
                     label: Text('KEYNOTE (SPK-1022)', style: DeltaTypography.monoBadge(fontSize: 10, color: DeltaColors.skyAqua)),
                     backgroundColor: DeltaColors.surfaceLight,
                     side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
-                    onPressed: () => codeCtrl.text = 'SPK-1022',
+                    onPressed: () => _scannerCodeController.text = 'SPK-1022',
                   ),
                   ActionChip(
                     avatar: const Icon(Icons.badge, size: 13, color: DeltaColors.mintGreen),
                     label: Text('DELEGATE (DELTA-1024)', style: DeltaTypography.monoBadge(fontSize: 10, color: DeltaColors.mintGreen)),
                     backgroundColor: DeltaColors.surfaceLight,
                     side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
-                    onPressed: () => codeCtrl.text = 'DELTA-1024',
+                    onPressed: () => _scannerCodeController.text = 'DELTA-1024',
                   ),
                   ActionChip(
                     avatar: const Icon(Icons.shield, size: 13, color: DeltaColors.hotPink),
                     label: Text('CREW (CREW-0771)', style: DeltaTypography.monoBadge(fontSize: 10, color: DeltaColors.hotPink)),
                     backgroundColor: DeltaColors.surfaceLight,
                     side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
-                    onPressed: () => codeCtrl.text = 'CREW-0771',
+                    onPressed: () => _scannerCodeController.text = 'CREW-0771',
                   ),
                 ],
               ),
@@ -3645,11 +3647,13 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 textColor: Colors.black,
                 onPressed: () async {
                   try {
-                    final res = await _api.verifyBadge(code: codeCtrl.text, scannedBy: widget.session.name);
-                    setState(() {
-                      _lastScannedBadge = res;
-                      _totalGateCheckins++;
-                    });
+                    final res = await _api.verifyBadge(code: _scannerCodeController.text, scannedBy: widget.session.name);
+                    if (mounted) {
+                      setState(() {
+                        _lastScannedBadge = res;
+                        _totalGateCheckins++;
+                      });
+                    }
                   } catch (e) {
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
