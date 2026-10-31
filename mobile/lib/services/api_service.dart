@@ -54,6 +54,22 @@ class ApiService {
       } catch (_) {}
     }
 
+    // Restore queued offline actions from local storage
+    final rawQueue = prefs.getString('delta_mesh_queue');
+    if (rawQueue != null && rawQueue.isNotEmpty) {
+      try {
+        final list = jsonDecode(rawQueue) as List<dynamic>;
+        _offlineQueue.clear();
+        for (final item in list) {
+          if (item is Map<String, dynamic>) {
+            _offlineQueue.add(item);
+          } else if (item is Map) {
+            _offlineQueue.add(Map<String, dynamic>.from(item));
+          }
+        }
+      } catch (_) {}
+    }
+
     if (savedUrl != null && savedUrl.isNotEmpty) {
       _baseUrl = savedUrl;
       // Fast background verification with low timeout (<250ms)

@@ -51,6 +51,8 @@ const tourSteps = [
 ];
 
 let currentTourStep = 0;
+let activeHighlightTimeout = null;
+let lastHighlightedElement = null;
 
 function initTourGuide() {
   const card = document.getElementById('tour-card');
@@ -62,6 +64,11 @@ function initTourGuide() {
   const stepInd = document.getElementById('tour-step-indicator');
 
   if (!card) return;
+  if (card.dataset.tourInitialized === 'true') {
+    renderTourStep();
+    return;
+  }
+  card.dataset.tourInitialized = 'true';
 
   // Click on 90-degree vertical minimized bar -> Expand Tour Guide Card
   if (minimizedBar) {
@@ -125,6 +132,17 @@ function initTourGuide() {
       stepInd.textContent = `${currentTourStep + 1} / ${tourSteps.length}`;
     }
     
+    // Clear previous outline and timeout
+    if (activeHighlightTimeout) {
+      clearTimeout(activeHighlightTimeout);
+      activeHighlightTimeout = null;
+    }
+    if (lastHighlightedElement) {
+      lastHighlightedElement.style.outline = 'none';
+      lastHighlightedElement.style.outlineOffset = '0';
+      lastHighlightedElement = null;
+    }
+
     // Highlight elements visually on page
     document.querySelectorAll('.highlight-tour').forEach(el => el.classList.remove('highlight-tour'));
     
@@ -140,8 +158,16 @@ function initTourGuide() {
       highlightTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
       highlightTarget.style.outline = '4px solid #facc15';
       highlightTarget.style.outlineOffset = '4px';
-      setTimeout(() => {
-        if (highlightTarget) highlightTarget.style.outline = 'none';
+      lastHighlightedElement = highlightTarget;
+      activeHighlightTimeout = setTimeout(() => {
+        if (highlightTarget) {
+          highlightTarget.style.outline = 'none';
+          highlightTarget.style.outlineOffset = '0';
+        }
+        if (lastHighlightedElement === highlightTarget) {
+          lastHighlightedElement = null;
+        }
+        activeHighlightTimeout = null;
       }, 3000);
     }
   }

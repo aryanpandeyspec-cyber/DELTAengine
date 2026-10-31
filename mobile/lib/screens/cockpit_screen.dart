@@ -316,6 +316,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             _voiceTransmissions.removeLast();
           }
         });
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
@@ -350,6 +351,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _scheduleSub = _ws.onScheduleEvent.listen((data) {
       if (mounted) {
         final reason = data['conflictReason'] ?? data['reason'] ?? 'Schedule optimized by Self-Healing Swarm';
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
@@ -379,6 +381,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       if (mounted) {
         final label = action['label'] ?? action['action'] ?? 'Tactical Action';
         final sender = action['sender'] ?? 'Field Operations';
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
@@ -490,9 +493,11 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             ),
             onPressed: () {
               Navigator.of(ctx).pop();
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
+              if (mounted) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              }
             },
             child: Text('RETURN TO LOGIN', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold)),
           ),
@@ -720,6 +725,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
         reason: 'Revoked by Administrator command (${widget.session.name})',
       );
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -884,6 +890,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                         channel: m['ch']!.replaceAll('CH ', ''),
                         text: 'Paging ${m['name']} over ${m['ch']}',
                       );
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Paging ${m['name']} on ${m['ch']}!')),
                       );
@@ -1166,6 +1173,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                       Navigator.pop(ctx);
                       await _loadInitialData();
                       if (mounted) {
+                        ScaffoldMessenger.of(context).hideCurrentSnackBar();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('✓ Resynced live telemetry graph from Edge')),
                         );
@@ -1240,6 +1248,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             _tasks[idx] = task.copyWith(status: 'CLAIMED', assignedTo: widget.session.name);
           }
         });
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
@@ -1249,6 +1258,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       }
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to claim: $e')),
         );
@@ -1266,6 +1276,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             _tasks[idx] = task.copyWith(status: 'RESOLVED');
           }
         });
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: DeltaColors.surfaceLight,
@@ -1275,6 +1286,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       }
     } catch (e) {
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to resolve: $e')),
         );
@@ -1414,6 +1426,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 onPressed: () async {
                   final enteredTitle = titleCtrl.text.trim();
                   if (enteredTitle.isEmpty) {
+                    ScaffoldMessenger.of(context).hideCurrentSnackBar();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Please enter a directive or title for the field task.')),
                     );
@@ -1429,14 +1442,16 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                       priority: priority,
                       creator: widget.session.name,
                     );
-                    setState(() {
-                      final idx = _tasks.indexWhere((t) => t.id == newTask.id);
-                      if (idx >= 0) {
-                        _tasks[idx] = newTask;
-                      } else {
-                        _tasks.insert(0, newTask);
-                      }
-                    });
+                    if (mounted) {
+                      setState(() {
+                        final idx = _tasks.indexWhere((t) => t.id == newTask.id);
+                        if (idx >= 0) {
+                          _tasks[idx] = newTask;
+                        } else {
+                          _tasks.insert(0, newTask);
+                        }
+                      });
+                    }
                     if (ctx.mounted) Navigator.pop(ctx);
                   } catch (e) {
                     final fallback = TaskItem(
@@ -1448,14 +1463,16 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                       description: '',
                       createdAt: DateTime.now(),
                     );
-                    setState(() {
-                      final idx = _tasks.indexWhere((t) => t.id == fallback.id);
-                      if (idx >= 0) {
-                        _tasks[idx] = fallback;
-                      } else {
-                        _tasks.insert(0, fallback);
-                      }
-                    });
+                    if (mounted) {
+                      setState(() {
+                        final idx = _tasks.indexWhere((t) => t.id == fallback.id);
+                        if (idx >= 0) {
+                          _tasks[idx] = fallback;
+                        } else {
+                          _tasks.insert(0, fallback);
+                        }
+                      });
+                    }
                     if (ctx.mounted) Navigator.pop(ctx);
                   }
                 },
@@ -1560,6 +1577,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                   note: noteCtrl.text.trim(),
                 );
                 if (mounted) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
                   if (ok) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -2042,6 +2060,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                           HapticFeedback.heavyImpact();
                           await _api.triggerTacticalAction('gate_release');
                           if (mounted) {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 backgroundColor: DeltaColors.yaleBlue,
@@ -2067,6 +2086,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                           HapticFeedback.lightImpact();
                           await _loadInitialData();
                           if (mounted) {
+                            ScaffoldMessenger.of(context).hideCurrentSnackBar();
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 backgroundColor: DeltaColors.successGreen,
@@ -2714,6 +2734,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             onTap: () async {
               final flushed = await _api.flushOfflineQueue();
               if (mounted) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('⚡ Mesh Relay Synced ($flushed delivered)')),
                 );
@@ -2759,6 +2780,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           sender: widget.session.name,
         );
         if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               backgroundColor: DeltaColors.surfaceLight,
@@ -2901,6 +2923,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                         label: 'Reroute flow from ${room.name}',
                         sender: widget.session.name,
                       );
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: DeltaColors.surfaceLight,
@@ -2936,6 +2959,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                         label: 'Marshal to ${room.name}',
                         sender: widget.session.name,
                       );
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           backgroundColor: DeltaColors.surfaceLight,
@@ -3361,11 +3385,11 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 child: GestureDetector(
                   onTapDown: (_) {
                     HapticFeedback.heavyImpact();
-                    setState(() => _isBroadcasting = true);
+                    if (mounted) setState(() => _isBroadcasting = true);
                   },
                   onTapUp: (_) async {
                     HapticFeedback.mediumImpact();
-                    setState(() => _isBroadcasting = false);
+                    if (mounted) setState(() => _isBroadcasting = false);
                     try {
                       await _api.broadcastVoice(
                         sender: widget.session.name,
@@ -3388,7 +3412,9 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                       }
                     }
                   },
-                  onTapCancel: () => setState(() => _isBroadcasting = false),
+                  onTapCancel: () {
+                    if (mounted) setState(() => _isBroadcasting = false);
+                  },
                   child: Container(
                     width: 96,
                     height: 96,
@@ -3476,6 +3502,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                 }
               }
               if (mounted) {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     backgroundColor: DeltaColors.yaleBlue,

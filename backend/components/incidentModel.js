@@ -108,13 +108,29 @@ function createIncident(params = {}) {
  * Requirements Model: Evaluates DATA_WE_HAVE vs DATA_WE_NEED
  */
 function evaluateTelemetryRequirements(incident, availableTelemetrySources = []) {
-  const availableSet = new Set((availableTelemetrySources || []).map(s => s.toLowerCase()));
-  const required = incident.requiredTelemetry || [];
-  const optional = incident.optionalTelemetry || [];
+  const availableSet = new Set((availableTelemetrySources || []).filter(Boolean).map(s => String(s).toLowerCase()));
+  if (!incident) {
+    return {
+      incidentId: null,
+      telemetryStatus: 'DEFICIENT',
+      hasAllRequired: false,
+      dataWeHave: Array.from(availableSet),
+      dataWeNeed: {
+        required: [],
+        missingRequired: [],
+        satisfiedRequired: [],
+        optional: [],
+        satisfiedOptional: []
+      }
+    };
+  }
 
-  const satisfiedRequired = required.filter(item => availableSet.has(item.toLowerCase()));
-  const missingRequired = required.filter(item => !availableSet.has(item.toLowerCase()));
-  const satisfiedOptional = optional.filter(item => availableSet.has(item.toLowerCase()));
+  const required = (incident.requiredTelemetry || []).filter(Boolean);
+  const optional = (incident.optionalTelemetry || []).filter(Boolean);
+
+  const satisfiedRequired = required.filter(item => availableSet.has(String(item).toLowerCase()));
+  const missingRequired = required.filter(item => !availableSet.has(String(item).toLowerCase()));
+  const satisfiedOptional = optional.filter(item => availableSet.has(String(item).toLowerCase()));
 
   const hasAllRequired = missingRequired.length === 0;
   let telemetryStatus = 'COMPLETE';
@@ -143,14 +159,25 @@ function evaluateTelemetryRequirements(incident, availableTelemetrySources = [])
 function evaluateActionFeasibility(action, availableResources = [], availablePersonnel = []) {
   if (!action) return { feasible: false, reason: 'No action specified' };
 
-  const resSet = new Set((availableResources || []).map(r => (typeof r === 'string' ? r : r.id || r.type).toLowerCase()));
-  const reqRes = action.requiredResources || [];
-  const missingResources = reqRes.filter(r => !resSet.has(r.toLowerCase()));
+  const resSet = new Set(
+    (availableResources || [])
+      .filter(Boolean)
+      .map(r => (typeof r === 'string' ? r : r.id || r.type || '').toLowerCase())
+      .filter(Boolean)
+  );
+  const reqRes = (action.requiredResources || []).filter(Boolean);
+  const missingResources = reqRes.filter(r => !resSet.has(String(r).toLowerCase()));
 
-  const requiredRoles = action.requiredRoles || [];
-  const activePersonnelRoles = new Set((availablePersonnel || []).map(p => (p.role || '').toLowerCase()));
+  const requiredRoles = (action.requiredRoles || []).filter(Boolean);
+  const activePersonnelRoles = new Set(
+    (availablePersonnel || [])
+      .filter(Boolean)
+      .map(p => ((p && p.role) || '').toLowerCase())
+      .filter(Boolean)
+  );
   const missingRoles = requiredRoles.filter(role => {
-    return !Array.from(activePersonnelRoles).some(r => r.includes(role.toLowerCase()));
+    const roleLower = String(role).toLowerCase();
+    return !Array.from(activePersonnelRoles).some(r => r.includes(roleLower));
   });
 
   const feasible = missingResources.length === 0 && (requiredRoles.length === 0 || missingRoles.length === 0);
@@ -163,7 +190,7 @@ function evaluateActionFeasibility(action, availableResources = [], availablePer
     missingResources,
     missingRoles,
     matchedPersonnel: (availablePersonnel || []).filter(p => 
-      requiredRoles.some(role => (p.role || '').toLowerCase().includes(role.toLowerCase()))
+      p && requiredRoles.some(role => ((p.role || '')).toLowerCase().includes(String(role).toLowerCase()))
     )
   };
 }
@@ -173,12 +200,13 @@ function evaluateActionFeasibility(action, availableResources = [], availablePer
  */
 function transitionIncidentState(incident, newState, note = '') {
   if (!incident) return null;
-  incident.resolutionState = newState;
+  const targetState = newState || RESOLUTION_STATES.DETECTED;
+  incident.resolutionState = targetState;
   incident.auditTrail = incident.auditTrail || [];
   incident.auditTrail.push({
-    state: newState,
+    state: targetState,
     timestamp: new Date().toISOString(),
-    note: note || `State transitioned to ${newState}`
+    note: note || `State transitioned to ${targetState}`
   });
   return incident;
 }

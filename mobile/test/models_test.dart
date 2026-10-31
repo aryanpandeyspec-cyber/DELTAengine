@@ -139,6 +139,35 @@ void main() {
       expect(res.tier, contains('VIP'));
       expect(res.tamperCheckPassed, isTrue);
     });
+
+    test('Offline verification detects SPK and CREW codes', () async {
+      final api = ApiService();
+      final spk = await api.verifyBadge(code: 'SPK-1022', scannedBy: 'Gate Marshal');
+      expect(spk.valid, isTrue);
+      expect(spk.name, equals('Keynote Speaker'));
+      expect(spk.tier, equals('Speaker Pass'));
+
+      final crew = await api.verifyBadge(code: 'CREW-0771', scannedBy: 'Gate Marshal');
+      expect(crew.valid, isTrue);
+      expect(crew.name, equals('Event Production Crew'));
+      expect(crew.tier, equals('Production Crew'));
+    });
+  });
+
+  group('Store-and-Forward Mesh Queue Tests', () {
+    test('enqueueOfflineAction records and counts queued actions', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+      final api = ApiService();
+      final initialCount = api.offlineQueueCount;
+
+      await api.enqueueOfflineAction(
+        endpoint: '/api/sensors/door',
+        payload: {'hallId': 'hall-1', 'type': 'in', 'count': 1},
+      );
+
+      expect(api.offlineQueueCount, equals(initialCount + 1));
+    });
   });
 }
 

@@ -1886,14 +1886,7 @@ app.post('/api/volunteer/sos', (req, res) => {
   const { volunteerName, hallId, note, crowdSeverity } = req.body || {};
   const timestamp = new Date().toLocaleTimeString();
   const safeHallId = String(hallId || 'hall-1').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
-  let resolvedHall = db.graph?.halls?.[safeHallId];
-  if (!resolvedHall) {
-    const hallNum = safeHallId.replace(/[^0-9]/g, '');
-    if (hallNum) {
-      resolvedHall = db.graph?.halls?.[`hall-${hallNum}`] || db.graph?.halls?.[`room${hallNum}`];
-    }
-  }
-  const hall = resolvedHall || { name: safeHallId || 'Active Zone' };
+  const hall = db.graph?.halls?.[safeHallId] || { name: safeHallId || 'Active Zone' };
 
   const sosRecord = {
     id: `SOS_${Date.now()}`,
@@ -4007,11 +4000,12 @@ app.get('/api/operations/requirements', (req, res) => {
 
 // Ingests and processes an operational incident
 app.post('/api/operations/incident', async (req, res) => {
-  const telemetryData = Object.assign({}, req.body, req.body.telemetry || {});
-  if (req.body.location && typeof req.body.location === 'string' && !telemetryData.zoneId) {
-    telemetryData.zoneId = req.body.location;
+  const body = req.body || {};
+  const telemetryData = Object.assign({}, body, body.telemetry || {});
+  if (body.location && typeof body.location === 'string' && !telemetryData.zoneId) {
+    telemetryData.zoneId = body.location;
   }
-  const scenarioId = req.body.scenarioId || (req.body.telemetry && req.body.telemetry.scenarioId);
+  const scenarioId = body.scenarioId || (body.telemetry && body.telemetry.scenarioId);
   const result = await processOperationalTelemetry(telemetryData, db, broadcast, { scenarioId });
   res.json({
     success: true,

@@ -98,6 +98,8 @@
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && isCameraActive && !screenWakeLock) {
         requestScreenWakeLock();
+      } else if (document.visibilityState === 'hidden') {
+        releaseScreenWakeLock();
       }
     });
   }
