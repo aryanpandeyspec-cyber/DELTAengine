@@ -217,9 +217,10 @@ function handleDropOnCell(e) {
     }
   }
 
-  previousSchedule = JSON.parse(JSON.stringify(scheduleState));
+  previousSchedule = JSON.parse(JSON.stringify(scheduleState || {}));
+  if (!scheduleState[targetSlotId]) scheduleState[targetSlotId] = {};
   const occupiedTopicId = scheduleState[targetSlotId][targetHallId];
-  if (srcSlot && srcHall) {
+  if (srcSlot && srcHall && scheduleState[srcSlot]) {
     scheduleState[srcSlot][srcHall] = occupiedTopicId || null;
   }
   scheduleState[targetSlotId][targetHallId] = topicId;

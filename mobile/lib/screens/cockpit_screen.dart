@@ -637,6 +637,9 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
 
   Future<void> _handleForceRevokeSession(ActiveOperatorSession targetSession) async {
     HapticFeedback.heavyImpact();
+    final isSelf = targetSession.sessionId == widget.session.sessionId ||
+        targetSession.email.toLowerCase() == widget.session.email.toLowerCase();
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -650,7 +653,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             const Icon(Icons.gavel, color: DeltaColors.dangerRed, size: 22),
             const SizedBox(width: 8),
             Text(
-              'FORCE LOGOUT VOLUNTEER',
+              isSelf ? 'REVOKE OWN SESSION' : 'FORCE LOGOUT OPERATOR',
               style: GoogleFonts.outfit(
                 color: DeltaColors.dangerRed,
                 fontWeight: FontWeight.w900,
@@ -664,7 +667,9 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Revoke active terminal session for ${targetSession.name}?',
+              isSelf
+                  ? 'End and revoke your own active terminal session on this device?'
+                  : 'Revoke active terminal session for ${targetSession.name}?',
               style: GoogleFonts.spaceGrotesk(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
             ),
             const SizedBox(height: 8),
@@ -703,7 +708,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () => Navigator.pop(ctx, true),
-            child: Text('CONFIRM REVOCATION', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800, fontSize: 11)),
+            child: Text(isSelf ? 'REVOKE & LOGOUT' : 'CONFIRM REVOCATION', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800, fontSize: 11)),
           ),
         ],
       ),
@@ -4386,15 +4391,22 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.wifi, size: 13, color: DeltaColors.textDim),
-                            const SizedBox(width: 4),
-                            Text(
-                              session.ip,
-                              style: GoogleFonts.spaceGrotesk(fontSize: 10.5, color: DeltaColors.textDim),
-                            ),
-                          ],
+                        Flexible(
+                          flex: 2,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.wifi, size: 13, color: DeltaColors.textDim),
+                              const SizedBox(width: 4),
+                              Flexible(
+                                child: Text(
+                                  session.ip,
+                                  style: GoogleFonts.spaceGrotesk(fontSize: 10.5, color: DeltaColors.textDim),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                         const SizedBox(width: 8),
                         Row(
