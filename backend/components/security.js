@@ -204,6 +204,7 @@ function detectSecurityDiscrepancies(sessionsList, roomStates = {}) {
   // 1. Dual / Simultaneous Login Detection (same email on multiple distinct IPs or devices)
   const emailMap = new Map();
   for (const s of activeOnly) {
+    if (!s.email || typeof s.email !== 'string') continue;
     if (!emailMap.has(s.email)) {
       emailMap.set(s.email, []);
     }
@@ -232,7 +233,9 @@ function detectSecurityDiscrepancies(sessionsList, roomStates = {}) {
   // 2. Idle Session Warning (Logged-in operator with no telemetry/heartbeat for > 20 mins)
   const nowMs = Date.now();
   for (const s of activeOnly) {
-    const idleMinutes = (nowMs - new Date(s.lastSeen).getTime()) / 60000;
+    const lastSeenMs = s.lastSeen ? new Date(s.lastSeen).getTime() : 0;
+    if (!lastSeenMs || isNaN(lastSeenMs)) continue;
+    const idleMinutes = (nowMs - lastSeenMs) / 60000;
     if (idleMinutes > 20) {
       discrepancies.push({
         id: `disc_idle_${s.sessionId}`,
@@ -249,7 +252,8 @@ function detectSecurityDiscrepancies(sessionsList, roomStates = {}) {
   }
 
   // 3. High Density Chokepoint Coverage Gap
-  Object.keys(roomStates).forEach(roomId => {
+  if (roomStates && typeof roomStates === 'object') {
+    Object.keys(roomStates).forEach(roomId => {
     const r = roomStates[roomId];
     if (r && (r.percent >= 85 || r.status === 'alert')) {
       const volunteerCount = activeOnly.filter(s => {
@@ -270,7 +274,7 @@ function detectSecurityDiscrepancies(sessionsList, roomStates = {}) {
       }
     }
   });
-
+  }
   return discrepancies;
 }
 

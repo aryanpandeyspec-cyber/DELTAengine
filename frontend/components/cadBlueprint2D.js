@@ -1187,6 +1187,10 @@ class CadBlueprint2DEngine {
         if (typeof createToast === 'function') {
           createToast(`📏 Scale calibrated: ${data.cadModel.scale.pixelsPerMeter} px/m (${data.cadModel.dimensions.areaM2} m² total area).`, 'success');
         }
+      } else {
+        if (typeof createToast === 'function') {
+          createToast(`⚠️ Calibration failed: ${data.error || 'Invalid calibration input'}`, 'warning');
+        }
       }
     } catch (err) {
       console.error('[CAD Calibration Error]', err);

@@ -598,6 +598,7 @@ function reconstructCadGeometryFromSource({ buffer, fileType, fileName, hallId =
  * Re-calibrates scale given two clicked user points and real-world meter measurement
  */
 function recalibrateScaleWithPoints(cadModel, p1, p2, realDistanceM) {
+  if (!cadModel || typeof cadModel !== 'object') return cadModel;
   if (!p1 || !p2 || !realDistanceM || realDistanceM <= 0) return cadModel;
 
   const dx = p2.x - p1.x;
@@ -607,11 +608,19 @@ function recalibrateScaleWithPoints(cadModel, p1, p2, realDistanceM) {
   if (pixelDistance <= 5) return cadModel;
 
   const newPpm = +(pixelDistance / realDistanceM).toFixed(3);
+  if (newPpm <= 0 || !isFinite(newPpm)) return cadModel;
+
+  if (!cadModel.scale) cadModel.scale = {};
   cadModel.scale.pixelsPerMeter = newPpm;
   cadModel.scale.calibrationPoints = [
     { x: p1.x, y: p1.y, label: 'Point A (Calibrated)' },
     { x: p2.x, y: p2.y, label: 'Point B (Calibrated)', realDistanceM }
   ];
+
+  if (!cadModel.dimensions) cadModel.dimensions = {};
+  if (!cadModel.exteriorBounds) cadModel.exteriorBounds = { width: 540, height: 460 };
+  if (!cadModel.capacityMetrics) cadModel.capacityMetrics = {};
+  if (!Array.isArray(cadModel.rooms)) cadModel.rooms = [];
 
   // Re-calculate room areas and capacity with new scale
   cadModel.dimensions.widthM = +(cadModel.exteriorBounds.width / newPpm).toFixed(1);
@@ -625,7 +634,7 @@ function recalibrateScaleWithPoints(cadModel, p1, p2, realDistanceM) {
 
   // Re-calculate rooms areas
   cadModel.rooms.forEach(r => {
-    if (r.bounds) {
+    if (r && r.bounds && newPpm > 0) {
       r.areaM2 = +((r.bounds.width / newPpm) * (r.bounds.height / newPpm)).toFixed(1);
     }
   });

@@ -185,6 +185,23 @@ void main() {
       expect(disc.type, equals('DUAL_SESSION_ANOMALY'));
       expect(disc.title, contains('Concurrent Sign-in'));
       expect(disc.description, contains('Dual login'));
+      expect(disc.sessionIds, isEmpty);
+    });
+
+    test('Correctly parses email and sessionIds in forensic discrepancies', () {
+      final disc = SecurityDiscrepancy.fromJson({
+        'id': 'disc_2',
+        'severity': 'CRITICAL',
+        'type': 'DUAL_SESSION_ANOMALY',
+        'title': 'Concurrent Sign-in Anomaly (test@delta.in)',
+        'description': 'Dual login detected',
+        'email': 'test@delta.in',
+        'sessionIds': ['sess_1', 'sess_2'],
+      });
+
+      expect(disc.email, equals('test@delta.in'));
+      expect(disc.sessionIds.length, equals(2));
+      expect(disc.sessionIds.first, equals('sess_1'));
     });
   });
 }

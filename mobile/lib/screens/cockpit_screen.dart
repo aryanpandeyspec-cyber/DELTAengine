@@ -952,12 +952,13 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'DELTA Engine Host Address:',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'DELTA Engine Host Address:',
                 style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted),
               ),
               const SizedBox(height: 8),
@@ -999,7 +1000,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               ),
             ],
           ),
-          actions: [
+        ),
+        actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: Text(
@@ -1511,11 +1513,12 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Broadcasts immediate high-priority override to all command dashboards, mesh radios, and safety marshals.',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Broadcasts immediate high-priority override to all command dashboards, mesh radios, and safety marshals.',
                   style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
               const SizedBox(height: 14),
               Text('Incident Location:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
@@ -1555,7 +1558,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               ),
             ],
           ),
-          actions: [
+        ),
+        actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
               child: const Text('CANCEL', style: TextStyle(color: DeltaColors.textMuted)),
@@ -3967,6 +3971,132 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     );
   }
 
+  Future<void> _showDiscrepancyDetailsDialog(SecurityDiscrepancy d) async {
+    HapticFeedback.lightImpact();
+    final sevUpper = d.severity.toUpperCase();
+    final isCrit = sevUpper == 'CRITICAL' || sevUpper == 'HIGH';
+
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F1523),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: isCrit ? DeltaColors.dangerRed : DeltaColors.mustard,
+            width: 1.5,
+          ),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              isCrit ? Icons.warning_rounded : Icons.info_outline,
+              color: isCrit ? DeltaColors.dangerRed : DeltaColors.mustard,
+              size: 22,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                d.title,
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: (isCrit ? DeltaColors.dangerRed : DeltaColors.mustard).withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '${d.severity} • ${d.type.replaceAll('_', ' ')}',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    color: isCrit ? DeltaColors.dangerRed : DeltaColors.mustard,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                d.description,
+                style: GoogleFonts.spaceGrotesk(fontSize: 12.5, color: const Color(0xFFCBD5E1), height: 1.4),
+              ),
+              if (d.affectedUser != null || d.roomId != null || d.email != null || d.sessionIds.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF162238),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFF222F47)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (d.affectedUser != null)
+                        Text('Target: ${d.affectedUser}', style: GoogleFonts.spaceGrotesk(fontSize: 11, color: Colors.white)),
+                      if (d.email != null)
+                        Text('Email: ${d.email}', style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.skyAqua)),
+                      if (d.roomId != null)
+                        Text('Chokepoint: ${d.roomId}', style: GoogleFonts.spaceGrotesk(fontSize: 11, color: DeltaColors.mustard)),
+                      if (d.sessionIds.isNotEmpty)
+                        Text('Active Tokens: ${d.sessionIds.length}', style: GoogleFonts.spaceGrotesk(fontSize: 10.5, color: DeltaColors.textDim)),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('DISMISS', style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted, fontWeight: FontWeight.bold)),
+          ),
+          if (d.sessionIds.isNotEmpty && d.sessionIds.length > 1)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DeltaColors.dangerRed,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              onPressed: () async {
+                Navigator.pop(ctx);
+                final dupSessionId = d.sessionIds.last;
+                final ok = await _api.revokeSession(
+                  sessionId: dupSessionId,
+                  reason: 'Automatic Anomaly Resolution: Revoked duplicate session',
+                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(ok
+                          ? '✓ Terminated duplicate session (${dupSessionId.length > 8 ? dupSessionId.substring(0, 8) : dupSessionId}...)'
+                          : 'Failed to revoke duplicate session'),
+                    ),
+                  );
+                  await _fetchAdminGovernanceData();
+                }
+              },
+              child: Text('REVOKE DUPLICATE', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold, fontSize: 11)),
+            ),
+        ],
+      ),
+    );
+  }
+
   // ==========================================
   // TAB 5: ADMIN GOVERNANCE & ACTIVE SESSIONS
   // ==========================================
@@ -4193,70 +4323,76 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             ..._adminDiscrepancies.map((d) {
               final sevUpper = d.severity.toUpperCase();
               final isCrit = sevUpper == 'CRITICAL' || sevUpper == 'HIGH';
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: isCrit ? const Color(0xFF231215) : const Color(0xFF1F1B12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isCrit ? DeltaColors.dangerRed.withValues(alpha: 0.6) : DeltaColors.mustard.withValues(alpha: 0.5),
-                    width: 1.0,
+              return InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => _showDiscrepancyDetailsDialog(d),
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isCrit ? const Color(0xFF231215) : const Color(0xFF1F1B12),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isCrit ? DeltaColors.dangerRed.withValues(alpha: 0.6) : DeltaColors.mustard.withValues(alpha: 0.5),
+                      width: 1.0,
+                    ),
                   ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      isCrit ? Icons.warning_rounded : Icons.info_outline,
-                      color: isCrit ? DeltaColors.dangerRed : DeltaColors.mustard,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  d.title,
-                                  style: GoogleFonts.outfit(
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                    fontSize: 12.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: (isCrit ? DeltaColors.dangerRed : DeltaColors.mustard).withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  d.type.replaceAll('_', ' '),
-                                  style: GoogleFonts.spaceGrotesk(
-                                    fontSize: 8.5,
-                                    fontWeight: FontWeight.w800,
-                                    color: isCrit ? DeltaColors.dangerRed : DeltaColors.mustard,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            d.description,
-                            style: GoogleFonts.spaceGrotesk(fontSize: 11, color: const Color(0xFFE2E8F0)),
-                          ),
-                        ],
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        isCrit ? Icons.warning_rounded : Icons.info_outline,
+                        color: isCrit ? DeltaColors.dangerRed : DeltaColors.mustard,
+                        size: 20,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    d.title,
+                                    style: GoogleFonts.outfit(
+                                      fontWeight: FontWeight.w800,
+                                      color: Colors.white,
+                                      fontSize: 12.5,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (isCrit ? DeltaColors.dangerRed : DeltaColors.mustard).withValues(alpha: 0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    d.type.replaceAll('_', ' '),
+                                    style: GoogleFonts.spaceGrotesk(
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.w800,
+                                      color: isCrit ? DeltaColors.dangerRed : DeltaColors.mustard,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              d.description,
+                              style: GoogleFonts.spaceGrotesk(fontSize: 11, color: const Color(0xFFE2E8F0)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Icon(Icons.chevron_right, color: DeltaColors.textDim, size: 18),
+                    ],
+                  ),
                 ),
               );
             }),

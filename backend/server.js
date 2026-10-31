@@ -1787,7 +1787,7 @@ app.post('/api/volunteers/bulk', (req, res) => {
 // 7. Test Targeted Hall Emergency Dispatch Endpoint (Pings ONLY assigned hall crew)
 app.post('/api/volunteers/test-hall-alert', async (req, res) => {
   const { hallId, eventType, count, capacity } = req.body;
-  const targetHall = hallId || 'hall-1';
+  const targetHall = normalizeHallId(hallId || 'hall-1');
   const cap = capacity || (db.graph.halls[targetHall]?.capacity || 250);
   const curCount = count || cap;
   const occupiedPercent = Math.round((curCount / cap) * 100);
@@ -1885,8 +1885,9 @@ app.post('/api/audit/supervisor-action', (req, res) => {
 app.post('/api/volunteer/sos', (req, res) => {
   const { volunteerName, hallId, note, crowdSeverity } = req.body || {};
   const timestamp = new Date().toLocaleTimeString();
-  const safeHallId = String(hallId || 'hall-1').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 50);
-  const hall = db.graph?.halls?.[safeHallId] || { name: safeHallId || 'Active Zone' };
+  const canonicalHallId = normalizeHallId(hallId) || 'hall-1';
+  const hall = db.graph?.halls?.[canonicalHallId] || { name: getHallDisplayName(canonicalHallId, db) || canonicalHallId };
+  const safeHallId = canonicalHallId;
 
   const sosRecord = {
     id: `SOS_${Date.now()}`,
@@ -3445,11 +3446,15 @@ app.post('/api/spatial/cad-parse', upload.single('blueprint'), async (req, res) 
 
 app.post('/api/spatial/cad-calibrate', (req, res) => {
   try {
-    const { cadModel, p1, p2, realDistanceM } = req.body;
+    const { cadModel, p1, p2, realDistanceM } = req.body || {};
     if (!cadModel) {
       return res.status(400).json({ success: false, error: 'cadModel payload is required.' });
     }
-    const calibrated = recalibrateScaleWithPoints(cadModel, p1, p2, parseFloat(realDistanceM));
+    const dist = parseFloat(realDistanceM);
+    if (!dist || isNaN(dist) || dist <= 0) {
+      return res.status(400).json({ success: false, error: 'realDistanceM must be a valid positive number.' });
+    }
+    const calibrated = recalibrateScaleWithPoints(cadModel, p1, p2, dist);
     res.json({ success: true, cadModel: calibrated });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -3458,11 +3463,11 @@ app.post('/api/spatial/cad-calibrate', (req, res) => {
 
 app.post('/api/spatial/cad-save', async (req, res) => {
   try {
-    const { cadModel } = req.body;
+    const { cadModel } = req.body || {};
     if (!cadModel || !cadModel.hallId) {
       return res.status(400).json({ success: false, error: 'Valid cadModel with hallId is required.' });
     }
-    const hallId = cadModel.hallId;
+    const hallId = normalizeHallId(cadModel.hallId) || cadModel.hallId;
     const effectiveCap = cadModel.capacityMetrics?.effectiveCapacity || 333;
 
     if (!db.graph.halls[hallId]) {

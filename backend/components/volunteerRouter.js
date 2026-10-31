@@ -11,14 +11,16 @@ const { dispatchTwilioWhatsApp } = require('./twilioDispatcher');
 function normalizeHallId(input) {
   if (!input) return '';
   const str = String(input).toLowerCase().trim();
-  if (str.includes('turing') || str === 'hall-1') return 'hall-1';
-  if (str.includes('lovelace') || str === 'hall-2') return 'hall-2';
-  if (str.includes('hopper') || str === 'hall-3') return 'hall-3';
-  if (str.includes('keynote') || str.includes('arena') || str === 'hall-4') return 'hall-4';
+  if (str.includes('turing') || str === 'hall-1' || str === 'hall1' || str === 'hall 1' || str === 'room-1' || str === 'room1' || str === 'room 1') return 'hall-1';
+  if (str.includes('lovelace') || str === 'hall-2' || str === 'hall2' || str === 'hall 2' || str === 'room-2' || str === 'room2' || str === 'room 2') return 'hall-2';
+  if (str.includes('hopper') || str === 'hall-3' || str === 'hall3' || str === 'hall 3' || str === 'room-3' || str === 'room3' || str === 'room 3') return 'hall-3';
+  if (str.includes('keynote') || str.includes('arena') || str === 'hall-4' || str === 'hall4' || str === 'hall 4' || str === 'room-4' || str === 'room4' || str === 'room 4') return 'hall-4';
   if (str.includes('kumbh')) return 'hall-kumbh';
   if (str.includes('rally')) return 'hall-rally';
   if (str.includes('stadium')) return 'hall-stadium';
-  if (str.includes('gate-a') || str.includes('entrance a')) return 'gate-a';
+  if (str.includes('gate-a') || str.includes('entrance a') || str.includes('gate a')) return 'gate-a';
+  if (str.includes('gate-b') || str.includes('entrance b') || str.includes('gate b')) return 'gate-b';
+  if (str.includes('gate-c') || str.includes('entrance c') || str.includes('gate c')) return 'gate-c';
   if (str === 'all' || str.startsWith('all ') || str.includes('all venue') || str.includes('central')) return 'ALL';
   return str;
 }
@@ -40,6 +42,8 @@ function getHallDisplayName(hallId, db) {
     'hall-rally': 'Mega Election Rally Grounds',
     'hall-stadium': 'Olympic / Tech Stadium Arena',
     'gate-a': 'Main Entrance Gate A',
+    'gate-b': 'Emergency Egress Gate B',
+    'gate-c': 'VIP / Speaker Gate C',
     'ALL': 'Central Command (All Halls)'
   };
   return nameMap[norm] || norm;

@@ -214,7 +214,13 @@ function closeUploadReviewModal() {
   const fileInput = document.getElementById('file-input');
   if (fileInput) fileInput.value = '';
   if (typeof activeModalSpatialRenderer !== 'undefined' && activeModalSpatialRenderer) {
-    activeModalSpatialRenderer.destroy();
+    try {
+      if (typeof activeModalSpatialRenderer.destroy === 'function') {
+        activeModalSpatialRenderer.destroy();
+      }
+    } catch (e) {
+      console.warn('[Content Pipeline] Failed destroying spatial renderer:', e);
+    }
     activeModalSpatialRenderer = null;
   }
 }
@@ -834,7 +840,8 @@ function initVisualCustomizer() {
 }
 
 function wrapText(context, text, x, y, maxWidth, lineHeight) {
-  const words = text.split(' ');
+  const cleanText = String(text || '');
+  const words = cleanText.split(' ');
   let line = '';
 
   for (let n = 0; n < words.length; n++) {

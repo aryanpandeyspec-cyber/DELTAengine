@@ -423,6 +423,8 @@ class SecurityDiscrepancy {
   final DateTime timestamp;
   final String? affectedUser;
   final String? roomId;
+  final String? email;
+  final List<String> sessionIds;
 
   SecurityDiscrepancy({
     required this.id,
@@ -433,9 +435,16 @@ class SecurityDiscrepancy {
     required this.timestamp,
     this.affectedUser,
     this.roomId,
+    this.email,
+    this.sessionIds = const [],
   });
 
   factory SecurityDiscrepancy.fromJson(Map<String, dynamic> json) {
+    final rawSessions = json['sessionIds'];
+    final List<String> parsedSessions = (rawSessions is List)
+        ? rawSessions.map((e) => e.toString()).toList()
+        : (json['sessionId'] != null ? [json['sessionId'].toString()] : const []);
+
     return SecurityDiscrepancy(
       id: json['id']?.toString() ?? 'disc-${DateTime.now().millisecondsSinceEpoch}',
       severity: json['severity']?.toString() ?? 'WARNING',
@@ -447,6 +456,8 @@ class SecurityDiscrepancy {
           : DateTime.now(),
       affectedUser: json['affectedUser']?.toString(),
       roomId: json['roomId']?.toString(),
+      email: json['email']?.toString(),
+      sessionIds: parsedSessions,
     );
   }
 }

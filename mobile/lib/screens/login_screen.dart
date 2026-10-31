@@ -144,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
     try {
       final session = await _api.login(
-        email: _emailController.text,
+        email: _emailController.text.trim(),
         password: _passwordController.text,
         role: _selectedRole,
         rememberMe: _rememberMe,
@@ -236,52 +236,54 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
               ),
             ],
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'DELTA Engine Host Address:',
-                style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: hostController,
-                style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 13),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: DeltaColors.background,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: const BorderSide(color: DeltaColors.skyAqua, width: 1.5),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'DELTA Engine Host Address:',
+                  style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: hostController,
+                  style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 13),
+                  decoration: InputDecoration(
+                    filled: true,
+                    fillColor: DeltaColors.background,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: DeltaColors.skyAqua, width: 1.5),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Quick Rebind Presets:',
-                style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [
-                  _buildHostPresetChip('Wi-Fi Host (192.168.1.5:3000)', 'http://192.168.1.5:3000', hostController),
-                  _buildHostPresetChip('Localhost / Reverse ADB', 'http://127.0.0.1:3000', hostController),
-                  _buildHostPresetChip('Wi-Fi (192.168.1.6)', 'http://192.168.1.6:3000', hostController),
-                  _buildHostPresetChip('Wi-Fi LAN (192.168.1.2)', 'http://192.168.1.2:3000', hostController),
-                  _buildHostPresetChip('Hotspot (192.168.137.1)', 'http://192.168.137.1:3000', hostController),
-                  _buildHostPresetChip('Android Emulator', 'http://10.0.2.2:3000', hostController),
-                  _buildHostPresetChip('Production Cloud', 'https://deltaengine.vercel.app', hostController),
-                ],
-              ),
-            ],
+                const SizedBox(height: 14),
+                Text(
+                  'Quick Rebind Presets:',
+                  style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _buildHostPresetChip('Wi-Fi Host (192.168.1.5:3000)', 'http://192.168.1.5:3000', hostController),
+                    _buildHostPresetChip('Localhost / Reverse ADB', 'http://127.0.0.1:3000', hostController),
+                    _buildHostPresetChip('Wi-Fi (192.168.1.6)', 'http://192.168.1.6:3000', hostController),
+                    _buildHostPresetChip('Wi-Fi LAN (192.168.1.2)', 'http://192.168.1.2:3000', hostController),
+                    _buildHostPresetChip('Hotspot (192.168.137.1)', 'http://192.168.137.1:3000', hostController),
+                    _buildHostPresetChip('Android Emulator', 'http://10.0.2.2:3000', hostController),
+                    _buildHostPresetChip('Production Cloud', 'https://deltaengine.vercel.app', hostController),
+                  ],
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
