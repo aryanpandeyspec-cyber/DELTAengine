@@ -706,9 +706,32 @@ class RoomSpatialModelRenderer {
     this.isAnimating = false;
     if (this.controls) {
       try { this.controls.dispose(); } catch (e) {}
+      this.controls = null;
+    }
+    if (this.scene) {
+      try {
+        this.scene.traverse((obj) => {
+          if (obj.geometry) {
+            try { obj.geometry.dispose(); } catch (_) {}
+          }
+          if (obj.material) {
+            if (Array.isArray(obj.material)) {
+              obj.material.forEach(m => { try { m.dispose(); } catch (_) {} });
+            } else {
+              try { obj.material.dispose(); } catch (_) {}
+            }
+          }
+        });
+      } catch (e) {}
     }
     if (this.renderer) {
-      try { this.renderer.dispose(); } catch (e) {}
+      try {
+        if (typeof this.renderer.forceContextLoss === 'function') {
+          this.renderer.forceContextLoss();
+        }
+        this.renderer.dispose();
+      } catch (e) {}
+      this.renderer = null;
     }
   }
 }

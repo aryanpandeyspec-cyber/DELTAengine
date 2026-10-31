@@ -580,7 +580,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildSessionMetaRow('Terminal Operator', widget.session.name),
-            _buildSessionMetaRow('Role Hierarchy', widget.session.role.toUpperCase()),
+            _buildSessionMetaRow('Role Hierarchy', (widget.session.role.trim().isNotEmpty ? widget.session.role.trim() : 'OPERATOR').toUpperCase()),
             _buildSessionMetaRow('Operator Email', widget.session.email),
             _buildSessionMetaRow('Session ID', widget.session.sessionId),
             _buildSessionMetaRow('Event Window', widget.session.remainingDurationFormatted),
@@ -730,7 +730,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               ),
             ),
           );
-          if (targetSession.sessionId == widget.session.sessionId) {
+          if (isSelf || targetSession.sessionId == widget.session.sessionId) {
             _handleForcedLogout(reason: 'You revoked your own session.');
             return;
           }
@@ -911,118 +911,122 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   }
 
 
-  void _showHostConfigDialog() {
+  Future<void> _showHostConfigDialog() async {
     final hostController = TextEditingController(text: _api.baseUrl);
 
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: DeltaColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
-        ),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(7),
-              decoration: BoxDecoration(
-                color: DeltaColors.surfaceLight,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: DeltaColors.cardBorder, width: 1.0),
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: DeltaColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(7),
+                decoration: BoxDecoration(
+                  color: DeltaColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: DeltaColors.cardBorder, width: 1.0),
+                ),
+                child: const Icon(Icons.dns_outlined, color: DeltaColors.skyAqua, size: 20),
               ),
-              child: const Icon(Icons.dns_outlined, color: DeltaColors.skyAqua, size: 20),
+              const SizedBox(width: 10),
+              Text(
+                'NETWORK BACKEND',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'DELTA Engine Host Address:',
+                style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                controller: hostController,
+                style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: DeltaColors.background,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: DeltaColors.skyAqua, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                'Quick Rebind Presets:',
+                style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  _buildHostPresetChip('Wi-Fi Host (192.168.1.5:3000)', 'http://192.168.1.5:3000', hostController),
+                  _buildHostPresetChip('Localhost / Reverse ADB', 'http://127.0.0.1:3000', hostController),
+                  _buildHostPresetChip('Wi-Fi (192.168.1.6)', 'http://192.168.1.6:3000', hostController),
+                  _buildHostPresetChip('Wi-Fi LAN (3000)', 'http://192.168.1.4:3000', hostController),
+                  _buildHostPresetChip('Hotspot (3000)', 'http://192.168.137.1:3000', hostController),
+                  _buildHostPresetChip('Android Emulator', 'http://10.0.2.2:3000', hostController),
+                  _buildHostPresetChip('Production Cloud', 'https://deltaengine.vercel.app', hostController),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: Text(
+                'CANCEL',
+                style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted, fontWeight: FontWeight.bold),
+              ),
             ),
-            const SizedBox(width: 10),
-            Text(
-              'NETWORK BACKEND',
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-                fontSize: 16,
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DeltaColors.skyAqua,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              ),
+              onPressed: () async {
+                final nav = Navigator.of(ctx);
+                await _api.setBaseUrl(hostController.text);
+                WebSocketService().connect();
+                if (mounted) setState(() {});
+                nav.pop();
+              },
+              child: Text(
+                'SAVE & REBIND',
+                style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800, fontSize: 12),
               ),
             ),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'DELTA Engine Host Address:',
-              style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: hostController,
-              style: GoogleFonts.spaceGrotesk(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: DeltaColors.background,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: DeltaColors.skyAqua, width: 1.5),
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Text(
-              'Quick Rebind Presets:',
-              style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                _buildHostPresetChip('Wi-Fi Host (192.168.1.5:3000)', 'http://192.168.1.5:3000', hostController),
-                _buildHostPresetChip('Localhost / Reverse ADB', 'http://127.0.0.1:3000', hostController),
-                _buildHostPresetChip('Wi-Fi (192.168.1.6)', 'http://192.168.1.6:3000', hostController),
-                _buildHostPresetChip('Wi-Fi LAN (3000)', 'http://192.168.1.4:3000', hostController),
-                _buildHostPresetChip('Hotspot (3000)', 'http://192.168.137.1:3000', hostController),
-                _buildHostPresetChip('Android Emulator', 'http://10.0.2.2:3000', hostController),
-                _buildHostPresetChip('Production Cloud', 'https://deltaengine.vercel.app', hostController),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(
-              'CANCEL',
-              style: GoogleFonts.spaceGrotesk(color: DeltaColors.textMuted, fontWeight: FontWeight.bold),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: DeltaColors.skyAqua,
-              foregroundColor: Colors.black,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            ),
-            onPressed: () async {
-              final nav = Navigator.of(ctx);
-              await _api.setBaseUrl(hostController.text);
-              WebSocketService().connect();
-              if (mounted) setState(() {});
-              nav.pop();
-            },
-            child: Text(
-              'SAVE & REBIND',
-              style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800, fontSize: 12),
-            ),
-          ),
-        ],
-      ),
-    );
+      );
+    } finally {
+      hostController.dispose();
+    }
   }
 
   Widget _buildHostPresetChip(String label, String url, TextEditingController controller) {
@@ -1278,9 +1282,10 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     }
   }
 
-  void _showCreateTaskDialog() {
+  Future<void> _showCreateTaskDialog() async {
     final titleCtrl = TextEditingController();
-    final locationCtrl = TextEditingController(text: 'Room 1 (Turing Grand Hall)');
+    final defaultLocation = _rooms.isNotEmpty ? _rooms.first.name : 'Room 1 (Turing Grand Hall)';
+    final locationCtrl = TextEditingController(text: defaultLocation);
     String priority = 'urgent';
 
     final presetTasks = [
@@ -1291,105 +1296,247 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       'HVAC thermal cooling boost requested',
     ];
 
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          backgroundColor: DeltaColors.surface,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-            side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
-          ),
-          title: Row(
-            children: [
-              const Icon(Icons.add_task, color: DeltaColors.mustard, size: 22),
-              const SizedBox(width: 8),
-              Text(
-                'DISPATCH FIELD TASK',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: DeltaColors.mustard, fontSize: 17),
-              ),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) => StatefulBuilder(
+          builder: (ctx, setDialogState) => AlertDialog(
+            backgroundColor: DeltaColors.surface,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+              side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
+            ),
+            title: Row(
               children: [
-                Text('Directive / Title:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted)),
-                const SizedBox(height: 4),
-                TextField(
-                  controller: titleCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: InputDecoration(
-                    hintText: 'e.g. Stage wireless lapel battery swap',
-                    filled: true,
-                    fillColor: DeltaColors.surfaceLight,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text('Quick Directives:', style: GoogleFonts.spaceGrotesk(fontSize: 10, color: DeltaColors.mustard, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: presetTasks.map((preset) => InkWell(
-                    onTap: () => setDialogState(() => titleCtrl.text = preset),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: DeltaColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: DeltaColors.cardBorder, width: 1.0),
-                      ),
-                      child: Text(preset, style: const TextStyle(fontSize: 10, color: DeltaColors.skyAqua)),
-                    ),
-                  )).toList(),
-                ),
-                const SizedBox(height: 14),
-                Text('Target Zone / Room:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted)),
-                const SizedBox(height: 4),
-                TextField(
-                  controller: locationCtrl,
-                  style: const TextStyle(color: Colors.white, fontSize: 13),
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: DeltaColors.surfaceLight,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Text('Priority Level:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted)),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    ChoiceChip(
-                      label: const Text('URGENT'),
-                      selected: priority == 'urgent',
-                      selectedColor: DeltaColors.dangerRed,
-                      labelStyle: TextStyle(
-                        color: priority == 'urgent' ? Colors.white : DeltaColors.textMuted,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                      onSelected: (_) => setDialogState(() => priority = 'urgent'),
-                    ),
-                    const SizedBox(width: 8),
-                    ChoiceChip(
-                      label: const Text('NORMAL'),
-                      selected: priority == 'normal',
-                      selectedColor: DeltaColors.skyAqua,
-                      labelStyle: TextStyle(
-                        color: priority == 'normal' ? Colors.black : DeltaColors.textMuted,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 11,
-                      ),
-                      onSelected: (_) => setDialogState(() => priority = 'normal'),
-                    ),
-                  ],
+                const Icon(Icons.add_task, color: DeltaColors.mustard, size: 22),
+                const SizedBox(width: 8),
+                Text(
+                  'DISPATCH FIELD TASK',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: DeltaColors.mustard, fontSize: 17),
                 ),
               ],
             ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Directive / Title:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: titleCtrl,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'e.g. Stage wireless lapel battery swap',
+                      filled: true,
+                      fillColor: DeltaColors.surfaceLight,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text('Quick Directives:', style: GoogleFonts.spaceGrotesk(fontSize: 10, color: DeltaColors.mustard, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: presetTasks.map((preset) => InkWell(
+                      onTap: () => setDialogState(() => titleCtrl.text = preset),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: DeltaColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: DeltaColors.cardBorder, width: 1.0),
+                        ),
+                        child: Text(preset, style: const TextStyle(fontSize: 10, color: DeltaColors.skyAqua)),
+                      ),
+                    )).toList(),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('Target Zone / Room:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted)),
+                  const SizedBox(height: 4),
+                  TextField(
+                    controller: locationCtrl,
+                    style: const TextStyle(color: Colors.white, fontSize: 13),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: DeltaColors.surfaceLight,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text('Priority Level:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: DeltaColors.textMuted)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('URGENT'),
+                        selected: priority == 'urgent',
+                        selectedColor: DeltaColors.dangerRed,
+                        labelStyle: TextStyle(
+                          color: priority == 'urgent' ? Colors.white : DeltaColors.textMuted,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                        onSelected: (_) => setDialogState(() => priority = 'urgent'),
+                      ),
+                      const SizedBox(width: 8),
+                      ChoiceChip(
+                        label: const Text('NORMAL'),
+                        selected: priority == 'normal',
+                        selectedColor: DeltaColors.skyAqua,
+                        labelStyle: TextStyle(
+                          color: priority == 'normal' ? Colors.black : DeltaColors.textMuted,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 11,
+                        ),
+                        onSelected: (_) => setDialogState(() => priority = 'normal'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('CANCEL', style: TextStyle(color: DeltaColors.textMuted)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: DeltaColors.mustard,
+                  foregroundColor: Colors.black,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
+                  ),
+                ),
+                onPressed: () async {
+                  final enteredTitle = titleCtrl.text.trim();
+                  if (enteredTitle.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a directive or title for the field task.')),
+                    );
+                    return;
+                  }
+                  final enteredLocation = locationCtrl.text.trim().isNotEmpty
+                      ? locationCtrl.text.trim()
+                      : defaultLocation;
+                  try {
+                    final newTask = await _api.createTask(
+                      title: enteredTitle,
+                      location: enteredLocation,
+                      priority: priority,
+                      creator: widget.session.name,
+                    );
+                    setState(() {
+                      final idx = _tasks.indexWhere((t) => t.id == newTask.id);
+                      if (idx >= 0) {
+                        _tasks[idx] = newTask;
+                      } else {
+                        _tasks.insert(0, newTask);
+                      }
+                    });
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  } catch (e) {
+                    final fallback = TaskItem(
+                      id: 'task_${DateTime.now().millisecondsSinceEpoch}',
+                      title: enteredTitle,
+                      location: enteredLocation,
+                      severity: priority.toUpperCase(),
+                      status: 'PENDING',
+                      description: '',
+                      createdAt: DateTime.now(),
+                    );
+                    setState(() {
+                      final idx = _tasks.indexWhere((t) => t.id == fallback.id);
+                      if (idx >= 0) {
+                        _tasks[idx] = fallback;
+                      } else {
+                        _tasks.insert(0, fallback);
+                      }
+                    });
+                    if (ctx.mounted) Navigator.pop(ctx);
+                  }
+                },
+                child: Text('DISPATCH NOW', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800)),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      titleCtrl.dispose();
+      locationCtrl.dispose();
+    }
+  }
+
+  Future<void> _showSosConfirmationDialog() async {
+    String selectedHall = _rooms.isNotEmpty ? _rooms.first.id : 'room1';
+    final noteCtrl = TextEditingController(text: 'Crowd bottleneck surge near main entrance!');
+
+    try {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: DeltaColors.surface,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+            side: const BorderSide(color: DeltaColors.dangerRed, width: 3.5),
+          ),
+          title: Row(
+            children: [
+              const PulsingDot(color: DeltaColors.dangerRed, size: 16),
+              const SizedBox(width: 10),
+              Text(
+                'TRIGGER EMERGENCY SOS',
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: DeltaColors.dangerRed, fontSize: 17),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Broadcasts immediate high-priority override to all command dashboards, mesh radios, and safety marshals.',
+                  style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
+              const SizedBox(height: 14),
+              Text('Incident Location:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 4),
+              DropdownButtonFormField<String>(
+                initialValue: selectedHall,
+                dropdownColor: DeltaColors.surfaceLight,
+                items: _rooms.isNotEmpty
+                    ? _rooms.map((r) => DropdownMenuItem(value: r.id, child: Text(r.name, style: const TextStyle(color: Colors.white)))).toList()
+                    : const [
+                        DropdownMenuItem(value: 'room1', child: Text('Turing Grand Hall', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: 'room2', child: Text('Lovelace Auditorium', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: 'room3', child: Text('Von Neumann Hub', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: 'room4', child: Text('Shannon Workshop', style: TextStyle(color: Colors.white))),
+                        DropdownMenuItem(value: 'room5', child: Text('Hopper Pavilion', style: TextStyle(color: Colors.white))),
+                      ],
+                onChanged: (val) {
+                  if (val != null) selectedHall = val;
+                },
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: DeltaColors.surfaceLight,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text('Urgent Field Note:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
+              const SizedBox(height: 4),
+              TextField(
+                controller: noteCtrl,
+                style: const TextStyle(color: Colors.white, fontSize: 13),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: DeltaColors.surfaceLight,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -1398,170 +1545,46 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: DeltaColors.mustard,
-                foregroundColor: Colors.black,
+                backgroundColor: DeltaColors.dangerRed,
+                foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                   side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
                 ),
               ),
               onPressed: () async {
-                if (titleCtrl.text.trim().isEmpty) return;
-                try {
-                  final newTask = await _api.createTask(
-                    title: titleCtrl.text.trim(),
-                    location: locationCtrl.text.trim(),
-                    priority: priority,
-                    creator: widget.session.name,
-                  );
-                  setState(() {
-
-                    final idx = _tasks.indexWhere((t) => t.id == newTask.id);
-
-                    if (idx >= 0) {
-
-                      _tasks[idx] = newTask;
-
-                    } else {
-
-                      _tasks.insert(0, newTask);
-
-                    }
-
-                  });
-                  if (ctx.mounted) Navigator.pop(ctx);
-                } catch (e) {
-                  final fallback = TaskItem(
-                    id: 'task_${DateTime.now().millisecondsSinceEpoch}',
-                    title: titleCtrl.text.trim(),
-                    location: locationCtrl.text.trim(),
-                    severity: priority.toUpperCase(),
-                    status: 'PENDING',
-                    description: '',
-                    createdAt: DateTime.now(),
-                  );
-                  setState(() => _tasks.insert(0, fallback));
-                  if (ctx.mounted) Navigator.pop(ctx);
+                Navigator.pop(ctx);
+                final ok = await _api.triggerEmergencySos(
+                  volunteerName: widget.session.name,
+                  hallId: selectedHall,
+                  note: noteCtrl.text.trim(),
+                );
+                if (mounted) {
+                  if (ok) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        backgroundColor: DeltaColors.dangerRed,
+                        content: Text('🚨 Emergency SOS Broadcast Sent to Central Command Deck!'),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        backgroundColor: Color(0xFF1E293B),
+                        content: Text('⚠️ SOS Queued Locally: Offline Mesh will relay when connection restores.'),
+                      ),
+                    );
+                  }
                 }
               },
-              child: Text('DISPATCH NOW', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w800)),
+              child: Text('SEND SOS ALERT', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w900)),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showSosConfirmationDialog() {
-    String selectedHall = _rooms.isNotEmpty ? _rooms.first.id : 'room1';
-    final noteCtrl = TextEditingController(text: 'Crowd bottleneck surge near main entrance!');
-
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: DeltaColors.surface,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
-          side: const BorderSide(color: DeltaColors.dangerRed, width: 3.5),
-        ),
-        title: Row(
-          children: [
-            const PulsingDot(color: DeltaColors.dangerRed, size: 16),
-            const SizedBox(width: 10),
-            Text(
-              'TRIGGER EMERGENCY SOS',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.w900, color: DeltaColors.dangerRed, fontSize: 17),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Broadcasts immediate high-priority override to all command dashboards, mesh radios, and safety marshals.',
-                style: GoogleFonts.spaceGrotesk(fontSize: 12, color: DeltaColors.textMuted)),
-            const SizedBox(height: 14),
-            Text('Incident Location:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-            const SizedBox(height: 4),
-            DropdownButtonFormField<String>(
-              initialValue: selectedHall,
-              dropdownColor: DeltaColors.surfaceLight,
-              items: _rooms.isNotEmpty
-                  ? _rooms.map((r) => DropdownMenuItem(value: r.id, child: Text(r.name, style: const TextStyle(color: Colors.white)))).toList()
-                  : const [
-                      DropdownMenuItem(value: 'room1', child: Text('Turing Grand Hall', style: TextStyle(color: Colors.white))),
-                      DropdownMenuItem(value: 'room2', child: Text('Lovelace Auditorium', style: TextStyle(color: Colors.white))),
-                      DropdownMenuItem(value: 'room3', child: Text('Von Neumann Hub', style: TextStyle(color: Colors.white))),
-                      DropdownMenuItem(value: 'room4', child: Text('Shannon Workshop', style: TextStyle(color: Colors.white))),
-                      DropdownMenuItem(value: 'room5', child: Text('Hopper Pavilion', style: TextStyle(color: Colors.white))),
-                    ],
-              onChanged: (val) {
-                if (val != null) selectedHall = val;
-              },
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: DeltaColors.surfaceLight,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text('Urgent Field Note:', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-            const SizedBox(height: 4),
-            TextField(
-              controller: noteCtrl,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
-              decoration: InputDecoration(
-                filled: true,
-                fillColor: DeltaColors.surfaceLight,
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('CANCEL', style: TextStyle(color: DeltaColors.textMuted)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: DeltaColors.dangerRed,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: const BorderSide(color: DeltaColors.cardBorder, width: 1.0),
-              ),
-            ),
-            onPressed: () async {
-              Navigator.pop(ctx);
-              final ok = await _api.triggerEmergencySos(
-                volunteerName: widget.session.name,
-                hallId: selectedHall,
-                note: noteCtrl.text.trim(),
-              );
-              if (mounted) {
-                if (ok) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      backgroundColor: DeltaColors.dangerRed,
-                      content: Text('🚨 Emergency SOS Broadcast Sent to Central Command Deck!'),
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      backgroundColor: Color(0xFF1E293B),
-                      content: Text('⚠️ SOS Queued Locally: Offline Mesh will relay when connection restores.'),
-                    ),
-                  );
-                }
-              }
-            },
-            child: Text('SEND SOS ALERT', style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.w900)),
-          ),
-        ],
-      ),
-    );
+      );
+    } finally {
+      noteCtrl.dispose();
+    }
   }
 
   // --- RENDER APP BAR & TABS ---
@@ -1626,7 +1649,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                           border: Border.all(color: roleColor.withValues(alpha: 0.4), width: 0.7),
                         ),
                         child: Text(
-                          widget.session.role.toUpperCase(),
+                          (widget.session.role.trim().isNotEmpty ? widget.session.role.trim() : 'OPERATOR').toUpperCase(),
                           style: GoogleFonts.spaceGrotesk(
                             fontSize: 8.5,
                             fontWeight: FontWeight.w800,
@@ -4291,7 +4314,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                           radius: 16,
                           backgroundColor: roleColor.withValues(alpha: 0.2),
                           child: Text(
-                            session.name.isNotEmpty ? session.name[0].toUpperCase() : '?',
+                            session.name.trim().isNotEmpty ? session.name.trim()[0].toUpperCase() : '?',
                             style: GoogleFonts.outfit(
                               color: roleColor,
                               fontWeight: FontWeight.bold,
@@ -4357,7 +4380,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                             border: Border.all(color: roleColor.withValues(alpha: 0.5), width: 1.0),
                           ),
                           child: Text(
-                            session.role.toUpperCase(),
+                            (session.role.trim().isNotEmpty ? session.role.trim() : 'OPERATOR').toUpperCase(),
                             style: GoogleFonts.spaceGrotesk(
                               fontSize: 9.5,
                               fontWeight: FontWeight.w800,

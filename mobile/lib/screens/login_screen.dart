@@ -184,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       id: 'demo-${DateTime.now().millisecondsSinceEpoch % 10000}',
       name: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : activePreset['name'] as String,
       email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : activePreset['email'] as String,
-      role: _selectedRole.toLowerCase(),
+      role: _selectedRole.toUpperCase(),
       token: 'jwt-delta-demo-instant-pass',
       sessionId: 'sess-demo-${DateTime.now().millisecondsSinceEpoch}',
       expiresAt: DateTime.now().add(const Duration(hours: 3)),

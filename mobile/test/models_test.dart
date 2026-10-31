@@ -105,5 +105,28 @@ void main() {
       expect(api.baseUrl, equals('http://127.0.0.1:3000'));
     });
   });
+
+  group('ActiveOperatorSession Model Tests', () {
+    test('Correctly handles empty strings and null fallbacks', () {
+      final session = ActiveOperatorSession.fromJson({
+        'sessionId': 'sess_123',
+        'name': '',
+        'role': '   ',
+        'title': '',
+        'ip': '   ',
+        'deviceModel': '',
+        'status': '',
+      });
+
+      expect(session.name, equals('Unknown Operator'));
+      expect(session.role, equals('VOLUNTEER'));
+      expect(session.title, equals('Field Operator'));
+      expect(session.ip, equals('127.0.0.1'));
+      expect(session.deviceModel, equals('Mobile Terminal'));
+      expect(session.status, equals('ACTIVE'));
+      expect(session.isActive, isTrue);
+      expect(session.isRevoked, isFalse);
+    });
+  });
 }
 

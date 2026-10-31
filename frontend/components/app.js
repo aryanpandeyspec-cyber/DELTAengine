@@ -1867,3 +1867,28 @@ window.handleRoomsUpdate = function (data) {
   if (typeof safeSyncUI === 'function') safeSyncUI(selectedNodeId);
 };
 
+window.handleSessionRevoked = function (data) {
+  if (!data) return;
+  const auditBox = document.getElementById('admin-audit-log-container');
+  if (auditBox) {
+    const line = document.createElement('div');
+    line.className = 'admin-audit-line conflict';
+    line.textContent = `[${data.timestamp || new Date().toLocaleTimeString()}] ⛔ SESSION REVOKED: Terminal for "${data.name || 'Operator'}" (${data.email || 'N/A'}) revoked by ${data.revokedBy || 'Administrator'}`;
+    auditBox.insertBefore(line, auditBox.firstChild);
+  }
+  const diagSessions = document.getElementById('admin-diag-sessions');
+  if (diagSessions) {
+    let token = null;
+    try { token = localStorage.getItem('delta_auth_token'); } catch (_) {}
+    if (token) {
+      fetch('/api/admin/sessions', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.ok ? r.json() : null)
+        .then(res => {
+          if (res && typeof res.activeCount === 'number') {
+            diagSessions.textContent = `${res.activeCount} Active Session${res.activeCount === 1 ? '' : 's'}`;
+          }
+        }).catch(() => {});
+    }
+  }
+};
+

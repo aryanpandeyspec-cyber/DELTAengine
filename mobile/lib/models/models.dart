@@ -381,22 +381,29 @@ class ActiveOperatorSession {
   });
 
   factory ActiveOperatorSession.fromJson(Map<String, dynamic> json) {
+    final rawName = json['name']?.toString().trim();
+    final rawRole = json['role']?.toString().trim();
+    final rawTitle = json['title']?.toString().trim();
+    final rawIp = json['ip']?.toString().trim();
+    final rawDevice = json['deviceModel']?.toString().trim();
+    final rawStatus = json['status']?.toString().trim();
+
     return ActiveOperatorSession(
       sessionId: json['sessionId']?.toString() ?? '',
       id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? 'Unknown Operator',
+      name: (rawName != null && rawName.isNotEmpty) ? rawName : 'Unknown Operator',
       email: json['email']?.toString() ?? '',
-      role: json['role']?.toString() ?? 'VOLUNTEER',
-      title: json['title']?.toString() ?? 'Field Operator',
-      ip: json['ip']?.toString() ?? '127.0.0.1',
-      deviceModel: json['deviceModel']?.toString() ?? 'Mobile Terminal',
+      role: (rawRole != null && rawRole.isNotEmpty) ? rawRole.toUpperCase() : 'VOLUNTEER',
+      title: (rawTitle != null && rawTitle.isNotEmpty) ? rawTitle : 'Field Operator',
+      ip: (rawIp != null && rawIp.isNotEmpty) ? rawIp : '127.0.0.1',
+      deviceModel: (rawDevice != null && rawDevice.isNotEmpty) ? rawDevice : 'Mobile Terminal',
       loginTime: json['loginTime'] != null
           ? DateTime.tryParse(json['loginTime'].toString()) ?? DateTime.now()
           : DateTime.now(),
       lastSeen: json['lastSeen'] != null
           ? DateTime.tryParse(json['lastSeen'].toString()) ?? DateTime.now()
           : DateTime.now(),
-      status: json['status']?.toString() ?? 'ACTIVE',
+      status: (rawStatus != null && rawStatus.isNotEmpty) ? rawStatus.toUpperCase() : 'ACTIVE',
       rememberMe: json['rememberMe'] == true,
       durationMinutes: (json['durationMinutes'] is num) ? (json['durationMinutes'] as num).toInt() : 0,
     );

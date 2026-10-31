@@ -36,6 +36,17 @@
         } else {
           var nameEl = document.getElementById('admin-user-name');
           if (nameEl && data.user.name) nameEl.textContent = data.user.name;
+
+          // Dynamically fetch and display real active sessions count
+          fetch('/api/admin/sessions', {
+            headers: { 'Authorization': 'Bearer ' + token }
+          }).then(function(r) { return r.ok ? r.json() : null; })
+            .then(function(sData) {
+              if (sData && typeof sData.activeCount === 'number') {
+                var sessEl = document.getElementById('admin-diag-sessions');
+                if (sessEl) sessEl.textContent = sData.activeCount + ' Active Session' + (sData.activeCount === 1 ? '' : 's');
+              }
+            }).catch(function() {});
         }
       }).catch(function () {
         try {

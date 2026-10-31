@@ -365,7 +365,7 @@ class ApiService {
             : (email.contains('suryansh')
                 ? 'Suryansh'
                 : (email.contains('safety') ? 'Safety Officer' : 'Field Operator')),
-        role: role.toLowerCase(),
+        role: role.toUpperCase(),
         token: 'jwt-delta-offline-${DateTime.now().millisecondsSinceEpoch}',
         sessionId: 'sess-${DateTime.now().millisecondsSinceEpoch}',
         rememberMe: rememberMe,

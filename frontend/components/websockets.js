@@ -673,6 +673,44 @@ function initWebSockets() {
         break;
       }
 
+      case 'SESSION_REVOKED': {
+        const revData = payload.data || {};
+        let myEmail = null;
+        let mySessionId = null;
+        try {
+          const userObj = JSON.parse(localStorage.getItem('delta_user_session') || '{}');
+          myEmail = userObj.email || localStorage.getItem('delta_user_email');
+          mySessionId = userObj.sessionId || localStorage.getItem('delta_session_id');
+        } catch (_) {}
+
+        const isMe = (mySessionId && revData.sessionId && mySessionId === revData.sessionId) ||
+                     (myEmail && revData.email && myEmail.toLowerCase() === revData.email.toLowerCase());
+
+        if (typeof appendLog === 'function') {
+          appendLog(`[SECURITY] ⛔ Session for "${revData.name || 'Operator'}" (${revData.email || 'N/A'}) was terminated by ${revData.revokedBy || 'Administrator'}.`, 'conflict');
+        }
+
+        if (typeof createToast === 'function') {
+          createToast(`Session Revocation: ${revData.name || 'Operator'} disconnected by Administrator.`, 'warning');
+        }
+
+        if (isMe && !window.location.pathname.includes('login')) {
+          localStorage.removeItem('delta_auth_token');
+          localStorage.removeItem('delta_user_session');
+          if (typeof createToast === 'function') {
+            createToast(`Your session has been terminated by an Administrator: ${revData.reason || 'Administrative Revocation'}.`, 'error');
+          }
+          setTimeout(() => {
+            window.location.replace('login.html?revoked=true');
+          }, 1500);
+        }
+
+        if (typeof window.handleSessionRevoked === 'function') {
+          window.handleSessionRevoked(revData);
+        }
+        break;
+      }
+
       case 'PONG': {
         // Live bidirectional WebSocket heartbeat acknowledgement
         break;

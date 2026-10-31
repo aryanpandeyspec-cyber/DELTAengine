@@ -441,7 +441,9 @@ app.post('/api/admin/sessions/revoke', authenticateToken, requireRole(['ADMIN'])
   if (!sessionId) {
     return res.status(400).json({ success: false, error: 'sessionId is required to revoke session' });
   }
-  const revokedSession = revokeActiveSession(sessionId, req.user?.name || 'Administrator', reason || 'Revoked by Administrator');
+  const cleanSessionId = String(sessionId).trim();
+  const cleanReason = (reason && typeof reason === 'string') ? reason.trim().slice(0, 200) : 'Administrative Revocation';
+  const revokedSession = revokeActiveSession(cleanSessionId, req.user?.name || 'Administrator', cleanReason);
   if (!revokedSession) {
     return res.status(404).json({ success: false, error: 'Session not found or already terminated' });
   }
@@ -450,20 +452,20 @@ app.post('/api/admin/sessions/revoke', authenticateToken, requireRole(['ADMIN'])
   broadcast({
     type: 'SESSION_REVOKED',
     data: {
-      sessionId,
+      sessionId: cleanSessionId,
       userId: revokedSession.id,
       email: revokedSession.email,
       name: revokedSession.name,
       revokedBy: req.user?.name || 'Administrator',
-      reason: reason || 'Administrative Security Revocation',
+      reason: cleanReason,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   });
 
   appendForensicAuditLog('ADMIN_FORCE_LOGOUT', req.user?.name || 'Admin', 'ADMIN', revokedSession.name, {
-    sessionId,
+    sessionId: cleanSessionId,
     targetEmail: revokedSession.email,
-    reason: reason || 'Administrative Revocation'
+    reason: cleanReason
   });
 
   res.json({
@@ -1139,7 +1141,7 @@ app.get('/api/rooms', (req, res) => {
 });
 
 app.post('/api/rooms/update', (req, res) => {
-  const { roomId, note, percent, status, label, seats, sender } = req.body;
+  const { roomId, note, percent, status, label, seats, sender } = req.body || {};
   if (!roomId || !db.roomsState[roomId]) {
     return res.status(400).json({ error: 'Valid roomId required' });
   }
@@ -1186,7 +1188,7 @@ app.post('/api/voice/broadcast', (req, res) => {
 });
 
 app.post('/api/action/dispatch', (req, res) => {
-  const { action, label, sender } = req.body;
+  const { action, label, sender } = req.body || {};
   const dispatchData = {
     id: 'act_' + Date.now(),
     action: action || 'general',
@@ -1294,7 +1296,7 @@ app.post('/api/tasks/create', (req, res) => {
 });
 
 app.post('/api/tasks/claim', (req, res) => {
-  const { taskId, claimedBy } = req.body;
+  const { taskId, claimedBy } = req.body || {};
   if (!db.incidentTasks) return res.status(404).json({ error: 'No tasks found' });
   const task = db.incidentTasks.find(t => t.id === taskId);
   if (!task) return res.status(404).json({ error: 'Task not found' });
@@ -1311,7 +1313,7 @@ app.post('/api/tasks/claim', (req, res) => {
 });
 
 app.post('/api/tasks/resolve', (req, res) => {
-  const { taskId, resolvedBy } = req.body;
+  const { taskId, resolvedBy } = req.body || {};
   if (!db.incidentTasks) return res.status(404).json({ error: 'No tasks found' });
   const task = db.incidentTasks.find(t => t.id === taskId);
   if (!task) return res.status(404).json({ error: 'Task not found' });
@@ -1344,7 +1346,7 @@ app.get('/api/attendees/checkin-stats', (req, res) => {
 });
 
 app.post('/api/attendees/verify-badge', (req, res) => {
-  const { code, scannedBy } = req.body;
+  const { code, scannedBy } = req.body || {};
   if (!code) return res.status(400).json({ error: 'Badge code is required' });
 
   const upperCode = code.trim().toUpperCase();
@@ -3831,7 +3833,7 @@ app.get('/api/spatial/plan-preview/:planId', (req, res) => {
 });
 
 app.post('/api/schedule/move', async (req, res) => {
-  const { topicId, targetSlotId, targetHallId } = req.body;
+  const { topicId, targetSlotId, targetHallId } = req.body || {};
 
   let sourceSlotId = null;
   let sourceHallId = null;
@@ -3894,7 +3896,7 @@ app.get('/api/groq/status', (req, res) => {
 });
 
 app.post('/api/groq/set-key', (req, res) => {
-  const { apiKey } = req.body;
+  const { apiKey } = req.body || {};
   if (typeof apiKey === 'string') {
     setGroqApiKey(apiKey.trim());
     res.json({ success: true, message: 'Groq API Key updated successfully!' });
@@ -3928,7 +3930,7 @@ app.get('/api/scenarios/active', (req, res) => {
 
 // Select active scenario (e.g. 'CONFERENCE', 'PUBLIC_RALLY', 'LARGE_GATHERING', 'MOVIE_PROMO', 'RELIGIOUS_GATHERING')
 app.post('/api/scenarios/select', (req, res) => {
-  const { scenarioId } = req.body;
+  const { scenarioId } = req.body || {};
   const updated = setActiveScenario(scenarioId);
   db.currentScenario = updated.id;
   db.applyScenario(updated);
@@ -4123,7 +4125,7 @@ app.get('/api/calendar/feed.ics', (req, res) => {
 });
 
 app.post('/api/simulate/sentiment', (req, res) => {
-  const { sentimentType, text } = req.body;
+  const { sentimentType, text } = req.body || {};
 
   let logs = [];
   let notifications = [];
