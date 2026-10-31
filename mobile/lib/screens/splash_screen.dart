@@ -294,14 +294,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                     children: [
                       // Dual Orbital Rings + Delta Prism Card
                       SizedBox(
-                        width: 220,
-                        height: 220,
+                        width: 240,
+                        height: 240,
                         child: Stack(
                           alignment: Alignment.center,
                           children: [
                             // Outer Gimbal Radar Rings & Sonar Pings
                             CustomPaint(
-                              size: const Size(220, 220),
+                              size: const Size(240, 240),
                               painter: _OrbitalRadarPainter(
                                 angle: _radarController.value * 2 * math.pi,
                                 pulseProgress: _masterController.value,
@@ -312,38 +312,38 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             Transform.scale(
                               scale: _coreScaleAnim.value,
                               child: Container(
-                                width: 124,
-                                height: 124,
+                                width: 140,
+                                height: 140,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0B132B).withValues(alpha: 0.85),
-                                  borderRadius: BorderRadius.circular(26),
+                                  color: const Color(0xFF0B132B).withValues(alpha: 0.90),
+                                  borderRadius: BorderRadius.circular(28),
                                   border: Border.all(
                                     color: const Color(0xFF00F5D4).withValues(
-                                      alpha: 0.8 * _coreGlowAnim.value,
+                                      alpha: 0.85 * _coreGlowAnim.value,
                                     ),
                                     width: 1.8,
                                   ),
                                   boxShadow: [
                                     BoxShadow(
                                       color: const Color(0xFF00F5D4).withValues(
-                                        alpha: 0.35 * _coreGlowAnim.value,
+                                        alpha: 0.40 * _coreGlowAnim.value,
                                       ),
-                                      blurRadius: 32,
+                                      blurRadius: 36,
                                       spreadRadius: 2,
                                     ),
                                     const BoxShadow(
                                       color: Colors.black,
                                       offset: Offset(0, 12),
-                                      blurRadius: 20,
+                                      blurRadius: 22,
                                     ),
                                   ],
                                 ),
                                 child: Stack(
                                   alignment: Alignment.center,
                                   children: [
-                                    // 100% Pure Vector-Cropped Emblem (No text fragments)
+                                    // 100% Complete Pure Triangle Emblem
                                     Padding(
-                                      padding: const EdgeInsets.all(18.0),
+                                      padding: const EdgeInsets.all(14.0),
                                       child: Image.asset(
                                         'assets/images/delta_emblem.png',
                                         fit: BoxFit.contain,
@@ -352,9 +352,9 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
                                     // Dynamic Laser Scanning Line Sweep
                                     ClipRRect(
-                                      borderRadius: BorderRadius.circular(24),
+                                      borderRadius: BorderRadius.circular(26),
                                       child: CustomPaint(
-                                        size: const Size(124, 124),
+                                        size: const Size(140, 140),
                                         painter: _LaserScanLinePainter(
                                           progress: _scannerController.value,
                                         ),
@@ -363,7 +363,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
                                     // Corner HUD Micro-Brackets
                                     const CustomPaint(
-                                      size: Size(124, 124),
+                                      size: Size(140, 140),
                                       painter: _CornerBracketsPainter(),
                                     ),
                                   ],
@@ -617,7 +617,7 @@ class _OrbitalRadarPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
 
     // 1. Expanding Sonar Shockwave Ping
-    final pingRadius = 65.0 + (45.0 * (pulseProgress % 1.0));
+    final pingRadius = 75.0 + (40.0 * (pulseProgress % 1.0));
     final pingOpacity = (1.0 - (pulseProgress % 1.0)).clamp(0.0, 1.0);
     final pingPaint = Paint()
       ..color = const Color(0xFF00F5D4).withValues(alpha: 0.45 * pingOpacity)
@@ -634,7 +634,7 @@ class _OrbitalRadarPainter extends CustomPainter {
       ..color = const Color(0xFF1E3A5F).withValues(alpha: 0.7)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
-    canvas.drawCircle(Offset.zero, 95, outerRingPaint);
+    canvas.drawCircle(Offset.zero, 105, outerRingPaint);
 
     // Cardinal tick marks
     final tickPaint = Paint()
@@ -644,8 +644,8 @@ class _OrbitalRadarPainter extends CustomPainter {
     for (int i = 0; i < 12; i++) {
       final rad = (i * 30) * math.pi / 180;
       final isCardinal = (i % 3 == 0);
-      final r1 = isCardinal ? 90.0 : 93.0;
-      const r2 = 97.0;
+      final r1 = isCardinal ? 100.0 : 103.0;
+      const r2 = 108.0;
 
       canvas.drawLine(
         Offset(math.cos(rad) * r1, math.sin(rad) * r1),
@@ -668,7 +668,7 @@ class _OrbitalRadarPainter extends CustomPainter {
     for (int i = 0; i < 8; i++) {
       final startAngle = (i * 45) * math.pi / 180;
       canvas.drawArc(
-        Rect.fromCircle(center: Offset.zero, radius: 76),
+        Rect.fromCircle(center: Offset.zero, radius: 84),
         startAngle,
         20 * math.pi / 180,
         false,
