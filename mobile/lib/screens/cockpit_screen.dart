@@ -2309,28 +2309,31 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                           HapticFeedback.heavyImpact();
                           final targetHallId = _selectedBlueprintRoomId ?? (_rooms.isNotEmpty ? _rooms.first.id : 'hall-1');
                           _api.recordDoorTally(hallId: targetHallId, type: 'in', count: 1);
-                          setState(() {
-                            final idx = _rooms.indexWhere((r) => r.id == targetHallId);
-                            if (idx != -1) {
-                              final r = _rooms[idx];
-                              final newOcc = r.currentOccupancy + 1;
-                              final newDensity = r.capacity > 0 ? (newOcc / r.capacity * 100.0) : r.currentDensity;
-                              _rooms[idx] = RoomTelemetry(
-                                id: r.id,
-                                name: r.name,
-                                currentDensity: newDensity,
-                                capacity: r.capacity,
-                                currentOccupancy: newOcc,
-                                status: newDensity > 85 ? 'CRITICAL' : (newDensity > 65 ? 'ELEVATED' : 'OPTIMAL'),
-                                predictedRisk: r.predictedRisk,
-                                trend: 'RISING',
-                                temperature: r.temperature,
-                                co2: r.co2,
-                                doorCountIn: r.doorCountIn + 1,
-                                doorCountOut: r.doorCountOut,
-                              );
-                            }
-                          });
+                          if (mounted) {
+                            setState(() {
+                              _totalGateCheckins++;
+                              final idx = _rooms.indexWhere((r) => r.id == targetHallId);
+                              if (idx != -1) {
+                                final r = _rooms[idx];
+                                final newOcc = r.currentOccupancy + 1;
+                                final newDensity = r.capacity > 0 ? (newOcc / r.capacity * 100.0) : r.currentDensity;
+                                _rooms[idx] = RoomTelemetry(
+                                  id: r.id,
+                                  name: r.name,
+                                  currentDensity: newDensity,
+                                  capacity: r.capacity,
+                                  currentOccupancy: newOcc,
+                                  status: newDensity > 85 ? 'CRITICAL' : (newDensity > 65 ? 'ELEVATED' : 'OPTIMAL'),
+                                  predictedRisk: r.predictedRisk,
+                                  trend: 'RISING',
+                                  temperature: r.temperature,
+                                  co2: r.co2,
+                                  doorCountIn: r.doorCountIn + 1,
+                                  doorCountOut: r.doorCountOut,
+                                );
+                              }
+                            });
+                          }
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -2372,28 +2375,31 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                           HapticFeedback.mediumImpact();
                           final targetHallId = _selectedBlueprintRoomId ?? (_rooms.isNotEmpty ? _rooms.first.id : 'hall-1');
                           _api.recordDoorTally(hallId: targetHallId, type: 'out', count: 1);
-                          setState(() {
-                            final idx = _rooms.indexWhere((r) => r.id == targetHallId);
-                            if (idx != -1 && _rooms[idx].currentOccupancy > 0) {
-                              final r = _rooms[idx];
-                              final newOcc = r.currentOccupancy - 1;
-                              final newDensity = r.capacity > 0 ? (newOcc / r.capacity * 100.0) : r.currentDensity;
-                              _rooms[idx] = RoomTelemetry(
-                                id: r.id,
-                                name: r.name,
-                                currentDensity: newDensity,
-                                capacity: r.capacity,
-                                currentOccupancy: newOcc,
-                                status: newDensity > 85 ? 'CRITICAL' : (newDensity > 65 ? 'ELEVATED' : 'OPTIMAL'),
-                                predictedRisk: r.predictedRisk,
-                                trend: 'FALLING',
-                                temperature: r.temperature,
-                                co2: r.co2,
-                                doorCountIn: r.doorCountIn,
-                                doorCountOut: r.doorCountOut + 1,
-                              );
-                            }
-                          });
+                          if (mounted) {
+                            setState(() {
+                              if (_totalGateCheckins > 0) _totalGateCheckins--;
+                              final idx = _rooms.indexWhere((r) => r.id == targetHallId);
+                              if (idx != -1 && _rooms[idx].currentOccupancy > 0) {
+                                final r = _rooms[idx];
+                                final newOcc = r.currentOccupancy - 1;
+                                final newDensity = r.capacity > 0 ? (newOcc / r.capacity * 100.0) : r.currentDensity;
+                                _rooms[idx] = RoomTelemetry(
+                                  id: r.id,
+                                  name: r.name,
+                                  currentDensity: newDensity,
+                                  capacity: r.capacity,
+                                  currentOccupancy: newOcc,
+                                  status: newDensity > 85 ? 'CRITICAL' : (newDensity > 65 ? 'ELEVATED' : 'OPTIMAL'),
+                                  predictedRisk: r.predictedRisk,
+                                  trend: 'FALLING',
+                                  temperature: r.temperature,
+                                  co2: r.co2,
+                                  doorCountIn: r.doorCountIn,
+                                  doorCountOut: r.doorCountOut + 1,
+                                );
+                              }
+                            });
+                          }
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
@@ -2643,7 +2649,13 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   Widget _buildBlueprintChamber(String id, String label, String density, Color heatColor) {
     final isSelected = _selectedBlueprintRoomId == id;
     return GestureDetector(
-      onTap: () => setState(() => _selectedBlueprintRoomId = id),
+      onTap: () {
+        if (mounted) {
+          setState(() {
+            _selectedBlueprintRoomId = (_selectedBlueprintRoomId == id) ? null : id;
+          });
+        }
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
@@ -4179,7 +4191,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             )
           else
             ..._adminDiscrepancies.map((d) {
-              final isCrit = d.severity == 'CRITICAL';
+              final sevUpper = d.severity.toUpperCase();
+              final isCrit = sevUpper == 'CRITICAL' || sevUpper == 'HIGH';
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(12),
@@ -4225,7 +4238,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: Text(
-                                  d.type,
+                                  d.type.replaceAll('_', ' '),
                                   style: GoogleFonts.spaceGrotesk(
                                     fontSize: 8.5,
                                     fontWeight: FontWeight.w800,

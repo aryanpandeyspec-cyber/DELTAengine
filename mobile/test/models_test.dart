@@ -169,5 +169,23 @@ void main() {
       expect(api.offlineQueueCount, equals(initialCount + 1));
     });
   });
+
+  group('SecurityDiscrepancy Model Tests', () {
+    test('Correctly parses discrepancy and defaults missing fields', () {
+      final disc = SecurityDiscrepancy.fromJson({
+        'id': 'disc_1',
+        'severity': 'HIGH',
+        'type': 'DUAL_SESSION_ANOMALY',
+        'title': 'Concurrent Sign-in Anomaly',
+        'description': 'Dual login from 2 IP addresses',
+      });
+
+      expect(disc.id, equals('disc_1'));
+      expect(disc.severity, equals('HIGH'));
+      expect(disc.type, equals('DUAL_SESSION_ANOMALY'));
+      expect(disc.title, contains('Concurrent Sign-in'));
+      expect(disc.description, contains('Dual login'));
+    });
+  });
 }
 
