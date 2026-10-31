@@ -5,6 +5,14 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 
+class AuthException implements Exception {
+  final String message;
+  final int statusCode;
+  AuthException(this.message, {this.statusCode = 401});
+  @override
+  String toString() => message;
+}
+
 class ApiService {
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
@@ -208,7 +216,7 @@ class ApiService {
       if (response.statusCode == 200) {
         return true;
       }
-      if (response.statusCode == 401) {
+      if (response.statusCode == 401 || response.statusCode == 403) {
         await clearStoredSession();
         return false;
       }
@@ -330,11 +338,17 @@ class ApiService {
         }
 
         return session;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        final err = _safeJsonDecode(response.body);
+        final msg = (err is Map) ? (err['error'] ?? err['message']) : null;
+        throw AuthException(msg ?? 'Invalid email or password (${response.statusCode})', statusCode: response.statusCode);
       } else {
         final err = _safeJsonDecode(response.body);
         final msg = (err is Map) ? (err['error'] ?? err['message']) : null;
-        throw Exception(msg ?? 'Authentication failed (${response.statusCode})');
+        throw AuthException(msg ?? 'Authentication failed (${response.statusCode})', statusCode: response.statusCode);
       }
+    } on AuthException {
+      rethrow;
     } catch (_) {
       // Graceful offline fallback: immediately issue authenticated operator session
       final offlineSession = OperatorSession(

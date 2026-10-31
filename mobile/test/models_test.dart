@@ -1,7 +1,19 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:delta_mobile/models/models.dart';
+import 'package:delta_mobile/services/api_service.dart';
 
 void main() {
+  group('AuthException & Security Tests', () {
+    test('AuthException stores message and status code correctly', () {
+      final exc401 = AuthException('Invalid email or password', statusCode: 401);
+      expect(exc401.statusCode, equals(401));
+      expect(exc401.toString(), equals('Invalid email or password'));
+
+      final exc403 = AuthException('Access Denied: Super Admin required', statusCode: 403);
+      expect(exc403.statusCode, equals(403));
+      expect(exc403.message, contains('Access Denied'));
+    });
+  });
   group('TaskItem Model Tests', () {
     test('Handles case-insensitive status and priority correctly', () {
       final task = TaskItem.fromJson({

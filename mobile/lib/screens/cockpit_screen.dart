@@ -709,6 +709,10 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               ),
             ),
           );
+          if (targetSession.sessionId == widget.session.sessionId) {
+            _handleForcedLogout(reason: 'You revoked your own session.');
+            return;
+          }
           _fetchAdminGovernanceData(silent: true);
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
