@@ -97,7 +97,14 @@ function initWebSockets() {
   };
 
   ws.onmessage = (event) => {
-    const payload = JSON.parse(event.data);
+    let payload;
+    try {
+      payload = JSON.parse(event.data);
+    } catch (parseErr) {
+      console.warn('[WS] Received non-JSON or malformed packet:', event.data, parseErr);
+      return;
+    }
+    if (!payload || typeof payload !== 'object') return;
 
     switch (payload.type) {
       case 'INIT_STATE':

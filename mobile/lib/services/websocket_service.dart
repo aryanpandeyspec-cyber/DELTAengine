@@ -16,6 +16,7 @@ class WebSocketService {
 
   final StreamController<bool> _connectionStateController = StreamController<bool>.broadcast();
   final StreamController<TaskItem> _taskEventController = StreamController<TaskItem>.broadcast();
+  final StreamController<List<TaskItem>> _taskBatchEventController = StreamController<List<TaskItem>>.broadcast();
   final StreamController<List<RoomTelemetry>> _roomEventController = StreamController<List<RoomTelemetry>>.broadcast();
   final StreamController<VoiceTransmission> _voiceEventController = StreamController<VoiceTransmission>.broadcast();
   final StreamController<Map<String, dynamic>> _sosEventController = StreamController<Map<String, dynamic>>.broadcast();
@@ -28,6 +29,7 @@ class WebSocketService {
 
   Stream<bool> get isConnectedStream => _connectionStateController.stream;
   Stream<TaskItem> get onTaskEvent => _taskEventController.stream;
+  Stream<List<TaskItem>> get onTaskBatchEvent => _taskBatchEventController.stream;
   Stream<List<RoomTelemetry>> get onRoomEvent => _roomEventController.stream;
   Stream<VoiceTransmission> get onVoiceEvent => _voiceEventController.stream;
   Stream<Map<String, dynamic>> get onSosEvent => _sosEventController.stream;
@@ -40,37 +42,59 @@ class WebSocketService {
 
   void connect() {
     _reconnectTimer?.cancel();
+    disconnect();
 
     try {
       final base = ApiService().baseUrl;
       final wsUrl = base.replaceFirst('http://', 'ws://').replaceFirst('https://', 'wss://');
       final uri = Uri.parse('$wsUrl/ws');
 
-      _channel = WebSocketChannel.connect(uri);
-      _isConnected = true;
-      _reconnectAttempts = 0;
-      _connectionStateController.add(true);
+      final channel = WebSocketChannel.connect(uri);
+      _channel = channel;
 
-      _subscription = _channel!.stream.listen(
-        (message) {
+      channel.ready.then((_) {
+        if (_channel == channel) {
           _isConnected = true;
           _reconnectAttempts = 0;
+          if (!_connectionStateController.isClosed) {
+            _connectionStateController.add(true);
+          }
+        }
+      }).catchError((_) {
+        if (_channel == channel) {
+          _isConnected = false;
+          if (!_connectionStateController.isClosed) {
+            _connectionStateController.add(false);
+          }
+          _scheduleReconnect();
+        }
+      });
+
+      _subscription = channel.stream.listen(
+        (message) {
           _handleMessage(message);
         },
-        onError: (err) {
+        onError: (_) {
           _isConnected = false;
-          _connectionStateController.add(false);
+          if (!_connectionStateController.isClosed) {
+            _connectionStateController.add(false);
+          }
           _scheduleReconnect();
         },
         onDone: () {
           _isConnected = false;
-          _connectionStateController.add(false);
+          if (!_connectionStateController.isClosed) {
+            _connectionStateController.add(false);
+          }
           _scheduleReconnect();
         },
+        cancelOnError: true,
       );
-    } catch (e) {
+    } catch (_) {
       _isConnected = false;
-      _connectionStateController.add(false);
+      if (!_connectionStateController.isClosed) {
+        _connectionStateController.add(false);
+      }
       _scheduleReconnect();
     }
   }
@@ -168,10 +192,14 @@ class WebSocketService {
         case 'INIT_STATE':
           if (data is Map<String, dynamic>) {
             if (data['tasks'] is List) {
+              final newTasks = <TaskItem>[];
               for (final t in data['tasks'] as List) {
                 if (t is Map<String, dynamic>) {
-                  _taskEventController.add(TaskItem.fromJson(t));
+                  newTasks.add(TaskItem.fromJson(t));
                 }
+              }
+              if (newTasks.isNotEmpty) {
+                _taskBatchEventController.add(newTasks);
               }
             }
             final roomsData = data['rooms'];
@@ -225,9 +253,15 @@ class WebSocketService {
     _reconnectTimer?.cancel();
     _reconnectAttempts = 0;
     _subscription?.cancel();
-    _channel?.sink.close();
+    _subscription = null;
+    try {
+      _channel?.sink.close();
+    } catch (_) {}
+    _channel = null;
     _isConnected = false;
-    _connectionStateController.add(false);
+    if (!_connectionStateController.isClosed) {
+      _connectionStateController.add(false);
+    }
   }
 
   void dispose() {

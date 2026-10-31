@@ -38,7 +38,38 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     RoomTelemetry(id: 'room4', name: 'Shannon Workshop Suite', currentDensity: 52.0, capacity: 120, currentOccupancy: 62, status: 'OPTIMAL', predictedRisk: 0.40, doorCountIn: 70, doorCountOut: 8, temperature: 22.0, co2: 590),
     RoomTelemetry(id: 'room5', name: 'Hopper Tech Pavilion', currentDensity: 35.0, capacity: 1200, currentOccupancy: 420, status: 'OPTIMAL', predictedRisk: 0.25, doorCountIn: 490, doorCountOut: 70, temperature: 20.8, co2: 480),
   ];
-  List<TaskItem> _tasks = [];
+  List<TaskItem> _tasks = [
+    TaskItem(
+      id: 'task-init-1',
+      title: 'Turing Hall Optical Turnstile Influx Monitor',
+      description: 'Active crowd surge monitoring at entry gates',
+      location: 'Turing Grand Hall - Sector A',
+      severity: 'HIGH',
+      status: 'IN_PROGRESS',
+      assignedTo: 'Aryan Pandey',
+      createdAt: DateTime.now(),
+    ),
+    TaskItem(
+      id: 'task-init-2',
+      title: 'Perimeter Laser Tripwire Calibration Check',
+      description: 'Verify optical beam tripwire alignment',
+      location: 'Main Concourse North',
+      severity: 'MEDIUM',
+      status: 'PENDING',
+      assignedTo: null,
+      createdAt: DateTime.now(),
+    ),
+    TaskItem(
+      id: 'task-init-3',
+      title: 'Life-Safety Evacuation Egress Path Clear',
+      description: 'Ensure double-door emergency exits are unblocked',
+      location: 'Lovelace Auditorium Egress',
+      severity: 'CRITICAL',
+      status: 'RESOLVED',
+      assignedTo: 'Suryansh',
+      createdAt: DateTime.now(),
+    ),
+  ];
   final List<VoiceTransmission> _voiceTransmissions = [];
   AttendeeBadgeResult? _lastScannedBadge;
   int _totalGateCheckins = 842;
@@ -67,6 +98,8 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
 
   StreamSubscription? _wsStateSub;
   StreamSubscription? _taskSub;
+  StreamSubscription? _taskBatchSub;
+  int _sessionValidateTick = 0;
   StreamSubscription? _roomSub;
   StreamSubscription? _voiceSub;
   StreamSubscription? _sosSub;
@@ -130,15 +163,23 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _telemetryTimer = Timer.periodic(const Duration(seconds: 4), (timer) async {
       if (!mounted) return;
       try {
-        // Validate active session with backend to detect remote revocation
-        final isSessionValid = await _api.validateSession();
-        if (!isSessionValid && mounted) {
-          _handleForcedLogout(reason: 'Session revoked or expired by Administrator.');
-          return;
+        _sessionValidateTick++;
+        // Validate active session every 8 ticks (~32s) to prevent hot-path network blocking
+        if (_sessionValidateTick % 8 == 0) {
+          final isSessionValid = await _api.validateSession();
+          if (!isSessionValid && mounted) {
+            _handleForcedLogout(reason: 'Session revoked or expired by Administrator.');
+            return;
+          }
         }
 
-        final rooms = await _api.fetchRooms();
-        final tasks = await _api.fetchTasks();
+        // Concurrent parallel fetching
+        final results = await Future.wait([
+          _api.fetchRooms(),
+          _api.fetchTasks(),
+        ]);
+        final rooms = results[0];
+        final tasks = results[1];
         if (mounted && rooms.isNotEmpty) {
           setState(() {
             _rooms = List<RoomTelemetry>.from(rooms);
@@ -185,6 +226,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     _scannerCodeController.dispose();
     _wsStateSub?.cancel();
     _taskSub?.cancel();
+    _taskBatchSub?.cancel();
     _roomSub?.cancel();
     _voiceSub?.cancel();
     _sosSub?.cancel();
@@ -244,6 +286,14 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
             copy.insert(0, task);
           }
           _tasks = copy;
+        });
+      }
+    });
+
+    _taskBatchSub = _ws.onTaskBatchEvent.listen((batch) {
+      if (mounted && batch.isNotEmpty) {
+        setState(() {
+          _tasks = List<TaskItem>.from(batch);
         });
       }
     });

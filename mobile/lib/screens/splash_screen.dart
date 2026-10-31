@@ -51,7 +51,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
     // 1. Master Sequence Controller (1250ms target for cinematic boot)
     _masterController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1250),
+      duration: const Duration(milliseconds: 900),
     );
 
     // 2. Continuous Tactical Radar Orbital Controller
@@ -134,7 +134,7 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
 
     // Allow cinematic sequence to complete smoothly
     final elapsed = DateTime.now().difference(startTime).inMilliseconds;
-    final remaining = 1250 - elapsed;
+    final remaining = 900 - elapsed;
     if (remaining > 0) {
       await Future.delayed(Duration(milliseconds: remaining));
     }
@@ -766,6 +766,13 @@ class _CornerBracketsPainter extends CustomPainter {
 /// Tactical Holographic Hex/Grid & Radar Beam Background Painter
 class _HolographicBackgroundPainter extends CustomPainter {
   final double radarAngle;
+  static final Paint _gridPaint = Paint()
+    ..color = const Color(0xFF101B30).withValues(alpha: 0.35)
+    ..strokeWidth = 0.5;
+  static final Paint _cornerPaint = Paint()
+    ..color = const Color(0xFF38BDF8).withValues(alpha: 0.3)
+    ..strokeWidth = 1.0;
+
   const _HolographicBackgroundPainter({required this.radarAngle});
 
   @override
@@ -773,16 +780,12 @@ class _HolographicBackgroundPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
 
     // 1. Subtle Background Tactical Grid
-    final gridPaint = Paint()
-      ..color = const Color(0xFF101B30).withValues(alpha: 0.35)
-      ..strokeWidth = 0.5;
-
     const step = 44.0;
     for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), _gridPaint);
     }
     for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), _gridPaint);
     }
 
     // 2. Ambient Rotating Tactical Radar Beam
@@ -801,26 +804,23 @@ class _HolographicBackgroundPainter extends CustomPainter {
     canvas.drawCircle(center, size.width * 0.7, radarPaint);
 
     // 3. Screen Edge Precision Corner Crosshairs
-    final cornerPaint = Paint()
-      ..color = const Color(0xFF38BDF8).withValues(alpha: 0.3)
-      ..strokeWidth = 1.0;
 
     const arm = 14.0;
     // Top-Left
-    canvas.drawLine(const Offset(16, 16), const Offset(16 + arm, 16), cornerPaint);
-    canvas.drawLine(const Offset(16, 16), const Offset(16, 16 + arm), cornerPaint);
+    canvas.drawLine(const Offset(16, 16), const Offset(16 + arm, 16), _cornerPaint);
+    canvas.drawLine(const Offset(16, 16), const Offset(16, 16 + arm), _cornerPaint);
 
     // Top-Right
-    canvas.drawLine(Offset(size.width - 16, 16), Offset(size.width - 16 - arm, 16), cornerPaint);
-    canvas.drawLine(Offset(size.width - 16, 16), Offset(size.width - 16, 16 + arm), cornerPaint);
+    canvas.drawLine(Offset(size.width - 16, 16), Offset(size.width - 16 - arm, 16), _cornerPaint);
+    canvas.drawLine(Offset(size.width - 16, 16), Offset(size.width - 16, 16 + arm), _cornerPaint);
 
     // Bottom-Left
-    canvas.drawLine(Offset(16, size.height - 16), Offset(16 + arm, size.height - 16), cornerPaint);
-    canvas.drawLine(Offset(16, size.height - 16), Offset(16, size.height - 16 - arm), cornerPaint);
+    canvas.drawLine(Offset(16, size.height - 16), Offset(16 + arm, size.height - 16), _cornerPaint);
+    canvas.drawLine(Offset(16, size.height - 16), Offset(16, size.height - 16 - arm), _cornerPaint);
 
     // Bottom-Right
-    canvas.drawLine(Offset(size.width - 16, size.height - 16), Offset(size.width - 16 - arm, size.height - 16), cornerPaint);
-    canvas.drawLine(Offset(size.width - 16, size.height - 16), Offset(size.width - 16, size.height - 16 - arm), cornerPaint);
+    canvas.drawLine(Offset(size.width - 16, size.height - 16), Offset(size.width - 16 - arm, size.height - 16), _cornerPaint);
+    canvas.drawLine(Offset(size.width - 16, size.height - 16), Offset(size.width - 16, size.height - 16 - arm), _cornerPaint);
   }
 
   @override
