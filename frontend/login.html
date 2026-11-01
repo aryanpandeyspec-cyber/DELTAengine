@@ -489,6 +489,14 @@
     // Handle incoming OAuth callback parameters in URL
     async function handleOAuthCallback() {
       const urlParams = new URLSearchParams(window.location.search);
+
+      // Check if redirected due to remote administrative session revocation
+      if (urlParams.get('revoked') === 'true') {
+        window.history.replaceState({}, document.title, window.location.pathname);
+        showError('⛔ Your active terminal session was revoked by the System Administrator. Please re-authenticate.');
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
+        return;
+      }
       const hashRaw = window.location.hash.startsWith('#') ? window.location.hash.substring(1) : window.location.hash;
       const hashParams = new URLSearchParams(hashRaw);
 

@@ -696,20 +696,26 @@ class ApiService {
     required String note,
     String crowdSeverity = 'CRITICAL',
   }) async {
+    final payload = {
+      'volunteerName': volunteerName,
+      'hallId': hallId,
+      'note': note,
+      'crowdSeverity': crowdSeverity,
+    };
     final uri = Uri.parse('$_baseUrl/api/volunteer/sos');
     try {
       final response = await http.post(
         uri,
         headers: _headers(),
-        body: jsonEncode({
-          'volunteerName': volunteerName,
-          'hallId': hallId,
-          'note': note,
-          'crowdSeverity': crowdSeverity,
-        }),
+        body: jsonEncode(payload),
       ).timeout(_defaultTimeout);
-      return response.statusCode == 200;
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return true;
+      }
+      await enqueueOfflineAction(endpoint: '/api/volunteer/sos', payload: payload);
+      return false;
     } catch (_) {
+      await enqueueOfflineAction(endpoint: '/api/volunteer/sos', payload: payload);
       return false;
     }
   }

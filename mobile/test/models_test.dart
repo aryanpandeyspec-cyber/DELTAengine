@@ -168,6 +168,23 @@ void main() {
 
       expect(api.offlineQueueCount, equals(initialCount + 1));
     });
+
+    test('triggerEmergencySos enqueues to mesh queue when network fails', () async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+      SharedPreferences.setMockInitialValues({});
+      final api = ApiService();
+      api.setBaseUrl('http://127.0.0.1:59999');
+      final beforeCount = api.offlineQueueCount;
+
+      final res = await api.triggerEmergencySos(
+        volunteerName: 'Aryan Pandey',
+        hallId: 'hall-1',
+        note: 'Stairwell crowd surge',
+      );
+
+      expect(res, isFalse);
+      expect(api.offlineQueueCount, equals(beforeCount + 1));
+    });
   });
 
   group('SecurityDiscrepancy Model Tests', () {

@@ -683,8 +683,9 @@ function initWebSockets() {
           mySessionId = userObj.sessionId || localStorage.getItem('delta_session_id');
         } catch (_) {}
 
-        const isMe = (mySessionId && revData.sessionId && mySessionId === revData.sessionId) ||
-                     (myEmail && revData.email && myEmail.toLowerCase() === revData.email.toLowerCase());
+        const isMe = (mySessionId && revData.sessionId)
+          ? (mySessionId === revData.sessionId)
+          : (myEmail && revData.email && myEmail.toLowerCase() === revData.email.toLowerCase());
 
         if (typeof appendLog === 'function') {
           appendLog(`[SECURITY] ⛔ Session for "${revData.name || 'Operator'}" (${revData.email || 'N/A'}) was terminated by ${revData.revokedBy || 'Administrator'}.`, 'conflict');
@@ -699,6 +700,7 @@ function initWebSockets() {
           localStorage.removeItem('delta_user_session');
           localStorage.removeItem('delta_session_id');
           localStorage.removeItem('delta_user_email');
+          fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' }).catch(() => {});
           if (typeof createToast === 'function') {
             createToast(`Your session has been terminated by an Administrator: ${revData.reason || 'Administrative Revocation'}.`, 'error');
           }

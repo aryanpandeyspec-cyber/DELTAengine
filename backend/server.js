@@ -1923,6 +1923,21 @@ app.post('/api/volunteer/sos', (req, res) => {
     }
   });
 
+  // Automated hall-targeted dispatch to on-duty personnel
+  dispatchHallTargetedAlert({
+    hallId: safeHallId,
+    eventType: 'EMERGENCY_SOS',
+    details: {
+      message: sosRecord.note,
+      senderName: sosRecord.volunteerName,
+      crowdSeverity: sosRecord.crowdSeverity,
+      timestamp
+    },
+    db,
+    broadcast,
+    sendWhatsAppNotification
+  }).catch(err => console.warn('[Volunteer SOS Alert Dispatch]', err.message));
+
   res.json({ success: true, sosRecord });
 });
 

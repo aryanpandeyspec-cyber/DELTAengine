@@ -171,6 +171,26 @@ function generateContextualTask(volunteer, incidentType, hallName, details = {})
   const cap = details.capacity || 250;
 
   switch (incidentType) {
+    case 'EMERGENCY_SOS':
+    case 'VOLUNTEER_SOS':
+    case 'SOS':
+      if (roleStr.includes('crowd') || roleStr.includes('entrance') || roleStr.includes('door') || roleStr.includes('gate')) {
+        return {
+          task: 'HOLD EMERGENCY GATES OPEN & CLEAR CORRIDORS',
+          whatsappMsg: `🚨 [EMERGENCY SOS: ${hallName.toUpperCase()}] Reported by ${details.senderName || 'Safety Marshal'}: "${details.message || 'Critical incident reported'}". Hold all gates open for unhindered egress. Keep emergency lanes clear.`
+        };
+      }
+      if (roleStr.includes('stage') || roleStr.includes('operations')) {
+        return {
+          task: 'STAGE HOLD & ACTIVATE EMERGENCY LIGHTING',
+          whatsappMsg: `🚨 [EMERGENCY SOS: ${hallName.toUpperCase()}] Emergency alert by ${details.senderName || 'Staff'}. Pause audio program, bring up house illumination, and guide occupants towards marked exits.`
+        };
+      }
+      return {
+        task: 'DEPLOY FIRST AID & FORM SAFETY CORDON',
+        whatsappMsg: `🚨 [EMERGENCY SOS: ${hallName.toUpperCase()}] Priority alert from ${details.senderName || 'Staff'}: "${details.message || 'Immediate assistance requested'}". Deploy immediate response team to the scene.`
+      };
+
     case 'CAPACITY_BREACH':
     case 'ROOM_FULL':
       if (roleStr.includes('crowd') || roleStr.includes('entrance') || roleStr.includes('door')) {
@@ -288,7 +308,7 @@ async function dispatchHallTargetedAlert({ hallId, eventType, details = {}, db, 
     type: eventType,
     hallId: normHall,
     hallName: hallName,
-    severity: (eventType === 'CAPACITY_BREACH' || eventType === 'ROOM_FULL') ? 'critical' : (eventType === 'ROOM_80_PERCENT' ? 'warning' : 'info'),
+    severity: (eventType === 'CAPACITY_BREACH' || eventType === 'ROOM_FULL' || String(eventType).includes('SOS') || String(eventType).includes('EMERGENCY')) ? 'critical' : (eventType === 'ROOM_80_PERCENT' ? 'warning' : 'info'),
     timestamp: new Date().toLocaleTimeString(),
     occupiedPercent: details.occupiedPercent || 0,
     emptyPercent: details.emptyPercent || 0,

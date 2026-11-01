@@ -37,6 +37,7 @@ class CadBlueprint2DEngine {
     this.startPan = { x: 0, y: 0 };
     this.minScale = 0.3;
     this.maxScale = 8.0;
+    this._userHasInteracted = false;
 
     // Layer visibility flags
     this.layers = {
@@ -305,6 +306,7 @@ class CadBlueprint2DEngine {
       this.panY = mouseY - (mouseY - this.panY) * (newScale / this.scale);
       this.scale = newScale;
 
+      this._userHasInteracted = true;
       this.updateViewportTransform();
     }, { passive: false });
 
@@ -337,6 +339,7 @@ class CadBlueprint2DEngine {
         return;
       }
 
+      this._userHasInteracted = true;
       this.panX = e.clientX - this.startPan.x;
       this.panY = e.clientY - this.startPan.y;
       this.updateViewportTransform();
@@ -358,8 +361,14 @@ class CadBlueprint2DEngine {
 
     if (btnZoomIn) btnZoomIn.addEventListener('click', () => this.zoom(1.2));
     if (btnZoomOut) btnZoomOut.addEventListener('click', () => this.zoom(1 / 1.2));
-    if (btnFit) btnFit.addEventListener('click', () => this.fitToScreen());
-    if (btnReset) btnReset.addEventListener('click', () => this.resetView());
+    if (btnFit) btnFit.addEventListener('click', () => {
+      this._userHasInteracted = false;
+      this.fitToScreen();
+    });
+    if (btnReset) btnReset.addEventListener('click', () => {
+      this._userHasInteracted = false;
+      this.resetView();
+    });
     if (btnCalib) btnCalib.addEventListener('click', () => this.toggleCalibrationMode());
 
     // 4. Layer and Overlay Toggles
@@ -452,7 +461,7 @@ class CadBlueprint2DEngine {
     // 7. Responsive auto-fit on container layout changes
     if (typeof window !== 'undefined' && window.ResizeObserver && this.canvasWrapper) {
       this.resizeObserver = new ResizeObserver(() => {
-        if (!this.isPanning && this.cadModel) {
+        if (!this.isPanning && this.cadModel && !this._userHasInteracted) {
           this.fitToScreen();
         }
       });
@@ -1238,6 +1247,7 @@ class CadBlueprint2DEngine {
   }
 
   zoom(factor) {
+    this._userHasInteracted = true;
     const w = this.canvasWrapper?.clientWidth || this.svg?.clientWidth || 800;
     const h = this.canvasWrapper?.clientHeight || this.svg?.clientHeight || 560;
     const cx = w / 2;
@@ -1376,6 +1386,18 @@ class CadBlueprint2DEngine {
       ],
       confidence: { score: 0.98, method: 'VECTOR_PDF_CAD_SURVEY' }
     };
+  }
+  /**
+   * Cleans up observers and DOM references to prevent memory leaks
+   */
+  destroy() {
+    if (this.resizeObserver) {
+      this.resizeObserver.disconnect();
+      this.resizeObserver = null;
+    }
+    if (this.container) {
+      this.container.innerHTML = '';
+    }
   }
 }
 

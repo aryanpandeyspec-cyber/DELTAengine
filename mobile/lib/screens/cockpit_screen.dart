@@ -420,8 +420,10 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       if (mounted) {
         final sessId = data['sessionId']?.toString();
         final email = data['email']?.toString();
-        if (sessId == widget.session.sessionId ||
-            (email != null && email.toLowerCase() == widget.session.email.toLowerCase())) {
+        final isMe = (widget.session.sessionId.isNotEmpty && sessId != null && sessId.isNotEmpty)
+            ? (widget.session.sessionId == sessId)
+            : (email != null && email.toLowerCase() == widget.session.email.toLowerCase());
+        if (isMe) {
           _handleForcedLogout(reason: data['reason']?.toString() ?? 'Session revoked by Administrator.');
         } else if (widget.session.isAdmin) {
           // If this terminal is Admin and another terminal was revoked, refresh live session roster
