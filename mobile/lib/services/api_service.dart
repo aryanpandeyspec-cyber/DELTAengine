@@ -318,7 +318,7 @@ class ApiService {
     ];
   }
 
-  /// Supabase Enterprise & Coordinator Authentication
+  /// Enterprise Identity & Coordinator Authentication
   Future<OperatorSession> login({
     required String email,
     required String password,
@@ -379,7 +379,7 @@ class ApiService {
         name: email.contains('aryan')
             ? 'Aryan Pandey'
             : (email.contains('suryansh')
-                ? 'Suryansh'
+                ? 'Suryansh Sharma'
                 : (email.contains('safety') ? 'Safety Officer' : 'Field Operator')),
         role: role.toUpperCase(),
         token: 'jwt-delta-offline-${DateTime.now().millisecondsSinceEpoch}',
@@ -751,7 +751,7 @@ class ApiService {
   }
 
   // ===============================================================
-  // OPTION 1: STORE-AND-FORWARD MESH RELAY ENGINE (FROM SURYANSH)
+  // STORE-AND-FORWARD MESH RELAY ENGINE (ENTERPRISE)
   // ===============================================================
   final List<Map<String, dynamic>> _offlineQueue = [];
   int get offlineQueueCount => _offlineQueue.length;

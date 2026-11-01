@@ -300,7 +300,7 @@ class OperatorSession {
       email: user['email']?.toString() ?? 'operator@deltaengine.internal',
       name: user['name']?.toString() ?? user['user_metadata']?['full_name']?.toString() ?? 'Lead Coordinator',
       role: user['role']?.toString() ?? 'coordinator',
-      token: json['token']?.toString() ?? json['access_token']?.toString() ?? 'token-demo-valid',
+      token: json['token']?.toString() ?? json['access_token']?.toString() ?? 'token-offline-valid',
       sessionId: sessId,
       expiresAt: expiresAt,
       rememberMe: json['rememberMe'] == true || user['rememberMe'] == true,

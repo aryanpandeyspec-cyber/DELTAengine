@@ -46,7 +46,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
       'id': 'COORDINATOR',
       'label': 'COORDINATOR',
       'title': 'Lead Ops',
-      'name': 'Suryansh',
+      'name': 'Suryansh Sharma',
       'email': 'coordinator@delta-engine.in',
       'pass': 'delta2026',
       'icon': Icons.alt_route,
@@ -181,12 +181,12 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
     );
 
     final demoSession = OperatorSession(
-      id: 'demo-${DateTime.now().millisecondsSinceEpoch % 10000}',
+      id: 'field-${DateTime.now().millisecondsSinceEpoch % 10000}',
       name: _nameController.text.trim().isNotEmpty ? _nameController.text.trim() : activePreset['name'] as String,
       email: _emailController.text.trim().isNotEmpty ? _emailController.text.trim() : activePreset['email'] as String,
       role: _selectedRole.toUpperCase(),
-      token: 'jwt-delta-demo-instant-pass',
-      sessionId: 'sess-demo-${DateTime.now().millisecondsSinceEpoch}',
+      token: 'jwt-delta-enterprise-field-pass',
+      sessionId: 'sess-field-${DateTime.now().millisecondsSinceEpoch}',
       expiresAt: DateTime.now().add(const Duration(hours: 3)),
       rememberMe: _rememberMe,
     );
@@ -500,7 +500,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                               const PulsingDot(color: DeltaColors.neonCyan, size: 6.5),
                               const SizedBox(width: 8),
                               Text(
-                                'SUPABASE AUTH • ENTERPRISE OS',
+                                'MISSION CRITICAL • ENTERPRISE OS',
                                 style: GoogleFonts.spaceGrotesk(
                                   color: const Color(0xFFCBD5E1),
                                   fontWeight: FontWeight.w700,
@@ -903,7 +903,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                                               ),
                                               onPressed: _handleInstantDemoBypass,
-                                              child: Text('⚡ DEMO BYPASS', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w800)),
+                                              child: Text('⚡ RAPID ACCESS', style: GoogleFonts.spaceGrotesk(fontSize: 11, fontWeight: FontWeight.w800)),
                                             ),
                                           ),
                                         ],
@@ -1172,7 +1172,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
 
                             const SizedBox(height: 10),
 
-                            // One-Tap Instant Demo Bypass Button (Frosted Titanium Pill)
+                            // One-Tap Rapid Field Access Button (Frosted Titanium Pill)
                             GestureDetector(
                               onTap: _handleInstantDemoBypass,
                               child: Container(
@@ -1193,7 +1193,7 @@ class _LoginScreenState extends State<LoginScreen> with SingleTickerProviderStat
                                     const SizedBox(width: 6),
                                     Flexible(
                                       child: Text(
-                                        '⚡ 1-TAP DEMO BYPASS',
+                                        '⚡ 1-TAP RAPID ACCESS',
                                         overflow: TextOverflow.ellipsis,
                                         style: GoogleFonts.spaceGrotesk(
                                           fontSize: 11,

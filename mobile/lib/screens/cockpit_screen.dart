@@ -67,7 +67,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       location: 'Lovelace Auditorium Egress',
       severity: 'CRITICAL',
       status: 'RESOLVED',
-      assignedTo: 'Suryansh',
+      assignedTo: 'S. Sharma (Lead Ops)',
       createdAt: DateTime.now(),
     ),
   ];
@@ -828,13 +828,13 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     });
   }
 
-  // Active Device Identity / Team Contacts Sheet (From Suryansh)
+  // Active Terminal Roster & Tactical Contacts Sheet
   void _showTeamRosterDialog() {
     final teamMembers = [
-      {'name': 'Suryansh', 'role': 'Lead Coordinator', 'phone': '+91 83030 09159', 'avatar': '🧑‍💻', 'ch': 'CH 1'},
-      {'name': 'Aryan Pandey', 'role': 'Core Systems Commander', 'phone': '+91 91542 76178', 'avatar': '💻', 'ch': 'CH 1'},
-      {'name': 'Shahid', 'role': 'Audio & AV Lead', 'phone': '+91 63035 70916', 'avatar': '🎧', 'ch': 'CH 4'},
-      {'name': 'Volunteer Runner', 'role': 'Field Gate Team', 'phone': 'Gate Desk #1', 'avatar': '🤝', 'ch': 'CH 2'},
+      {'name': 'Suryansh Sharma', 'role': 'Lead Coordinator', 'phone': '+91 83030 09159', 'avatar': 'OPS', 'ch': 'CH 1'},
+      {'name': 'Aryan Pandey', 'role': 'Core Systems Commander', 'phone': '+91 91542 76178', 'avatar': 'SYS', 'ch': 'CH 1'},
+      {'name': 'Shahid Khan', 'role': 'Audio & Comms Lead', 'phone': '+91 63035 70916', 'avatar': 'COM', 'ch': 'CH 4'},
+      {'name': 'Perimeter Unit Alpha', 'role': 'Field Gate Team', 'phone': 'Gate Desk Alpha', 'avatar': 'SEC', 'ch': 'CH 2'},
     ];
 
     showModalBottomSheet(
@@ -873,7 +873,25 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
               decoration: Neubrutalism.boxDecoration(color: DeltaColors.surfaceLight, radius: 8),
               child: Row(
                 children: [
-                  Text(m['avatar']!, style: const TextStyle(fontSize: 22)),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF131D31),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: DeltaColors.skyAqua.withValues(alpha: 0.4), width: 1.0),
+                    ),
+                    child: Text(
+                      m['avatar']!,
+                      style: GoogleFonts.spaceGrotesk(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                        color: DeltaColors.skyAqua,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -1948,7 +1966,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // POINT 6 (Suryansh): Live Event Phase Countdown Ticker
+          // EVENT PHASE ENGINE: Live Event Phase Countdown Ticker
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: Neubrutalism.boxDecoration(
@@ -2215,11 +2233,11 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
           ),
           const SizedBox(height: 14),
 
-          // POINT 5 (Suryansh): Interactive Venue Blueprint Floorplan
+          // TACTICAL VENUE BLUEPRINT: Interactive Venue Blueprint Floorplan
           _buildInteractiveBlueprintFloorplan(),
           const SizedBox(height: 14),
 
-          // Option 1 Store-and-Forward Mesh Relay Bar (Suryansh)
+          // Store-and-Forward Mesh Relay Bar
           _buildStoreAndForwardMeshBar(),
           const SizedBox(height: 14),
 
@@ -2533,7 +2551,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     );
   }
 
-  // POINT 5 (Suryansh): Interactive Venue Blueprint Floorplan
+  // TACTICAL VENUE BLUEPRINT: Interactive Venue Blueprint Floorplan
   Widget _buildInteractiveBlueprintFloorplan() {
     return NeubrutalistCard(
       backgroundColor: DeltaColors.surface,
@@ -2707,7 +2725,7 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
     );
   }
 
-  // Option 1: Store-and-Forward Mesh Relay Bar (Suryansh)
+  // Store-and-Forward Mesh Relay Bar
   Widget _buildStoreAndForwardMeshBar() {
     final queuedCount = _api.offlineQueueCount;
     return Container(
@@ -3286,9 +3304,9 @@ class _CockpitScreenState extends State<CockpitScreen> with TickerProviderStateM
   Widget _buildWalkieTalkieTab() {
     final quickVoiceMessages = [
       'All primary venue exits verified clear.',
-      'Requesting 2 runners for Turing stage water restock.',
-      'Crowd surge detected at Entrance Gate 1.',
-      'Medical first responder on standby at Hub.',
+      'Requesting logistics support at Turing Main Stage.',
+      'Crowd pressure building at Gate A. Requesting marshal relay.',
+      'Medical first-aid responder on standby at Central Command.',
     ];
 
     return ListView(
