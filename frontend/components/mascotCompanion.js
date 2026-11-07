@@ -1,7 +1,12 @@
 /**
- * DELTA ENGINE - LIVE 2D AI MASCOT COMPANION ("AERO")
- * Interactive 2D aerospace drone companion providing dynamic co-pilot guidance,
- * speech bubbles, pointing animations, and situational feedback during live operations.
+ * DELTA ENGINE - AUTONOMOUS 2D AI MASCOT COMPANION ("AERO")
+ * A lively, expressive, autonomous aerospace drone companion that has a "mind of its own":
+ * - Freely roams the dashboard visiting key operational cards
+ * - Performs joyful aerial tricks (barrel rolls, laser chasing, thruster bursts)
+ * - Naps when idle with floating 'z Z Z' bubbles and wakes up when user interacts
+ * - Points laser markers at active components during incidents
+ * - Reacts with robotic chirps, dynamic emotions, and witty speech bubbles
+ * - 100% non-harmful: zero DOM mutations or interference with existing operations.
  */
 
 (function initAeroMascotCompanion() {
@@ -9,318 +14,412 @@
 
   const STORAGE_KEY = 'delta_mascot_enabled';
   let isEnabled = localStorage.getItem(STORAGE_KEY) !== 'false';
-  let mascotContainer = null;
-  let speechBubble = null;
-  let targetMarker = null;
-  let posX = window.innerWidth - 180;
-  let posY = window.innerHeight - 240;
+  let mascotEl = null;
+  let speechBubbleEl = null;
+  let laserPointerEl = null;
+  let zzzBubbleEl = null;
+
+  // Position & Physics state
+  let posX = window.innerWidth - 170;
+  let posY = window.innerHeight - 230;
   let targetX = posX;
   let targetY = posY;
   let isDragging = false;
   let dragOffset = { x: 0, y: 0 };
-  let currentEmotion = 'happy'; // 'happy', 'alert', 'thinking', 'pointing', 'wink'
-  let speechTimer = null;
-  let idleTimer = null;
-  let pointingTargetEl = null;
+  let currentEmotion = 'happy'; // 'happy', 'alert', 'thinking', 'pointing', 'wink', 'dizzy', 'sleep', 'stars'
+  let isSleeping = false;
+  let lastUserActivity = Date.now();
+  let autonomousActionTimer = null;
+  let speechDismissTimer = null;
+  let isBusyWithTrick = false;
 
-  // Sound generator for cute robotic chirps via Web Audio API
-  function playMascotChirp(type = 'blip') {
+  // Sound Synthesizer via Web Audio API (Robotic chirps, whooshes, chimes)
+  function playAudioChirp(type = 'blip') {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
+      const now = ctx.currentTime;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.connect(gain);
       gain.connect(ctx.destination);
 
-      const now = ctx.currentTime;
       if (type === 'blip') {
-        osc.frequency.setValueAtTime(580, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12);
-        gain.gain.setValueAtTime(0.08, now);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(540, now);
+        osc.frequency.exponentialRampToValueAtTime(920, now + 0.12);
+        gain.gain.setValueAtTime(0.09, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
         osc.start(now);
         osc.stop(now + 0.15);
+      } else if (type === 'whoosh') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(780, now + 0.22);
+        osc.frequency.exponentialRampToValueAtTime(260, now + 0.4);
+        gain.gain.setValueAtTime(0.07, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+        osc.start(now);
+        osc.stop(now + 0.45);
       } else if (type === 'alert') {
+        osc.type = 'square';
         osc.frequency.setValueAtTime(880, now);
-        osc.frequency.setValueAtTime(660, now + 0.08);
-        osc.frequency.setValueAtTime(990, now + 0.16);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-        osc.start(now);
-        osc.stop(now + 0.3);
-      } else if (type === 'success') {
-        osc.frequency.setValueAtTime(440, now);
-        osc.frequency.setValueAtTime(660, now + 0.08);
-        osc.frequency.setValueAtTime(880, now + 0.16);
+        osc.frequency.setValueAtTime(660, now + 0.09);
+        osc.frequency.setValueAtTime(990, now + 0.18);
         gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
         osc.start(now);
-        osc.stop(now + 0.35);
+        osc.stop(now + 0.32);
+      } else if (type === 'celebrate') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(523.25, now); // C5
+        osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+        osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+        osc.frequency.setValueAtTime(1046.50, now + 0.24); // C6
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.42);
+        osc.start(now);
+        osc.stop(now + 0.45);
+      } else if (type === 'wake') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(420, now);
+        osc.frequency.exponentialRampToValueAtTime(840, now + 0.16);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.start(now);
+        osc.stop(now + 0.2);
       }
     } catch (_) {}
   }
 
-  // Create SVG Mascot Character (Aero the Aerospace Co-Pilot Drone)
-  function renderMascotSvg(emotion = 'happy') {
+  // Render SVG Robot Body with Dynamic Moods
+  function renderAeroSvg(emotion = 'happy') {
     let eyesSvg = '';
+    let antennaColor = '#00f0ff';
+    let blushOpacity = 0.75;
+
     if (emotion === 'happy') {
       eyesSvg = `
-        <path d="M26 36 Q32 30 38 36" stroke="#00f0ff" stroke-width="3" stroke-linecap="round" fill="none" />
-        <path d="M52 36 Q58 30 64 36" stroke="#00f0ff" stroke-width="3" stroke-linecap="round" fill="none" />
+        <path d="M38 48 Q46 40 54 48" stroke="#00f0ff" stroke-width="4.5" stroke-linecap="round" fill="none" />
+        <path d="M72 48 Q80 40 88 48" stroke="#00f0ff" stroke-width="4.5" stroke-linecap="round" fill="none" />
       `;
     } else if (emotion === 'alert') {
+      antennaColor = '#ff3344';
+      blushOpacity = 0.3;
       eyesSvg = `
-        <circle cx="32" cy="36" r="6" fill="#ff5252" />
-        <circle cx="58" cy="36" r="6" fill="#ff5252" />
-        <circle cx="32" cy="36" r="2.5" fill="#ffffff" />
-        <circle cx="58" cy="36" r="2.5" fill="#ffffff" />
+        <circle cx="46" cy="48" r="8" fill="#ff3344" />
+        <circle cx="80" cy="48" r="8" fill="#ff3344" />
+        <circle cx="46" cy="48" r="3.5" fill="#ffffff" />
+        <circle cx="80" cy="48" r="3.5" fill="#ffffff" />
       `;
-    } else if (emotion === 'thinking') {
+    } else if (emotion === 'stars') {
       eyesSvg = `
-        <circle cx="32" cy="34" r="5" fill="#ffd600" />
-        <line x1="52" y1="36" x2="64" y2="36" stroke="#ffd600" stroke-width="3" stroke-linecap="round" />
+        <polygon points="46,40 48,46 54,46 49,50 51,56 46,52 41,56 43,50 38,46 44,46" fill="#ffd600" />
+        <polygon points="80,40 82,46 88,46 83,50 85,56 80,52 75,56 77,50 72,46 78,46" fill="#ffd600" />
+      `;
+    } else if (emotion === 'dizzy') {
+      eyesSvg = `
+        <path d="M42 48 A4 4 0 1 1 50 48 A4 4 0 1 1 42 48" stroke="#00f0ff" stroke-width="2.5" fill="none" />
+        <path d="M76 48 A4 4 0 1 1 84 48 A4 4 0 1 1 76 48" stroke="#00f0ff" stroke-width="2.5" fill="none" />
+      `;
+    } else if (emotion === 'sleep') {
+      antennaColor = '#64748b';
+      blushOpacity = 0.5;
+      eyesSvg = `
+        <line x1="38" y1="50" x2="54" y2="50" stroke="#94a3b8" stroke-width="4" stroke-linecap="round" />
+        <line x1="72" y1="50" x2="88" y2="50" stroke="#94a3b8" stroke-width="4" stroke-linecap="round" />
       `;
     } else if (emotion === 'wink') {
       eyesSvg = `
-        <circle cx="32" cy="36" r="5" fill="#00f0ff" />
-        <circle cx="34" cy="34" r="2" fill="#ffffff" />
-        <path d="M52 36 Q58 32 64 36" stroke="#00f0ff" stroke-width="3" stroke-linecap="round" fill="none" />
+        <circle cx="46" cy="48" r="7" fill="#00f0ff" />
+        <circle cx="49" cy="45" r="2.5" fill="#ffffff" />
+        <path d="M72 48 Q80 43 88 48" stroke="#00f0ff" stroke-width="4.5" stroke-linecap="round" fill="none" />
       `;
-    } else { // pointing / focus
+    } else { // thinking / curious
       eyesSvg = `
-        <circle cx="32" cy="36" r="5" fill="#00f0ff" />
-        <circle cx="58" cy="36" r="5" fill="#00f0ff" />
+        <circle cx="46" cy="46" r="6.5" fill="#00f0ff" />
+        <line x1="72" y1="48" x2="88" y2="48" stroke="#00f0ff" stroke-width="4.5" stroke-linecap="round" />
       `;
     }
 
     return `
-      <svg class="aero-svg" width="90" height="90" viewBox="0 0 90 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Floating Thruster Glow -->
-        <ellipse cx="45" cy="80" rx="16" ry="5" fill="rgba(0, 240, 255, 0.45)" class="aero-thruster-glow" />
-        <ellipse cx="45" cy="78" rx="8" ry="2.5" fill="#ffffff" />
+      <svg class="aero-core-svg" width="126" height="126" viewBox="0 0 126 126" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Antigravity Thruster Flames (Animated Plasma) -->
+        <g class="aero-thrusters">
+          <ellipse cx="63" cy="112" rx="20" ry="7" fill="rgba(0, 240, 255, 0.45)" class="aero-plasma-outer" />
+          <ellipse cx="63" cy="109" rx="11" ry="3.5" fill="#ffffff" class="aero-plasma-inner" />
+          <path d="M57 110 L63 122 L69 110 Z" fill="#00e5ff" opacity="0.8" />
+        </g>
 
-        <!-- Drone Antenna -->
-        <line x1="45" y1="14" x2="45" y2="4" stroke="#000000" stroke-width="2.5" stroke-linecap="round" />
-        <circle cx="45" cy="4" r="3.5" fill="${emotion === 'alert' ? '#ff5252' : '#00e5ff'}" stroke="#000000" stroke-width="2" class="aero-antenna-bulb" />
+        <!-- Antenna with Pulsing Beacon Light -->
+        <line x1="63" y1="20" x2="63" y2="6" stroke="#000000" stroke-width="3" stroke-linecap="round" />
+        <circle cx="63" cy="6" r="4.5" fill="${antennaColor}" stroke="#000000" stroke-width="2.5" class="aero-antenna-glow" />
 
-        <!-- Outer Ring Thrusters -->
-        <rect x="6" y="42" width="10" height="18" rx="5" fill="#2563eb" stroke="#000000" stroke-width="2" />
-        <rect x="74" y="42" width="10" height="18" rx="5" fill="#2563eb" stroke="#000000" stroke-width="2" />
+        <!-- Twin Side Propulsion Pods -->
+        <rect x="8" y="58" width="14" height="26" rx="7" fill="#2563eb" stroke="#000000" stroke-width="2.5" />
+        <rect x="104" y="58" width="14" height="26" rx="7" fill="#2563eb" stroke="#000000" stroke-width="2.5" />
 
-        <!-- Main Curved Chassis (Neubrutalist Aerospace) -->
-        <rect x="16" y="14" width="58" height="58" rx="22" fill="#1e293b" stroke="#000000" stroke-width="3" />
+        <!-- Main Aerodynamic Drone Chassis (Neubrutalist White & Obsidian) -->
+        <rect x="22" y="20" width="82" height="82" rx="30" fill="#f8fafc" stroke="#000000" stroke-width="3.5" />
         
-        <!-- Visor Bezel & Digital Screen -->
-        <rect x="20" y="22" width="50" height="30" rx="10" fill="#0f172a" stroke="#000000" stroke-width="2" />
+        <!-- Curved Visor Screen Bezel -->
+        <rect x="28" y="30" width="70" height="42" rx="14" fill="#0f172a" stroke="#000000" stroke-width="2.5" />
         
-        <!-- Dynamic Expressive Eyes -->
-        <g class="aero-eyes">
+        <!-- Expressive Digital LED Visor Eyes -->
+        <g class="aero-digital-eyes">
           ${eyesSvg}
         </g>
 
-        <!-- Status Cheeks -->
-        <circle cx="25" cy="45" r="3" fill="#ff4081" opacity="0.75" />
-        <circle cx="65" cy="45" r="3" fill="#ff4081" opacity="0.75" />
+        <!-- Blushing Status Cheeks -->
+        <circle cx="34" cy="62" r="4.5" fill="#ff4081" opacity="${blushOpacity}" />
+        <circle cx="92" cy="62" r="4.5" fill="#ff4081" opacity="${blushOpacity}" />
 
-        <!-- Front Delta Insignia -->
-        <polygon points="45,58 49,65 41,65" fill="#00f0ff" stroke="#000000" stroke-width="1.2" />
+        <!-- Front Delta Aerospace Insignia -->
+        <polygon points="63,78 68,88 58,88" fill="#00f0ff" stroke="#000000" stroke-width="1.8" />
 
-        <!-- Articulated Hand (Left/Right) -->
-        <g class="aero-hand ${emotion === 'pointing' ? 'pointing' : ''}">
-          <circle cx="78" cy="56" r="6" fill="#f8fafc" stroke="#000000" stroke-width="2" />
-          <path d="M82 56 L89 54" stroke="#000000" stroke-width="2" stroke-linecap="round" />
+        <!-- Articulated Mechanical Pointer Hand (Right) -->
+        <g class="aero-arm-right ${emotion === 'pointing' ? 'pointing' : ''}">
+          <circle cx="108" cy="76" r="8" fill="#ffffff" stroke="#000000" stroke-width="2.5" />
+          <path d="M114 76 L124 74" stroke="#000000" stroke-width="3" stroke-linecap="round" />
+        </g>
+
+        <!-- Mechanical Hand (Left) -->
+        <g class="aero-arm-left">
+          <circle cx="18" cy="76" r="8" fill="#ffffff" stroke="#000000" stroke-width="2.5" />
         </g>
       </svg>
     `;
   }
 
-  // Setup DOM Elements and Styles
+  // Setup DOM Elements and Animations
   function setupDOM() {
-    if (document.getElementById('delta-mascot-container')) return;
+    if (document.getElementById('delta-aero-mascot-root')) return;
 
     const styleEl = document.createElement('style');
-    styleEl.id = 'delta-mascot-styles';
+    styleEl.id = 'delta-aero-mascot-styles';
     styleEl.textContent = `
-      #delta-mascot-container {
+      #delta-aero-mascot-root {
         position: fixed;
-        width: 90px;
-        height: 90px;
-        z-index: 999995;
+        width: 126px;
+        height: 126px;
+        z-index: 2147483640; /* High priority visibility */
         cursor: grab;
         user-select: none;
         will-change: transform;
-        transition: transform 0.08s ease-out;
-        filter: drop-shadow(4px 4px 0px rgba(0,0,0,0.85));
+        filter: drop-shadow(0 12px 25px rgba(0,0,0,0.3)) drop-shadow(4px 4px 0px #000000);
+        pointer-events: auto;
       }
-      #delta-mascot-container:active {
+      #delta-aero-mascot-root:active {
         cursor: grabbing;
       }
-      .aero-svg {
-        animation: aeroFloat 2.6s ease-in-out infinite;
+      .aero-core-svg {
+        animation: aeroLevitate 3s ease-in-out infinite;
+        transform-origin: 63px 63px;
+        transition: transform 0.2s ease;
       }
-      @keyframes aeroFloat {
+      @keyframes aeroLevitate {
         0%, 100% { transform: translateY(0px) rotate(0deg); }
-        50% { transform: translateY(-7px) rotate(1.5deg); }
+        50% { transform: translateY(-10px) rotate(2deg); }
       }
-      .aero-thruster-glow {
-        animation: thrusterPulse 1.2s ease-in-out infinite alternate;
+      .aero-core-svg.barrel-roll {
+        animation: aeroSpinRoll 0.75s cubic-bezier(0.2, 0.8, 0.2, 1) !important;
       }
-      @keyframes thrusterPulse {
-        0% { opacity: 0.35; transform: scale(0.9); }
-        100% { opacity: 0.85; transform: scale(1.15); }
+      @keyframes aeroSpinRoll {
+        0% { transform: rotate(0deg) scale(1); }
+        50% { transform: rotate(180deg) scale(1.15) translateY(-20px); }
+        100% { transform: rotate(360deg) scale(1); }
       }
-      .aero-antenna-bulb {
-        animation: antennaBlink 1.8s infinite;
+      .aero-plasma-outer {
+        animation: thrusterPuff 1.1s ease-in-out infinite alternate;
       }
-      @keyframes antennaBlink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.3; }
+      @keyframes thrusterPuff {
+        0% { opacity: 0.4; transform: scale(0.9); }
+        100% { opacity: 0.9; transform: scale(1.2); }
       }
-      .aero-hand.pointing {
-        transform: translate(-10px, -8px) rotate(-25deg);
-        transform-origin: 78px 56px;
-        transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      .aero-antenna-glow {
+        animation: beaconFlicker 1.5s infinite;
+      }
+      @keyframes beaconFlicker {
+        0%, 100% { opacity: 1; filter: drop-shadow(0 0 6px #00f0ff); }
+        50% { opacity: 0.35; filter: none; }
+      }
+      .aero-arm-right.pointing {
+        transform: translate(-14px, -12px) rotate(-30deg);
+        transform-origin: 108px 76px;
+        transition: transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
 
-      /* Neubrutalist Speech Bubble */
-      #delta-mascot-bubble {
+      /* High-Contrast Comic Neubrutalist Speech Bubble */
+      #delta-aero-bubble {
         position: fixed;
-        max-width: 280px;
-        min-width: 180px;
+        max-width: 310px;
+        min-width: 200px;
         background: #ffffff;
         color: #000000;
-        border: 2.5px solid #000000;
-        border-radius: 12px;
-        padding: 10px 14px;
+        border: 3px solid #000000;
+        border-radius: 14px;
+        padding: 12px 16px;
         font-family: 'Space Grotesk', -apple-system, sans-serif;
-        font-size: 12.5px;
+        font-size: 13px;
         font-weight: 700;
-        line-height: 1.4;
+        line-height: 1.45;
         box-shadow: 4px 4px 0px #000000;
-        z-index: 999996;
+        z-index: 2147483645;
         pointer-events: auto;
         opacity: 0;
-        transform: translateY(10px) scale(0.94);
-        transition: opacity 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        transform: translateY(12px) scale(0.92);
+        transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         display: none;
       }
-      #delta-mascot-bubble.visible {
+      #delta-aero-bubble.visible {
         display: block;
         opacity: 1;
         transform: translateY(0px) scale(1);
       }
-      #delta-mascot-bubble::after {
+      #delta-aero-bubble::after {
         content: '';
         position: absolute;
-        bottom: -11px;
-        right: 28px;
-        border-width: 11px 9px 0 0;
+        bottom: -14px;
+        right: 34px;
+        border-width: 14px 11px 0 0;
         border-style: solid;
         border-color: #000000 transparent transparent transparent;
       }
-      #delta-mascot-bubble::before {
+      #delta-aero-bubble::before {
         content: '';
         position: absolute;
-        bottom: -7px;
-        right: 29px;
-        border-width: 8px 7px 0 0;
+        bottom: -9px;
+        right: 35px;
+        border-width: 10px 9px 0 0;
         border-style: solid;
         border-color: #ffffff transparent transparent transparent;
         z-index: 1;
       }
-      .bubble-header {
+      .aero-bubble-head {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 4px;
-        font-size: 10.5px;
+        margin-bottom: 6px;
+        font-size: 11px;
         font-weight: 800;
         color: #2563eb;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.6px;
       }
-      .bubble-close {
+      .aero-bubble-close {
         background: none;
         border: none;
         cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        color: #94a3b8;
-        padding: 0 2px;
+        font-size: 16px;
+        font-weight: 900;
+        color: #64748b;
+        padding: 0 4px;
         line-height: 1;
+        border-radius: 4px;
       }
-      .bubble-close:hover {
+      .aero-bubble-close:hover {
         color: #000000;
+        background: #f1f5f9;
       }
 
-      /* Animated Laser Target Ring */
-      #delta-mascot-target-marker {
+      /* Floating z Z Z sleep particles */
+      #delta-aero-zzz {
         position: fixed;
-        width: 32px;
-        height: 32px;
-        border: 2px dashed #00f0ff;
+        font-family: 'Space Grotesk', monospace;
+        font-size: 20px;
+        font-weight: 900;
+        color: #60a5fa;
+        text-shadow: 2px 2px 0px #000000;
+        z-index: 2147483642;
+        pointer-events: none;
+        display: none;
+        animation: floatZzz 2.4s infinite ease-in;
+      }
+      @keyframes floatZzz {
+        0% { opacity: 0; transform: translateY(0px) scale(0.7); }
+        50% { opacity: 1; transform: translateY(-25px) scale(1.1); }
+        100% { opacity: 0; transform: translateY(-50px) scale(1.4); }
+      }
+
+      /* Laser Pointer Marker on active target */
+      #delta-aero-laser-point {
+        position: fixed;
+        width: 36px;
+        height: 36px;
+        border: 2.5px dashed #00f0ff;
         border-radius: 50%;
         pointer-events: none;
-        z-index: 999994;
+        z-index: 2147483630;
         display: none;
-        animation: targetSpin 2s linear infinite;
-        box-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+        animation: laserSpin 1.8s linear infinite;
+        box-shadow: 0 0 16px rgba(0, 240, 255, 0.75);
       }
-      @keyframes targetSpin {
+      @keyframes laserSpin {
         from { transform: translate(-50%, -50%) rotate(0deg); }
         to { transform: translate(-50%, -50%) rotate(360deg); }
       }
     `;
     document.head.appendChild(styleEl);
 
-    // Mascot Body
-    mascotContainer = document.createElement('div');
-    mascotContainer.id = 'delta-mascot-container';
-    mascotContainer.innerHTML = renderMascotSvg('happy');
-    document.body.appendChild(mascotContainer);
+    // Mascot Root Container
+    mascotEl = document.createElement('div');
+    mascotEl.id = 'delta-aero-mascot-root';
+    mascotEl.setAttribute('role', 'complementary');
+    mascotEl.setAttribute('aria-label', 'Aero the 2D AI Mascot Co-Pilot');
+    mascotEl.innerHTML = renderAeroSvg('happy');
+    document.body.appendChild(mascotEl);
 
     // Speech Bubble
-    speechBubble = document.createElement('div');
-    speechBubble.id = 'delta-mascot-bubble';
-    speechBubble.innerHTML = `
-      <div class="bubble-header">
-        <span id="mascot-bubble-title">🤖 AERO CO-PILOT</span>
-        <button class="bubble-close" id="mascot-bubble-close">✕</button>
+    speechBubbleEl = document.createElement('div');
+    speechBubbleEl.id = 'delta-aero-bubble';
+    speechBubbleEl.innerHTML = `
+      <div class="aero-bubble-head">
+        <span id="aero-bubble-title">🤖 AERO CO-PILOT</span>
+        <button class="aero-bubble-close" id="aero-bubble-close" title="Dismiss">✕</button>
       </div>
-      <div id="mascot-bubble-text">Ready for operations!</div>
+      <div id="aero-bubble-msg">All systems nominal! Ready for event operations.</div>
     `;
-    document.body.appendChild(speechBubble);
+    document.body.appendChild(speechBubbleEl);
 
-    document.getElementById('mascot-bubble-close').addEventListener('click', (e) => {
+    document.getElementById('aero-bubble-close').addEventListener('click', (e) => {
       e.stopPropagation();
-      hideSpeechBubble();
+      hideBubble();
     });
 
-    // Target Marker
-    targetMarker = document.createElement('div');
-    targetMarker.id = 'delta-mascot-target-marker';
-    document.body.appendChild(targetMarker);
+    // Sleep Bubble
+    zzzBubbleEl = document.createElement('div');
+    zzzBubbleEl.id = 'delta-aero-zzz';
+    zzzBubbleEl.textContent = 'z Z Z';
+    document.body.appendChild(zzzBubbleEl);
 
-    // Position initially
-    updateMascotPosition(posX, posY);
+    // Laser Pointer
+    laserPointerEl = document.createElement('div');
+    laserPointerEl.id = 'delta-aero-laser-point';
+    document.body.appendChild(laserPointerEl);
+
+    // Set initial position
+    updatePosition(posX, posY);
 
     // Draggable Mascot Logic
-    mascotContainer.addEventListener('mousedown', (e) => {
+    mascotEl.addEventListener('mousedown', (e) => {
       isDragging = true;
       dragOffset.x = e.clientX - posX;
       dragOffset.y = e.clientY - posY;
+      wakeUp();
       setEmotion('thinking');
     });
 
     window.addEventListener('mousemove', (e) => {
+      lastUserActivity = Date.now();
+      if (isSleeping) wakeUp();
+
       if (isDragging) {
         posX = e.clientX - dragOffset.x;
         posY = e.clientY - dragOffset.y;
         targetX = posX;
         targetY = posY;
-        updateMascotPosition(posX, posY);
+        updatePosition(posX, posY);
       }
     });
 
@@ -328,208 +427,333 @@
       if (isDragging) {
         isDragging = false;
         setEmotion('happy');
+        playAudioChirp('blip');
       }
     });
 
-    // Click Mascot for Random Pro-Tip / Mission Briefing
-    mascotContainer.addEventListener('click', () => {
+    // Click Mascot to perform Joyful Trick & Speak
+    mascotEl.addEventListener('click', () => {
       if (!isDragging) {
-        sayRandomProTip();
-        playMascotChirp('blip');
+        wakeUp();
+        doPlayfulTrick();
       }
+    });
+
+    // Listen to keypresses
+    window.addEventListener('keydown', () => {
+      lastUserActivity = Date.now();
+      if (isSleeping) wakeUp();
     });
 
     if (!isEnabled) {
-      mascotContainer.style.display = 'none';
-      speechBubble.style.display = 'none';
+      mascotEl.style.display = 'none';
+      speechBubbleEl.style.display = 'none';
     }
   }
 
   function setEmotion(emotion) {
-    if (currentEmotion === emotion || !mascotContainer) return;
+    if (currentEmotion === emotion || !mascotEl) return;
     currentEmotion = emotion;
-    mascotContainer.innerHTML = renderMascotSvg(emotion);
+    mascotEl.innerHTML = renderAeroSvg(emotion);
   }
 
-  function updateMascotPosition(x, y) {
-    if (!mascotContainer) return;
-    mascotContainer.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
+  function updatePosition(x, y) {
+    if (!mascotEl) return;
+    mascotEl.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
 
     // Position speech bubble above mascot
-    if (speechBubble) {
-      const bubbleW = speechBubble.offsetWidth || 220;
-      const bubbleH = speechBubble.offsetHeight || 60;
-      speechBubble.style.left = `${Math.max(10, Math.min(window.innerWidth - bubbleW - 10, x - bubbleW + 70))}px`;
-      speechBubble.style.top = `${Math.max(10, y - bubbleH - 14)}px`;
+    if (speechBubbleEl) {
+      const bW = speechBubbleEl.offsetWidth || 230;
+      const bH = speechBubbleEl.offsetHeight || 65;
+      speechBubbleEl.style.left = `${Math.max(15, Math.min(window.innerWidth - bW - 15, x - bW + 90))}px`;
+      speechBubbleEl.style.top = `${Math.max(15, y - bH - 18)}px`;
+    }
+
+    // Position zzz bubble
+    if (zzzBubbleEl) {
+      zzzBubbleEl.style.left = `${x + 65}px`;
+      zzzBubbleEl.style.top = `${y - 30}px`;
     }
   }
 
-  function showSpeechBubble(text, title = '🤖 AERO CO-PILOT', duration = 5000) {
-    if (!speechBubble || !isEnabled) return;
-    const txtEl = document.getElementById('mascot-bubble-text');
-    const titleEl = document.getElementById('mascot-bubble-title');
-    if (txtEl) txtEl.innerHTML = text;
+  function speak(msg, title = '🤖 AERO CO-PILOT', duration = 5000) {
+    if (!speechBubbleEl || !isEnabled) return;
+    const txtEl = document.getElementById('aero-bubble-msg');
+    const titleEl = document.getElementById('aero-bubble-title');
+    if (txtEl) txtEl.innerHTML = msg;
     if (titleEl) titleEl.textContent = title;
 
-    speechBubble.classList.add('visible');
-    updateMascotPosition(posX, posY);
+    speechBubbleEl.classList.add('visible');
+    updatePosition(posX, posY);
 
-    if (speechTimer) clearTimeout(speechTimer);
+    if (speechDismissTimer) clearTimeout(speechDismissTimer);
     if (duration > 0) {
-      speechTimer = setTimeout(() => {
-        hideSpeechBubble();
-      }, duration);
+      speechDismissTimer = setTimeout(hideBubble, duration);
     }
   }
 
-  function hideSpeechBubble() {
-    if (speechBubble) {
-      speechBubble.classList.remove('visible');
-    }
-    if (targetMarker) {
-      targetMarker.style.display = 'none';
-    }
-    setEmotion('happy');
+  function hideBubble() {
+    if (speechBubbleEl) speechBubbleEl.classList.remove('visible');
+    if (laserPointerEl) laserPointerEl.style.display = 'none';
+    if (!isSleeping) setEmotion('happy');
   }
 
-  // Point at specific DOM element and fly over to guide user
-  function pointAtElement(targetEl, text, emotion = 'pointing', duration = 5500) {
+  function wakeUp() {
+    if (isSleeping) {
+      isSleeping = false;
+      if (zzzBubbleEl) zzzBubbleEl.style.display = 'none';
+      setEmotion('happy');
+      playAudioChirp('wake');
+      speak("I'm awake, I'm awake! Scanning venue perimeters.", '⚡ AERO ONLINE', 3500);
+    }
+    lastUserActivity = Date.now();
+  }
+
+  function fallAsleep() {
+    if (isSleeping || isDragging || isBusyWithTrick) return;
+    isSleeping = true;
+    setEmotion('sleep');
+    if (zzzBubbleEl) zzzBubbleEl.style.display = 'block';
+    hideBubble();
+  }
+
+  // Playful Aerial Backflip / 360 Spin
+  function doPlayfulTrick() {
+    if (isBusyWithTrick) return;
+    isBusyWithTrick = true;
+    wakeUp();
+
+    const svg = mascotEl.querySelector('.aero-core-svg');
+    if (svg) {
+      svg.classList.add('barrel-roll');
+      playAudioChirp('whoosh');
+      setEmotion('stars');
+
+      setTimeout(() => {
+        svg.classList.remove('barrel-roll');
+        setEmotion('dizzy');
+        playAudioChirp('blip');
+
+        setTimeout(() => {
+          setEmotion('happy');
+          isBusyWithTrick = false;
+          sayRandomWittyTip();
+        }, 900);
+      }, 750);
+    }
+  }
+
+  // Point laser marker at a DOM element
+  function flyAndPointAt(targetEl, text, emotion = 'pointing', duration = 5500) {
     if (!targetEl || !isEnabled) return;
-    const rect = targetEl.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) return;
+    wakeUp();
+    isBusyWithTrick = true;
 
-    // Scroll element into view if offscreen
-    if (rect.top < 0 || rect.bottom > window.innerHeight) {
+    // Smooth scroll into view if offscreen
+    const rInitial = targetEl.getBoundingClientRect();
+    if (rInitial.top < 0 || rInitial.bottom > window.innerHeight) {
       targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     setTimeout(() => {
       const r = targetEl.getBoundingClientRect();
-      // Target position: Hovering just to the right and above target element
-      targetX = Math.min(window.innerWidth - 110, r.right + 15);
-      targetY = Math.max(20, r.top - 20);
+      targetX = Math.min(window.innerWidth - 140, r.right + 20);
+      targetY = Math.max(30, r.top - 15);
 
-      // Show laser target marker on the element center
-      if (targetMarker) {
-        targetMarker.style.left = `${r.left + r.width / 2}px`;
-        targetMarker.style.top = `${r.top + r.height / 2}px`;
-        targetMarker.style.display = 'block';
+      if (laserPointerEl) {
+        laserPointerEl.style.left = `${r.left + r.width / 2}px`;
+        laserPointerEl.style.top = `${r.top + r.height / 2}px`;
+        laserPointerEl.style.display = 'block';
       }
 
       setEmotion(emotion);
-      playMascotChirp(emotion === 'alert' ? 'alert' : 'blip');
-      showSpeechBubble(text, `🎯 TARGET: ${targetEl.id || 'INSPECTION'}`, duration);
-    }, 150);
+      playAudioChirp(emotion === 'alert' ? 'alert' : 'blip');
+      speak(text, `🎯 TARGET: ${targetEl.id || 'INSPECTION'}`, duration);
+
+      setTimeout(() => {
+        isBusyWithTrick = false;
+        // Return to home float station after 6 seconds
+        targetX = window.innerWidth - 170;
+        targetY = window.innerHeight - 230;
+      }, duration + 500);
+    }, 200);
   }
 
-  // Library of proactive situational tips
-  const PRO_TIPS = [
-    "Tip: Drag session cards in the schedule grid to manually rebalance venue halls!",
-    "Telemetry SLA is clocked at < 0.1ms — all deterministic constraint solvers active.",
-    "Did you know? Turing Hall capacity is calibrated at 250 pax according to NFPA-101 codes.",
-    "Press Alt + S anytime to toggle the Swarm dock or inspect active agent callsigns.",
-    "CCTV Perception HUD uses optical headcount tripwires for real-time room density estimation.",
-    "Emergency SOS broadcasts are queued offline if connection drops — zero lost packets!"
+  // Autonomous Roaming ("Mind of Its Own")
+  const AUTONOMOUS_DESTINATIONS = [
+    {
+      selector: '.sidebar-brand-card',
+      text: "DELTA ENGINE Command Basecamp! All 5 operational scenarios registered & ready.",
+      emotion: 'happy'
+    },
+    {
+      selector: '#cadCanvas',
+      text: "Inspecting 2D CAD Blueprint... calibrated scale 20m × 30m = 600m² conforms with NFPA-101 egress rules!",
+      emotion: 'pointing'
+    },
+    {
+      selector: '#cameraFeed',
+      text: "Checking CCTV Perception Feed... turnstile headcount tracking active with zero frame drop!",
+      emotion: 'thinking'
+    },
+    {
+      selector: '#schedule-grid',
+      text: "Checking conference session grid... all speaker timeslots synchronized with deterministic solver.",
+      emotion: 'wink'
+    },
+    {
+      selector: '#autopilot-toggle-pill',
+      text: "Tesla-grade autonomous autopilot is engaged — keeping venue safety locked in!",
+      emotion: 'stars'
+    }
+  ];
+
+  const WITTY_TIPS = [
+    "Whoosh! Look at me fly! Drag me anywhere on screen if I'm in your way.",
+    "Deterministic safety engine calculation SLA: < 0.1ms. Faster than a flash of lightning!",
+    "Tip: Drag talk cards in the schedule grid to manually rebalance venue halls.",
+    "Turing Hall is calibrated at 250 pax maximum capacity according to NFPA-101 life safety.",
+    "Offline Field Mesh: Emergency SOS signals are queued offline if radio connectivity drops!",
+    "Everything looking good, Commander! Coast is clear across all zones."
   ];
 
   let tipIndex = 0;
-  function sayRandomProTip() {
-    const tip = PRO_TIPS[tipIndex % PRO_TIPS.length];
+  function sayRandomWittyTip() {
+    const tip = WITTY_TIPS[tipIndex % WITTY_TIPS.length];
     tipIndex++;
-    setEmotion('wink');
-    showSpeechBubble(tip, '💡 AERO PRO-TIP', 5000);
+    speak(tip, '💡 AERO DISPATCH', 5000);
   }
 
-  // Smooth Flying Animation Loop (Spring Physics toward target)
-  function animateMascot() {
-    if (!isDragging && mascotContainer && isEnabled) {
+  // Periodic Autonomous Mind (Every 10-15 seconds when idle)
+  function startAutonomousMind() {
+    if (autonomousActionTimer) clearInterval(autonomousActionTimer);
+    autonomousActionTimer = setInterval(() => {
+      if (!isEnabled || isDragging || isBusyWithTrick) return;
+
+      const idleDuration = Date.now() - lastUserActivity;
+
+      // If user has been away for > 30s, take a nap!
+      if (idleDuration > 30000 && !isSleeping) {
+        fallAsleep();
+        return;
+      }
+
+      if (isSleeping) return;
+
+      // 40% chance: fly to an interesting component on page
+      // 30% chance: do an aerial barrel roll trick
+      // 30% chance: say a fun operational tip
+      const roll = Math.random();
+      if (roll < 0.4) {
+        const dest = AUTONOMOUS_DESTINATIONS[Math.floor(Math.random() * AUTONOMOUS_DESTINATIONS.length)];
+        const el = document.querySelector(dest.selector);
+        if (el) {
+          flyAndPointAt(el, dest.text, dest.emotion, 4800);
+        }
+      } else if (roll < 0.7) {
+        doPlayfulTrick();
+      } else {
+        sayRandomWittyTip();
+        playAudioChirp('blip');
+      }
+    }, 12000);
+  }
+
+  // 60FPS Flight Physics Animation Loop
+  function animateFlight() {
+    if (!isDragging && mascotEl && isEnabled) {
       const dx = targetX - posX;
       const dy = targetY - posY;
       if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
-        posX += dx * 0.12;
-        posY += dy * 0.12;
-        updateMascotPosition(posX, posY);
+        posX += dx * 0.14;
+        posY += dy * 0.14;
+        updatePosition(posX, posY);
       }
     }
-    requestAnimationFrame(animateMascot);
+    requestAnimationFrame(animateFlight);
   }
 
-  // System Event Listeners
-  function attachSystemListeners() {
-    // 1. When Speaker Delay contingency is simulated
+  // Listen to Real System Events
+  function attachEventListeners() {
+    // 1. Speaker Delay Simulation Click
     const btnDelay = document.getElementById('btn-simulate-delay');
     if (btnDelay) {
       btnDelay.addEventListener('click', () => {
         const grid = document.getElementById('schedule-grid');
-        pointAtElement(grid || btnDelay, "⏱️ Speaker delay contingency active! Scheduler Agent is reallocating the slot to an open hall.", 'thinking', 6000);
+        flyAndPointAt(grid || btnDelay, "⏱️ Speaker delay simulated! Scheduler Agent is reallocating the slot to an open hall.", 'thinking', 6000);
       });
     }
 
-    // 2. When Crowd Surge contingency is simulated
+    // 2. Capacity Surge Simulation Click
     const btnSurge = document.getElementById('btn-simulate-surge');
     if (btnSurge) {
       btnSurge.addEventListener('click', () => {
         const cad = document.getElementById('cadCanvas') || btnSurge;
-        pointAtElement(cad, "⚠️ Capacity surge alert! Logistics Agent opening East Overflow Park & releasing barricades.", 'alert', 6000);
+        flyAndPointAt(cad, "⚠️ Capacity surge alert! Logistics Agent opening East Overflow Park & releasing barricades.", 'alert', 6000);
       });
     }
 
-    // 3. When CAD Blueprint is inspected
+    // 3. Hovering CAD Blueprint
     const cadCanvas = document.getElementById('cadCanvas');
     if (cadCanvas) {
       cadCanvas.addEventListener('mouseenter', () => {
-        if (Math.random() > 0.6) {
-          showSpeechBubble("2D CAD Blueprint calibrated: 20m × 30m = 600m² | Primary life-safety egress route clear.", '📐 CAD ARCHITECTURE', 4000);
+        if (!isBusyWithTrick && Math.random() > 0.6) {
+          speak("2D CAD Blueprint: 20m × 30m = 600m² | Primary life-safety egress corridor verified.", '📐 CAD ARCHITECTURE', 4000);
         }
       });
     }
 
-    // 4. Listen to WebSockets / custom events
+    // 4. WebSocket Events
     window.addEventListener('message', (e) => {
       try {
         const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
         if (d && d.type === 'SCHEDULE_HEALED') {
-          setEmotion('happy');
-          playMascotChirp('success');
-          showSpeechBubble("✨ Agenda constraint solved! All sessions synchronized with zero delay.", '🎉 SELF-HEALING COMPLETE', 5000);
+          wakeUp();
+          setEmotion('stars');
+          playAudioChirp('celebrate');
+          speak("🎉 Self-Healing Complete! All agenda constraints optimized with zero crowd friction.", '✨ RESOLVED', 5500);
         }
       } catch (_) {}
     });
   }
 
-  // Public Mascot API
+  // Global Mascot Controller
   window.deltaMascot = {
-    say(text, duration = 5000) {
-      showSpeechBubble(text, '🤖 AERO CO-PILOT', duration);
-      playMascotChirp('blip');
+    speak(msg, duration = 5000) {
+      wakeUp();
+      speak(msg, '🤖 AERO CO-PILOT', duration);
+      playAudioChirp('blip');
     },
-    pointAt(el, text, emotion = 'pointing') {
-      pointAtElement(el, text, emotion);
+    pointAt(el, msg, emotion = 'pointing') {
+      flyAndPointAt(el, msg, emotion);
     },
-    setEmotion(emotion) {
-      setEmotion(emotion);
+    trick() {
+      doPlayfulTrick();
     },
     toggle() {
       isEnabled = !isEnabled;
       localStorage.setItem(STORAGE_KEY, isEnabled ? 'true' : 'false');
-      if (mascotContainer) mascotContainer.style.display = isEnabled ? 'block' : 'none';
-      if (speechBubble) speechBubble.style.display = isEnabled ? 'block' : 'none';
+      if (mascotEl) mascotEl.style.display = isEnabled ? 'block' : 'none';
+      if (speechBubbleEl) speechBubbleEl.style.display = isEnabled ? 'block' : 'none';
       const lbl = document.getElementById('lbl-mascot-toggle');
       if (lbl) lbl.textContent = isEnabled ? 'AI Mascot: ON' : 'AI Mascot: OFF';
       if (isEnabled) {
-        showSpeechBubble("Systems online! Aero is reporting for duty.", '🤖 AERO ONLINE', 4000);
-        playMascotChirp('success');
+        wakeUp();
+        speak("Aero reporting for duty! All systems nominal.", '🤖 AERO ONLINE', 4000);
+        playAudioChirp('celebrate');
       }
       return isEnabled;
     },
     onSwarmRebuildComplete() {
-      // Called when Swarm Rebuild finishes rebuilding all components
+      // Called when Swarm Rebuild finishes constructing the page
       if (!isEnabled) return;
       setTimeout(() => {
-        setEmotion('wink');
-        playMascotChirp('success');
-        showSpeechBubble("🚀 Mission Ready! Every component has been built. Welcome back to DELTAengine, Commander!", '✨ SYSTEMS BUILT', 6000);
-      }, 900);
+        wakeUp();
+        setEmotion('stars');
+        playAudioChirp('celebrate');
+        speak("🚀 Mission Ready! Every component has been assembled. Welcome back to DELTAengine, Commander!", '✨ SYSTEMS BUILT', 6000);
+        doPlayfulTrick();
+      }, 950);
     }
   };
 
@@ -537,12 +761,14 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       setupDOM();
-      attachSystemListeners();
-      requestAnimationFrame(animateMascot);
+      attachEventListeners();
+      startAutonomousMind();
+      requestAnimationFrame(animateFlight);
     });
   } else {
     setupDOM();
-    attachSystemListeners();
-    requestAnimationFrame(animateMascot);
+    attachEventListeners();
+    startAutonomousMind();
+    requestAnimationFrame(animateFlight);
   }
 })();
