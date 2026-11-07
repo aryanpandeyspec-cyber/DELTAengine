@@ -83,6 +83,7 @@ window.addEventListener('DOMContentLoaded', () => {
   initNodeInspectorClose();
   initTourGuide();
   initVisualCustomizer();
+  initSwarmAndMascotToggles();
   initSvgMouseHandlers();
   
   // Phase 2 QoL bindings
@@ -829,6 +830,62 @@ function initSoundEffects() {
       createToast('🔇 Audio feedback muted (All voices stopped).', 'info');
     }
   });
+}
+
+function initSwarmAndMascotToggles() {
+  const btnSwarm = document.getElementById('btn-swarm-intro-toggle');
+  const lblSwarm = document.getElementById('lbl-swarm-intro');
+  const btnReplay = document.getElementById('btn-replay-swarm-intro');
+  const btnMascot = document.getElementById('btn-mascot-toggle');
+  const lblMascot = document.getElementById('lbl-mascot-toggle');
+
+  if (btnSwarm && lblSwarm) {
+    const isSwarmOn = localStorage.getItem('delta_swarm_intro') !== 'false';
+    lblSwarm.textContent = isSwarmOn ? 'Swarm Intro: ON' : 'Swarm Intro: OFF';
+    btnSwarm.classList.toggle('btn-yellow', isSwarmOn);
+    btnSwarm.classList.toggle('btn-white', !isSwarmOn);
+
+    btnSwarm.addEventListener('click', () => {
+      const cur = localStorage.getItem('delta_swarm_intro') !== 'false';
+      const next = !cur;
+      localStorage.setItem('delta_swarm_intro', next ? 'true' : 'false');
+      lblSwarm.textContent = next ? 'Swarm Intro: ON' : 'Swarm Intro: OFF';
+      btnSwarm.classList.toggle('btn-yellow', next);
+      btnSwarm.classList.toggle('btn-white', !next);
+      if (typeof createToast === 'function') {
+        createToast(next ? '🎬 Swarm Intro Movie will play on refresh.' : '⚡ Swarm Intro Movie disabled on refresh.', 'info');
+      }
+    });
+  }
+
+  if (btnReplay) {
+    btnReplay.addEventListener('click', () => {
+      if (typeof window.replaySwarmIntro === 'function') {
+        window.replaySwarmIntro();
+      } else if (window.__swarmRebuild && typeof window.__swarmRebuild.start === 'function') {
+        window.__swarmRebuild.start();
+      }
+    });
+  }
+
+  if (btnMascot && lblMascot) {
+    const isMascotOn = localStorage.getItem('delta_mascot_enabled') !== 'false';
+    lblMascot.textContent = isMascotOn ? 'AI Mascot: ON' : 'AI Mascot: OFF';
+    btnMascot.classList.toggle('btn-yellow', isMascotOn);
+    btnMascot.classList.toggle('btn-white', !isMascotOn);
+
+    btnMascot.addEventListener('click', () => {
+      if (window.deltaMascot && typeof window.deltaMascot.toggle === 'function') {
+        const active = window.deltaMascot.toggle();
+        lblMascot.textContent = active ? 'AI Mascot: ON' : 'AI Mascot: OFF';
+        btnMascot.classList.toggle('btn-yellow', active);
+        btnMascot.classList.toggle('btn-white', !active);
+        if (typeof createToast === 'function') {
+          createToast(active ? '🤖 2D AI Mascot Aero online!' : '🤖 2D AI Mascot hidden.', 'info');
+        }
+      }
+    });
+  }
 }
 
 function triggerReallocationCountdown(conflictReason, destinationTarget, onComplete) {
