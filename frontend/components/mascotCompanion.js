@@ -201,6 +201,8 @@
     styleEl.textContent = `
       #delta-aero-mascot-root {
         position: fixed;
+        top: 0;
+        left: 0;
         width: 126px;
         height: 126px;
         z-index: 2147483640; /* High priority visibility */
@@ -557,12 +559,16 @@
 
     setTimeout(() => {
       const r = targetEl.getBoundingClientRect();
-      targetX = Math.min(window.innerWidth - 140, r.right + 20);
-      targetY = Math.max(30, r.top - 15);
+      const targetCenterX = r.left + r.width / 2;
+      
+      // Position Aero near target element within viewport bounds
+      targetX = Math.min(window.innerWidth - 140, Math.max(20, targetCenterX - 63));
+      targetY = Math.min(window.innerHeight - 150, Math.max(30, r.top - 80));
+      if (targetY < 30) targetY = Math.min(window.innerHeight - 150, r.bottom + 15);
 
       if (laserPointerEl) {
-        laserPointerEl.style.left = `${r.left + r.width / 2}px`;
-        laserPointerEl.style.top = `${r.top + r.height / 2}px`;
+        laserPointerEl.style.left = `${Math.min(window.innerWidth - 50, Math.max(10, r.left + r.width / 2 - 18))}px`;
+        laserPointerEl.style.top = `${Math.min(window.innerHeight - 50, Math.max(10, r.top + r.height / 2 - 18))}px`;
         laserPointerEl.style.display = 'block';
       }
 
@@ -571,8 +577,9 @@
       speak(text, `🎯 TARGET: ${targetEl.id || 'INSPECTION'}`, duration);
 
       setTimeout(() => {
+        if (laserPointerEl) laserPointerEl.style.display = 'none';
         isBusyWithTrick = false;
-        // Return to home float station after 6 seconds
+        // Return to home float station after duration
         targetX = window.innerWidth - 170;
         targetY = window.innerHeight - 230;
       }, duration + 500);
@@ -587,22 +594,22 @@
       emotion: 'happy'
     },
     {
-      selector: '#cadCanvas',
+      selector: '#card-spatial-builder, #spatial-reconstruction-canvas',
       text: "Inspecting 2D CAD Blueprint... calibrated scale 20m × 30m = 600m² conforms with NFPA-101 egress rules!",
       emotion: 'pointing'
     },
     {
-      selector: '#cameraFeed',
+      selector: '#cctv-hud-canvas, .cctv-card',
       text: "Checking CCTV Perception Feed... turnstile headcount tracking active with zero frame drop!",
       emotion: 'thinking'
     },
     {
-      selector: '#schedule-grid',
+      selector: '#schedule-grid, .schedule-matrix-card',
       text: "Checking conference session grid... all speaker timeslots synchronized with deterministic solver.",
       emotion: 'wink'
     },
     {
-      selector: '#autopilot-toggle-pill',
+      selector: '#autopilot-toggle-pill, #card-autopilot',
       text: "Tesla-grade autonomous autopilot is engaged — keeping venue safety locked in!",
       emotion: 'stars'
     }
