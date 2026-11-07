@@ -3777,6 +3777,12 @@
         this.dead = true;
         cancelAnimationFrame(this.raf);
         for (const u of this.unbinds || []) u();
+        try {
+          window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        } catch (_) {}
+        if (window.deltaMascot && typeof window.deltaMascot.onSwarmRebuildComplete === 'function') {
+          window.deltaMascot.onSwarmRebuildComplete();
+        }
         setTimeout(() => this.view.host.remove(), 260);
       }
     }

@@ -298,6 +298,22 @@
         border-color: #ffffff transparent transparent transparent;
         z-index: 1;
       }
+      #delta-aero-bubble.bubble-below::after {
+        bottom: auto;
+        top: -14px;
+        right: 34px;
+        border-width: 0 11px 14px 0;
+        border-style: solid;
+        border-color: transparent #000000 transparent transparent;
+      }
+      #delta-aero-bubble.bubble-below::before {
+        bottom: auto;
+        top: -9px;
+        right: 35px;
+        border-width: 0 9px 10px 0;
+        border-style: solid;
+        border-color: transparent #ffffff transparent transparent;
+      }
       .aero-bubble-head {
         display: flex;
         align-items: center;
@@ -433,6 +449,45 @@
       }
     });
 
+    // Mobile / Touch Screen Dragging Support
+    mascotEl.addEventListener('touchstart', (e) => {
+      if (!e.touches || !e.touches[0]) return;
+      isDragging = true;
+      dragOffset.x = e.touches[0].clientX - posX;
+      dragOffset.y = e.touches[0].clientY - posY;
+      wakeUp();
+      setEmotion('thinking');
+    }, { passive: true });
+
+    window.addEventListener('touchmove', (e) => {
+      lastUserActivity = Date.now();
+      if (isSleeping) wakeUp();
+      if (isDragging && e.touches && e.touches[0]) {
+        posX = Math.min(window.innerWidth - 140, Math.max(10, e.touches[0].clientX - dragOffset.x));
+        posY = Math.min(window.innerHeight - 150, Math.max(10, e.touches[0].clientY - dragOffset.y));
+        targetX = posX;
+        targetY = posY;
+        updatePosition(posX, posY);
+      }
+    }, { passive: true });
+
+    window.addEventListener('touchend', () => {
+      if (isDragging) {
+        isDragging = false;
+        setEmotion('happy');
+        playAudioChirp('blip');
+      }
+    });
+
+    // Viewport Resizing & Boundary Clamping
+    window.addEventListener('resize', () => {
+      posX = Math.min(window.innerWidth - 140, Math.max(20, posX));
+      posY = Math.min(window.innerHeight - 150, Math.max(20, posY));
+      targetX = Math.min(window.innerWidth - 140, Math.max(20, targetX));
+      targetY = Math.min(window.innerHeight - 150, Math.max(20, targetY));
+      updatePosition(posX, posY);
+    });
+
     // Click Mascot to perform Joyful Trick & Speak
     mascotEl.addEventListener('click', () => {
       if (!isDragging) {
@@ -441,11 +496,15 @@
       }
     });
 
-    // Listen to keypresses
-    window.addEventListener('keydown', () => {
+    // Listen to all user activity (keys, mouse, wheel, touch, scroll)
+    const onUserInteraction = () => {
       lastUserActivity = Date.now();
       if (isSleeping) wakeUp();
-    });
+    };
+    window.addEventListener('keydown', onUserInteraction, { passive: true });
+    window.addEventListener('wheel', onUserInteraction, { passive: true });
+    window.addEventListener('scroll', onUserInteraction, { passive: true });
+    window.addEventListener('touchstart', onUserInteraction, { passive: true });
 
     if (!isEnabled) {
       mascotEl.style.display = 'none';
@@ -463,12 +522,18 @@
     if (!mascotEl) return;
     mascotEl.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`;
 
-    // Position speech bubble above mascot
+    // Position speech bubble above mascot (or flip below if near top of screen)
     if (speechBubbleEl) {
       const bW = speechBubbleEl.offsetWidth || 230;
       const bH = speechBubbleEl.offsetHeight || 65;
       speechBubbleEl.style.left = `${Math.max(15, Math.min(window.innerWidth - bW - 15, x - bW + 90))}px`;
-      speechBubbleEl.style.top = `${Math.max(15, y - bH - 18)}px`;
+      if (y < bH + 25) {
+        speechBubbleEl.style.top = `${y + 130}px`;
+        speechBubbleEl.classList.add('bubble-below');
+      } else {
+        speechBubbleEl.style.top = `${Math.max(15, y - bH - 18)}px`;
+        speechBubbleEl.classList.remove('bubble-below');
+      }
     }
 
     // Position zzz bubble
@@ -742,6 +807,11 @@
       localStorage.setItem(STORAGE_KEY, isEnabled ? 'true' : 'false');
       if (mascotEl) mascotEl.style.display = isEnabled ? 'block' : 'none';
       if (speechBubbleEl) speechBubbleEl.style.display = isEnabled ? 'block' : 'none';
+      if (!isEnabled) {
+        if (zzzBubbleEl) zzzBubbleEl.style.display = 'none';
+        if (laserPointerEl) laserPointerEl.style.display = 'none';
+        if (speechDismissTimer) clearTimeout(speechDismissTimer);
+      }
       const lbl = document.getElementById('lbl-mascot-toggle');
       if (lbl) lbl.textContent = isEnabled ? 'AI Mascot: ON' : 'AI Mascot: OFF';
       if (isEnabled) {
