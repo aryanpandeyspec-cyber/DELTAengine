@@ -1573,8 +1573,33 @@ Email: ${fromEmail}`;
 
   function extractYouTubeId(url) {
     if (!url) return null;
-    const trimmed = url.trim();
+    let trimmed = url.trim();
     if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) return trimmed;
+
+    // 1. Unwrap search engine redirect tracking URLs (Google, Bing, Yahoo, DuckDuckGo)
+    try {
+      const initialParsed = new URL(trimmed.startsWith('http') ? trimmed : 'https://' + trimmed);
+      for (const param of ['url', 'q', 'target', 'dest', 'u']) {
+        if (initialParsed.searchParams.has(param)) {
+          const nestedUrl = initialParsed.searchParams.get(param);
+          if (nestedUrl && (nestedUrl.includes('youtube') || nestedUrl.includes('youtu.be') || /^[a-zA-Z0-9_-]{11}$/.test(nestedUrl))) {
+            const nestedId = extractYouTubeId(nestedUrl);
+            if (nestedId) return nestedId;
+          }
+        }
+      }
+    } catch (_) {}
+
+    // 2. Decode URI components in case URL has percent-encoding (e.g. %2F, %3F, %3D)
+    try {
+      if (trimmed.includes('%')) {
+        const decoded = decodeURIComponent(trimmed);
+        if (decoded !== trimmed) {
+          const decodedId = extractYouTubeId(decoded);
+          if (decodedId) return decodedId;
+        }
+      }
+    } catch (_) {}
 
     try {
       const parsed = new URL(trimmed.startsWith('http') ? trimmed : 'https://' + trimmed);
@@ -1629,9 +1654,9 @@ Email: ${fromEmail}`;
     const trimmed = url.trim();
     const ytId = extractYouTubeId(trimmed);
 
-    // Sync input values across all URL inputs
+    // Sync input values across all URL inputs (canonical clean URL if ytId matched)
     document.querySelectorAll('#input-youtube-url, .cctv-inline-yt-input').forEach(inp => {
-      inp.value = trimmed;
+      inp.value = ytId ? `https://www.youtube.com/watch?v=${ytId}` : trimmed;
     });
 
     const ytWrappers = document.querySelectorAll('#cctv-youtube-frame-wrap, #modal-cctv-youtube-frame-wrap');
@@ -4189,5 +4214,10 @@ Email: ${fromEmail}`;
       }
     }
   };
+
+  // Expose Global Streaming Controllers for Direct Ingestion & Diagnostic Testing
+  window.playYouTubeStream = playYouTubeStream;
+  window.extractYouTubeId = extractYouTubeId;
+  window.stopYouTubeStream = stopYouTubeStream;
 
 })();
