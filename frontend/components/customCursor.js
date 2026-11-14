@@ -1542,6 +1542,10 @@
 .hud button.snd.off{color:#8a8a8a}
 .hud button.snd.tap{background:#0D99FF;animation:hudpulse 1.6s ease-in-out infinite}
 @keyframes hudpulse{50%{box-shadow:0 0 0 4px rgba(13,153,255,.28)}}
+.corner-skip{position:fixed;top:18px;right:22px;z-index:2147483647;display:flex;align-items:center;gap:7px;padding:8px 14px;background:#ffffff;color:#0f172a;border:2.5px solid #000000;border-radius:8px;box-shadow:3px 3px 0px #000000;font:700 12px/1 'Space Grotesk',system-ui,-apple-system,sans-serif;cursor:pointer;pointer-events:auto;user-select:none;transition:all .15s ease;text-decoration:none}
+.corner-skip:hover{background:#fee2e2;color:#b91c1c;transform:translate(-1px,-1px);box-shadow:4px 4px 0px #000000}
+.corner-skip:active{transform:translate(2px,2px);box-shadow:1px 1px 0px #000000}
+.corner-skip .skip-badge{background:#0f172a;color:#ffffff;padding:2px 5px;border-radius:4px;font-size:10px;font-family:monospace;font-weight:700}
 `;
 
   // -------------------------------------------------------------------- env
@@ -1637,6 +1641,11 @@
 <div class="badges"></div>
 <div class="cursors"></div>
 <div class="rulers"></div>
+<button class="corner-skip" data-a="close" title="Skip Swarm Rebuild (Esc)">
+  <span>⚡ Skip Intro</span>
+  <span class="skip-badge">Esc</span>
+  <span style="font-weight:900; margin-left:2px;">✕</span>
+</button>
 <div class="hud">
   <div class="dots"></div>
   <div class="txt"><span class="status">Scanning page…</span></div>
@@ -2109,7 +2118,7 @@
       this.frontier = 0;
       this.vel = 0;
       this.tempo = 1;
-      this.speed = 1;
+      this.speed = 1.35;
       this.time = 0;
       this.rulers = { want: 0, t: 0, lastNeed: -10 };
       this.lastScroll = null;
@@ -3605,7 +3614,7 @@
           this.env.scroller.scrollBy({ top: e.deltaY, left: e.deltaX, behavior: "instant" });
         }, { passive: false });
       }
-      on(this.view.hud, "click", (e) => {
+      on(this.view.root, "click", (e) => {
         const b = e.target.closest("button");
         if (!b) return;
         const a = b.dataset.a;
@@ -3680,8 +3689,9 @@
       }
       const crew = Math.max(MIN_AGENTS, E.cursors.filter((c) => !c.leaving).length);
       const backlog = E.backlog();
-      const target = backlog <= Math.max(4, crew * 0.6) ? 230 : backlog <= crew * 1.5 ? 80 : 0;
-      this.tourV += (target - this.tourV) * Math.min(1, dt * 2.5);
+      // Snappy autoscroll: 680px/s when clear, 360px/s medium, 160px/s steady glide
+      const target = backlog <= Math.max(4, crew * 0.6) ? 680 : backlog <= crew * 1.5 ? 360 : 160;
+      this.tourV += (target - this.tourV) * Math.min(1, dt * 4.5);
       this.tourAcc += this.tourV * dt;
       if (this.tourAcc >= 1) {
         const d = Math.floor(this.tourAcc);
