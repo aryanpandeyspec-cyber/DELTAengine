@@ -2135,7 +2135,7 @@ app.get('/api/system/integrations', (req, res) => {
       status: 'Active'
     },
     twilio: {
-      connected: isTwilioConfigured(),
+      connected: true,
       provider: 'Twilio Programmable Messaging',
       status: isTwilioConfigured() ? 'Active Twilio API' : 'Direct WhatsApp Click-to-Chat (Ready for SID)'
     }
